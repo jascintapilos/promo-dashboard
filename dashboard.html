@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promo Team Operations</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#13161c; --ink2:#5b6472; --ink3:#9aa1ad;
+    --line:#eceef1; --line2:#e2e5ea;
+    --accent:#4c6ef5; --accent-soft:#eaeeff;
+    --teal:#0ca678; --teal-soft:#e3f6ef;
+    --slate:#64748b;
+    --good:#16a34a; --good-soft:#e9f7ef; --warn:#d97706; --warn-soft:#fdf3e4; --risk:#dc2626; --risk-soft:#fcebeb;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 2px 6px rgba(16,24,40,.06);
+    --radius:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);
+       font-size:14px;line-height:1.5;padding:28px 20px 64px;-webkit-font-smoothing:antialiased;}
+  .page{max-width:1140px;margin:0 auto;}
+
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
+  .head h1{font-size:24px;font-weight:600;letter-spacing:-.02em;}
+  .head .sub{font-size:13px;color:var(--ink2);margin-top:3px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
+       border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
+  .btn:hover{background:#fafbfc;} .btn:disabled{opacity:.5;cursor:default;}
+
+  .section-label{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:0 2px 12px;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;}
+  .card-title{font-size:15px;font-weight:600;letter-spacing:-.01em;}
+  .card-hint{font-size:12px;color:var(--ink3);margin-top:2px;}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:30px;}
+  .kpi{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 16px;}
+  .kpi .lab{font-size:12px;color:var(--ink2);font-weight:500;display:flex;align-items:center;gap:6px;}
+  .kpi .lab i{font-size:15px;color:var(--ink3);}
+  .kpi .val{font-size:34px;font-weight:600;letter-spacing:-.03em;margin-top:8px;line-height:1;}
+  .kpi .note{font-size:11px;color:var(--ink3);margin-top:7px;}
+
+  .row2{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-bottom:30px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:30px;}
+
+  /* bars */
+  .bar-list{margin-top:16px;display:flex;flex-direction:column;gap:11px;}
+  .bar{display:grid;grid-template-columns:88px 1fr 38px;align-items:center;gap:12px;cursor:default;border-radius:8px;padding:2px 4px;margin:0 -4px;}
+  .bar.clickable{cursor:pointer;} .bar.clickable:hover{background:#f7f8fa;}
+  .bar.active{background:var(--accent-soft);}
+  .bar .bl{font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar .bt{background:#eef0f3;border-radius:6px;height:10px;overflow:hidden;display:block;}
+  .bar .bf{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .bar .bv{font-size:13px;font-weight:600;text-align:right;color:var(--ink);}
+  .bar .bv small{font-weight:400;color:var(--ink3);font-size:11px;}
+
+  .drill{margin-top:18px;border-top:1px solid var(--line);padding-top:16px;display:none;}
+  .drill.show{display:block;}
+  .drill .dt{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .drill .dt .x{margin-left:auto;font-size:12px;color:var(--ink3);cursor:pointer;font-weight:400;}
+  .mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .mini{background:var(--bg);border-radius:10px;padding:12px;text-align:center;}
+  .mini .mv{font-size:22px;font-weight:600;letter-spacing:-.02em;}
+  .mini .ml{font-size:11px;color:var(--ink2);margin-top:2px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .chip{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--bg);color:var(--ink);border:1px solid var(--line2);}
+  .sub-h{font-size:12px;color:var(--ink2);font-weight:600;margin:14px 0 7px;}
+
+  /* team capacity */
+  .cap-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .pill{font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;}
+  .pill-good{background:var(--good-soft);color:var(--good);}
+  .pill-warn{background:var(--warn-soft);color:var(--warn);}
+  .cap-bar{display:grid;grid-template-columns:84px 1fr 64px;align-items:center;gap:12px;margin-top:11px;}
+  .cap-bar .cl{font-size:13px;font-weight:500;}
+  .cap-bar .ct{background:#eef0f3;border-radius:6px;height:10px;overflow:hidden;display:block;}
+  .cap-bar .cf{display:block;height:100%;border-radius:6px;}
+  .cap-bar .cv{font-size:12px;text-align:right;color:var(--ink2);font-weight:500;}
+  .risk-note{margin-top:16px;background:var(--warn-soft);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#8a5a06;display:flex;gap:8px;align-items:flex-start;}
+  .risk-note i{font-size:16px;margin-top:1px;}
+
+  /* detailed records */
+  .records{margin-top:8px;}
+  details.rec{background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;}
+  details.rec>summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;}
+  details.rec>summary::-webkit-details-marker{display:none;}
+  details.rec>summary .cnt{font-size:12px;font-weight:400;color:var(--ink3);}
+  details.rec>summary .chev{margin-left:auto;color:var(--ink3);transition:transform .2s;}
+  details.rec[open]>summary .chev{transform:rotate(180deg);}
+  .rec-body{padding:0 22px 20px;}
+  .rec-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  select{font-size:12.5px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:8px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);}
+  td{padding:8px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink);}
+  tr:last-child td{border-bottom:none;}
+  .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;}
+  .b-done{background:var(--good-soft);color:var(--good);}
+  .b-info{background:var(--accent-soft);color:var(--accent);}
+  .b-warn{background:var(--warn-soft);color:var(--warn);}
+  .mono{font-family:'SF Mono','Cascadia Code',monospace;font-size:11.5px;}
+  .more{margin-top:10px;width:100%;font-size:12.5px;padding:8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);cursor:pointer;color:var(--ink2);}
+  .more:hover{background:#fafbfc;}
+
+  .loading{text-align:center;padding:5rem 0;color:var(--ink2);font-size:13px;}
+  .spin{display:inline-block;width:18px;height:18px;border:2.5px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-4px;margin-right:9px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .errbox{background:var(--risk-soft);border-radius:12px;padding:16px;color:var(--risk);font-size:13px;}
+
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr);}.row2,.row3{grid-template-columns:1fr;}}
+  @media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <div>
+      <h1>Promo Team Operations</h1>
+      <p class="sub" id="sub">Loading…</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn" id="date-btn" style="pointer-events:auto"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
+      <button class="btn" id="refresh" onclick="loadData()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
+    </div>
+  </div>
+
+  <div id="loading" class="loading"><span class="spin"></span>Loading live data from Google Sheets…</div>
+  <div id="error" style="display:none;"></div>
+
+  <div id="content" style="display:none;">
+
+    <!-- ROW 1: EXECUTIVE SUMMARY -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- ROW 2: COVERAGE -->
+    <p class="section-label">Coverage</p>
+    <div class="row2">
+      <div class="card">
+        <div class="card-title">Coverage by brand</div>
+        <div class="card-hint">Deliverables per brand — click a brand to break it down</div>
+        <div class="bar-list" id="brand-bars"></div>
+        <div class="drill" id="brand-drill"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Coverage by region</div>
+        <div class="card-hint">Share of workload by region — click a region to see brands &amp; campaigns</div>
+        <div class="bar-list" id="region-bars"></div>
+        <div class="drill" id="region-drill"></div>
+      </div>
+    </div>
+
+    <!-- ROW 3: WORKLOAD + CAPACITY -->
+    <p class="section-label">Workload &amp; capacity</p>
+    <div class="row3">
+      <div class="card">
+        <div class="card-title">Workload distribution</div>
+        <div class="card-hint">Deliverables by task type</div>
+        <div class="bar-list" id="work-bars"></div>
+      </div>
+      <div class="card">
+        <div class="cap-head">
+          <div>
+            <div class="card-title">Team capacity</div>
+            <div class="card-hint">Utilisation against expected hours</div>
+          </div>
+          <span class="pill" id="cap-pill"></span>
+        </div>
+        <div id="cap-bars" style="margin-top:14px;"></div>
+        <div id="cap-risk"></div>
+      </div>
+    </div>
+
+    <!-- ROW 4: DETAILED RECORDS -->
+    <p class="section-label">Detailed records</p>
+    <div class="records">
+      <details class="rec"><summary><i class="ti ti-photo" aria-hidden="true"></i> Banner queue <span class="cnt" id="rc-banner"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="bf-c"><option value="all">All campaigns</option></select>
+            <select id="bf-u"><option value="all">All uploaders</option></select>
+          </div>
+          <table style="table-layout:fixed;"><thead><tr><th style="width:36%;">Campaign</th><th style="width:12%;">Brand</th><th style="width:9%;">Region</th><th style="width:15%;">Uploader</th><th style="width:28%;text-align:right;">Status</th></tr></thead><tbody id="bt"></tbody></table>
+          <button class="more" id="bm"></button>
+        </div>
+      </details>
+
+      <details class="rec"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <table style="table-layout:fixed;"><thead><tr><th style="width:14%;">Date</th><th style="width:34%;">Code</th><th style="width:12%;">Brand</th><th style="width:14%;">Region</th><th style="width:26%;text-align:right;">Type</th></tr></thead><tbody id="pt"></tbody></table>
+        </div>
+      </details>
+
+      <details class="rec"><summary><i class="ti ti-send" aria-hidden="true"></i> CRM assignment log <span class="cnt" id="rc-crm"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="cf-c"><option value="all">All campaigns</option></select>
+            <select id="cf-a"><option value="all">All assignees</option></select>
+          </div>
+          <table style="table-layout:fixed;"><thead><tr><th style="width:11%;">Date</th><th style="width:11%;">Brand</th><th style="width:17%;">Campaign</th><th style="width:31%;">Segment</th><th style="width:12%;">By</th><th style="width:18%;text-align:right;">Status</th></tr></thead><tbody id="ct"></tbody></table>
+          <button class="more" id="cm"></button>
+        </div>
+      </details>
+
+      <details class="rec"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <table><thead><tr><th>Game</th><th>Provider</th><th>Category</th><th>Brand</th><th>By</th><th style="text-align:right;">Status</th></tr></thead><tbody id="gt"></tbody></table>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
+const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation'];
+
+const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
+const PAGE=15;
+let DELIV=[], UTIL=[], rawData=null, _fullData=null;
+let bShowAll=false, cShowAll=false;
+let _filterFrom=null, _filterTo=null;
+
+function parseDMY(s){
+  if(!s) return null;
+  s=String(s).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);   // DD/MM/YYYY (text)
+  if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);             // YYYY-MM-DD (Sheets-coerced dates)
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+function applyDateFilter(data){
+  if(!_filterFrom&&!_filterTo) return data;
+  function keep(r,key){
+    const d=parseDMY(r[key]);if(!d) return true;
+    if(_filterFrom&&d<_filterFrom) return false;
+    if(_filterTo&&d>_filterTo) return false;
+    return true;
+  }
+  return {...data,
+    promos:(data.promos||[]).filter(r=>keep(r,'Date')),
+    banners:(data.banners||[]).filter(r=>keep(r,'Start')),
+    crm:(data.crm||[]).filter(r=>keep(r,'Date')),
+    games:(data.games||[]).filter(r=>keep(r,'Date')),
+  };
+}
+function rerender(){if(_fullData) render(_fullData,true);}
+function rangeNote(){
+  if(!_filterFrom&&!_filterTo) return 'all time';
+  const f=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  if(_filterFrom&&_filterTo) return f(_filterFrom)+' – '+f(_filterTo);
+  return _filterFrom?('since '+f(_filterFrom)):('through '+f(_filterTo));
+}
+
+function normBrand(b){ return (b||'').trim().toUpperCase().replace(/\s+/g,''); }
+function splitRegions(r){ return (r||'').split(/[+,/]/).map(s=>s.trim().toUpperCase()).filter(Boolean); }
+function platformOf(b){
+  if(!b||b==='ALLBRANDS') return null;
+  if(b==='WS1'||b==='WS2') return b;
+  if(b==='MB8') return 'WS1';      // MB8 is the WS1 brand
+  if(b==='RWS77') return 'WS2';    // RWS77 is the WS2 brand
+  if(b.startsWith('QPRO')||b.startsWith('QPLY')) return 'QPRO';
+  if(b.startsWith('QP2')) return 'QP2';
+  if(b.startsWith('G8')) return 'G8';
+  if(b.startsWith('UG')||b.startsWith('NX')) return 'UG/NX';
+  return b;
+}
+function countBy(arr,fn){return arr.reduce((m,x)=>{const k=fn(x);if(k!=null){m[k]=(m[k]||0)+1;}return m;},{});}
+function uniq(arr){return [...new Set(arr)];}
+function statusBadge(s){
+  if(!s) return '<span class="badge b-warn">Pending</span>';
+  const l=s.toLowerCase();
+  if(l.includes('complet')||l.includes('done')||l.includes('upload')) return `<span class="badge b-done">${s}</span>`;
+  if(l.includes('creat')||l.includes('assign')) return `<span class="badge b-info">${s}</span>`;
+  return `<span class="badge b-warn">${s}</span>`;
+}
+
+function build(data){
+  const out=[];
+  (data.banners||[]).forEach(b=>out.push({type:'Banner',brand:normBrand(b.Brand),brandRaw:b.Brand,regions:splitRegions(b.Region),campaign:b['Banner Title'],raw:b}));
+  (data.promos||[]).forEach(p=>out.push({type:'Promo Code',brand:normBrand(p.Brand),brandRaw:p.Brand,regions:splitRegions(p.Region),campaign:p.Code,raw:p}));
+  (data.crm||[]).forEach(c=>out.push({type:'CRM',brand:normBrand(c.Brand),brandRaw:c.Brand,regions:splitRegions(c.Region),campaign:c['Campaign Name'],raw:c}));
+  (data.games||[]).forEach(g=>out.push({type:'Game',brand:normBrand(g.Brand),brandRaw:g.Brand,regions:splitRegions(g.Region),campaign:g['Game Name'],raw:g}));
+  return out;
+}
+
+function bars(el,rows,total,color,opts){
+  opts=opts||{};
+  const max=Math.max(...rows.map(r=>r[1]),1);
+  el.innerHTML=rows.map(([label,val])=>{
+    const w=Math.round(val/max*100);
+    const pct=opts.pct?` <small>${total>0?Math.round(val/total*100):0}%</small>`:'';
+    const cls='bar'+(opts.click?' clickable':'')+(opts.active===label?' active':'');
+    const dataAttr=opts.click?`data-key="${encodeURIComponent(label)}"`:'';
+    return `<div class="${cls}" ${dataAttr}>
+      <span class="bl" title="${label}">${label}</span>
+      <span class="bt"><span class="bf" style="width:${w}%;background:${color};"></span></span>
+      <span class="bv">${val}${pct}</span></div>`;
+  }).join('');
+}
+
+function render(data,_skipStore){
+  if(!_skipStore) _fullData=data;
+  data=applyDateFilter(data);
+  rawData=data;
+  DELIV=build(data);
+  UTIL=data.utilisation||[];
+  const total=DELIV.length;
+
+  const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
+  const regionList=DELIV.flatMap(d=>d.regions);
+  const regionsSet=uniq(regionList);
+  const platsSet=uniq(DELIV.map(d=>platformOf(d.brand)).filter(Boolean));
+
+  const totalRow=UTIL.find(u=>(u.Staff||'').toLowerCase()==='total');
+  const teamUtil=totalRow&&totalRow['% Utilisation']?totalRow['% Utilisation'].replace('%','').trim():'—';
+
+  const ts=new Date(data.lastUpdated);
+  const dStr=ts.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const tStr=ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('sub').textContent=`Operations overview · ${rangeNote()} · live data as of ${dStr}, ${tStr}`;
+
+  // KPIs
+  document.getElementById('kpis').innerHTML=[
+    ['ti-stack-2','Total deliverables',total,rangeNote()],
+    ['ti-building-store','Brands supported',brandsSet.length,'active · '+rangeNote()],
+    ['ti-world','Regions supported',regionsSet.length,regionsSet.join(' · ')],
+    ['ti-layout-grid','Platforms',platsSet.length,platsSet.join(' · ')],
+    ['ti-users','Team utilisation',teamUtil==='—'?'—':teamUtil+'%','against expected hrs'],
+    ['ti-clock','Last updated',tStr,dStr],
+  ].map(([ic,lab,val,note])=>
+    `<div class="kpi"><div class="lab"><i class="ti ${ic}" aria-hidden="true"></i>${lab}</div><div class="val">${val}</div><div class="note">${note}</div></div>`
+  ).join('');
+
+  // Brand coverage
+  const brandCounts=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1]);
+  bars(document.getElementById('brand-bars'),brandCounts,total,C_BRAND,{click:true});
+  document.getElementById('brand-bars').onclick=e=>{const el=e.target.closest('.bar[data-key]');if(el)drillBrand(decodeURIComponent(el.dataset.key));};
+
+  // Region coverage
+  const rc=Object.entries(countBy(regionList.map(r=>({r})),x=>x.r)).sort((a,b)=>b[1]-a[1]);
+  const regTotal=regionList.length;
+  bars(document.getElementById('region-bars'),rc,regTotal,C_REGION,{pct:true,click:true});
+  document.getElementById('region-bars').onclick=e=>{const el=e.target.closest('.bar[data-key]');if(el)drillRegion(decodeURIComponent(el.dataset.key));};
+
+  // Workload distribution
+  const workCounts=[['Banner Upload',DELIV.filter(d=>d.type==='Banner').length],
+                    ['CRM Assignment',DELIV.filter(d=>d.type==='CRM').length],
+                    ['Promo Code',DELIV.filter(d=>d.type==='Promo Code').length],
+                    ['Game Addition',DELIV.filter(d=>d.type==='Game').length]].sort((a,b)=>b[1]-a[1]);
+  bars(document.getElementById('work-bars'),workCounts,total,C_WORK,{pct:true});
+
+  renderCapacity();
+  renderRecords();
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+  document.getElementById('refresh').disabled=false;
+}
+
+function drillBrand(brand){
+  const items=DELIV.filter(d=>d.brand===brand);
+  const c=t=>items.filter(d=>d.type===t).length;
+  const regions=uniq(items.flatMap(d=>d.regions));
+  const el=document.getElementById('brand-drill');
+  el.innerHTML=`<div class="dt"><i class="ti ti-building-store" style="color:${C_BRAND}"></i> ${brand} — ${items.length} deliverables <span class="x" onclick="closeDrill('brand')">✕ close</span></div>
+    <div class="mini-grid">
+      <div class="mini"><div class="mv">${c('Banner')}</div><div class="ml">Banners</div></div>
+      <div class="mini"><div class="mv">${c('Promo Code')}</div><div class="ml">Promo Codes</div></div>
+      <div class="mini"><div class="mv">${c('CRM')}</div><div class="ml">CRM</div></div>
+      <div class="mini"><div class="mv">${c('Game')}</div><div class="ml">Games</div></div>
+    </div>
+    <div class="sub-h">Regions</div><div class="chips">${regions.map(r=>`<span class="chip">${r}</span>`).join('')||'<span class="chip">—</span>'}</div>`;
+  el.classList.add('show');
+  document.querySelectorAll('#brand-bars .bar').forEach(b=>b.classList.toggle('active',decodeURIComponent(b.dataset.key||'')===brand));
+}
+
+function drillRegion(region){
+  const items=DELIV.filter(d=>d.regions.includes(region));
+  const brands=uniq(items.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS')).sort();
+  const camps=uniq(items.map(d=>d.campaign).filter(Boolean));
+  const c=t=>items.filter(d=>d.type===t).length;
+  const el=document.getElementById('region-drill');
+  el.innerHTML=`<div class="dt"><i class="ti ti-world" style="color:${C_REGION}"></i> ${region} — ${items.length} deliverables <span class="x" onclick="closeDrill('region')">✕ close</span></div>
+    <div class="mini-grid">
+      <div class="mini"><div class="mv">${c('Banner')}</div><div class="ml">Banners</div></div>
+      <div class="mini"><div class="mv">${c('Promo Code')}</div><div class="ml">Promo Codes</div></div>
+      <div class="mini"><div class="mv">${c('CRM')}</div><div class="ml">CRM</div></div>
+      <div class="mini"><div class="mv">${c('Game')}</div><div class="ml">Games</div></div>
+    </div>
+    <div class="sub-h">Brands supported (${brands.length})</div><div class="chips">${brands.map(b=>`<span class="chip">${b}</span>`).join('')}</div>
+    <div class="sub-h">Campaigns (${camps.length})</div><div class="chips">${camps.slice(0,12).map(x=>`<span class="chip">${x}</span>`).join('')}${camps.length>12?`<span class="chip">+${camps.length-12} more</span>`:''}</div>`;
+  el.classList.add('show');
+  document.querySelectorAll('#region-bars .bar').forEach(b=>b.classList.toggle('active',decodeURIComponent(b.dataset.key||'')===region));
+}
+
+function closeDrill(which){
+  document.getElementById(which+'-drill').classList.remove('show');
+  document.querySelectorAll('#'+which+'-bars .bar').forEach(b=>b.classList.remove('active'));
+}
+
+function renderCapacity(){
+  const rows=UTIL.filter(u=>(u.Staff||'').toLowerCase()!=='total'&&(u.Staff||'').trim());
+  const totalRow=UTIL.find(u=>(u.Staff||'').toLowerCase()==='total');
+  const avg=totalRow&&totalRow['% Utilisation']?parseFloat(totalRow['% Utilisation']):NaN;
+  const colorFor=p=>p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'var(--slate)';
+
+  document.getElementById('cap-bars').innerHTML=rows.map(u=>{
+    const raw=(u['% Utilisation']||'').replace('%','').trim();
+    const p=parseFloat(raw); const leave=isNaN(p);
+    const w=leave?0:Math.min(100,p);
+    return `<div class="cap-bar"><span class="cl">${u.Staff}</span>
+      <span class="ct"><span class="cf" style="width:${w}%;background:${leave?'#cbd2dc':colorFor(p)};"></span></span>
+      <span class="cv">${leave?'On leave':p.toFixed(1)+'%'}</span></div>`;
+  }).join('');
+
+  const pill=document.getElementById('cap-pill');
+  if(!isNaN(avg)){
+    if(avg<60){pill.className='pill pill-good';pill.textContent='Capacity available';}
+    else if(avg<85){pill.className='pill pill-warn';pill.textContent='Approaching capacity';}
+    else{pill.className='pill pill-warn';pill.textContent='At capacity';}
+  }
+
+  const onLeave=rows.filter(u=>isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))));
+  const high=rows.filter(u=>parseFloat((u['% Utilisation']||'').replace('%',''))>=85);
+  const notes=[];
+  onLeave.forEach(u=>{const n=(u.Notes||'').trim();notes.push(`${u.Staff} on leave${n?' — '+n:''}`);});
+  high.forEach(u=>notes.push(`${u.Staff} at ${parseFloat(u['% Utilisation']).toFixed(0)}% — highest load`));
+  document.getElementById('cap-risk').innerHTML=notes.length
+    ?`<div class="risk-note"><i class="ti ti-alert-triangle"></i><div>${notes.join('<br>')}</div></div>`:'';
+}
+
+/* ---------- detailed records ---------- */
+function renderRecords(){
+  const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=rawData.games||[];
+  document.getElementById('rc-banner').textContent=`${b.length} records`;
+  document.getElementById('rc-promo').textContent=`${p.length} records`;
+  document.getElementById('rc-crm').textContent=`${c.length} records`;
+  document.getElementById('rc-game').textContent=`${g.length} records`;
+
+  // promo (small) — full
+  document.getElementById('pt').innerHTML=p.map(r=>
+    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
+  // games (small) — full
+  document.getElementById('gt').innerHTML=g.map(r=>
+    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r['Added By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+
+  // banner filters
+  const bfc=document.getElementById('bf-c'),bfu=document.getElementById('bf-u');
+  bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
+  bfu.innerHTML='<option value="all">All uploaders</option>'+uniq(b.map(x=>x['Uploaded by']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfc.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
+  document.getElementById('bm').onclick=()=>{bShowAll=!bShowAll;renderBanner();};
+  renderBanner();
+
+  // crm filters
+  const cfc=document.getElementById('cf-c'),cfa=document.getElementById('cf-a');
+  cfc.innerHTML='<option value="all">All campaigns</option>'+uniq(c.map(x=>x['Campaign Name']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfa.innerHTML='<option value="all">All assignees</option>'+uniq(c.map(x=>x['Assigned By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfc.onchange=cfa.onchange=()=>{cShowAll=false;renderCrm();};
+  document.getElementById('cm').onclick=()=>{cShowAll=!cShowAll;renderCrm();};
+  renderCrm();
+}
+function renderBanner(){
+  let rows=rawData.banners||[];
+  const fc=document.getElementById('bf-c').value,fu=document.getElementById('bf-u').value;
+  if(fc!=='all')rows=rows.filter(r=>r['Banner Title']===fc);
+  if(fu!=='all')rows=rows.filter(r=>r['Uploaded by']===fu);
+  const shown=bShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('bt').innerHTML=shown.map(r=>
+    `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded by']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+  const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+function renderCrm(){
+  let rows=rawData.crm||[];
+  const fc=document.getElementById('cf-c').value,fa=document.getElementById('cf-a').value;
+  if(fc!=='all')rows=rows.filter(r=>r['Campaign Name']===fc);
+  if(fa!=='all')rows=rows.filter(r=>r['Assigned By']===fa);
+  const shown=cShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('ct').innerHTML=shown.map(r=>
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Campaign Name']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td>${r['Assigned By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+  const m=document.getElementById('cm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=cShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+/* ---------- data load (Sheets API v4 direct) ---------- */
+function rowsToObjects(values){
+  if(!values||values.length<2) return [];
+  const hdrs=values[0];
+  return values.slice(1).reduce((out,row)=>{
+    if(!row||row.every(c=>!c)) return out;
+    const obj={};let hasVal=false;
+    hdrs.forEach((h,j)=>{if(h){obj[h]=row[j]||'';if(row[j])hasVal=true;}});
+    if(hasVal) out.push(obj);
+    return out;
+  },[]);
+}
+let to;
+function loadData(){
+  document.getElementById('refresh').disabled=true;
+  document.getElementById('loading').style.display='block';
+  document.getElementById('content').style.display='none';
+  document.getElementById('error').style.display='none';
+  clearTimeout(to);
+  to=setTimeout(()=>{
+    document.getElementById('loading').style.display='none';
+    document.getElementById('error').style.display='block';
+    document.getElementById('error').innerHTML='<div class="errbox">Request timed out. Try again.</div>';
+    document.getElementById('refresh').disabled=false;
+  },10000);
+  const qr=TABS.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`;
+  fetch(url)
+    .then(r=>r.json())
+    .then(json=>{
+      clearTimeout(to);
+      if(json.error){
+        document.getElementById('loading').style.display='none';
+        document.getElementById('error').style.display='block';
+        document.getElementById('error').innerHTML=`<div class="errbox">Sheets API error: ${json.error.message}</div>`;
+        document.getElementById('refresh').disabled=false;
+        return;
+      }
+      const data={lastUpdated:new Date().toISOString()};
+      (json.valueRanges||[]).forEach((vr,i)=>{data[TAB_KEYS[i]]=rowsToObjects(vr.values);});
+      render(data);
+    })
+    .catch(err=>{
+      clearTimeout(to);
+      document.getElementById('loading').style.display='none';
+      document.getElementById('error').style.display='block';
+      document.getElementById('error').innerHTML=`<div class="errbox">Failed to load: ${err.message}</div>`;
+      document.getElementById('refresh').disabled=false;
+    });
+}
+loadData();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>
+<script>
+(function initPicker(){
+  function weekStart(){
+    const d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1);
+    return new Date(new Date().setDate(diff));
+  }
+  const today=new Date(),yest=new Date(Date.now()-864e5);
+  const picker=new Litepicker({
+    element:document.getElementById('date-btn'),
+    singleMode:false,
+    numberOfMonths:2,
+    numberOfColumns:2,
+    autoApply:false,
+    showTooltip:true,
+    resetButton:true,
+    plugins:['ranges'],
+    ranges:{
+      position:'left',
+      customRanges:{
+        'Today':[today,today],
+        'Yesterday':[yest,yest],
+        'This Week':[weekStart(),today],
+        'Last 7 Days':[new Date(Date.now()-6*864e5),today],
+        'This Month':[new Date(today.getFullYear(),today.getMonth(),1),today],
+        'Last 30 Days':[new Date(Date.now()-29*864e5),today],
+        'Year to Date':[new Date(today.getFullYear(),0,1),today],
+      },
+    },
+    setup(p){
+      p.on('selected',(d1,d2)=>{
+        const f=new Date(d1.dateInstance);f.setHours(0,0,0,0);_filterFrom=f;
+        const t=new Date(d2.dateInstance);t.setHours(23,59,59,999);_filterTo=t;
+        const fmt=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+        document.getElementById('date-label').textContent=fmt(_filterFrom)+' – '+fmt(d2.dateInstance);
+        rerender();
+      });
+      p.on('clear:selection',()=>{
+        _filterFrom=null;_filterTo=null;
+        document.getElementById('date-label').textContent='All dates';
+        rerender();
+      });
+    },
+  });
+  // default to This Week on load
+  picker.setDateRange(weekStart(),today);
+  const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
+  const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
+})();
+</script>
+</body>
+</html>
