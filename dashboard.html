@@ -369,7 +369,7 @@
       </details>
       <details class="rec"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
-          <table><thead><tr><th>Game</th><th>Provider</th><th>Category</th><th>Brand</th><th>By</th><th style="text-align:right;">Status</th></tr></thead><tbody id="gt"></tbody></table>
+          <table><thead><tr><th>Game</th><th>Provider</th><th>Category</th><th>Brand</th><th style="text-align:right;">Status</th></tr></thead><tbody id="gt"></tbody></table>
         </div>
       </details>
     </div>
@@ -906,7 +906,7 @@ function renderRecords(){
   document.getElementById('pt').innerHTML=p.map(r=>
     `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
   document.getElementById('gt').innerHTML=g.map(r=>
-    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r['Added By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
 
   const bfc=document.getElementById('bf-c'),bfu=document.getElementById('bf-u');
   bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
@@ -955,7 +955,7 @@ function makeDemoData(){
   const promos=Array.from({length:48},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions)+' + '+rnd(regions),Code:'CODE'+String(i+1).padStart(3,'0'),Type:rnd(['Deposit','Free Credit','Free Spin'])}));
   const banners=Array.from({length:22},(_,i)=>({Start:daysAgo(i%5),'Banner Title':'Campaign '+String.fromCharCode(65+i%8)+' – '+rnd(brands),Brand:rnd(brands),Region:rnd(regions),'Creator':rnd(members),Status:rnd(['Uploaded','Pending','Completed'])}));
   const crm=Array.from({length:87},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions),'Campaign Name':['June Reload','Weekly Bonus','VIP Special','New Member','Cashback'][i%5],'Segment Name':'Seg-'+String(i+1).padStart(3,'0'),'Assigned By':rnd(members),Status:'Assigned'}));
-  const games=Array.from({length:14},(_,i)=>({Date:daysAgo(i%6),'Game Name':'Game Title '+String.fromCharCode(65+i),'Game Provider':['PP2','EVO','JILI','PGS','NETENT'][i%5],'Game Category':['Slots','Live','Crash'][i%3],Brand:rnd(['WS1/WS2','QPRO1','QP2A']),'Added By':rnd(members),Status:'Added'}));
+  const games=Array.from({length:14},(_,i)=>({Date:daysAgo(i%6),'Game Name':'Game Title '+String.fromCharCode(65+i),'Game Provider':['PP2','EVO','JILI','PGS','NETENT'][i%5],'Game Category':['Slots','Live','Crash'][i%3],Brand:rnd(['WS1/WS2','QPRO1','QP2A']),Status:'Added'}));
   const utilisation=[
     {Staff:'Jascinta','% Utilisation':'72%',Notes:''},
     {Staff:'Elyssa','% Utilisation':'85%',Notes:''},
