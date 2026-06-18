@@ -421,13 +421,7 @@ function applyDateFilter(data){
   }
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
-    banners:(data.banners||[]).filter(r=>{
-      const s=parseDMY(r.Start),e=parseDMY(r.End);
-      if(!s) return true;
-      if(_filterTo&&s>_filterTo) return false;
-      if(_filterFrom&&e&&e<_filterFrom) return false;
-      return true;
-    }),
+    banners:(data.banners||[]).filter(r=>keep(r,'Start')),
     crm:data.crm||[],
     games:(data.games||[]).filter(r=>keep(r,'Date')),
   };
