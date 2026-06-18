@@ -363,7 +363,7 @@
             <select id="cf-c"><option value="all">All campaigns</option></select>
             <select id="cf-a"><option value="all">All assignees</option></select>
           </div>
-          <table style="table-layout:fixed;"><thead><tr><th style="width:11%;">Date</th><th style="width:11%;">Brand</th><th style="width:17%;">Campaign</th><th style="width:31%;">Segment</th><th style="width:12%;">By</th><th style="width:18%;text-align:right;">Status</th></tr></thead><tbody id="ct"></tbody></table>
+          <table style="table-layout:fixed;"><thead><tr><th style="width:11%;">Date</th><th style="width:11%;">Brand</th><th style="width:17%;">CRM Tool</th><th style="width:31%;">Segment</th><th style="width:12%;">By</th><th style="width:18%;text-align:right;">Status</th></tr></thead><tbody id="ct"></tbody></table>
           <button class="more" id="cm"></button>
         </div>
       </details>
@@ -421,8 +421,14 @@ function applyDateFilter(data){
   }
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
-    banners:(data.banners||[]).filter(r=>keep(r,'Start')),
-    crm:(data.crm||[]).filter(r=>keep(r,'Date')),
+    banners:(data.banners||[]).filter(r=>{
+      const s=parseDMY(r.Start),e=parseDMY(r.End);
+      if(!s) return true;
+      if(_filterTo&&s>_filterTo) return false;
+      if(_filterFrom&&e&&e<_filterFrom) return false;
+      return true;
+    }),
+    crm:data.crm||[],
     games:(data.games||[]).filter(r=>keep(r,'Date')),
   };
 }
@@ -459,7 +465,7 @@ function build(data){
   const out=[];
   (data.banners||[]).forEach(b=>out.push({type:'Banner',brand:normBrand(b.Brand),brandRaw:b.Brand,regions:splitRegions(b.Region),campaign:b['Banner Title'],raw:b}));
   (data.promos||[]).forEach(p=>out.push({type:'Promo Code',brand:normBrand(p.Brand),brandRaw:p.Brand,regions:splitRegions(p.Region),campaign:p.Code,raw:p}));
-  (data.crm||[]).forEach(c=>out.push({type:'CRM',brand:normBrand(c.Brand),brandRaw:c.Brand,regions:splitRegions(c.Region),campaign:c['Campaign Name'],raw:c}));
+  (data.crm||[]).forEach(c=>out.push({type:'CRM',brand:normBrand(c.Brand),brandRaw:c.Brand,regions:splitRegions(c.Region),campaign:c['Segment Name'],raw:c}));
   (data.games||[]).forEach(g=>out.push({type:'Game',brand:normBrand(g.Brand),brandRaw:g.Brand,regions:splitRegions(g.Region),campaign:g['Game Name'],raw:g}));
   return out;
 }
@@ -910,14 +916,14 @@ function renderRecords(){
 
   const bfc=document.getElementById('bf-c'),bfu=document.getElementById('bf-u');
   bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
-  bfu.innerHTML='<option value="all">All uploaders</option>'+uniq(b.map(x=>x['Uploaded by']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfu.innerHTML='<option value="all">All uploaders</option>'+uniq(b.map(x=>x['Creator']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   bfc.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
   document.getElementById('bm').onclick=()=>{bShowAll=!bShowAll;renderBanner();};
   renderBanner();
 
   const cfc=document.getElementById('cf-c'),cfa=document.getElementById('cf-a');
-  cfc.innerHTML='<option value="all">All campaigns</option>'+uniq(c.map(x=>x['Campaign Name']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
-  cfa.innerHTML='<option value="all">All assignees</option>'+uniq(c.map(x=>x['Assigned By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfc.innerHTML='<option value="all">All tools</option>'+uniq(c.map(x=>x['CRM Tool']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfa.innerHTML='<option value="all">All assignees</option>'+uniq(c.map(x=>x['Created By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   cfc.onchange=cfa.onchange=()=>{cShowAll=false;renderCrm();};
   document.getElementById('cm').onclick=()=>{cShowAll=!cShowAll;renderCrm();};
   renderCrm();
@@ -927,21 +933,21 @@ function renderBanner(){
   let rows=rawData.banners||[];
   const fc=document.getElementById('bf-c').value,fu=document.getElementById('bf-u').value;
   if(fc!=='all')rows=rows.filter(r=>r['Banner Title']===fc);
-  if(fu!=='all')rows=rows.filter(r=>r['Uploaded by']===fu);
+  if(fu!=='all')rows=rows.filter(r=>r['Creator']===fu);
   const shown=bShowAll?rows:rows.slice(0,PAGE);
   document.getElementById('bt').innerHTML=shown.map(r=>
-    `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded by']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Creator']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
 function renderCrm(){
   let rows=rawData.crm||[];
   const fc=document.getElementById('cf-c').value,fa=document.getElementById('cf-a').value;
-  if(fc!=='all')rows=rows.filter(r=>r['Campaign Name']===fc);
-  if(fa!=='all')rows=rows.filter(r=>r['Assigned By']===fa);
+  if(fc!=='all')rows=rows.filter(r=>r['CRM Tool']===fc);
+  if(fa!=='all')rows=rows.filter(r=>r['Created By']===fa);
   const shown=cShowAll?rows:rows.slice(0,PAGE);
   document.getElementById('ct').innerHTML=shown.map(r=>
-    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Campaign Name']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td>${r['Assigned By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['CRM Tool']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td>${r['Created By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('cm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=cShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
@@ -953,7 +959,7 @@ function makeDemoData(){
   function rnd(a){return a[Math.floor(Math.random()*a.length)];}
   function daysAgo(n){const d=new Date(today);d.setDate(d.getDate()-n);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}
   const promos=Array.from({length:48},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions)+' + '+rnd(regions),Code:'CODE'+String(i+1).padStart(3,'0'),Type:rnd(['Deposit','Free Credit','Free Spin'])}));
-  const banners=Array.from({length:22},(_,i)=>({Start:daysAgo(i%5),'Banner Title':'Campaign '+String.fromCharCode(65+i%8)+' – '+rnd(brands),Brand:rnd(brands),Region:rnd(regions),'Uploaded by':rnd(members),Status:rnd(['Uploaded','Pending','Completed'])}));
+  const banners=Array.from({length:22},(_,i)=>({Start:daysAgo(i%5),'Banner Title':'Campaign '+String.fromCharCode(65+i%8)+' – '+rnd(brands),Brand:rnd(brands),Region:rnd(regions),'Creator':rnd(members),Status:rnd(['Uploaded','Pending','Completed'])}));
   const crm=Array.from({length:87},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions),'Campaign Name':['June Reload','Weekly Bonus','VIP Special','New Member','Cashback'][i%5],'Segment Name':'Seg-'+String(i+1).padStart(3,'0'),'Assigned By':rnd(members),Status:'Assigned'}));
   const games=Array.from({length:14},(_,i)=>({Date:daysAgo(i%6),'Game Name':'Game Title '+String.fromCharCode(65+i),'Game Provider':['PP2','EVO','JILI','PGS','NETENT'][i%5],'Game Category':['Slots','Live','Crash'][i%3],Brand:rnd(['WS1/WS2','QPRO1','QP2A']),'Added By':rnd(members),Status:'Added'}));
   const utilisation=[
