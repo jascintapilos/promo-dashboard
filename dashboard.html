@@ -421,7 +421,7 @@ function applyDateFilter(data){
   }
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
-    banners:(data.banners||[]).filter(r=>keep(r,'Start')),
+    banners:(data.banners||[]).filter(r=>keep(r,r.Uploaded?'Uploaded':'Start')),
     crm:data.crm||[],
     games:(data.games||[]).filter(r=>keep(r,'Date')),
   };
