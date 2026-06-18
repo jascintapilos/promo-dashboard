@@ -910,7 +910,7 @@ function renderRecords(){
 
   const bfc=document.getElementById('bf-c'),bfu=document.getElementById('bf-u');
   bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
-  bfu.innerHTML='<option value="all">All uploaded by</option>'+uniq(b.map(x=>x['Uploaded By']||x['Creator']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfu.innerHTML='<option value="all">All uploaded by</option>'+uniq(b.map(x=>x['Uploaded By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   bfc.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
   document.getElementById('bm').onclick=()=>{bShowAll=!bShowAll;renderBanner();};
   renderBanner();
