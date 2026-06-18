@@ -988,14 +988,6 @@ function loadData(){
   document.getElementById('content').style.display='none';
   document.getElementById('error').style.display='none';
   clearTimeout(_to);
-  if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){
-    setTimeout(()=>{
-      const demo=makeDemoData();
-      render(demo);
-      document.getElementById('sub').textContent+=' · ⚠ demo data (API key blocked on localhost)';
-    },400);
-    return;
-  }
   _to=setTimeout(()=>{
     document.getElementById('loading').style.display='none';
     document.getElementById('error').style.display='block';
