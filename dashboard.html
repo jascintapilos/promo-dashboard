@@ -442,7 +442,7 @@ function applyDateFilter(data){
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
     banners:(data.banners||[]).filter(r=>keep(r,r.Uploaded?'Uploaded':'Start')),
-    crm:data.crm||[],
+    crm:(data.crm||[]).filter(r=>keep(r,'Date')),
     games:(data.games||[]).filter(r=>keep(r,'Date')),
   };
 }
