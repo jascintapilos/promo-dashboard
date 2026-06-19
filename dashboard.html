@@ -837,13 +837,11 @@ function renderCapacity(){
     const p=parseFloat(raw);const leave=isNaN(p);
     const w=leave?0:Math.min(100,p);
     const notesTxt=(u.Notes||'').trim();
-    // Build remark: "actual h / expected h" or leave label
+    // Build remark: parse "actual / expected" written by pull-utilisation.mjs
     let remark='';
-    const hoursMatch=notesTxt.match(/^([\d.]+)h/);
-    if(hoursMatch&&!leave&&p>0){
-      const actualH=parseFloat(hoursMatch[1]);
-      const expectedH=Math.round(actualH/(p/100));
-      remark=`${Math.round(actualH)}h / ${expectedH}h`;
+    const slashMatch=notesTxt.match(/^([\d.]+)h\s*\/\s*([\d.]+)h/);
+    if(slashMatch&&!leave){
+      remark=`${Math.round(parseFloat(slashMatch[1]))}h / ${Math.round(parseFloat(slashMatch[2]))}h`;
     } else if(notesTxt&&!/^\d/.test(notesTxt)){
       remark=notesTxt;
     }
