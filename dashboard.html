@@ -134,7 +134,7 @@
   .pill-warn{background:var(--warn-soft);color:var(--warn);}
   .pill-risk{background:var(--risk-soft);color:var(--risk);}
   .pill-idle{background:var(--line);color:var(--ink3);}
-  .cap-row{display:grid;grid-template-columns:88px 1fr 58px;align-items:center;gap:12px;margin-bottom:10px;}
+  .cap-row{display:grid;grid-template-columns:88px 1fr 58px auto;align-items:center;gap:12px;margin-bottom:10px;}
   .cap-row:last-child{margin-bottom:0;}
   .cap-name{font-size:13px;font-weight:500;color:var(--ink);}
   .cap-track{background:#eef0f3;border-radius:6px;height:9px;overflow:hidden;}
@@ -199,6 +199,17 @@
   .more{margin-top:10px;width:100%;font-size:12.5px;padding:8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);cursor:pointer;color:var(--ink2);}
   .more:hover{background:#fafbfc;}
 
+  /* ── AUTOMATION HEALTH ── */
+  .ah-inst{background:var(--bg);border-radius:12px;padding:14px 18px;min-width:160px;flex:1;}
+  .ah-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+  .ah-status{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;}
+  .ah-overall{display:flex;align-items:center;gap:8px;}
+  .ah-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .ah-dot-ok{background:var(--good);}
+  .ah-dot-warn{background:var(--warn);}
+  .ah-dot-err{background:var(--risk);}
+  .ah-detail{font-size:11px;color:var(--ink3);margin-top:4px;}
+
   /* ── STATES ── */
   .loading{text-align:center;padding:5rem 0;color:var(--ink2);font-size:13px;}
   .spin{display:inline-block;width:18px;height:18px;border:2.5px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-4px;margin-right:9px;}
@@ -242,6 +253,21 @@
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
     <div class="kpis" id="kpis"></div>
+
+    <!-- AUTOMATION HEALTH -->
+    <div id="auto-health" style="display:none;margin-bottom:28px;">
+      <p class="section-label">Automation health</p>
+      <div class="card" style="padding:18px 24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+          <div>
+            <div class="card-title">FT CRM sessions</div>
+            <div class="card-hint" id="ah-ts">–</div>
+          </div>
+          <div id="ah-overall"></div>
+        </div>
+        <div id="ah-instances" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+      </div>
+    </div>
 
     <!-- 3 + 4. WORKLOAD MIX + TOP BRANDS -->
     <p class="section-label">Workload &amp; performance</p>
@@ -399,8 +425,8 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -552,6 +578,7 @@ function render(data,_skipStore){
 
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
+  renderAutoHealth(data.sysStatus || []);
   renderWorkloadMix(total);
   renderTopBrands(total);
   renderRegionalDonut(regionList, total);
@@ -756,6 +783,43 @@ function renderRegionalDonut(regionList, total){
   }
 }
 
+/* ── AUTOMATION HEALTH ── */
+function renderAutoHealth(rows){
+  const el=document.getElementById('auto-health');
+  if(!rows||!rows.length){el.style.display='none';return;}
+  el.style.display='';
+
+  // rows = array of objects with keys: Timestamp, Instance, Label, Status, 'Valid Until', Detail
+  // normalise: sheet returns array-of-objects (JSONP) with header row stripped
+  const dataRows=rows.filter(r=>r.Instance&&r.Instance!=='Instance');
+  if(!dataRows.length){el.style.display='none';return;}
+
+  // Timestamp from first row
+  const ts=dataRows[0].Timestamp||'';
+  const tsFmt=ts?ts.slice(0,16).replace('T',' '):'-';
+  document.getElementById('ah-ts').textContent='Last checked '+tsFmt+' UTC';
+
+  const allOk=dataRows.every(r=>(r.Status||'').toUpperCase()==='OK');
+  const anyErr=dataRows.some(r=>['EXPIRED','ERROR','MISSING','NO TOKEN'].includes((r.Status||'').toUpperCase()));
+  const overallCls=allOk?'ah-dot-ok':anyErr?'ah-dot-err':'ah-dot-warn';
+  const overallTxt=allOk?'All healthy':anyErr?'Attention needed':'Partial';
+  document.getElementById('ah-overall').innerHTML=
+    `<div class="ah-overall"><span class="ah-dot ${overallCls}"></span><span style="font-size:13px;font-weight:600;">${overallTxt}</span></div>`;
+
+  document.getElementById('ah-instances').innerHTML=dataRows.map(r=>{
+    const st=(r.Status||'').toUpperCase();
+    const cls=st==='OK'?'ah-dot-ok':st==='EXPIRED'||st==='MISSING'||st==='NO TOKEN'?'ah-dot-err':'ah-dot-warn';
+    const detail=r.Detail||(r['Valid Until']?'Refreshed '+r['Valid Until'].slice(0,10):'');
+    return `<div class="ah-inst">
+      <span class="ah-dot ${cls}"></span>
+      <div>
+        <div class="ah-label">${r.Label||r.Instance}</div>
+        <div class="ah-detail">${st==='OK'?detail||'OK':st+(detail?' — '+detail:'')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 /* ── TEAM CAPACITY ── */
 function renderCapacity(){
   const rows=UTIL.filter(u=>(u.Staff||'').toLowerCase()!=='total'&&(u.Staff||'').trim());
@@ -784,10 +848,12 @@ function renderCapacity(){
     const raw=(u['% Utilisation']||'').replace('%','').trim();
     const p=parseFloat(raw);const leave=isNaN(p);
     const w=leave?0:Math.min(100,p);
+    const notesTxt=(u.Notes||'').trim();
     return `<div class="cap-row">
       <span class="cap-name">${u.Staff}</span>
       <span class="cap-track"><span class="cap-fill" style="width:${w}%;background:${leave?'#cbd2dc':colorFor(p)};"></span></span>
       <span class="cap-val" style="color:${leave?'var(--ink3)':colorFor(p)};">${leave?'Leave':p.toFixed(0)+'%'}</span>
+      ${notesTxt?`<span style="font-size:10px;color:var(--ink3);min-width:0;white-space:nowrap;margin-left:4px;">${notesTxt}</span>`:''}
     </div>`;
   }).join('');
 
