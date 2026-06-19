@@ -596,7 +596,7 @@ function render(data,_skipStore){
   rawData=data;
   DELIV=build(data);
   UTIL=data.utilisation||[];
-  ADHOC=data.adhoc||[];
+  ADHOC=(_fullData||data).adhoc||[];
   const total=DELIV.length;
 
   const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
@@ -614,7 +614,7 @@ function render(data,_skipStore){
 
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
-  renderDataSources(data);
+  renderDataSources(_fullData||data);
   renderAutoHealth(data.sysStatus || []);
   renderWorkloadMix(total);
   renderTopBrands(total);
@@ -1279,15 +1279,6 @@ function renderGames(){
 
 function renderAdhoc(){
   let rows=ADHOC;
-  // Apply date filter
-  if(_filterFrom||_filterTo){
-    rows=rows.filter(r=>{
-      const d=parseDMY(r.Date);if(!d) return true;
-      if(_filterFrom&&d<_filterFrom) return false;
-      if(_filterTo&&d>_filterTo) return false;
-      return true;
-    });
-  }
   const aft=document.getElementById('af-t'),afa=document.getElementById('af-a');
   if(aft&&afa){
     const prevT=aft.value,prevA=afa.value;
@@ -1302,7 +1293,7 @@ function renderAdhoc(){
   }
   rows=applySort(rows,aSort);
   const cnt=document.getElementById('rc-adhoc');
-  if(cnt) cnt.textContent=`${ADHOC.length} records`;
+  if(cnt) cnt.textContent=`${rows.length} records`;
   const shown=aShowAll?rows:rows.slice(0,PAGE);
   const th=document.getElementById('a-th');
   const tb=document.getElementById('at');
