@@ -431,9 +431,9 @@ let _donutChart=null, _trendChart=null;
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function fmtDate(d){return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
-function fmtDateShort(d){return MONTHS[d.getMonth()]+' '+d.getDate();}
-function fmtTime(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function fmtDate(d){return d.toLocaleDateString('en-GB',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'short',year:'numeric'});}
+function fmtDateShort(d){return d.toLocaleDateString('en-GB',{timeZone:'Asia/Kuala_Lumpur',month:'short',day:'numeric'});}
+function fmtTime(d){return d.toLocaleTimeString('en-GB',{timeZone:'Asia/Kuala_Lumpur',hour:'2-digit',minute:'2-digit'})+' MYT';}
 
 /* ── HELPERS ── */
 function parseDMY(s){
@@ -795,7 +795,7 @@ function renderAutoHealth(rows){
   if(!dataRows.length){bar.style.display='none';return;}
 
   const ts=dataRows[0].Timestamp||'';
-  const tsFmt=ts?ts.slice(11,16)+' UTC':'';
+  const tsFmt=ts?new Date(ts).toLocaleTimeString('en-GB',{timeZone:'Asia/Kuala_Lumpur',hour:'2-digit',minute:'2-digit'})+' MYT':'';
   tsEl.textContent=tsFmt;
 
   dotsEl.innerHTML=dataRows.map(r=>{
