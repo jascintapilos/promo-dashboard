@@ -216,6 +216,27 @@
   .empty-state{text-align:center;color:var(--ink3);font-size:13px;padding:40px 20px;}
   .empty-state i{font-size:28px;display:block;margin-bottom:8px;opacity:.5;}
 
+  /* ── SOURCE STRIP ── */
+  .source-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:5px 20px;background:var(--bg1);border-bottom:1px solid var(--line);font-size:10.5px;color:var(--ink3);}
+  .src-sep{margin:0 8px;opacity:.4;}
+  .src-item strong{color:var(--ink2);font-weight:600;}
+  .src-item .src-ts{color:var(--ink3);margin-left:3px;}
+  .src-item .src-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:4px;vertical-align:1px;}
+  .src-item .src-dot.stale{background:var(--warn);}
+
+  /* ── WEEKLY UTIL TOGGLE ── */
+  .cap-tabs{display:flex;gap:4px;margin-bottom:14px;}
+  .cap-tab{font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--ink2);cursor:pointer;transition:background .12s;}
+  .cap-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .wk-grid{overflow-x:auto;margin-top:4px;}
+  .wk-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+  .wk-tbl th{font-weight:600;color:var(--ink3);text-align:center;padding:3px 6px;white-space:nowrap;border-bottom:1px solid var(--line);}
+  .wk-tbl th:first-child{text-align:left;}
+  .wk-tbl td{text-align:center;padding:3px 6px;color:var(--ink1);border-bottom:1px solid var(--line2);}
+  .wk-tbl td:first-child{text-align:left;font-weight:500;white-space:nowrap;}
+  .wk-tbl tr:last-child td{border-bottom:none;}
+  .wk-cell-0{color:var(--ink3)!important;font-weight:400!important;}
+
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
   @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.mix-grid{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
@@ -240,6 +261,7 @@
     </div>
   </div>
 
+  <div class="source-strip" id="source-strip" style="display:none;"></div>
   <div id="loading" class="loading"><span class="spin"></span>Loading live data from Google Sheets…</div>
   <div id="error" style="display:none;"></div>
 
@@ -313,9 +335,18 @@
             <div class="card-hint">Utilisation against expected hours</div>
           </div>
         </div>
-        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
-        <div id="cap-bars"></div>
-        <div class="cap-highlights" id="cap-highlights"></div>
+        <div class="cap-tabs">
+          <button class="cap-tab active" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
+          <button class="cap-tab" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
+        </div>
+        <div id="cap-ytd-view">
+          <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+          <div id="cap-bars"></div>
+          <div class="cap-highlights" id="cap-highlights"></div>
+        </div>
+        <div id="cap-weekly-view" style="display:none;">
+          <div class="wk-grid" id="cap-weekly-grid"></div>
+        </div>
       </div>
     </div>
 
@@ -404,6 +435,16 @@
           <button class="more" id="gm"></button>
         </div>
       </details>
+      <details class="rec"><summary><i class="ti ti-checkbox" aria-hidden="true"></i> Adhoc tasks <span class="cnt" id="rc-adhoc"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="af-t"><option value="all">All task types</option></select>
+            <select id="af-a"><option value="all">All assignees</option></select>
+          </div>
+          <table id="a-tbl" style="table-layout:fixed;"><thead id="a-th"></thead><tbody id="at"></tbody></table>
+          <button class="more" id="am"></button>
+        </div>
+      </details>
     </div>
 
   </div>
@@ -413,18 +454,19 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
 const REGION_ORDER = ['MY','SG','ID','TH','KH'];
 const PAGE = 15;
 
-let DELIV=[], UTIL=[], rawData=null, _fullData=null;
-let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false;
+let DELIV=[], UTIL=[], ADHOC=[], rawData=null, _fullData=null;
+let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false;
 let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
-let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'};
+let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'};
+let _capTab='ytd';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
 let _donutChart=null, _trendChart=null;
@@ -550,6 +592,7 @@ function render(data,_skipStore){
   rawData=data;
   DELIV=build(data);
   UTIL=data.utilisation||[];
+  ADHOC=data.adhoc||[];
   const total=DELIV.length;
 
   const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
@@ -567,6 +610,7 @@ function render(data,_skipStore){
 
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
+  renderDataSources(data);
   renderAutoHealth(data.sysStatus || []);
   renderWorkloadMix(total);
   renderTopBrands(total);
@@ -575,6 +619,7 @@ function render(data,_skipStore){
   renderTrends();
   renderCoverageDetail(total, regionList, regionsSet);
   renderRecords();
+  renderAdhoc();
 
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='block';
@@ -784,6 +829,32 @@ function renderRegionalDonut(regionList, total){
   }
 }
 
+/* ── DATA SOURCE TIMESTAMPS ── */
+function renderDataSources(data){
+  const strip=document.getElementById('source-strip');
+  const maxDate=arr=>{
+    let max=null;
+    (arr||[]).forEach(r=>{
+      const d=parseDMY(r.Date||r.Start||r.Uploaded||'');
+      if(d&&(!max||d>max)) max=d;
+    });
+    return max;
+  };
+  const fmt=d=>{if(!d) return '—'; return fmtDateShort(d);};
+  const today=new Date(); today.setHours(0,0,0,0);
+  const stale=d=>{if(!d) return false; const diff=(today-d)/864e5; return diff>3;};
+  const sources=[
+    {label:'Promo Code', d:maxDate(data.promos)},
+    {label:'Banner',     d:maxDate(data.banners)},
+    {label:'CRM',        d:maxDate(data.crm)},
+    {label:'Games',      d:maxDate(data.games)},
+    {label:'Adhoc',      d:maxDate(data.adhoc)},
+  ];
+  const items=sources.map((s,i)=>`${i>0?'<span class="src-sep">·</span>':''}<span class="src-item"><span class="src-dot${stale(s.d)?' stale':''}"></span><strong>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></span>`).join('');
+  strip.innerHTML='<span style="font-size:10px;font-weight:600;color:var(--ink3);margin-right:8px;letter-spacing:.04em;text-transform:uppercase;">Last entry</span>'+items;
+  strip.style.display='flex';
+}
+
 /* ── CRM STATUS (header) ── */
 function renderAutoHealth(rows){
   const bar=document.getElementById('crm-status');
@@ -869,6 +940,48 @@ function renderCapacity(){
   onLeave.forEach(u=>notes.push(`<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-moon"></i><span>${u.Staff} — on leave</span></div>`));
   document.getElementById('cap-highlights').innerHTML=notes.join('');
 }
+
+function switchCapTab(tab){
+  _capTab=tab;
+  document.getElementById('cap-tab-ytd').classList.toggle('active',tab==='ytd');
+  document.getElementById('cap-tab-weekly').classList.toggle('active',tab==='weekly');
+  document.getElementById('cap-ytd-view').style.display=tab==='ytd'?'':'none';
+  document.getElementById('cap-weekly-view').style.display=tab==='weekly'?'':'none';
+  if(tab==='weekly') renderWeeklyCapacity();
+}
+
+function renderWeeklyCapacity(){
+  const container=document.getElementById('cap-weekly-grid');
+  const wkData=(_fullData&&_fullData.utilWeekly)||[];
+  if(!wkData.length){
+    container.innerHTML='<div class="empty-state"><i class="ti ti-calendar-stats"></i>No weekly data yet — run pull-utilisation.mjs --write to generate.</div>';
+    return;
+  }
+  // Build week → staff → hours map
+  const staffOrder=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
+  const weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort().slice(-8);
+  const wm={};
+  wkData.forEach(r=>{
+    if(!r.Week||!r.Staff) return;
+    if(!wm[r.Week]) wm[r.Week]={};
+    wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;
+  });
+  const fmtWk=s=>{const d=new Date(s);return fmtDateShort(d);};
+  const maxH=Math.max(...weeks.flatMap(w=>staffOrder.map(s=>wm[w]?.[s]||0)),1);
+  const colorFor=h=>{const pctEq=h/40*100;return pctEq>=85?'var(--risk)':pctEq>=60?'var(--good)':pctEq>=20?'var(--warn)':'#cbd2dc';};
+  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>`<th>${fmtWk(w)}</th>`).join('')+'</tr></thead><tbody>';
+  staffOrder.forEach(staff=>{
+    html+=`<tr><td>${staff}</td>`+weeks.map(w=>{
+      const h=wm[w]?.[staff]||0;
+      const cls=h===0?' class="wk-cell-0"':'';
+      return `<td${cls} title="${h.toFixed(1)}h">${h>0?h.toFixed(1):'—'}</td>`;
+    }).join('')+'</tr>';
+  });
+  html+='</tbody></table>';
+  container.innerHTML=html;
+}
+
+const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun'];
 
 /* ── TRENDS ── */
 function renderTrends(){
@@ -1008,6 +1121,7 @@ function sortBanner(col){toggleSort(bSort,col);renderBanner();}
 function sortPromo(col){toggleSort(pSort,col);renderPromo();}
 function sortCrm(col){toggleSort(cSort,col);renderCrm();}
 function sortGame(col){toggleSort(gSort,col);renderGames();}
+function sortAdhoc(col){toggleSort(aSort,col);renderAdhoc();}
 
 /* ── DETAILED RECORDS ── */
 function renderRecords(){
@@ -1143,6 +1257,47 @@ function renderGames(){
   document.getElementById('gt').innerHTML=shown.map(r=>
     `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="text-align:right;color:var(--ink2);">${r.Brand||''}</td></tr>`).join('');
   const m=document.getElementById('gm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=gShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function renderAdhoc(){
+  let rows=ADHOC;
+  // Apply date filter
+  if(_filterFrom||_filterTo){
+    rows=rows.filter(r=>{
+      const d=parseDMY(r.Date);if(!d) return true;
+      if(_filterFrom&&d<_filterFrom) return false;
+      if(_filterTo&&d>_filterTo) return false;
+      return true;
+    });
+  }
+  const aft=document.getElementById('af-t'),afa=document.getElementById('af-a');
+  if(aft&&afa){
+    const prevT=aft.value,prevA=afa.value;
+    aft.innerHTML='<option value="all">All task types</option>'+uniq(ADHOC.map(x=>x['Task Type']).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    afa.innerHTML='<option value="all">All assignees</option>'+uniq(ADHOC.map(x=>x.Assignee).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...aft.options].some(o=>o.value===prevT)) aft.value=prevT;
+    if([...afa.options].some(o=>o.value===prevA)) afa.value=prevA;
+    aft.onchange=afa.onchange=()=>{aShowAll=false;renderAdhoc();};
+    document.getElementById('am').onclick=()=>{aShowAll=!aShowAll;renderAdhoc();};
+    if(aft.value!=='all') rows=rows.filter(r=>r['Task Type']===aft.value);
+    if(afa.value!=='all') rows=rows.filter(r=>r.Assignee===afa.value);
+  }
+  rows=applySort(rows,aSort);
+  const cnt=document.getElementById('rc-adhoc');
+  if(cnt) cnt.textContent=`${ADHOC.length} records`;
+  const shown=aShowAll?rows:rows.slice(0,PAGE);
+  const th=document.getElementById('a-th');
+  const tb=document.getElementById('at');
+  if(!th||!tb) return;
+  th.innerHTML='<tr>'
+    +thHtml('Date','Date',aSort,'sortAdhoc','11%')
+    +thHtml('Task Type','Task Type',aSort,'sortAdhoc','22%')
+    +thHtml('Task','Task',aSort,'sortAdhoc','47%')
+    +thHtml('Assignee','Assignee',aSort,'sortAdhoc','20%',true)+'</tr>';
+  tb.innerHTML=shown.map(r=>
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r['Task Type']||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r.Task||''}</td><td style="text-align:right;">${r.Assignee||''}</td></tr>`).join('');
+  const m=document.getElementById('am');
+  if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=aShowAll?'Show fewer':`Show all ${rows.length}`;}
 }
 
 /* ── DEMO DATA (used when Sheets API is blocked on localhost) ── */
