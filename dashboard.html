@@ -500,6 +500,7 @@ function applyDateFilter(data){
     banners:(data.banners||[]).filter(r=>keep(r,r.Uploaded?'Uploaded':'Start')),
     crm:(data.crm||[]).filter(r=>keep(r,'Date')),
     games:(data.games||[]).filter(r=>keep(r,'Date')),
+    adhoc:(data.adhoc||[]).filter(r=>keep(r,'Date')),
   };
 }
 function rerender(){if(_fullData) render(_fullData,true);}
@@ -537,6 +538,7 @@ function build(data){
   (data.promos||[]).forEach(p=>out.push({type:'Promo Code',brand:normBrand(p.Brand),brandRaw:p.Brand,regions:splitRegions(p.Region),campaign:p.Code,raw:p}));
   (data.crm||[]).forEach(c=>out.push({type:'CRM',brand:normBrand(c.Brand),brandRaw:c.Brand,regions:splitRegions(c.Region),campaign:c['Segment Name'],raw:c}));
   (data.games||[]).forEach(g=>out.push({type:'Game',brand:normBrand(g.Brand),brandRaw:g.Brand,regions:splitRegions(g.Region),campaign:g['Game Name'],raw:g}));
+  (data.adhoc||[]).forEach(a=>out.push({type:'Adhoc',brand:'',brandRaw:'',regions:[],campaign:a.Task,raw:a}));
   return out;
 }
 
@@ -640,6 +642,7 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
     'Banner Upload':DELIV.filter(d=>d.type==='Banner').length,
     'Promo Code':DELIV.filter(d=>d.type==='Promo Code').length,
     'Game Addition':DELIV.filter(d=>d.type==='Game').length,
+    'Adhoc Task':DELIV.filter(d=>d.type==='Adhoc').length,
   };
   const dominant=Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0];
   const brandCounts=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1]);
@@ -670,7 +673,7 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
 
   const pills=[];
   Object.entries(typeCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([label,count])=>{
-    const icons={'CRM':'ti-send','Banner Upload':'ti-photo','Promo Code':'ti-ticket','Game Addition':'ti-device-gamepad-2'};
+    const icons={'CRM':'ti-send','Banner Upload':'ti-photo','Promo Code':'ti-ticket','Game Addition':'ti-device-gamepad-2','Adhoc Task':'ti-checkbox'};
     const pct=Math.round(count/total*100);
     pills.push(`<span class="exec-pill"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
   });
@@ -715,6 +718,7 @@ function renderWorkloadMix(total){
     {key:'Banner',label:'Banner Uploads',icon:'ti-photo',color:'#0ca678',soft:'#e3f6ef',pctColor:'var(--teal)'},
     {key:'Promo Code',label:'Promo Codes',icon:'ti-ticket',color:'#f59e0b',soft:'#fef3c7',pctColor:'var(--warn)'},
     {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2',color:'#8b5cf6',soft:'#f3f0ff',pctColor:'#8b5cf6'},
+    {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox',color:'#06b6d4',soft:'#e0f9ff',pctColor:'#06b6d4'},
   ].map(t=>({...t,count:DELIV.filter(d=>d.type===t.key).length}));
   const pctSoft={'#4c6ef5':'#eaeeff','#0ca678':'#e3f6ef','#f59e0b':'#fef3c7','#8b5cf6':'#f3f0ff'};
   document.getElementById('mix-grid').innerHTML=types.map(t=>{
