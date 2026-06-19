@@ -1035,13 +1035,13 @@ function renderCrm(){
   const shown=cShowAll?rows:rows.slice(0,PAGE);
   document.getElementById('c-th').innerHTML='<tr>'
     +thHtml('Date','Date',cSort,'sortCrm','11%')
-    +thHtml('Brand','Brand',cSort,'sortCrm','11%')
-    +thHtml('CRM Tool','CRM Tool',cSort,'sortCrm','17%')
-    +thHtml('Segment','Segment Name',cSort,'sortCrm','31%')
-    +thHtml('By','Created By',cSort,'sortCrm','12%')
-    +thHtml('Status','Status',cSort,'sortCrm','18%',true)+'</tr>';
+    +thHtml('Brand','Brand',cSort,'sortCrm','10%')
+    +thHtml('Region','Region',cSort,'sortCrm','9%')
+    +thHtml('CRM Tool','CRM Tool',cSort,'sortCrm','16%')
+    +thHtml('Segment','Segment Name',cSort,'sortCrm','34%')
+    +thHtml('By','Created By',cSort,'sortCrm','20%',true)+'</tr>';
   document.getElementById('ct').innerHTML=shown.map(r=>
-    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['CRM Tool']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td>${r['Created By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['CRM Tool']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td style="text-align:right;">${r['Created By']||''}</td></tr>`).join('');
   const m=document.getElementById('cm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=cShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
