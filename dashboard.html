@@ -199,16 +199,14 @@
   .more{margin-top:10px;width:100%;font-size:12.5px;padding:8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);cursor:pointer;color:var(--ink2);}
   .more:hover{background:#fafbfc;}
 
-  /* ── AUTOMATION HEALTH ── */
-  .ah-inst{background:var(--bg);border-radius:12px;padding:14px 18px;min-width:160px;flex:1;}
-  .ah-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
-  .ah-status{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;}
-  .ah-overall{display:flex;align-items:center;gap:8px;}
-  .ah-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-  .ah-dot-ok{background:var(--good);}
-  .ah-dot-warn{background:var(--warn);}
-  .ah-dot-err{background:var(--risk);}
-  .ah-detail{font-size:11px;color:var(--ink3);margin-top:4px;}
+  /* ── CRM STATUS (header compact strip) ── */
+  .crm-status-bar{display:flex;align-items:center;gap:7px;padding:0 10px 0 0;border-right:1px solid var(--line);margin-right:2px;}
+  .crm-status-label{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);}
+  .crm-ts{font-size:10px;color:var(--ink3);}
+  .crm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;cursor:default;}
+  .crm-dot-ok{background:var(--good);}
+  .crm-dot-warn{background:var(--warn);}
+  .crm-dot-err{background:var(--risk);}
 
   /* ── STATES ── */
   .loading{text-align:center;padding:5rem 0;color:var(--ink2);font-size:13px;}
@@ -232,6 +230,11 @@
       <p class="sub" id="sub">Loading…</p>
     </div>
     <div class="head-right">
+      <div id="crm-status" style="display:none;" class="crm-status-bar">
+        <span class="crm-status-label">FT CRM</span>
+        <div id="crm-dots" style="display:flex;gap:5px;align-items:center;"></div>
+        <span id="crm-ts" class="crm-ts"></span>
+      </div>
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
     </div>
@@ -253,21 +256,6 @@
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
     <div class="kpis" id="kpis"></div>
-
-    <!-- AUTOMATION HEALTH -->
-    <div id="auto-health" style="display:none;margin-bottom:28px;">
-      <p class="section-label">Automation health</p>
-      <div class="card" style="padding:18px 24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
-          <div>
-            <div class="card-title">FT CRM sessions</div>
-            <div class="card-hint" id="ah-ts">–</div>
-          </div>
-          <div id="ah-overall"></div>
-        </div>
-        <div id="ah-instances" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
-      </div>
-    </div>
 
     <!-- 3 + 4. WORKLOAD MIX + TOP BRANDS -->
     <p class="section-label">Workload &amp; performance</p>
@@ -783,41 +771,28 @@ function renderRegionalDonut(regionList, total){
   }
 }
 
-/* ── AUTOMATION HEALTH ── */
+/* ── CRM STATUS (header) ── */
 function renderAutoHealth(rows){
-  const el=document.getElementById('auto-health');
-  if(!rows||!rows.length){el.style.display='none';return;}
-  el.style.display='';
+  const bar=document.getElementById('crm-status');
+  const dotsEl=document.getElementById('crm-dots');
+  const tsEl=document.getElementById('crm-ts');
+  if(!rows||!rows.length){bar.style.display='none';return;}
 
-  // rows = array of objects with keys: Timestamp, Instance, Label, Status, 'Valid Until', Detail
-  // normalise: sheet returns array-of-objects (JSONP) with header row stripped
   const dataRows=rows.filter(r=>r.Instance&&r.Instance!=='Instance');
-  if(!dataRows.length){el.style.display='none';return;}
+  if(!dataRows.length){bar.style.display='none';return;}
 
-  // Timestamp from first row
   const ts=dataRows[0].Timestamp||'';
-  const tsFmt=ts?ts.slice(0,16).replace('T',' '):'-';
-  document.getElementById('ah-ts').textContent='Last checked '+tsFmt+' UTC';
+  const tsFmt=ts?ts.slice(11,16)+' UTC':'';
+  tsEl.textContent=tsFmt;
 
-  const allOk=dataRows.every(r=>(r.Status||'').toUpperCase()==='OK');
-  const anyErr=dataRows.some(r=>['EXPIRED','ERROR','MISSING','NO TOKEN'].includes((r.Status||'').toUpperCase()));
-  const overallCls=allOk?'ah-dot-ok':anyErr?'ah-dot-err':'ah-dot-warn';
-  const overallTxt=allOk?'All healthy':anyErr?'Attention needed':'Partial';
-  document.getElementById('ah-overall').innerHTML=
-    `<div class="ah-overall"><span class="ah-dot ${overallCls}"></span><span style="font-size:13px;font-weight:600;">${overallTxt}</span></div>`;
-
-  document.getElementById('ah-instances').innerHTML=dataRows.map(r=>{
+  dotsEl.innerHTML=dataRows.map(r=>{
     const st=(r.Status||'').toUpperCase();
-    const cls=st==='OK'?'ah-dot-ok':st==='EXPIRED'||st==='MISSING'||st==='NO TOKEN'?'ah-dot-err':'ah-dot-warn';
-    const detail=r.Detail||(r['Valid Until']?'Refreshed '+r['Valid Until'].slice(0,10):'');
-    return `<div class="ah-inst">
-      <span class="ah-dot ${cls}"></span>
-      <div>
-        <div class="ah-label">${r.Label||r.Instance}</div>
-        <div class="ah-detail">${st==='OK'?detail||'OK':st+(detail?' — '+detail:'')}</div>
-      </div>
-    </div>`;
+    const cls=st==='OK'?'crm-dot-ok':['EXPIRED','ERROR','MISSING','NO TOKEN'].includes(st)?'crm-dot-err':'crm-dot-warn';
+    const tip=`${r.Label||r.Instance}: ${st}${r.Detail?' — '+r.Detail:''}`;
+    return `<span class="crm-dot ${cls}" title="${tip}"></span>`;
   }).join('');
+
+  bar.style.display='flex';
 }
 
 /* ── TEAM CAPACITY ── */
