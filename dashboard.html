@@ -939,6 +939,7 @@ function renderCapacity(){
   }
   onLeave.forEach(u=>notes.push(`<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-moon"></i><span>${u.Staff} — on leave</span></div>`));
   document.getElementById('cap-highlights').innerHTML=notes.join('');
+  if(_capTab==='weekly') renderWeeklyCapacity();
 }
 
 function switchCapTab(tab){
@@ -959,7 +960,18 @@ function renderWeeklyCapacity(){
   }
   // Build week → staff → hours map
   const staffOrder=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
-  const weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort().slice(-8);
+  let weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  // Apply date filter: include a week if its Monday falls within the selected range
+  if(_filterFrom||_filterTo){
+    weeks=weeks.filter(w=>{
+      const d=new Date(w);
+      if(_filterFrom&&d<_filterFrom) return false;
+      if(_filterTo&&d>_filterTo) return false;
+      return true;
+    });
+  } else {
+    weeks=weeks.slice(-8); // default: last 8 weeks
+  }
   const wm={};
   wkData.forEach(r=>{
     if(!r.Week||!r.Staff) return;
