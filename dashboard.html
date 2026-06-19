@@ -618,7 +618,7 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
     text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
   }
   if(botCount>0){
-    text+=`. <strong>${botCount} (${botPct}%)</strong> automated via promo_testbot`;
+    text+=`. <strong>${botPct}%</strong> of deliverables automated`;
   }
   text+='.';
 
@@ -629,7 +629,7 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
     pills.push(`<span class="exec-pill"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
   });
   if(botCount>0){
-    pills.push(`<span class="exec-pill" style="opacity:.85;"><i class="ti ti-robot"></i>Bot: ${botCount}&nbsp;(${botPct}%)</span>`);
+    pills.push(`<span class="exec-pill" style="opacity:.85;"><i class="ti ti-robot"></i>Automated: ${botCount}&nbsp;(${botPct}%)</span>`);
   }
   if(regions.length>0){
     const top2=regions.slice(0,2).join(' &amp; ');
