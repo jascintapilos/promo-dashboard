@@ -85,13 +85,13 @@
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px;}
 
   /* ── WORKLOAD MIX ── */
-  .mix-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  .mix-item{background:var(--bg);border-radius:12px;padding:18px 14px;text-align:center;transition:background .15s;}
+  .mix-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+  .mix-item{background:var(--bg);border-radius:14px;padding:20px 14px;text-align:center;transition:background .15s;}
   .mix-item:hover{background:#eef0f3;}
-  .mix-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px;}
-  .mix-val{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;}
-  .mix-label{font-size:12px;color:var(--ink2);margin-top:5px;font-weight:500;}
-  .mix-pct{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;margin-top:8px;}
+  .mix-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;}
+  .mix-val{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  .mix-label{font-size:12px;color:var(--ink2);margin-top:6px;font-weight:500;}
+  .mix-pct{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-top:8px;}
 
   /* ── TOP BRANDS ── */
   .brand-rank-list{display:flex;flex-direction:column;gap:0;}
@@ -217,22 +217,22 @@
   .empty-state i{font-size:28px;display:block;margin-bottom:8px;opacity:.5;}
 
   /* ── SOURCE STRIP ── */
-  .source-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:5px 20px;background:var(--bg1);border-bottom:1px solid var(--line);font-size:10.5px;color:var(--ink3);}
-  .src-sep{margin:0 8px;opacity:.4;}
+  .source-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:6px 0 18px;font-size:11px;color:var(--ink3);}
+  .src-sep{margin:0 10px;opacity:.3;}
   .src-item strong{color:var(--ink2);font-weight:600;}
   .src-item .src-ts{color:var(--ink3);margin-left:3px;}
-  .src-item .src-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:4px;vertical-align:1px;}
+  .src-item .src-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--good);margin-right:4px;vertical-align:1px;}
   .src-item .src-dot.stale{background:var(--warn);}
 
   /* ── WEEKLY UTIL TOGGLE ── */
   .cap-tabs{display:flex;gap:4px;margin-bottom:14px;}
-  .cap-tab{font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--ink2);cursor:pointer;transition:background .12s;}
+  .cap-tab{font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--line2);background:transparent;color:var(--ink2);cursor:pointer;transition:background .12s;}
   .cap-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .wk-grid{overflow-x:auto;margin-top:4px;}
   .wk-tbl{width:100%;border-collapse:collapse;font-size:11px;}
   .wk-tbl th{font-weight:600;color:var(--ink3);text-align:center;padding:3px 6px;white-space:nowrap;border-bottom:1px solid var(--line);}
   .wk-tbl th:first-child{text-align:left;}
-  .wk-tbl td{text-align:center;padding:3px 6px;color:var(--ink1);border-bottom:1px solid var(--line2);}
+  .wk-tbl td{text-align:center;padding:3px 6px;color:var(--ink);border-bottom:1px solid var(--line2);}
   .wk-tbl td:first-child{text-align:left;font-weight:500;white-space:nowrap;}
   .wk-tbl tr:last-child td{border-bottom:none;}
   .wk-cell-0{color:var(--ink3)!important;font-weight:400!important;}
@@ -249,6 +249,7 @@
     <div class="head-left">
       <h1>Promo Team Operations</h1>
       <p class="sub" id="sub">Loading…</p>
+      <div class="source-strip" id="source-strip" style="display:none;"></div>
     </div>
     <div class="head-right">
       <div id="crm-status" style="display:none;" class="crm-status-bar">
@@ -261,7 +262,6 @@
     </div>
   </div>
 
-  <div class="source-strip" id="source-strip" style="display:none;"></div>
   <div id="loading" class="loading"><span class="spin"></span>Loading live data from Google Sheets…</div>
   <div id="error" style="display:none;"></div>
 
@@ -279,18 +279,20 @@
     <p class="section-label">Key metrics</p>
     <div class="kpis" id="kpis"></div>
 
-    <!-- 3 + 4. WORKLOAD MIX + TOP BRANDS -->
+    <!-- 3. WORKLOAD MIX (full width) -->
     <p class="section-label">Workload &amp; performance</p>
-    <div class="row2" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Workload mix</div>
-            <div class="card-hint">Deliverables by task type for this period</div>
-          </div>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="card-header" style="margin-bottom:20px;">
+        <div class="card-header-info">
+          <div class="card-title">Workload mix</div>
+          <div class="card-hint">Deliverables by task type for this period</div>
         </div>
-        <div class="mix-grid" id="mix-grid"></div>
       </div>
+      <div class="mix-grid" id="mix-grid"></div>
+    </div>
+
+    <!-- 4 + 5. TOP BRANDS + REGIONAL DISTRIBUTION -->
+    <div class="row2" style="margin-bottom:28px;">
       <div class="card">
         <div class="card-header">
           <div class="card-header-info">
@@ -304,11 +306,6 @@
           <div class="bar-list" id="brand-bars-full" style="margin-top:12px;"></div>
         </div>
       </div>
-    </div>
-
-    <!-- 5 + 6. REGIONAL DISTRIBUTION + TEAM CAPACITY -->
-    <p class="section-label">Coverage &amp; capacity</p>
-    <div class="row2" style="margin-bottom:28px;">
       <div class="card">
         <div class="card-header">
           <div class="card-header-info">
@@ -328,25 +325,28 @@
         </div>
         <div class="donut-insight" id="donut-insight" style="display:none;"></div>
       </div>
-      <div class="card">
-        <div class="cap-summary">
-          <div>
-            <div class="card-title">Team capacity</div>
-            <div class="card-hint">Utilisation against expected hours</div>
-          </div>
+    </div>
+
+    <!-- 6. TEAM CAPACITY (full width) -->
+    <p class="section-label">Coverage &amp; capacity</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
+        <div>
+          <div class="card-title">Team capacity</div>
+          <div class="card-hint">Utilisation against expected hours</div>
         </div>
         <div class="cap-tabs">
           <button class="cap-tab active" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
           <button class="cap-tab" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
         </div>
-        <div id="cap-ytd-view">
-          <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
-          <div id="cap-bars"></div>
-          <div class="cap-highlights" id="cap-highlights"></div>
-        </div>
-        <div id="cap-weekly-view" style="display:none;">
-          <div class="wk-grid" id="cap-weekly-grid"></div>
-        </div>
+      </div>
+      <div id="cap-ytd-view">
+        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+        <div id="cap-bars"></div>
+        <div class="cap-highlights" id="cap-highlights"></div>
+      </div>
+      <div id="cap-weekly-view" style="display:none;">
+        <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
 
@@ -402,7 +402,7 @@
       <details class="rec"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
-            <input type="text" id="pf-q" placeholder="Search code…" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--ink1);font-size:0.8rem;outline:none;min-width:130px;">
+            <input type="text" id="pf-q" placeholder="Search code…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
             <select id="pf-b"><option value="all">All brands</option></select>
             <select id="pf-r"><option value="all">All regions</option></select>
             <select id="pf-t"><option value="all">All types</option></select>
@@ -426,7 +426,7 @@
       <details class="rec"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
-            <input type="text" id="gf-q" placeholder="Search game…" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--ink1);font-size:0.8rem;outline:none;min-width:130px;">
+            <input type="text" id="gf-q" placeholder="Search game…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
             <select id="gf-b"><option value="all">All brands</option></select>
             <select id="gf-p"><option value="all">All providers</option></select>
             <select id="gf-cat"><option value="all">All categories</option></select>
@@ -473,9 +473,11 @@ let _donutChart=null, _trendChart=null;
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function fmtDate(d){return d.toLocaleDateString('en-GB',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'short',year:'numeric'});}
-function fmtDateShort(d){return d.toLocaleDateString('en-GB',{timeZone:'Asia/Kuala_Lumpur',month:'short',day:'numeric'});}
-function fmtTime(d){return d.toLocaleTimeString('en-GB',{timeZone:'Asia/Kuala_Lumpur',hour:'2-digit',minute:'2-digit'})+' MYT';}
+const _TZ='Asia/Kuala_Lumpur';
+function fmtDate(d){try{return d.toLocaleDateString('en-GB',{timeZone:_TZ,day:'numeric',month:'short',year:'numeric'});}catch(e){return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}}
+function fmtDateShort(d){try{return d.toLocaleDateString('en-GB',{timeZone:_TZ,month:'short',day:'numeric'});}catch(e){return d.toLocaleDateString('en-GB',{month:'short',day:'numeric'});}}
+function fmtTime(d){try{return d.toLocaleTimeString('en-GB',{timeZone:_TZ,hour:'2-digit',minute:'2-digit'})+' MYT';}catch(e){return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}}
+function fmtMYT(ts){if(!ts) return ''; try{return new Date(ts).toLocaleTimeString('en-GB',{timeZone:_TZ,hour:'2-digit',minute:'2-digit'})+' MYT';}catch(e){return new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}}
 
 /* ── HELPERS ── */
 function parseDMY(s){
@@ -720,7 +722,7 @@ function renderWorkloadMix(total){
     {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2',color:'#8b5cf6',soft:'#f3f0ff',pctColor:'#8b5cf6'},
     {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox',color:'#06b6d4',soft:'#e0f9ff',pctColor:'#06b6d4'},
   ].map(t=>({...t,count:DELIV.filter(d=>d.type===t.key).length}));
-  const pctSoft={'#4c6ef5':'#eaeeff','#0ca678':'#e3f6ef','#f59e0b':'#fef3c7','#8b5cf6':'#f3f0ff'};
+  const pctSoft={'#4c6ef5':'#eaeeff','#0ca678':'#e3f6ef','#f59e0b':'#fef3c7','#8b5cf6':'#f3f0ff','#06b6d4':'#e0f9ff'};
   document.getElementById('mix-grid').innerHTML=types.map(t=>{
     const pct=total>0?Math.round(t.count/total*100):0;
     const bg=pctSoft[t.color]||'#f1f5f9';
@@ -870,7 +872,7 @@ function renderAutoHealth(rows){
   if(!dataRows.length){bar.style.display='none';return;}
 
   const ts=dataRows[0].Timestamp||'';
-  const tsFmt=ts?new Date(ts).toLocaleTimeString('en-GB',{timeZone:'Asia/Kuala_Lumpur',hour:'2-digit',minute:'2-digit'})+' MYT':'';
+  const tsFmt=fmtMYT(ts);
   tsEl.textContent=tsFmt;
 
   dotsEl.innerHTML=dataRows.map(r=>{
