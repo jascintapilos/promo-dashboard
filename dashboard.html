@@ -1348,12 +1348,23 @@ function loadData(){
     document.getElementById('error').style.display='block';
     document.getElementById('error').innerHTML='<div class="errbox">Request timed out. Try refreshing.</div>';
     document.getElementById('refresh').disabled=false;
-  },12000);
-  const qr=TABS.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`;
-  fetch(url,{referrerPolicy:'no-referrer'})
+  },15000);
+  // Step 1: discover which tabs actually exist (avoids 400 when optional tabs aren't created yet)
+  const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${SHEETS_API_KEY}&fields=sheets.properties.title`;
+  fetch(metaUrl,{referrerPolicy:'no-referrer'})
     .then(r=>r.json())
-    .then(json=>{
+    .then(meta=>{
+      if(meta.error) throw new Error('Sheets API error: '+meta.error.message);
+      const existing=new Set((meta.sheets||[]).map(s=>s.properties.title));
+      const availIdx=TABS.map((t,i)=>existing.has(t)?i:-1).filter(i=>i>=0);
+      const availTabs=availIdx.map(i=>TABS[i]);
+      const availKeys=availIdx.map(i=>TAB_KEYS[i]);
+      const qr=availTabs.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
+      return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`,{referrerPolicy:'no-referrer'})
+        .then(r=>r.json())
+        .then(json=>({json,availKeys}));
+    })
+    .then(({json,availKeys})=>{
       clearTimeout(_to);
       if(json.error){
         document.getElementById('loading').style.display='none';
@@ -1363,7 +1374,7 @@ function loadData(){
         return;
       }
       const data={lastUpdated:new Date().toISOString()};
-      (json.valueRanges||[]).forEach((vr,i)=>{data[TAB_KEYS[i]]=rowsToObjects(vr.values);});
+      (json.valueRanges||[]).forEach((vr,i)=>{data[availKeys[i]]=rowsToObjects(vr.values);});
       render(data);
     })
     .catch(err=>{
