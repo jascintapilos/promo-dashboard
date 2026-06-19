@@ -346,30 +346,43 @@
         <div class="rec-body">
           <div class="rec-tools">
             <select id="bf-c"><option value="all">All campaigns</option></select>
+            <select id="bf-b"><option value="all">All brands</option></select>
             <select id="bf-u"><option value="all">All uploaded by</option></select>
           </div>
-          <table style="table-layout:fixed;"><thead><tr><th style="width:36%;">Campaign</th><th style="width:12%;">Brand</th><th style="width:9%;">Region</th><th style="width:15%;">Uploaded By</th><th style="width:28%;text-align:right;">Status</th></tr></thead><tbody id="bt"></tbody></table>
+          <table id="b-tbl" style="table-layout:fixed;"><thead id="b-th"></thead><tbody id="bt"></tbody></table>
           <button class="more" id="bm"></button>
         </div>
       </details>
       <details class="rec"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
-          <table style="table-layout:fixed;"><thead><tr><th style="width:14%;">Date</th><th style="width:34%;">Code</th><th style="width:12%;">Brand</th><th style="width:14%;">Region</th><th style="width:26%;text-align:right;">Type</th></tr></thead><tbody id="pt"></tbody></table>
+          <div class="rec-tools">
+            <input type="text" id="pf-q" placeholder="Search code…" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--ink1);font-size:0.8rem;outline:none;min-width:130px;">
+            <select id="pf-b"><option value="all">All brands</option></select>
+            <select id="pf-t"><option value="all">All types</option></select>
+          </div>
+          <table id="p-tbl" style="table-layout:fixed;"><thead id="p-th"></thead><tbody id="pt"></tbody></table>
+          <button class="more" id="pm"></button>
         </div>
       </details>
       <details class="rec"><summary><i class="ti ti-send" aria-hidden="true"></i> CRM assignment log <span class="cnt" id="rc-crm"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
-            <select id="cf-c"><option value="all">All campaigns</option></select>
+            <select id="cf-c"><option value="all">All tools</option></select>
+            <select id="cf-b"><option value="all">All brands</option></select>
             <select id="cf-a"><option value="all">All assignees</option></select>
           </div>
-          <table style="table-layout:fixed;"><thead><tr><th style="width:11%;">Date</th><th style="width:11%;">Brand</th><th style="width:17%;">CRM Tool</th><th style="width:31%;">Segment</th><th style="width:12%;">By</th><th style="width:18%;text-align:right;">Status</th></tr></thead><tbody id="ct"></tbody></table>
+          <table id="c-tbl" style="table-layout:fixed;"><thead id="c-th"></thead><tbody id="ct"></tbody></table>
           <button class="more" id="cm"></button>
         </div>
       </details>
       <details class="rec"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
-          <table><thead><tr><th>Game</th><th>Provider</th><th>Category</th><th>Brand</th><th style="text-align:right;">Status</th></tr></thead><tbody id="gt"></tbody></table>
+          <div class="rec-tools">
+            <select id="gf-b"><option value="all">All brands</option></select>
+            <select id="gf-p"><option value="all">All providers</option></select>
+          </div>
+          <table id="g-tbl"><thead id="g-th"></thead><tbody id="gt"></tbody></table>
+          <button class="more" id="gm"></button>
         </div>
       </details>
     </div>
@@ -390,7 +403,9 @@ const REGION_ORDER = ['MY','SG','ID','TH','KH'];
 const PAGE = 15;
 
 let DELIV=[], UTIL=[], rawData=null, _fullData=null;
-let bShowAll=false, cShowAll=false;
+let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false;
+let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
+let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'};
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
 let _donutChart=null, _trendChart=null;
@@ -895,6 +910,38 @@ function closeDrill(which){
   document.querySelectorAll('#'+which+'-bars .bar').forEach(b=>b.classList.remove('active'));
 }
 
+/* ── SORT / FILTER HELPERS ── */
+function parseAnyDate(s){
+  if(!s)return null; s=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);
+  return parseDMY(s);
+}
+function applySort(rows,st){
+  if(!st.col)return rows;
+  return [...rows].sort((a,b)=>{
+    const av=String(a[st.col]||''),bv=String(b[st.col]||'');
+    const ad=parseAnyDate(av),bd=parseAnyDate(bv);
+    const cmp=ad&&bd?ad-bd:av.localeCompare(bv,undefined,{numeric:true});
+    return st.dir==='asc'?cmp:-cmp;
+  });
+}
+function toggleSort(st,col){
+  if(st.col===col)st.dir=st.dir==='asc'?'desc':'asc';
+  else{st.col=col;st.dir='asc';}
+}
+function thHtml(label,field,st,fn,w,right){
+  const active=st.col===field;
+  const icon=active?(st.dir==='asc'?'▲':'▼'):'⇕';
+  const op=active?'1':'0.25';
+  const s=(w?'width:'+w+';':'')+'cursor:pointer;user-select:none;white-space:nowrap;'+(right?'text-align:right;':'');
+  return '<th style="'+s+'" onclick="'+fn+'(\''+field+'\')">'
+       +label+'<span style="font-size:0.65em;opacity:'+op+';margin-left:3px;">'+icon+'</span></th>';
+}
+function sortBanner(col){toggleSort(bSort,col);renderBanner();}
+function sortPromo(col){toggleSort(pSort,col);renderPromo();}
+function sortCrm(col){toggleSort(cSort,col);renderCrm();}
+function sortGame(col){toggleSort(gSort,col);renderGames();}
+
 /* ── DETAILED RECORDS ── */
 function renderRecords(){
   const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=rawData.games||[];
@@ -903,46 +950,117 @@ function renderRecords(){
   document.getElementById('rc-crm').textContent=`${c.length} records`;
   document.getElementById('rc-game').textContent=`${g.length} records`;
 
-  document.getElementById('pt').innerHTML=p.map(r=>
-    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
-  document.getElementById('gt').innerHTML=g.map(r=>
-    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
-
-  const bfc=document.getElementById('bf-c'),bfu=document.getElementById('bf-u');
+  // Banner filters
+  const bfc=document.getElementById('bf-c'),bfb=document.getElementById('bf-b'),bfu=document.getElementById('bf-u');
   bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
+  bfb.innerHTML='<option value="all">All brands</option>'+uniq(b.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   bfu.innerHTML='<option value="all">All uploaded by</option>'+uniq(b.map(x=>x['Uploaded By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
-  bfc.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
+  bfc.onchange=bfb.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
   document.getElementById('bm').onclick=()=>{bShowAll=!bShowAll;renderBanner();};
   renderBanner();
 
-  const cfc=document.getElementById('cf-c'),cfa=document.getElementById('cf-a');
+  // Promo filters
+  const pfb=document.getElementById('pf-b'),pft=document.getElementById('pf-t');
+  pfb.innerHTML='<option value="all">All brands</option>'+uniq(p.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  pft.innerHTML='<option value="all">All types</option>'+uniq(p.map(x=>x.Type).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  document.getElementById('pf-q').oninput=()=>{pShowAll=false;renderPromo();};
+  pfb.onchange=pft.onchange=()=>{pShowAll=false;renderPromo();};
+  document.getElementById('pm').onclick=()=>{pShowAll=!pShowAll;renderPromo();};
+  renderPromo();
+
+  // CRM filters
+  const cfc=document.getElementById('cf-c'),cfb=document.getElementById('cf-b'),cfa=document.getElementById('cf-a');
   cfc.innerHTML='<option value="all">All tools</option>'+uniq(c.map(x=>x['CRM Tool']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfb.innerHTML='<option value="all">All brands</option>'+uniq(c.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   cfa.innerHTML='<option value="all">All assignees</option>'+uniq(c.map(x=>x['Created By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
-  cfc.onchange=cfa.onchange=()=>{cShowAll=false;renderCrm();};
+  cfc.onchange=cfb.onchange=cfa.onchange=()=>{cShowAll=false;renderCrm();};
   document.getElementById('cm').onclick=()=>{cShowAll=!cShowAll;renderCrm();};
   renderCrm();
+
+  // Games filters
+  const gfb=document.getElementById('gf-b'),gfp=document.getElementById('gf-p');
+  gfb.innerHTML='<option value="all">All brands</option>'+uniq(g.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  gfp.innerHTML='<option value="all">All providers</option>'+uniq(g.map(x=>x['Game Provider']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  gfb.onchange=gfp.onchange=()=>{gShowAll=false;renderGames();};
+  document.getElementById('gm').onclick=()=>{gShowAll=!gShowAll;renderGames();};
+  renderGames();
 }
 
 function renderBanner(){
   let rows=rawData.banners||[];
-  const fc=document.getElementById('bf-c').value,fu=document.getElementById('bf-u').value;
+  const fc=document.getElementById('bf-c').value,fb=document.getElementById('bf-b').value,fu=document.getElementById('bf-u').value;
   if(fc!=='all')rows=rows.filter(r=>r['Banner Title']===fc);
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
   if(fu!=='all')rows=rows.filter(r=>r['Uploaded By']===fu);
+  rows=applySort(rows,bSort);
   const shown=bShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('b-th').innerHTML='<tr>'
+    +thHtml('Campaign','Banner Title',bSort,'sortBanner','36%')
+    +thHtml('Brand','Brand',bSort,'sortBanner','12%')
+    +thHtml('Region','Region',bSort,'sortBanner','9%')
+    +thHtml('Uploaded By','Uploaded By',bSort,'sortBanner','15%')
+    +thHtml('Status','Status',bSort,'sortBanner','28%',true)+'</tr>';
   document.getElementById('bt').innerHTML=shown.map(r=>
     `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
+function renderPromo(){
+  let rows=rawData.promos||[];
+  const fq=(document.getElementById('pf-q').value||'').toLowerCase();
+  const fb=document.getElementById('pf-b').value,ft=document.getElementById('pf-t').value;
+  if(fq)rows=rows.filter(r=>String(r.Code||'').toLowerCase().includes(fq));
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(ft!=='all')rows=rows.filter(r=>r.Type===ft);
+  rows=applySort(rows,pSort);
+  const shown=pShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('p-th').innerHTML='<tr>'
+    +thHtml('Date','Date',pSort,'sortPromo','14%')
+    +thHtml('Code','Code',pSort,'sortPromo','34%')
+    +thHtml('Brand','Brand',pSort,'sortPromo','12%')
+    +thHtml('Region','Region',pSort,'sortPromo','14%')
+    +thHtml('Type','Type',pSort,'sortPromo','26%',true)+'</tr>';
+  document.getElementById('pt').innerHTML=shown.map(r=>
+    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
+  const m=document.getElementById('pm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=pShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
 function renderCrm(){
   let rows=rawData.crm||[];
-  const fc=document.getElementById('cf-c').value,fa=document.getElementById('cf-a').value;
+  const fc=document.getElementById('cf-c').value,fb=document.getElementById('cf-b').value,fa=document.getElementById('cf-a').value;
   if(fc!=='all')rows=rows.filter(r=>r['CRM Tool']===fc);
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
   if(fa!=='all')rows=rows.filter(r=>r['Created By']===fa);
+  rows=applySort(rows,cSort);
   const shown=cShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('c-th').innerHTML='<tr>'
+    +thHtml('Date','Date',cSort,'sortCrm','11%')
+    +thHtml('Brand','Brand',cSort,'sortCrm','11%')
+    +thHtml('CRM Tool','CRM Tool',cSort,'sortCrm','17%')
+    +thHtml('Segment','Segment Name',cSort,'sortCrm','31%')
+    +thHtml('By','Created By',cSort,'sortCrm','12%')
+    +thHtml('Status','Status',cSort,'sortCrm','18%',true)+'</tr>';
   document.getElementById('ct').innerHTML=shown.map(r=>
     `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['CRM Tool']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td>${r['Created By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('cm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=cShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function renderGames(){
+  let rows=rawData.games||[];
+  const fb=document.getElementById('gf-b').value,fp=document.getElementById('gf-p').value;
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(fp!=='all')rows=rows.filter(r=>r['Game Provider']===fp);
+  rows=applySort(rows,gSort);
+  const shown=gShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('g-th').innerHTML='<tr>'
+    +thHtml('Game','Game Name',gSort,'sortGame','')
+    +thHtml('Provider','Game Provider',gSort,'sortGame','')
+    +thHtml('Category','Game Category',gSort,'sortGame','')
+    +thHtml('Brand','Brand',gSort,'sortGame','')
+    +thHtml('Status','Status',gSort,'sortGame','',true)+'</tr>';
+  document.getElementById('gt').innerHTML=shown.map(r=>
+    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+  const m=document.getElementById('gm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=gShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
 /* ── DEMO DATA (used when Sheets API is blocked on localhost) ── */
