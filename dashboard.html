@@ -626,6 +626,20 @@ function openRecordSection(id){
   setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
 
+/* ── AUTOMATION START DATE ── */
+function firstBotDate(){
+  const allP=(_fullData&&_fullData.promos)||[];
+  const botRows=allP.filter(p=>String(p['Created By']||'').toLowerCase().trim()==='promo_testbot');
+  if(!botRows.length) return null;
+  const dates=botRows.map(p=>{
+    const[dd,mm,yyyy]=String(p['Date']||'').split('/').map(Number);
+    return new Date(yyyy,mm-1,dd);
+  }).filter(d=>!isNaN(d.getTime()));
+  if(!dates.length) return null;
+  const earliest=new Date(Math.min(...dates.map(d=>d.getTime())));
+  return earliest.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
 /* ── EXECUTIVE SUMMARY ── */
 function renderExecSummary(total, brands, regions, platforms, teamUtil){
   if(total===0){
@@ -652,7 +666,7 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
   if(dominant&&dominant[1]>0&&total>0) text+=`. <strong>${dominant[0]}</strong> led workload at <strong>${Math.round(dominant[1]/total*100)}%</strong>`;
   if(topBrand) text+=`, with <strong>${topBrand[0]}</strong> as the top brand (<strong>${topBrand[1]}</strong> item${topBrand[1]!==1?'s':''})`;
   if(!isNaN(teamUtil)) text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
-  if(botCount>0) text+=`. <strong>${botPct}%</strong> of deliverables automated`;
+  if(botCount>0){const bStart=firstBotDate();text+=`. <strong>${botPct}%</strong> of deliverables automated${bStart?` (since ${bStart})`:''}`;}
   text+='.';
 
   document.getElementById('exec-text').innerHTML=text;
