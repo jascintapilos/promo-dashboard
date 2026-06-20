@@ -71,7 +71,16 @@
   .exec-pill i{font-size:12px;margin-right:4px;opacity:.8;}
   .exec-pill-link{cursor:pointer;}
   .exec-pill-link:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.45);}
-  .exec-range{font-size:11.5px;opacity:.6;margin-top:12px;position:relative;}
+  .exec-range{font-size:11.5px;opacity:.6;margin-top:10px;position:relative;}
+  .exec-mix{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:20px;position:relative;}
+  .exec-mix-item{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;
+    padding:14px 10px;text-align:center;cursor:pointer;transition:background .15s,transform .12s;}
+  .exec-mix-item:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
+  .exec-mix-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    margin:0 auto 8px;font-size:19px;background:rgba(255,255,255,.15);}
+  .exec-mix-val{font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;}
+  .exec-mix-label{font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;}
+  .exec-mix-pct{font-size:11.5px;color:rgba(255,255,255,.92);font-weight:600;margin-top:5px;}
 
   /* ── KPI CARDS ── */
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px;}
@@ -255,7 +264,7 @@
 
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
-  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.mix-grid{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.exec-mix{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
 <body>
@@ -282,25 +291,13 @@
     <div class="exec-card" id="exec-card">
       <div class="exec-badge"><i class="ti ti-chart-pie"></i>This period at a glance</div>
       <div class="exec-text" id="exec-text"></div>
-      <div class="exec-pills" id="exec-pills"></div>
+      <div class="exec-mix" id="exec-mix"></div>
       <div class="exec-range" id="exec-range"></div>
     </div>
 
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
     <div class="kpis" id="kpis"></div>
-
-    <!-- 3. WORKLOAD MIX (full width) -->
-    <p class="section-label">Workload &amp; performance</p>
-    <div class="card" style="margin-bottom:28px;">
-      <div class="card-header" style="margin-bottom:20px;">
-        <div class="card-header-info">
-          <div class="card-title">Workload mix</div>
-          <div class="card-hint">Deliverables by task type for this period</div>
-        </div>
-      </div>
-      <div class="mix-grid" id="mix-grid"></div>
-    </div>
 
     <!-- 4 + 5. TOP BRANDS + REGIONAL DISTRIBUTION -->
     <div class="row2" style="margin-bottom:28px;">
@@ -656,23 +653,18 @@ function openRecordSection(id){
 function renderExecSummary(total, brands, regions, platforms, teamUtil){
   if(total===0){
     document.getElementById('exec-text').innerHTML='No deliverables found for this period.';
-    document.getElementById('exec-pills').innerHTML='';
     document.getElementById('exec-range').textContent=rangeNote();
     return;
   }
 
-  const typeCounts={
+  const dominant=Object.entries({
     'CRM':DELIV.filter(d=>d.type==='CRM').length,
     'Banner Upload':DELIV.filter(d=>d.type==='Banner').length,
     'Promo Code':DELIV.filter(d=>d.type==='Promo Code').length,
     'Game Addition':DELIV.filter(d=>d.type==='Game').length,
     'Adhoc Task':DELIV.filter(d=>d.type==='Adhoc').length,
-  };
-  const dominant=Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0];
-  const brandCounts=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1]);
-  const topBrand=brandCounts[0];
-
-  // Automation count: items where Created By = promo_testbot
+  }).sort((a,b)=>b[1]-a[1])[0];
+  const topBrand=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1])[0];
   const botCount=DELIV.filter(d=>{
     const cb=String(d.raw['Created By']||d.raw['created_by']||'').toLowerCase().trim();
     return cb==='promo_testbot';
@@ -680,43 +672,13 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
   const botPct=total>0?Math.round(botCount/total*100):0;
 
   let text=`The team handled <strong>${total} deliverables</strong> across <strong>${brands.length} brand${brands.length!==1?'s':''}</strong> and <strong>${regions.length} region${regions.length!==1?'s':''}</strong>`;
-  if(dominant&&dominant[1]>0&&total>0){
-    const pct=Math.round(dominant[1]/total*100);
-    text+=`. <strong>${dominant[0]}</strong> led workload at <strong>${pct}%</strong>`;
-  }
-  if(topBrand){
-    text+=`, with <strong>${topBrand[0]}</strong> as the top brand (<strong>${topBrand[1]}</strong> item${topBrand[1]!==1?'s':''})`;
-  }
-  if(!isNaN(teamUtil)){
-    text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
-  }
-  if(botCount>0){
-    text+=`. <strong>${botPct}%</strong> of deliverables automated`;
-  }
+  if(dominant&&dominant[1]>0&&total>0) text+=`. <strong>${dominant[0]}</strong> led workload at <strong>${Math.round(dominant[1]/total*100)}%</strong>`;
+  if(topBrand) text+=`, with <strong>${topBrand[0]}</strong> as the top brand (<strong>${topBrand[1]}</strong> item${topBrand[1]!==1?'s':''})`;
+  if(!isNaN(teamUtil)) text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
+  if(botCount>0) text+=`. <strong>${botPct}%</strong> of deliverables automated`;
   text+='.';
 
-  const pills=[];
-  const recIds={'CRM':'rec-crm','Banner Upload':'rec-banner','Promo Code':'rec-promo','Game Addition':'rec-game','Adhoc Task':'rec-adhoc'};
-  Object.entries(typeCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([label,count])=>{
-    const icons={'CRM':'ti-send','Banner Upload':'ti-photo','Promo Code':'ti-ticket','Game Addition':'ti-device-gamepad-2','Adhoc Task':'ti-checkbox'};
-    const pct=Math.round(count/total*100);
-    const rid=recIds[label];
-    if(rid){
-      pills.push(`<span class="exec-pill exec-pill-link" role="button" tabindex="0" title="Jump to ${label}" onclick="openRecordSection('${rid}')"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
-    } else {
-      pills.push(`<span class="exec-pill"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
-    }
-  });
-  if(botCount>0){
-    pills.push(`<span class="exec-pill" style="opacity:.85;"><i class="ti ti-robot"></i>Automated: ${botCount}&nbsp;(${botPct}%)</span>`);
-  }
-  if(regions.length>0){
-    const top2=regions.slice(0,2).join(' &amp; ');
-    pills.push(`<span class="exec-pill"><i class="ti ti-world"></i>${top2}${regions.length>2?' + '+(regions.length-2)+' more':''}</span>`);
-  }
-
   document.getElementById('exec-text').innerHTML=text;
-  document.getElementById('exec-pills').innerHTML=pills.join('');
   document.getElementById('exec-range').textContent=rangeNote()==='all time'?'All-time data':'Period: '+rangeNote();
 }
 
@@ -741,24 +703,24 @@ function renderKpis(total, brands, regions, platforms, teamUtil, tStr, dStr){
   ).join('');
 }
 
-/* ── WORKLOAD MIX ── */
+/* ── WORKLOAD MIX (inside exec card) ── */
 function renderWorkloadMix(total){
+  const recIds={'CRM':'rec-crm','Banner':'rec-banner','Promo Code':'rec-promo','Game':'rec-game','Adhoc':'rec-adhoc'};
   const types=[
-    {key:'CRM',label:'CRM Assignments',icon:'ti-send',color:'#4c6ef5',soft:'#eaeeff',pctColor:'var(--accent)'},
-    {key:'Banner',label:'Banner Uploads',icon:'ti-photo',color:'#0ca678',soft:'#e3f6ef',pctColor:'var(--teal)'},
-    {key:'Promo Code',label:'Promo Codes',icon:'ti-ticket',color:'#f59e0b',soft:'#fef3c7',pctColor:'var(--warn)'},
-    {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2',color:'#8b5cf6',soft:'#f3f0ff',pctColor:'#8b5cf6'},
-    {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox',color:'#06b6d4',soft:'#e0f9ff',pctColor:'#06b6d4'},
+    {key:'CRM',label:'CRM Assignments',icon:'ti-send'},
+    {key:'Banner',label:'Banner Uploads',icon:'ti-photo'},
+    {key:'Promo Code',label:'Promo Codes',icon:'ti-ticket'},
+    {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2'},
+    {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox'},
   ].map(t=>({...t,count:DELIV.filter(d=>d.type===t.key).length}));
-  const pctSoft={'#4c6ef5':'#eaeeff','#0ca678':'#e3f6ef','#f59e0b':'#fef3c7','#8b5cf6':'#f3f0ff','#06b6d4':'#e0f9ff'};
-  document.getElementById('mix-grid').innerHTML=types.map(t=>{
+  document.getElementById('exec-mix').innerHTML=types.map(t=>{
     const pct=total>0?Math.round(t.count/total*100):0;
-    const bg=pctSoft[t.color]||'#f1f5f9';
-    return `<div class="mix-item">
-      <div class="mix-icon" style="background:${t.soft};"><i class="ti ${t.icon}" style="color:${t.color};"></i></div>
-      <div class="mix-val" style="color:${t.color};">${t.count}</div>
-      <div class="mix-label">${t.label}</div>
-      <span class="mix-pct" style="background:${bg};color:${t.color};">${pct}%</span>
+    const rid=recIds[t.key];
+    return `<div class="exec-mix-item" onclick="openRecordSection('${rid}')" role="button" tabindex="0" title="Jump to ${t.label}">
+      <div class="exec-mix-icon"><i class="ti ${t.icon}"></i></div>
+      <div class="exec-mix-val">${t.count}</div>
+      <div class="exec-mix-label">${t.label}</div>
+      <div class="exec-mix-pct">${pct}%</div>
     </div>`;
   }).join('');
 }
