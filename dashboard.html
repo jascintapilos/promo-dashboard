@@ -252,11 +252,6 @@
       <div class="source-strip" id="source-strip" style="display:none;"></div>
     </div>
     <div class="head-right">
-      <div id="crm-status" style="display:none;" class="crm-status-bar">
-        <span class="crm-status-label">FT CRM</span>
-        <div id="crm-dots" style="display:flex;gap:5px;align-items:center;"></div>
-        <span id="crm-ts" class="crm-ts"></span>
-      </div>
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
     </div>
@@ -622,7 +617,6 @@ function render(data,_skipStore){
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
-  renderAutoHealth(data.sysStatus || []);
   renderWorkloadMix(total);
   renderTopBrands(total);
   renderRegionalDonut(regionList, total);
