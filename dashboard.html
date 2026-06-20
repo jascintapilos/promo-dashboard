@@ -341,7 +341,7 @@
       <div class="trend-header">
         <div>
           <div class="card-title">Deliverables over time</div>
-          <div class="card-hint">Weekly totals — all dates regardless of active filter</div>
+          <div class="card-hint">Weekly totals — last 8 weeks of selected period</div>
         </div>
         <div class="trend-legend" id="trend-legend"></div>
       </div>
@@ -1143,10 +1143,7 @@ function calcWeeklyTeamUtil(){
 /* ── TRENDS ── */
 function renderTrends(){
   if(!_fullData) return;
-  const allDeliv=build(applyDateFilter({..._fullData,promos:_fullData.promos,banners:_fullData.banners,crm:_fullData.crm,games:_fullData.games}));
-  // Use all data (bypass filter) for trends
-  const allDelivFull=build({promos:_fullData.promos||[],banners:_fullData.banners||[],crm:_fullData.crm||[],games:_fullData.games||[],adhoc:_fullData.adhoc||[]});
-  const weeks=buildWeeklyTotals(allDelivFull);
+  const weeks=buildWeeklyTotals(build(applyDateFilter({..._fullData,adhoc:_fullData.adhoc||[]})));
 
   if(_trendChart){_trendChart.destroy();_trendChart=null;}
 
