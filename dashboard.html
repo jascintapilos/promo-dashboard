@@ -1139,12 +1139,22 @@ function calcWeeklyTeamUtil(){
   }
   if(!weeks.length) return NaN;
   const wm={};
-  wkData.forEach(r=>{if(!r.Week||!r.Staff) return;if(!wm[r.Week]) wm[r.Week]={};wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;});
+  const we={};
+  wkData.forEach(r=>{
+    if(!r.Week||!r.Staff) return;
+    if(!wm[r.Week]) wm[r.Week]={};
+    wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;
+    if(r.Expected!==undefined&&r.Expected!==''){
+      if(!we[r.Week]) we[r.Week]={};
+      we[r.Week][r.Staff]=parseFloat(r.Expected)||0;
+    }
+  });
   const staff=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
   if(!staff.length) return NaN;
   const utils=staff.map(s=>{
     const h=weeks.reduce((sum,w)=>sum+(wm[w]?.[s]||0),0);
-    return h/(weeks.length*40)*100;
+    const exp=weeks.reduce((sum,w)=>sum+(we[w]?.[s]??40),0);
+    return exp>0?h/exp*100:0;
   });
   return utils.reduce((a,b)=>a+b,0)/utils.length;
 }
