@@ -897,6 +897,7 @@ function renderCapacity(){
     const p=parseFloat(raw);const leave=isNaN(p);
     const w=leave?0:Math.min(100,p);
     const notesTxt=(u.Notes||'').trim();
+    const isResigned=RESIGNED_STAFF.has(u.Staff);
     // Build remark: parse "actual / expected" written by pull-utilisation.mjs
     let remark='';
     const slashMatch=notesTxt.match(/^([\d.]+)h\s*\/\s*([\d.]+)h/);
@@ -905,20 +906,23 @@ function renderCapacity(){
     } else if(notesTxt&&!/^\d/.test(notesTxt)){
       remark=notesTxt;
     }
-    return `<div class="cap-row">
-      <span class="cap-name">${u.Staff}</span>
-      <span class="cap-track"><span class="cap-fill" style="width:${w}%;background:${leave?'#cbd2dc':colorFor(p)};"></span></span>
-      <span class="cap-val" style="color:${leave?'var(--ink3)':colorFor(p)};">${leave?'—':p.toFixed(0)+'%'}</span>
+    const barColor=isResigned?'#cbd2dc':(leave?'#cbd2dc':colorFor(p));
+    const valColor=isResigned?'var(--ink3)':(leave?'var(--ink3)':colorFor(p));
+    const nameBadge=isResigned?` <span style="font-size:8px;background:var(--line);color:var(--ink3);padding:1px 4px;border-radius:3px;font-weight:600;letter-spacing:.02em;vertical-align:2px;">resigned</span>`:'';
+    return `<div class="cap-row"${isResigned?' style="opacity:0.55;"':''}>
+      <span class="cap-name" style="${isResigned?'color:var(--ink3);':''}">${u.Staff}${nameBadge}</span>
+      <span class="cap-track"><span class="cap-fill" style="width:${w}%;background:${barColor};"></span></span>
+      <span class="cap-val" style="color:${valColor};">${leave?'—':p.toFixed(0)+'%'}</span>
       <span style="font-size:10.5px;color:var(--ink3);min-width:0;white-space:nowrap;">${remark}</span>
     </div>`;
   }).join('');
 
-  // Highlights
-  const sorted=rows.filter(u=>!isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))))
+  // Highlights — exclude resigned staff
+  const sorted=rows.filter(u=>!RESIGNED_STAFF.has(u.Staff)&&!isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))))
     .sort((a,b)=>parseFloat(b['% Utilisation'])-parseFloat(a['% Utilisation']));
   const highest=sorted[0];
   const lowest=sorted[sorted.length-1];
-  const onLeave=rows.filter(u=>isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))));
+  const onLeave=rows.filter(u=>!RESIGNED_STAFF.has(u.Staff)&&isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))));
   const notes=[];
   if(highest&&sorted.length>1){
     notes.push(`<div class="cap-note-item" style="background:var(--risk-soft);color:var(--risk);"><i class="ti ti-arrow-up"></i><span>Highest: ${highest.Staff} at ${parseFloat(highest['% Utilisation']).toFixed(0)}%</span></div>`);
