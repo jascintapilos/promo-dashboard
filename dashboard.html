@@ -246,6 +246,8 @@
   .wk-tbl td:first-child{text-align:left;font-weight:500;white-space:nowrap;}
   .wk-tbl tr:last-child td{border-bottom:none;}
   .wk-cell-0{color:var(--ink3)!important;font-weight:400!important;}
+  .wk-cell-nodata{color:var(--ink3)!important;font-style:italic;font-size:9px!important;}
+  .wk-avg-row td{border-top:2px solid var(--line)!important;}
 
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
@@ -1004,19 +1006,28 @@ function renderWeeklyCapacity(){
   wkData.forEach(r=>{
     if(!r.Week||!r.Staff) return;
     if(!wm[r.Week]) wm[r.Week]={};
-    wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;
+    wm[r.Week][r.Staff]=parseFloat(r.Hours)||0;
   });
   const fmtWk=s=>{const d=new Date(s);return fmtDateShort(d);};
-  const maxH=Math.max(...weeks.flatMap(w=>staffOrder.map(s=>wm[w]?.[s]||0)),1);
-  const colorFor=h=>{const pctEq=h/40*100;return pctEq>=85?'var(--risk)':pctEq>=60?'var(--good)':pctEq>=20?'var(--warn)':'#cbd2dc';};
+  const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
   let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>`<th>${fmtWk(w)}</th>`).join('')+'</tr></thead><tbody>';
   staffOrder.forEach(staff=>{
     html+=`<tr><td>${staff}</td>`+weeks.map(w=>{
-      const h=wm[w]?.[staff]||0;
-      const cls=h===0?' class="wk-cell-0"':'';
-      return `<td${cls} title="${h.toFixed(1)}h">${h>0?h.toFixed(1):'—'}</td>`;
+      const h=wm[w]?.[staff];
+      if(h===undefined) return `<td class="wk-cell-nodata" title="No data captured yet">no data</td>`;
+      if(h===0) return `<td class="wk-cell-0" title="0h">—</td>`;
+      return `<td style="color:${colorFor(h)};" title="${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
     }).join('')+'</tr>';
   });
+  // Team avg row
+  const avgCells=weeks.map(w=>{
+    const vals=staffOrder.map(s=>wm[w]?.[s]).filter(h=>h!==undefined);
+    if(!vals.length) return `<td class="wk-cell-0">—</td>`;
+    const avg=vals.reduce((a,b)=>a+b,0)/(staffOrder.length*40)*100;
+    const c=avg>=85?'var(--risk)':avg>=60?'var(--good)':avg>=40?'var(--warn)':'var(--ink3)';
+    return `<td style="font-weight:700;color:${c};" title="${avg.toFixed(1)}% team avg">${avg.toFixed(0)}%</td>`;
+  }).join('');
+  html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}</tr>`;
   html+='</tbody></table>';
   container.innerHTML=html;
 }
