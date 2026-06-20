@@ -614,8 +614,7 @@ function render(data,_skipStore){
   const regionList=DELIV.flatMap(d=>d.regions);
   const regionsSet=uniq(regionList);
   const platsSet=uniq(DELIV.map(d=>platformOf(d.brand)).filter(Boolean));
-  const totalRow=UTIL.find(u=>(u.Staff||'').toLowerCase()==='total');
-  const teamUtil=totalRow&&totalRow['% Utilisation']?parseFloat(totalRow['% Utilisation']):NaN;
+  const teamUtil=calcWeeklyTeamUtil();
 
   const ts=new Date(data.lastUpdated);
   const dStr=fmtDate(ts);
@@ -1022,7 +1021,33 @@ function renderWeeklyCapacity(){
   container.innerHTML=html;
 }
 
-const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun'];
+const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Michelle'];
+
+function calcWeeklyTeamUtil(){
+  const wkData=(_fullData&&_fullData.utilWeekly)||[];
+  if(!wkData.length) return NaN;
+  let weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  if(_filterFrom||_filterTo){
+    weeks=weeks.filter(w=>{
+      const d=new Date(w);
+      if(_filterFrom&&d<_filterFrom) return false;
+      if(_filterTo&&d>_filterTo) return false;
+      return true;
+    });
+  } else {
+    weeks=weeks.slice(-8);
+  }
+  if(!weeks.length) return NaN;
+  const wm={};
+  wkData.forEach(r=>{if(!r.Week||!r.Staff) return;if(!wm[r.Week]) wm[r.Week]={};wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;});
+  const staff=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
+  if(!staff.length) return NaN;
+  const utils=staff.map(s=>{
+    const h=weeks.reduce((sum,w)=>sum+(wm[w]?.[s]||0),0);
+    return h/(weeks.length*40)*100;
+  });
+  return utils.reduce((a,b)=>a+b,0)/utils.length;
+}
 
 /* ── TRENDS ── */
 function renderTrends(){
