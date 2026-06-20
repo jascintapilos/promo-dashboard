@@ -597,7 +597,7 @@ function render(data,_skipStore){
   rawData=data;
   DELIV=build(data);
   UTIL=data.utilisation||[];
-  ADHOC=(_fullData||data).adhoc||[];
+  ADHOC=data.adhoc||[];
   const total=DELIV.length;
 
   const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
