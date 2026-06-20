@@ -457,7 +457,7 @@ const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', 
 const REGION_ORDER = ['MY','SG','ID','TH','KH'];
 const PAGE = 15;
 
-let DELIV=[], UTIL=[], ADHOC=[], GAMES=[], rawData=null, _fullData=null;
+let DELIV=[], UTIL=[], ADHOC=[], rawData=null, _fullData=null;
 let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false;
 let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
 let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'};
@@ -598,7 +598,6 @@ function render(data,_skipStore){
   DELIV=build(data);
   UTIL=data.utilisation||[];
   ADHOC=(_fullData||data).adhoc||[];
-  GAMES=(_fullData||data).games||[];
   const total=DELIV.length;
 
   const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
@@ -1144,7 +1143,7 @@ function sortAdhoc(col){toggleSort(aSort,col);renderAdhoc();}
 
 /* ── DETAILED RECORDS ── */
 function renderRecords(){
-  const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=GAMES;
+  const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=rawData.games||[];
   document.getElementById('rc-banner').textContent=`${b.length} records`;
   document.getElementById('rc-promo').textContent=`${p.length} records`;
   document.getElementById('rc-crm').textContent=`${c.length} records`;
@@ -1259,7 +1258,7 @@ function renderCrm(){
 }
 
 function renderGames(){
-  let rows=GAMES;
+  let rows=rawData.games||[];
   const fq=(document.getElementById('gf-q').value||'').toLowerCase();
   const fb=document.getElementById('gf-b').value,fp=document.getElementById('gf-p').value,fcat=document.getElementById('gf-cat').value;
   if(fq)rows=rows.filter(r=>String(r['Game Name']||'').toLowerCase().includes(fq));
