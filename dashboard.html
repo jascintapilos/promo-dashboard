@@ -993,22 +993,23 @@ function renderWeeklyCapacity(){
       return `<td style="color:${colorFor(h)};" title="${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
     }).join('');
     const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
-    const totalExp=weeks.reduce((s,w)=>s+(we[w]?.[staff]??40),0);
+    const totalExp=weeks.reduce((s,w)=>{const e=we[w]?.[staff];return s+(e!==undefined?e:0);},0);
     const tc=weeks.length?colorFor(totalActual/weeks.length):'#cbd2dc';
     html+=`<tr><td>${staff}</td>${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
   });
 
   // Team avg row — uses full staffOrder (including hidden members) for accuracy
   const avgCells=weeks.map(w=>{
-    const vals=staffOrder.map(s=>wm[w]?.[s]).filter(h=>h!==undefined);
-    if(!vals.length) return `<td class="wk-cell-0">—</td>`;
-    const weekTeamExp=staffOrder.reduce((s,st)=>s+(we[w]?.[st]??40),0);
-    const avg=weekTeamExp>0?vals.reduce((a,b)=>a+b,0)/weekTeamExp*100:0;
+    const activeStaff=staffOrder.filter(s=>we[w]?.[s]!==undefined);
+    if(!activeStaff.length) return `<td class="wk-cell-0">—</td>`;
+    const weekTeamExp=activeStaff.reduce((s,st)=>s+(we[w][st]||0),0);
+    const weekTeamAct=activeStaff.reduce((s,st)=>s+(wm[w]?.[st]||0),0);
+    const avg=weekTeamExp>0?weekTeamAct/weekTeamExp*100:0;
     const c=avg>=85?'var(--risk)':avg>=60?'var(--good)':avg>=40?'var(--warn)':'var(--ink3)';
     return `<td style="font-weight:700;color:${c};" title="${avg.toFixed(1)}% team avg">${avg.toFixed(0)}%</td>`;
   }).join('');
   const teamTotalActual=staffOrder.reduce((sum,s)=>sum+weeks.reduce((ws,w)=>{const h=wm[w]?.[s];return ws+(h!==undefined?h:0);},0),0);
-  const teamTotalExp=staffOrder.reduce((s,st)=>s+weeks.reduce((ws,w)=>ws+(we[w]?.[st]??40),0),0);
+  const teamTotalExp=staffOrder.reduce((s,st)=>s+weeks.reduce((ws,w)=>{const e=we[w]?.[st];return ws+(e!==undefined?e:0);},0),0);
   const teamPct=teamTotalExp?teamTotalActual/teamTotalExp*100:0;
   const ttc=teamPct>=85?'var(--risk)':teamPct>=60?'var(--good)':teamPct>=40?'var(--warn)':'var(--ink3)';
   html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}<td style="border-left:1px solid var(--line);font-weight:700;color:${ttc};white-space:nowrap;">${Math.round(teamTotalActual)}h / ${teamTotalExp}h</td></tr>`;
@@ -1086,17 +1087,16 @@ function calcWeeklyTeamUtil(){
   });
   const staff=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
   if(!staff.length) return NaN;
-  const utils=staff.map(s=>{
-    let totalH=0,totalExp=0;
-    for(const w of weeks){
-      const exp=we[w]?.[s]; // undefined = pre-join or post-resignation week → skip
-      if(exp===undefined) continue;
+  let totalH=0,totalExp=0;
+  for(const w of weeks){
+    for(const s of staff){
+      const exp=we[w]?.[s];
+      if(exp===undefined) continue; // pre-join / post-resignation / untracked week → skip
       totalH+=(wm[w]?.[s]||0);
       totalExp+=exp;
     }
-    return totalExp>0?totalH/totalExp*100:0;
-  });
-  return utils.reduce((a,b)=>a+b,0)/utils.length;
+  }
+  return totalExp>0?totalH/totalExp*100:NaN;
 }
 
 /* ── TRENDS ── */
