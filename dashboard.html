@@ -1025,11 +1025,20 @@ function renderWeeklyCapacity(){
     </div></div>`;
   }
 
-  // Notice 2: per-member missing weeks (incomplete data within visible range)
+  // Notice 2a: staff missing from utilisation tracker entirely (no expected hours for any displayed week)
+  const noTracker=displayStaff.filter(s=>!weeks.some(w=>we[w]?.[s]!==undefined));
+  if(noTracker.length){
+    html+=`<div class="wk-missing-notice" style="background:var(--line);color:var(--ink2);"><i class="ti ti-user-off"></i><div>
+      <strong>Not yet in utilisation tracker</strong>
+      <div style="opacity:.8;">${noTracker.join(', ')} — add their Work Hours Tracker sheets to pull-utilisation.mjs</div>
+    </div></div>`;
+  }
+
+  // Notice 2b: staff with expected hours in some weeks but no actual hours logged (genuine gap)
   const missing={};
   displayStaff.forEach(staff=>{
     weeks.forEach(w=>{
-      if(wm[w]?.[staff]===undefined){
+      if(we[w]?.[staff]!==undefined && wm[w]?.[staff]===undefined){
         if(!missing[staff]) missing[staff]=[];
         missing[staff].push(fmtWeekLabel(w).full);
       }
