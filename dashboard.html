@@ -915,7 +915,7 @@ function renderAutoHealth(rows){
 
 /* ── TEAM CAPACITY ── */
 function renderCapacity(){
-  const rows=UTIL.filter(u=>(u.Staff||'').toLowerCase()!=='total'&&(u.Staff||'').trim());
+  const rows=UTIL.filter(u=>(u.Staff||'').toLowerCase()!=='total'&&(u.Staff||'').trim()&&!HIDDEN_STAFF.has(u.Staff));
   const totalRow=UTIL.find(u=>(u.Staff||'').toLowerCase()==='total');
   const avg=totalRow&&totalRow['% Utilisation']?parseFloat(totalRow['% Utilisation']):NaN;
 
@@ -1012,31 +1012,41 @@ function renderWeeklyCapacity(){
     if(!wm[r.Week]) wm[r.Week]={};
     wm[r.Week][r.Staff]=parseFloat(r.Hours)||0;
   });
+  const displayStaff=staffOrder.filter(s=>!HIDDEN_STAFF.has(s));
   const fmtWk=s=>{const d=new Date(s);return fmtDateShort(d);};
   const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
-  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>`<th>${fmtWk(w)}</th>`).join('')+'</tr></thead><tbody>';
-  staffOrder.forEach(staff=>{
-    html+=`<tr><td>${staff}</td>`+weeks.map(w=>{
+  const expPerWeek=40;
+  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>`<th>${fmtWk(w)}</th>`).join('')+'<th style="border-left:1px solid var(--line);">Total</th></tr></thead><tbody>';
+  displayStaff.forEach(staff=>{
+    const weekCells=weeks.map(w=>{
       const h=wm[w]?.[staff];
       if(h===undefined) return `<td class="wk-cell-nodata" title="No data captured yet">no data</td>`;
       if(h===0) return `<td class="wk-cell-0" title="0h">—</td>`;
       return `<td style="color:${colorFor(h)};" title="${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
-    }).join('')+'</tr>';
+    }).join('');
+    const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
+    const totalExp=weeks.length*expPerWeek;
+    const totalPct=totalExp?totalActual/totalExp*100:0;
+    const tc=colorFor(totalPct/100*40);
+    html+=`<tr><td>${staff}</td>${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
   });
-  // Team avg row
+  // Team avg row — uses full staffOrder (including hidden members) for accuracy
   const avgCells=weeks.map(w=>{
     const vals=staffOrder.map(s=>wm[w]?.[s]).filter(h=>h!==undefined);
     if(!vals.length) return `<td class="wk-cell-0">—</td>`;
-    const avg=vals.reduce((a,b)=>a+b,0)/(staffOrder.length*40)*100;
+    const avg=vals.reduce((a,b)=>a+b,0)/(staffOrder.length*expPerWeek)*100;
     const c=avg>=85?'var(--risk)':avg>=60?'var(--good)':avg>=40?'var(--warn)':'var(--ink3)';
     return `<td style="font-weight:700;color:${c};" title="${avg.toFixed(1)}% team avg">${avg.toFixed(0)}%</td>`;
   }).join('');
-  html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}</tr>`;
+  const teamTotalActual=staffOrder.reduce((sum,s)=>sum+weeks.reduce((ws,w)=>{const h=wm[w]?.[s];return ws+(h!==undefined?h:0);},0),0);
+  const teamTotalExp=staffOrder.length*weeks.length*expPerWeek;
+  const ttc=teamTotalExp?(teamTotalActual/teamTotalExp*100)>=85?'var(--risk)':(teamTotalActual/teamTotalExp*100)>=60?'var(--good)':(teamTotalActual/teamTotalExp*100)>=40?'var(--warn)':'var(--ink3)':'var(--ink3)';
+  html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}<td style="border-left:1px solid var(--line);font-weight:700;color:${ttc};white-space:nowrap;">${Math.round(teamTotalActual)}h / ${teamTotalExp}h</td></tr>`;
   html+='</tbody></table>';
 
-  // Missing-data notice
+  // Missing-data notice — only for displayed staff
   const missing={};
-  staffOrder.forEach(staff=>{
+  displayStaff.forEach(staff=>{
     weeks.forEach(w=>{
       if(wm[w]?.[staff]===undefined){
         if(!missing[staff]) missing[staff]=[];
@@ -1056,6 +1066,7 @@ function renderWeeklyCapacity(){
 }
 
 const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Michelle'];
+const HIDDEN_STAFF=new Set(['Michelle']); // in calculations but not displayed
 
 function calcWeeklyTeamUtil(){
   const wkData=(_fullData&&_fullData.utilWeekly)||[];
