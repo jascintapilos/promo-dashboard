@@ -454,8 +454,8 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -591,6 +591,12 @@ function buildWeeklyTotals(allDeliv){
 
 /* ── MAIN RENDER ── */
 function render(data,_skipStore){
+  // Merge manual entry tabs into their auto-pulled counterparts
+  data={...data,
+    promos:[...(data.promos||[]),...(data.manualPromo||[])],
+    banners:[...(data.banners||[]),...(data.manualBanner||[])],
+    crm:[...(data.crm||[]),...(data.manualCrm||[])],
+  };
   if(!_skipStore) _fullData=data;
   data=applyDateFilter(data);
   rawData=data;
