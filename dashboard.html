@@ -1152,9 +1152,14 @@ function calcWeeklyTeamUtil(){
   const staff=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
   if(!staff.length) return NaN;
   const utils=staff.map(s=>{
-    const h=weeks.reduce((sum,w)=>sum+(wm[w]?.[s]||0),0);
-    const exp=weeks.reduce((sum,w)=>sum+(we[w]?.[s]??40),0);
-    return exp>0?h/exp*100:0;
+    let totalH=0,totalExp=0;
+    for(const w of weeks){
+      const exp=we[w]?.[s]; // undefined = pre-join or post-resignation week → skip
+      if(exp===undefined) continue;
+      totalH+=(wm[w]?.[s]||0);
+      totalExp+=exp;
+    }
+    return totalExp>0?totalH/totalExp*100:0;
   });
   return utils.reduce((a,b)=>a+b,0)/utils.length;
 }
