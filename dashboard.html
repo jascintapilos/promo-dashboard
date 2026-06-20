@@ -1040,14 +1040,18 @@ function renderWeeklyCapacity(){
     weeks=weeks.slice(-8); // default: last 8 weeks
   }
   const wm={};
+  const we={}; // week → staff → expected hours (from pull script; falls back to 40)
   wkData.forEach(r=>{
     if(!r.Week||!r.Staff) return;
     if(!wm[r.Week]) wm[r.Week]={};
     wm[r.Week][r.Staff]=parseFloat(r.Hours)||0;
+    if(r.Expected!==undefined&&r.Expected!==''){
+      if(!we[r.Week]) we[r.Week]={};
+      we[r.Week][r.Staff]=parseFloat(r.Expected)||0;
+    }
   });
   const displayStaff=staffOrder.filter(s=>!HIDDEN_STAFF.has(s));
   const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
-  const expPerWeek=40;
 
   // Week headers: "W24 · 15–21 Jun"
   let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>{
@@ -1063,7 +1067,7 @@ function renderWeeklyCapacity(){
       return `<td style="color:${colorFor(h)};" title="${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
     }).join('');
     const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
-    const totalExp=weeks.length*expPerWeek;
+    const totalExp=weeks.reduce((s,w)=>s+(we[w]?.[staff]??40),0);
     const tc=weeks.length?colorFor(totalActual/weeks.length):'#cbd2dc';
     html+=`<tr><td>${staff}</td>${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
   });
@@ -1072,12 +1076,13 @@ function renderWeeklyCapacity(){
   const avgCells=weeks.map(w=>{
     const vals=staffOrder.map(s=>wm[w]?.[s]).filter(h=>h!==undefined);
     if(!vals.length) return `<td class="wk-cell-0">—</td>`;
-    const avg=vals.reduce((a,b)=>a+b,0)/(staffOrder.length*expPerWeek)*100;
+    const weekTeamExp=staffOrder.reduce((s,st)=>s+(we[w]?.[st]??40),0);
+    const avg=weekTeamExp>0?vals.reduce((a,b)=>a+b,0)/weekTeamExp*100:0;
     const c=avg>=85?'var(--risk)':avg>=60?'var(--good)':avg>=40?'var(--warn)':'var(--ink3)';
     return `<td style="font-weight:700;color:${c};" title="${avg.toFixed(1)}% team avg">${avg.toFixed(0)}%</td>`;
   }).join('');
   const teamTotalActual=staffOrder.reduce((sum,s)=>sum+weeks.reduce((ws,w)=>{const h=wm[w]?.[s];return ws+(h!==undefined?h:0);},0),0);
-  const teamTotalExp=staffOrder.length*weeks.length*expPerWeek;
+  const teamTotalExp=staffOrder.reduce((s,st)=>s+weeks.reduce((ws,w)=>ws+(we[w]?.[st]??40),0),0);
   const teamPct=teamTotalExp?teamTotalActual/teamTotalExp*100:0;
   const ttc=teamPct>=85?'var(--risk)':teamPct>=60?'var(--good)':teamPct>=40?'var(--warn)':'var(--ink3)';
   html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}<td style="border-left:1px solid var(--line);font-weight:700;color:${ttc};white-space:nowrap;">${Math.round(teamTotalActual)}h / ${teamTotalExp}h</td></tr>`;
