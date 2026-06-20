@@ -248,6 +248,10 @@
   .wk-cell-0{color:var(--ink3)!important;font-weight:400!important;}
   .wk-cell-nodata{color:var(--ink3)!important;font-style:italic;font-size:9px!important;}
   .wk-avg-row td{border-top:2px solid var(--line)!important;}
+  .wk-missing-notice{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:10px 14px;
+    background:var(--warn-soft);border-radius:8px;color:var(--warn);font-size:11.5px;line-height:1.6;}
+  .wk-missing-notice i{flex-shrink:0;font-size:15px;margin-top:1px;}
+  .wk-missing-notice strong{display:block;font-weight:600;margin-bottom:2px;}
 
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
@@ -1029,6 +1033,25 @@ function renderWeeklyCapacity(){
   }).join('');
   html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}</tr>`;
   html+='</tbody></table>';
+
+  // Missing-data notice
+  const missing={};
+  staffOrder.forEach(staff=>{
+    weeks.forEach(w=>{
+      if(wm[w]?.[staff]===undefined){
+        if(!missing[staff]) missing[staff]=[];
+        missing[staff].push(fmtWk(w));
+      }
+    });
+  });
+  const missingEntries=Object.entries(missing);
+  if(missingEntries.length){
+    html+=`<div class="wk-missing-notice"><i class="ti ti-alert-triangle"></i><div>
+      <strong>Missing hours — please update</strong>
+      ${missingEntries.map(([s,dates])=>`<div><span style="font-weight:600;">${s}:</span> ${dates.join(', ')}</div>`).join('')}
+    </div></div>`;
+  }
+
   container.innerHTML=html;
 }
 
