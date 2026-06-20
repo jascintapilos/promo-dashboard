@@ -985,6 +985,24 @@ function switchCapTab(tab){
   if(tab==='weekly') renderWeeklyCapacity();
 }
 
+function isoWeekNum(d){
+  const t=new Date(+d);t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+4-(t.getDay()||7));
+  const y1=new Date(t.getFullYear(),0,1);
+  return Math.ceil(((t-y1)/864e5+1)/7);
+}
+function fmtWeekLabel(wKey){
+  const start=new Date(wKey);
+  const end=new Date(start);end.setDate(start.getDate()+6);
+  const wn=isoWeekNum(start);
+  return {wn,label:`W${wn}`,range:`${fmtDateShort(start)}–${fmtDateShort(end)}`,full:`W${wn} (${fmtDateShort(start)}–${fmtDateShort(end)})`};
+}
+function thisWeekMonday(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-(d.getDay()+6)%7);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 function renderWeeklyCapacity(){
   const container=document.getElementById('cap-weekly-grid');
   const wkData=(_fullData&&_fullData.utilWeekly)||[];
@@ -1013,10 +1031,15 @@ function renderWeeklyCapacity(){
     wm[r.Week][r.Staff]=parseFloat(r.Hours)||0;
   });
   const displayStaff=staffOrder.filter(s=>!HIDDEN_STAFF.has(s));
-  const fmtWk=s=>{const d=new Date(s);return fmtDateShort(d);};
   const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
   const expPerWeek=40;
-  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>`<th>${fmtWk(w)}</th>`).join('')+'<th style="border-left:1px solid var(--line);">Total</th></tr></thead><tbody>';
+
+  // Week headers: "W24 · 15–21 Jun"
+  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>{
+    const wl=fmtWeekLabel(w);
+    return `<th style="white-space:nowrap;">${wl.label}<br><span style="font-size:9px;font-weight:400;opacity:.7;">${wl.range}</span></th>`;
+  }).join('')+'<th style="border-left:1px solid var(--line);">Total</th></tr></thead><tbody>';
+
   displayStaff.forEach(staff=>{
     const weekCells=weeks.map(w=>{
       const h=wm[w]?.[staff];
@@ -1026,10 +1049,10 @@ function renderWeeklyCapacity(){
     }).join('');
     const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
     const totalExp=weeks.length*expPerWeek;
-    const totalPct=totalExp?totalActual/totalExp*100:0;
-    const tc=colorFor(totalPct/100*40);
+    const tc=weeks.length?colorFor(totalActual/weeks.length):'#cbd2dc';
     html+=`<tr><td>${staff}</td>${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
   });
+
   // Team avg row — uses full staffOrder (including hidden members) for accuracy
   const avgCells=weeks.map(w=>{
     const vals=staffOrder.map(s=>wm[w]?.[s]).filter(h=>h!==undefined);
@@ -1040,24 +1063,36 @@ function renderWeeklyCapacity(){
   }).join('');
   const teamTotalActual=staffOrder.reduce((sum,s)=>sum+weeks.reduce((ws,w)=>{const h=wm[w]?.[s];return ws+(h!==undefined?h:0);},0),0);
   const teamTotalExp=staffOrder.length*weeks.length*expPerWeek;
-  const ttc=teamTotalExp?(teamTotalActual/teamTotalExp*100)>=85?'var(--risk)':(teamTotalActual/teamTotalExp*100)>=60?'var(--good)':(teamTotalActual/teamTotalExp*100)>=40?'var(--warn)':'var(--ink3)':'var(--ink3)';
+  const teamPct=teamTotalExp?teamTotalActual/teamTotalExp*100:0;
+  const ttc=teamPct>=85?'var(--risk)':teamPct>=60?'var(--good)':teamPct>=40?'var(--warn)':'var(--ink3)';
   html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}<td style="border-left:1px solid var(--line);font-weight:700;color:${ttc};white-space:nowrap;">${Math.round(teamTotalActual)}h / ${teamTotalExp}h</td></tr>`;
   html+='</tbody></table>';
 
-  // Missing-data notice — only for displayed staff
+  // Notice 1: current week not yet in data (pull script hasn't run)
+  const latestDataWeek=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort().pop()||'';
+  const curMon=thisWeekMonday();
+  if(latestDataWeek<curMon){
+    const wl=fmtWeekLabel(curMon);
+    html+=`<div class="wk-missing-notice" style="background:var(--line);color:var(--ink2);"><i class="ti ti-clock"></i><div>
+      <strong>No data captured yet for ${wl.label}</strong>
+      <div style="opacity:.8;">${wl.range} — run <code style="font-size:10px;background:var(--bg);padding:1px 5px;border-radius:4px;">pull-utilisation.mjs --write</code> to refresh</div>
+    </div></div>`;
+  }
+
+  // Notice 2: per-member missing weeks (incomplete data within visible range)
   const missing={};
   displayStaff.forEach(staff=>{
     weeks.forEach(w=>{
       if(wm[w]?.[staff]===undefined){
         if(!missing[staff]) missing[staff]=[];
-        missing[staff].push(fmtWk(w));
+        missing[staff].push(fmtWeekLabel(w).full);
       }
     });
   });
   const missingEntries=Object.entries(missing);
   if(missingEntries.length){
     html+=`<div class="wk-missing-notice"><i class="ti ti-alert-triangle"></i><div>
-      <strong>Missing hours — please update</strong>
+      <strong>Incomplete data — hours not submitted</strong>
       ${missingEntries.map(([s,dates])=>`<div><span style="font-weight:600;">${s}:</span> ${dates.join(', ')}</div>`).join('')}
     </div></div>`;
   }
