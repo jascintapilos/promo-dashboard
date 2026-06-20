@@ -333,16 +333,16 @@
           <div class="card-hint">Utilisation against expected hours</div>
         </div>
         <div class="cap-tabs">
-          <button class="cap-tab active" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
-          <button class="cap-tab" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
+          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
+          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
         </div>
       </div>
-      <div id="cap-ytd-view">
+      <div id="cap-ytd-view" style="display:none;">
         <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
         <div id="cap-bars"></div>
         <div class="cap-highlights" id="cap-highlights"></div>
       </div>
-      <div id="cap-weekly-view" style="display:none;">
+      <div id="cap-weekly-view">
         <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
@@ -463,7 +463,7 @@ let DELIV=[], UTIL=[], ADHOC=[], rawData=null, _fullData=null;
 let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false;
 let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
 let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'};
-let _capTab='ytd';
+let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
 let _donutChart=null, _trendChart=null;
