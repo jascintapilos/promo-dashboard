@@ -773,16 +773,40 @@ function renderTopBrands(total){
   const posClass=(i)=>i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
   const posLabel=(i)=>i===0?'1':i===1?'2':i===2?'3':String(i+1);
 
+  const TYPE_INFO=[
+    {key:'Promo Code',short:'Promo',color:'#f59e0b'},
+    {key:'CRM',short:'CRM',color:'#4c6ef5'},
+    {key:'Banner',short:'Banner',color:'#0ca678'},
+    {key:'Game',short:'Game',color:'#8b5cf6'},
+    {key:'Adhoc',short:'Adhoc',color:'#06b6d4'},
+  ];
+  const brandMix={};
+  DELIV.forEach(d=>{
+    if(!d.brand||d.brand==='ALLBRANDS') return;
+    if(!brandMix[d.brand]) brandMix[d.brand]={};
+    brandMix[d.brand][d.type]=(brandMix[d.brand][d.type]||0)+1;
+  });
+
   document.getElementById('brand-rank-list').innerHTML=top5.map(([brand,count],i)=>{
     const pct=total>0?Math.round(count/total*100):0;
     const barW=Math.round(count/maxCount*100);
-    return `<div class="brand-rank">
-      <div class="rank-pos ${posClass(i)}">${posLabel(i)}</div>
-      <div class="rank-name" title="${brand}">${brand}</div>
-      <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${barW}%;"></div></div>
-      <div>
-        <div class="rank-count">${count}</div>
-        <div class="rank-sub">${pct}%</div>
+    const mix=brandMix[brand]||{};
+    const mixTotal=Object.values(mix).reduce((a,b)=>a+b,0)||1;
+    const bar=TYPE_INFO.map(t=>{const n=mix[t.key]||0;return n?`<span style="flex:${n};background:${t.color};min-width:2px;" title="${t.short}: ${n}"></span>`:''}).join('');
+    const pills=TYPE_INFO.filter(t=>mix[t.key]>0).map(t=>{
+      const tp=Math.round(mix[t.key]/mixTotal*100);
+      return `<span style="font-size:9.5px;color:${t.color};font-weight:600;white-space:nowrap;">${t.short}&nbsp;${tp}%</span>`;
+    }).join(`<span style="color:var(--line2);margin:0 1px;">·</span>`);
+    return `<div class="brand-rank" style="flex-direction:column;align-items:stretch;gap:5px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="rank-pos ${posClass(i)}">${posLabel(i)}</div>
+        <div class="rank-name" title="${brand}">${brand}</div>
+        <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${barW}%;"></div></div>
+        <div><div class="rank-count">${count}</div><div class="rank-sub">${pct}%</div></div>
+      </div>
+      <div style="margin-left:38px;display:flex;flex-direction:column;gap:3px;">
+        <div style="height:5px;border-radius:3px;display:flex;overflow:hidden;gap:1px;">${bar}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px 8px;line-height:1.4;">${pills}</div>
       </div>
     </div>`;
   }).join('');
