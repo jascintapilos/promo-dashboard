@@ -559,12 +559,13 @@ function buildWeeklyTotals(allDeliv){
     const date=parseDMY(dateStr);
     if(!date) return;
     const wk=getWeekMonday(date);
-    if(!wm[wk]) wm[wk]={total:0,banner:0,crm:0,promo:0,game:0};
+    if(!wm[wk]) wm[wk]={total:0,banner:0,crm:0,promo:0,game:0,adhoc:0};
     wm[wk].total++;
     if(d.type==='Banner') wm[wk].banner++;
     if(d.type==='CRM') wm[wk].crm++;
     if(d.type==='Promo Code') wm[wk].promo++;
     if(d.type==='Game') wm[wk].game++;
+    if(d.type==='Adhoc') wm[wk].adhoc++;
   });
   const sorted=Object.keys(wm).sort().slice(-8);
   return sorted.map(wk=>{
@@ -1144,7 +1145,7 @@ function renderTrends(){
   if(!_fullData) return;
   const allDeliv=build(applyDateFilter({..._fullData,promos:_fullData.promos,banners:_fullData.banners,crm:_fullData.crm,games:_fullData.games}));
   // Use all data (bypass filter) for trends
-  const allDelivFull=build({promos:_fullData.promos||[],banners:_fullData.banners||[],crm:_fullData.crm||[],games:_fullData.games||[]});
+  const allDelivFull=build({promos:_fullData.promos||[],banners:_fullData.banners||[],crm:_fullData.crm||[],games:_fullData.games||[],adhoc:_fullData.adhoc||[]});
   const weeks=buildWeeklyTotals(allDelivFull);
 
   if(_trendChart){_trendChart.destroy();_trendChart=null;}
@@ -1161,13 +1162,17 @@ function renderTrends(){
 
   const legend=[
     {label:'Total',color:'#4c6ef5'},
+    {label:'Promo Code',color:'#f43f5e'},
     {label:'CRM',color:'#0ca678'},
     {label:'Banner',color:'#f59e0b'},
+    {label:'Game',color:'#8b5cf6'},
+    {label:'Adhoc',color:'#94a3b8'},
   ];
   document.getElementById('trend-legend').innerHTML=legend.map(l=>
     `<div class="trend-legend-item"><div class="trend-legend-dot" style="background:${l.color};"></div>${l.label}</div>`
   ).join('');
 
+  const sub=(c,a)=>({backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointBackgroundColor:c,borderColor:c,borderWidth:1.5,borderDash:[4,3],...a});
   const ctx=document.getElementById('trend-canvas').getContext('2d');
   _trendChart=new Chart(ctx,{
     type:'line',
@@ -1175,8 +1180,11 @@ function renderTrends(){
       labels:weeks.map(w=>w.label),
       datasets:[
         {label:'Total',data:weeks.map(w=>w.total),borderColor:'#4c6ef5',backgroundColor:'rgba(76,110,245,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#4c6ef5',borderWidth:2},
-        {label:'CRM',data:weeks.map(w=>w.crm),borderColor:'#0ca678',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointBackgroundColor:'#0ca678',borderWidth:1.5,borderDash:[4,3]},
-        {label:'Banner',data:weeks.map(w=>w.banner),borderColor:'#f59e0b',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointBackgroundColor:'#f59e0b',borderWidth:1.5,borderDash:[4,3]},
+        sub('#f43f5e',{label:'Promo Code',data:weeks.map(w=>w.promo)}),
+        sub('#0ca678',{label:'CRM',data:weeks.map(w=>w.crm)}),
+        sub('#f59e0b',{label:'Banner',data:weeks.map(w=>w.banner)}),
+        sub('#8b5cf6',{label:'Game',data:weeks.map(w=>w.game)}),
+        sub('#94a3b8',{label:'Adhoc',data:weeks.map(w=>w.adhoc)}),
       ]
     },
     options:{
