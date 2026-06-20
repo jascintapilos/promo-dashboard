@@ -570,7 +570,7 @@ function buildWeeklyTotals(allDeliv){
   const sorted=Object.keys(wm).sort().slice(-8);
   return sorted.map(wk=>{
     const d=new Date(wk);
-    const label=fmtDateShort(d);
+    const label=`W${isoWeekNum(d)} · ${fmtDateShort(d)}`;
     return{label,...wm[wk]};
   });
 }
