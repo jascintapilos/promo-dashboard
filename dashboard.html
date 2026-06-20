@@ -336,12 +336,12 @@
     </div>
 
     <!-- 7. TRENDS -->
-    <p class="section-label">8-week trend</p>
+    <p class="section-label">Deliverables trend</p>
     <div class="card" style="margin-bottom:28px;">
       <div class="trend-header">
         <div>
           <div class="card-title">Deliverables over time</div>
-          <div class="card-hint">Weekly totals — last 8 weeks of selected period</div>
+          <div class="card-hint">Weekly totals — follows selected date range</div>
         </div>
         <div class="trend-legend" id="trend-legend"></div>
       </div>
@@ -567,7 +567,7 @@ function buildWeeklyTotals(allDeliv){
     if(d.type==='Game') wm[wk].game++;
     if(d.type==='Adhoc') wm[wk].adhoc++;
   });
-  const sorted=Object.keys(wm).sort().slice(-8);
+  const sorted=Object.keys(wm).sort();
   return sorted.map(wk=>{
     const d=new Date(wk);
     const label=`W${isoWeekNum(d)} · ${fmtDateShort(d)}`;
