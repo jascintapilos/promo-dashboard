@@ -1039,7 +1039,7 @@ function renderWeeklyCapacity(){
   if(missingEntries.length){
     html+=`<div class="wk-missing-notice"><i class="ti ti-alert-triangle"></i><div>
       <strong>Incomplete data — hours not submitted</strong>
-      ${missingEntries.map(([s,dates])=>`<div><span style="font-weight:600;">${s}:</span> ${dates.join(', ')}</div>`).join('')}
+      ${missingEntries.map(([s,dates])=>`<div><span style="font-weight:600;">${s}:</span> from ${dates[0]}</div>`).join('')}
     </div></div>`;
   }
 
