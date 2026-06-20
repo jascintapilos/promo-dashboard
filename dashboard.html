@@ -67,8 +67,10 @@
   .exec-text strong{font-weight:700;}
   .exec-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;}
   .exec-pill{font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);
-    padding:4px 12px;border-radius:20px;color:rgba(255,255,255,.95);}
+    padding:4px 12px;border-radius:20px;color:rgba(255,255,255,.95);transition:background .15s,border-color .15s;}
   .exec-pill i{font-size:12px;margin-right:4px;opacity:.8;}
+  .exec-pill-link{cursor:pointer;}
+  .exec-pill-link:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.45);}
   .exec-range{font-size:11.5px;opacity:.6;margin-top:12px;position:relative;}
 
   /* ── KPI CARDS ── */
@@ -178,7 +180,7 @@
 
   /* ── DETAILED RECORDS ── */
   .records{margin-top:8px;}
-  details.rec{background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;}
+  details.rec{background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;scroll-margin-top:16px;}
   details.rec>summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;user-select:none;}
   details.rec>summary::-webkit-details-marker{display:none;}
   details.rec>summary .cnt{font-size:12px;font-weight:400;color:var(--ink3);}
@@ -382,7 +384,7 @@
     <!-- 8. DETAILED RECORDS -->
     <p class="section-label">Detailed records</p>
     <div class="records">
-      <details class="rec"><summary><i class="ti ti-photo" aria-hidden="true"></i> Banner queue <span class="cnt" id="rc-banner"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+      <details class="rec" id="rec-banner"><summary><i class="ti ti-photo" aria-hidden="true"></i> Banner queue <span class="cnt" id="rc-banner"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
             <select id="bf-c"><option value="all">All campaigns</option></select>
@@ -394,7 +396,7 @@
           <button class="more" id="bm"></button>
         </div>
       </details>
-      <details class="rec"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+      <details class="rec" id="rec-promo"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
             <input type="text" id="pf-q" placeholder="Search code…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
@@ -406,7 +408,7 @@
           <button class="more" id="pm"></button>
         </div>
       </details>
-      <details class="rec"><summary><i class="ti ti-send" aria-hidden="true"></i> CRM assignment log <span class="cnt" id="rc-crm"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+      <details class="rec" id="rec-crm"><summary><i class="ti ti-send" aria-hidden="true"></i> CRM assignment log <span class="cnt" id="rc-crm"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
             <select id="cf-c"><option value="all">All tools</option></select>
@@ -418,7 +420,7 @@
           <button class="more" id="cm"></button>
         </div>
       </details>
-      <details class="rec"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+      <details class="rec" id="rec-game"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
             <input type="text" id="gf-q" placeholder="Search game…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
@@ -430,7 +432,7 @@
           <button class="more" id="gm"></button>
         </div>
       </details>
-      <details class="rec"><summary><i class="ti ti-checkbox" aria-hidden="true"></i> Adhoc tasks <span class="cnt" id="rc-adhoc"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+      <details class="rec" id="rec-adhoc"><summary><i class="ti ti-checkbox" aria-hidden="true"></i> Adhoc tasks <span class="cnt" id="rc-adhoc"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
             <select id="af-t"><option value="all">All task types</option></select>
@@ -630,6 +632,13 @@ function render(data,_skipStore){
   document.getElementById('refresh').disabled=false;
 }
 
+function openRecordSection(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.open=true;
+  setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
 /* ── EXECUTIVE SUMMARY ── */
 function renderExecSummary(total, brands, regions, platforms, teamUtil){
   if(total===0){
@@ -674,10 +683,16 @@ function renderExecSummary(total, brands, regions, platforms, teamUtil){
   text+='.';
 
   const pills=[];
+  const recIds={'CRM':'rec-crm','Banner Upload':'rec-banner','Promo Code':'rec-promo','Game Addition':'rec-game','Adhoc Task':'rec-adhoc'};
   Object.entries(typeCounts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([label,count])=>{
     const icons={'CRM':'ti-send','Banner Upload':'ti-photo','Promo Code':'ti-ticket','Game Addition':'ti-device-gamepad-2','Adhoc Task':'ti-checkbox'};
     const pct=Math.round(count/total*100);
-    pills.push(`<span class="exec-pill"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
+    const rid=recIds[label];
+    if(rid){
+      pills.push(`<span class="exec-pill exec-pill-link" role="button" tabindex="0" title="Jump to ${label}" onclick="openRecordSection('${rid}')"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
+    } else {
+      pills.push(`<span class="exec-pill"><i class="ti ${icons[label]||'ti-circle'}"></i>${label}: ${count}&nbsp;(${pct}%)</span>`);
+    }
   });
   if(botCount>0){
     pills.push(`<span class="exec-pill" style="opacity:.85;"><i class="ti ti-robot"></i>Automated: ${botCount}&nbsp;(${botPct}%)</span>`);
