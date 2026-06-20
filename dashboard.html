@@ -979,6 +979,15 @@ function renderWeeklyCapacity(){
   const displayStaff=staffOrder.filter(s=>!HIDDEN_STAFF.has(s));
   const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
 
+  // Per-staff tracking start (first we week) and end (last we week, for resigned).
+  // Computed from ALL wkData, not just the filtered display window.
+  const allWkDataWeeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  const staffStart={};const staffEnd={};
+  staffOrder.forEach(s=>{
+    const active=allWkDataWeeks.filter(w=>we[w]?.[s]!==undefined);
+    if(active.length){staffStart[s]=active[0];staffEnd[s]=active[active.length-1];}
+  });
+
   // Week headers: "W24 · 15–21 Jun"
   let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>{
     const wl=fmtWeekLabel(w);
@@ -986,6 +995,7 @@ function renderWeeklyCapacity(){
   }).join('')+'<th style="border-left:1px solid var(--line);">Total</th></tr></thead><tbody>';
 
   displayStaff.forEach(staff=>{
+    const isResigned=RESIGNED_STAFF.has(staff);
     const weekCells=weeks.map(w=>{
       const h=wm[w]?.[staff];
       if(h===undefined) return `<td class="wk-cell-nodata" title="No data captured yet">no data</td>`;
@@ -995,10 +1005,21 @@ function renderWeeklyCapacity(){
     const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
     const totalExp=weeks.reduce((s,w)=>{const e=we[w]?.[staff];return s+(e!==undefined?e:0);},0);
     const tc=weeks.length?colorFor(totalActual/weeks.length):'#cbd2dc';
-    html+=`<tr><td>${staff}</td>${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
+    // Name cell: staff name + tracking window annotation
+    const sw=staffStart[staff],ew=staffEnd[staff];
+    const startLbl=sw?fmtWeekLabel(sw):null;
+    const endLbl=ew?fmtWeekLabel(ew):null;
+    const trackSpan=startLbl
+      ? `<div style="font-size:9px;color:var(--ink3);font-weight:400;margin-top:2px;line-height:1.3;">`
+        +(isResigned&&endLbl?`${startLbl.label}–${endLbl.label} · ${startLbl.range.split('–')[0].trim()}–${endLbl.range.split('–')[1].trim()}`:`from ${startLbl.label} · ${startLbl.range}`)
+        +`</div>`
+      : '';
+    const resignedBadge=isResigned?`<span style="display:inline-block;margin-left:6px;font-size:8px;padding:1px 4px;border-radius:3px;background:var(--line);color:var(--ink3);font-weight:600;vertical-align:2px;letter-spacing:.02em;">resigned</span>`:'';
+    const nameCell=`<td style="${isResigned?'color:var(--ink3);':''}">${staff}${resignedBadge}${trackSpan}</td>`;
+    html+=`<tr${isResigned?' style="opacity:0.55;"':''}>${nameCell}${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
   });
 
-  // Team avg row — uses full staffOrder (including hidden members) for accuracy
+  // Team avg row — uses full staffOrder (including resigned members for their active weeks)
   const avgCells=weeks.map(w=>{
     const activeStaff=staffOrder.filter(s=>we[w]?.[s]!==undefined);
     if(!activeStaff.length) return `<td class="wk-cell-0">—</td>`;
@@ -1027,7 +1048,7 @@ function renderWeeklyCapacity(){
   }
 
   // Notice 2a: staff missing from utilisation tracker entirely (no expected hours for any displayed week)
-  const noTracker=displayStaff.filter(s=>!weeks.some(w=>we[w]?.[s]!==undefined));
+  const noTracker=displayStaff.filter(s=>!RESIGNED_STAFF.has(s)&&!weeks.some(w=>we[w]?.[s]!==undefined));
   if(noTracker.length){
     html+=`<div class="wk-missing-notice" style="background:var(--line);color:var(--ink2);"><i class="ti ti-user-off"></i><div>
       <strong>Not yet in utilisation tracker</strong>
@@ -1057,7 +1078,8 @@ function renderWeeklyCapacity(){
 }
 
 const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Michelle'];
-const HIDDEN_STAFF=new Set(['Michelle']); // in calculations but not displayed
+const HIDDEN_STAFF=new Set([]); // no one hidden
+const RESIGNED_STAFF=new Set(['Michelle']); // shown in muted style; still counted in team avg for their active weeks
 
 function calcWeeklyTeamUtil(){
   const wkData=(_fullData&&_fullData.utilWeekly)||[];
