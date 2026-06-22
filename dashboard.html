@@ -477,14 +477,14 @@ function parseDMY(s){
 function applyDateFilter(data){
   if(!_filterFrom&&!_filterTo) return data;
   function keep(r,key){
-    const d=parseDMY(r[key]);if(!d) return true;
+    const d=parseDMY(r[key]);if(!d) return false;
     if(_filterFrom&&d<_filterFrom) return false;
     if(_filterTo&&d>_filterTo) return false;
     return true;
   }
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
-    banners:(data.banners||[]).filter(r=>keep(r,r.Uploaded?'Uploaded':'Start')),
+    banners:(data.banners||[]).filter(r=>keep(r,r['Uploaded Date']?'Uploaded Date':'Start')),
     crm:(data.crm||[]).filter(r=>keep(r,'Date')),
     games:(data.games||[]).filter(r=>keep(r,'Date')),
     adhoc:(data.adhoc||[]).filter(r=>keep(r,'Date')),
