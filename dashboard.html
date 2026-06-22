@@ -822,16 +822,16 @@ function renderRegionalDonut(regionList, total){
 /* ── DATA SOURCE TIMESTAMPS ── */
 function renderDataSources(data){
   const strip=document.getElementById('source-strip');
+  const today=new Date(); today.setHours(23,59,59,999);
   const maxDate=arr=>{
     let max=null;
     (arr||[]).forEach(r=>{
       const d=parseDMY(r.Date||r.Start||r.Uploaded||'');
-      if(d&&(!max||d>max)) max=d;
+      if(d&&d<=today&&(!max||d>max)) max=d;
     });
     return max;
   };
   const fmt=d=>{if(!d) return '—'; return fmtDateShort(d);};
-  const today=new Date(); today.setHours(0,0,0,0);
   const stale=d=>{if(!d) return false; const diff=(today-d)/864e5; return diff>3;};
   const sources=[
     {label:'Promo Code', d:maxDate(data.promos)},
