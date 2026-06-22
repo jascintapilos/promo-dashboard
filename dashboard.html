@@ -583,13 +583,13 @@ function buildWeeklyTotals(allDeliv){
 
 /* ── MAIN RENDER ── */
 function render(data,_skipStore){
-  // Merge manual entry tabs into their auto-pulled counterparts
+  if(!_skipStore) _fullData=data;
+  // Merge manual entry tabs into their auto-pulled counterparts (idempotent: do AFTER storing raw)
   data={...data,
     promos:[...(data.promos||[]),...(data.manualPromo||[])],
     banners:[...(data.banners||[]),...(data.manualBanner||[])],
     crm:[...(data.crm||[]),...(data.manualCrm||[])],
   };
-  if(!_skipStore) _fullData=data;
   data=applyDateFilter(data);
   rawData=data;
   DELIV=build(data);
