@@ -826,7 +826,7 @@ function renderDataSources(data){
   const maxDate=arr=>{
     let max=null;
     (arr||[]).forEach(r=>{
-      const d=parseDMY(r.Date||r.Start||r.Uploaded||'');
+      const d=parseDMY(r['Uploaded Date']||r.Date||r.Start||r.Uploaded||'');
       if(d&&d<=today&&(!max||d>max)) max=d;
     });
     return max;
