@@ -231,6 +231,7 @@
   .src-item .src-ts{color:var(--ink3);margin-left:3px;}
   .src-item .src-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--good);margin-right:4px;vertical-align:1px;}
   .src-item .src-dot.stale{background:var(--warn);}
+  .src-item .src-dot.fail{background:var(--risk);}
 
   /* ── WEEKLY UTIL TOGGLE ── */
   .cap-tabs{display:flex;gap:4px;margin-bottom:14px;}
@@ -264,6 +265,7 @@
       <h1>Promo Team Operations</h1>
       <p class="sub" id="sub">Loading…</p>
       <div class="source-strip" id="source-strip" style="display:none;"></div>
+      <div class="source-strip" id="pull-strip" style="display:none;margin-top:2px;"></div>
     </div>
     <div class="head-right">
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
@@ -612,6 +614,7 @@ function render(data,_skipStore){
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
+  renderPullHealth((_fullData&&_fullData.sysStatus)||data.sysStatus||[]);
   renderWorkloadMix(total);
   renderTopBrands(total);
   renderRegionalDonut(regionList, total);
@@ -849,6 +852,45 @@ function renderDataSources(data){
   ];
   const items=sources.map((s,i)=>`${i>0?'<span class="src-sep">·</span>':''}<span class="src-item"><span class="src-dot${stale(s.d)?' stale':''}"></span><strong>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></span>`).join('');
   strip.innerHTML='<span style="font-size:10px;font-weight:600;color:var(--ink3);margin-right:8px;letter-spacing:.04em;text-transform:uppercase;">Last entry</span>'+items;
+  strip.style.display='flex';
+}
+
+/* ── PULL HEALTH STRIP (when sheet last got fresh data per source) ── */
+function renderPullHealth(rows){
+  const strip=document.getElementById('pull-strip');
+  if(!rows||!rows.length){strip.style.display='none';return;}
+
+  // Data pull instances (not FT session statuses ws1/qpro1/qp2)
+  const PULL_ORDER=['bo-ytd','bo-banners','cms-banners','new-games','utilisation','smartico','ft-ws1','ft-qpro1','ft-qp2'];
+  const SHORT={
+    'bo-ytd':'Promos','bo-banners':'Banners (BO)','cms-banners':'Banners (CMS)',
+    'new-games':'Games','utilisation':'Utilisation','smartico':'Smartico',
+    'ft-ws1':'FT WS1','ft-qpro1':'FT QPRO1','ft-qp2':'FT QP2',
+  };
+
+  // Most recent row per instance
+  const latest={};
+  rows.forEach(r=>{
+    if(!r.Instance||!r.Timestamp) return;
+    if(!latest[r.Instance]||r.Timestamp>latest[r.Instance].Timestamp) latest[r.Instance]=r;
+  });
+
+  const now=Date.now();
+  const items=PULL_ORDER.filter(k=>latest[k]).map(k=>{
+    const r=latest[k];
+    const ts=new Date(r.Timestamp).getTime();
+    const ageH=(now-ts)/3.6e6;
+    const ageStr=ageH<1?`${Math.round(ageH*60)}m ago`:ageH<24?`${Math.round(ageH)}h ago`:`${Math.round(ageH/24)}d ago`;
+    const failed=(r.Status||'').toUpperCase()!=='OK';
+    const stale=ageH>30;
+    const cls=failed?'fail':stale?'stale':'';
+    const detail=r.Detail?` — ${r.Detail}`:'';
+    const tip=`${SHORT[k]}: ${r.Status}${detail} (${ageStr})`;
+    return `<span class="src-item" title="${tip}"><span class="src-dot ${cls}"></span><strong>${SHORT[k]}</strong><span class="src-ts">${ageStr}</span></span>`;
+  }).join('<span class="src-sep">·</span>');
+
+  if(!items){strip.style.display='none';return;}
+  strip.innerHTML='<span style="font-size:10px;font-weight:600;color:var(--ink3);margin-right:8px;letter-spacing:.04em;text-transform:uppercase;">Last pull</span>'+items;
   strip.style.display='flex';
 }
 
