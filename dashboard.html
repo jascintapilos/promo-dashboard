@@ -823,10 +823,11 @@ function renderRegionalDonut(regionList, total){
 function renderDataSources(data){
   const strip=document.getElementById('source-strip');
   const today=new Date(); today.setHours(23,59,59,999);
-  const maxDate=arr=>{
+  const maxDate=(arr,key)=>{
     let max=null;
     (arr||[]).forEach(r=>{
-      const d=parseDMY(r['Uploaded Date']||r.Date||r.Start||r.Uploaded||'');
+      const val=key?r[key]:(r.Date||r.Start||r.Uploaded||'');
+      const d=parseDMY(val||'');
       if(d&&d<=today&&(!max||d>max)) max=d;
     });
     return max;
@@ -835,7 +836,7 @@ function renderDataSources(data){
   const stale=d=>{if(!d) return false; const diff=(today-d)/864e5; return diff>3;};
   const sources=[
     {label:'Promo Code', d:maxDate(data.promos)},
-    {label:'Banner',     d:maxDate(data.banners)},
+    {label:'Banner',     d:maxDate(data.banners,'Uploaded Date')},
     {label:'CRM',        d:maxDate(data.crm)},
     {label:'Games',      d:maxDate(data.games)},
     {label:'Adhoc',      d:maxDate(data.adhoc)},
