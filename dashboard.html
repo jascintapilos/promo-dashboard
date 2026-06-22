@@ -472,6 +472,9 @@ function parseDMY(s){
   if(m) return new Date(+m[3],+m[2]-1,+m[1]);
   m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  // "17 Jun" or "17 Jun 2026" — manual entry format
+  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,})(?:\s+(\d{4}))?/);
+  if(m){const mo={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11}[m[2].slice(0,3)];if(mo!=null)return new Date(m[3]?+m[3]:new Date().getFullYear(),mo,+m[1]);}
   return null;
 }
 function applyDateFilter(data){
