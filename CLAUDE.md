@@ -4,6 +4,49 @@ Working directory: `C:\Users\vdiuser\Downloads\promo-automation\promo-automation
 
 ---
 
+## Auto-flow rules (MUST follow)
+
+When the user prompts a promo request — phrasings like **"process P172"**, **"run P175-P180"**, **"check this request"**, **"set up this promo"** (with a P### / B### in context), or a pasted Slack delegation with P### / B### — Claude **MUST** execute this sequence automatically without asking for permission step-by-step:
+
+1. **`node bin/ingest-requests.js`** — refresh from sheet
+2. **`/qc-engine <handle>`** — Triage Officer (READY / NOTE / RETURN). If RETURN, STOP and surface what to fix.
+3. **`node bin/canary-multi-brand.js <handle> --parallel`** — dry-run (writes plan bundles)
+4. **`/pre-qc <handle>`** — Pre-QC Agent (PASS / WARNING / FAIL). Present the table.
+5. **WAIT for user direction.** Do NOT auto-commit. User says "commit it" or "fix X first".
+6. **`node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc`** — live save (only after user confirms)
+7. **`/deep-qc <handle>`** — Sentinel (PASS / WARNING / FAIL / INCONCLUSIVE). Present the verdict.
+
+**Skip conditions:**
+- User says "skip qc" or "no qc" in their message → run only the canary commands, no skill invocations
+- Idempotency fails (code already on BO for ALL brands) → no plan bundles get written; surface the idempotency block and stop
+- Triage returns RETURN → STOP. Tell the user what to fix; do not attempt dry-run.
+
+**Each QC skill spawns its sub-agent with EXACTLY this prompt** — keep it short, no exploration:
+
+```
+# /qc-engine
+subagent_type: "promo-qc-engine"
+prompt: |
+  Triage — validate the promo request at: captures/requests/<handle>.json
+  Read ONLY that file. Do not Glob or Grep other files. Return only the JSON within 30 seconds.
+
+# /pre-qc
+subagent_type: "promo-qc"
+prompt: |
+  Pre-QC — review the planned promotion at: captures/qc-plans/<handle>__<brand>.json
+  Read ONLY that file. Do not Glob or Grep other files. Return only the JSON within 30 seconds.
+
+# /deep-qc
+subagent_type: "sentinel"
+prompt: |
+  Sentinel — validate the saved promo at: captures/qc-bundles/<handle>__<brand>.json
+  Read ONLY that file. Do not Glob or Grep other files. Return only the JSON within 60 seconds.
+```
+
+Send all sub-agents for one skill in **a single Agent-tool message** so they run in parallel. Total wall-clock per skill should be ~5-15s, never minutes. If a sub-agent exceeds 60s, cancel and report INCONCLUSIVE — do not wait.
+
+---
+
 ## Git workflow
 
 ### Branch strategy
@@ -88,23 +131,26 @@ Full guide: `docs/TEAM-QUICKSTART.md`
 
 ---
 
-## Promo automation — daily commands
+## Promo automation — daily commands (for reference; auto-flow rules above handle these)
 
 ```bash
 # Step 1: Pull latest requests from sheet
 node bin/ingest-requests.js
 
-# Step 2: Dry-run (no BO writes)
+# Step 2: Triage source row (Triage Officer)
+/qc-engine P###
+
+# Step 3: Dry-run (no BO writes)
 node bin/canary-multi-brand.js P###
 
-# Step 3: Pre-QC before committing
+# Step 4: Pre-QC the plan (Pre-QC Agent)
 /pre-qc P###
 
-# Step 4: Commit to BO (live)
+# Step 5: Commit to BO (live)
 node bin/canary-multi-brand.js P### --commit
-node bin/canary-multi-brand.js P### --commit --parallel   # multi-brand
+node bin/canary-multi-brand.js P### --commit --parallel --parallel-qc   # multi-brand
 
-# Step 5: Post-save QC
+# Step 6: Post-save adversarial audit (Sentinel)
 /deep-qc P###
 ```
 

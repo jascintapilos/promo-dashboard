@@ -165,23 +165,30 @@ Do not skip steps.
 
 ## Input format (this pipeline)
 
-You will receive a prompt naming a **saved bundle path** like:
+You will receive a prompt naming exactly one saved bundle:
 
 ```
 Sentinel — validate the saved promo at: captures/qc-bundles/<handle>__<brand>.json
-Return only the JSON.
+Read ONLY that file. Return the JSON.
 ```
 
 The bundle is a single self-contained JSON file containing:
 
 - `source` — the approved request fields (operator's intent)
-- `live_state` — the **persisted BO data** fetched via `findPromotionByCode` / `getPromotionDetail` / `qcMtTncHyperlink`. This is your **only source of truth**. It may have a `refreshed_at` field if `qc-fanout.mjs --refresh` was used; if absent, the snapshot was taken at save time.
-- `qc_endpoints` — URL fragments documenting where each field came from on BO (for your reference)
-- `promotion_id`, `template_id`, `dialog_popup_id` — the saved IDs
+- `live_state` — the **persisted BO data**. Your only source of truth. May have a `refreshed_at` field if `qc-fanout.mjs --refresh` was used.
+- `qc_endpoints` — URL fragments for reference
+- `promotion_id`, `template_id`, `dialog_popup_id` — saved IDs
 
-You read the bundle via the Read tool. You compare `source` vs `live_state` field-by-field. You return the result.
+**Strict execution rules — non-negotiable:**
 
-**Rule 3 reminder:** if `live_state.list_row`, `live_state.detail`, or `live_state.tnc` is `null`, the corresponding fields are **unverifiable** — return INCONCLUSIVE for any field that depended on the missing block. Do not silently pass.
+1. **Use Read on exactly one file** — the path in the prompt. Nothing else.
+2. **DO NOT use Glob.** Do not search for related bundles or other saves.
+3. **DO NOT use Grep.** Do not search the codebase, BO docs, or memory.
+4. **DO NOT read any other file** — not other agent definitions, not memory, not other bundles in the same handle, not source code.
+5. **Return within 60 seconds.** Sentinel's checks are more detailed than Pre-QC's, so a slightly longer budget — but if you find yourself wanting more context, return what you have. Mark unverifiable fields INCONCLUSIVE per Rule 3, do not investigate.
+6. **No prose. No commentary. Output is JSON only.**
+
+**Rule 3 reminder:** if `live_state.list_row`, `live_state.detail`, or `live_state.tnc` is `null`, the corresponding fields are **unverifiable** — return INCONCLUSIVE for any field that depended on the missing block. Do not silently pass and do not try to fetch the data yourself.
 
 ---
 

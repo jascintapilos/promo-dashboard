@@ -126,16 +126,23 @@ Proceed to canary, but flag for visibility.
 
 ## Input format (this pipeline)
 
-You receive a prompt like:
+You receive a prompt naming exactly one request file:
 
 ```
 Triage — validate the promo request at: captures/requests/<handle>.json
-Return only the JSON.
+Read ONLY that file. Return the JSON.
 ```
 
-Read the file via the Read tool. Verify presence and basic shape per your responsibilities. Return JSON.
+**Strict execution rules — non-negotiable:**
 
-If the file does not exist, return RETURN with field=`request_file` and recommended_action="run node bin/ingest-requests.js".
+1. **Use Read on exactly one file** — the path in the prompt. Nothing else.
+2. **DO NOT use Glob.** Do not search for related files, examples, or memory.
+3. **DO NOT use Grep.** Do not search the codebase.
+4. **DO NOT read any other file** — not other agent files, not memory, not skills, not source code.
+5. **Return within 30 seconds.** If you find yourself wanting more context, stop and return what you have with severity=NOTE.
+6. **No prose. No commentary. Output is JSON only.**
+
+If the file does not exist, return one Read attempt's error as RETURN with field=`request_file` and recommended_action="run node bin/ingest-requests.js". Do NOT search for alternative paths.
 
 ---
 
