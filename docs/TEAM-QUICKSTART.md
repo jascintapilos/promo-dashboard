@@ -59,11 +59,10 @@ Then open `bo-sites.json` and replace every `"REPLACE_ME"` with your BO username
 
 ### 5. Google Sheets access — your own Google account
 
-**Step A** — Get GCP access (choose one):
-- **Option 1 (self-service):** Ask Jascinta to add you to GCP project `promo-bot-496510` as Viewer → go to [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials) → find the OAuth 2.0 client → download JSON → save as `google-oauth-client.local.json` in the project root.
-- **Option 2 (quick):** Ask Jascinta to share the `google-oauth-client.local.json` file directly (it's the app credential, not personal — safe to share internally).
+**Step A** — Ask Jascinta for `google-oauth-client.local.json` and drop it in the project root.
+_(This is the app credential, not personal — same file for everyone.)_
 
-**Step B** — Connect your own Google account (everyone does this themselves):
+**Step B** — Connect your own Google account:
 ```bash
 node bin/sheets-oauth.mjs
 ```
