@@ -16,11 +16,64 @@ You can pass the bare `P###` (the CLI auto-resolves to the current-month row) or
 
 ---
 
-## Prerequisites (one-time)
+## Prerequisites (one-time setup)
 
-1. **Node 20+** (`node --version`)
-2. **`bo-sites.local.json`** in the project root — has the BO passwords (`promo_testbot`). Get it from a teammate.
-3. **`google-oauth-token.local.json`** in the project root — Sheets API refresh token. Run `node bin/sheets-oauth.mjs` once if you don't have it (see `docs/SHEETS-API-SETUP.md`).
+### 1. Software
+- **Node 20+** — `node --version` to verify
+- **Git** — `git --version` to verify
+- **Claude Code** — download at claude.ai/code
+
+### 2. Clone the repo
+```bash
+git clone https://github.com/jascintapilos/promo-automation.git
+cd promo-automation
+npm install
+```
+
+### 3. Install Claude Code skills
+```bash
+install-skills.bat        # Windows
+# or
+bash install-skills.sh    # Mac/Linux
+```
+This copies skills to `~/.claude/skills/`. Restart Claude Code after running.
+
+### 4. BO credentials — your own account
+
+You need your own Back Office login. Ask Jascinta or your BO admin to provision one.
+
+**`bo-sites.json`** — copy the example and fill in your username:
+```bash
+cp bo-sites.example.json bo-sites.json
+```
+Then open `bo-sites.json` and replace every `"REPLACE_ME"` with your BO username.
+
+**`bo-sites.local.json`** — create this file in the project root with your password:
+```json
+{
+  "passwords": {
+    "your_bo_username": "your_bo_password"
+  }
+}
+```
+
+### 5. Google Sheets access — your own Google account
+
+**Step A** — Get GCP access (choose one):
+- **Option 1 (self-service):** Ask Jascinta to add you to GCP project `promo-bot-496510` as Viewer → go to [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials) → find the OAuth 2.0 client → download JSON → save as `google-oauth-client.local.json` in the project root.
+- **Option 2 (quick):** Ask Jascinta to share the `google-oauth-client.local.json` file directly (it's the app credential, not personal — safe to share internally).
+
+**Step B** — Connect your own Google account (everyone does this themselves):
+```bash
+node bin/sheets-oauth.mjs
+```
+A browser opens → log in with your Google account → approve access → your personal token is saved as `google-oauth-token.local.json`.
+
+### 6. Verify setup
+```bash
+node bin/sheets-test.mjs
+```
+Should print the current month's sheet name with no errors.
 
 That's it. No Playwright, no Chrome profile needed.
 
