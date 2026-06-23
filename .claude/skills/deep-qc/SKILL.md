@@ -1,22 +1,19 @@
 ---
 name: deep-qc
-description: Post-save deep QC for a promo request using sub-agent fan-out. Independent of the inline canary QC — spawns one Explore sub-agent per saved brand, each reading the live BO state captured in the deep-QC bundle (no auth needed) and surfacing semantic/textual issues the numeric QC misses. Trigger on `/deep-qc P###`, "deep qc this", "verify save independently", or any post-save verification request that wants a second opinion across multiple brands.
+description: Post-save deep QC for a promo request using sub-agent fan-out. Spawns one promo-qc sub-agent per saved brand to verify the live BO state against the source request. Catches semantic/textual issues the inline canary QC misses (MT body brand placeholder, free_credit fill, ZH/ID name dup, FS provider restriction, dialog body, multi-merchant linkage). Pairs with /pre-qc (pre-commit). Trigger on `/deep-qc P###`, "deep qc this", "verify save independently", or any post-save verification request that wants a second opinion across multiple brands.
 ---
 
-# Deep QC — sub-agent fan-out for post-save verification
+# Deep-QC — sub-agent fan-out for post-save verification
 
-This skill provides **independent post-save verification** for promo saves. The inline canary QC (Levels 1/2/3) confirms the save's *numeric* and *id-linkage* correctness on the same thread that did the save. Deep QC adds a layer of **fresh-context, brand-isolated semantic checks** that catch issues the inline QC can't:
+This skill orchestrates **independent post-save verification** for promo saves. It spawns one `promo-qc` sub-agent per brand. The sub-agent already knows the QC rules and false-positive list — see [`.claude/agents/promo-qc.md`](../../agents/promo-qc.md) — so this skill stays thin.
 
-| Inline QC catches | Deep QC adds |
-|---|---|
-| code exists, id match, name set | MT body uses correct brand placeholder (`:brandname` QPRO / `:merchantname` QP2) |
-| numeric mechanics match | MT free_credit_amount placeholder filled with actual value |
-| MT linked, T&C hyperlink present | T&C clauses match bonus type + max_withdraw rule |
-| dialog popup linked | Dialog body has the right per-locale promo name |
-| | ZH/ID/TH names non-empty and not EN duplicates |
-| | FS game codes resolved to the intended games |
-| | promotion_currency rows exist per region |
-| | Known false-positives skipped (empty member_group_ids on QPRO, etc.) |
+The inline canary QC (Levels 1/2/3) confirms numeric and id-linkage correctness on the same thread that did the save. Deep QC adds **fresh-context, brand-isolated semantic checks** that catch:
+- MT body using wrong brand placeholder (`:brandname` vs `:merchantname`)
+- Free credit amount placeholder not filled
+- ZH/ID names duplicating EN
+- FS provider restriction not applied
+- Dialog body issues, multi-merchant linkage mistakes
+- Anything else operator rules dictate (see [`.claude/agents/promo-qc.md`](../../agents/promo-qc.md))
 
 ## Trigger
 
@@ -28,45 +25,63 @@ User says:
 
 ## Pre-requisite
 
-The canary runner must have written **deep-QC bundles** for the handle. These are auto-written by `bin/canary-api.js` and `bin/canary-api-qp2.js` after each save, under `captures/qc-bundles/<handle>__<brand>.json`. Each bundle contains:
-- Source request fields (parsed.*, names, categories, regions, instructions, remark)
-- Saved IDs (promotion_id, template_id, dialog_popup_id)
-- **Inlined live BO state** (list row, full detail, T&C check result) — so sub-agents need no BO auth
-
-If no bundle exists, the skill prompts the user to re-run the canary or check what saved.
+Saved bundles must exist for the handle. The canary runners auto-write `captures/qc-bundles/<handle>__<brand>.json` after each save (containing source + saved IDs + inlined live BO state — no auth needed downstream). If no bundle exists, tell the user to run the canary save first (with `--commit`).
 
 ## Steps
 
-### 1. Resolve the handle and list bundles
-
-Run the fanout script to find all bundles for the request:
+### 1. List saved bundles
 
 ```sh
 node bin/qc-fanout.mjs <handle> --pretty
 ```
 
-This validates each bundle and shows: `▸ <BRAND> (<platform>)  promo_id=...  template_id=...  dialog_id=...`. If it errors with "No bundles found", stop and tell the user to run the canary save first.
+Shows: `▸ <BRAND> (<platform>)  promo_id=...  template_id=...  dialog_id=...`. If it errors with "No bundles found", stop and tell the user to run the canary save first.
 
-### 2. Read each bundle into memory
+**For forensic / older saves**, add `--refresh` to re-fetch live BO state before listing:
 
-Load each `captures/qc-bundles/<handle>__<brand>.json` via the Read tool. You only need to read them once — then pass relevant fields into each sub-agent's prompt.
+```sh
+node bin/qc-fanout.mjs <handle> --refresh --pretty
+```
 
-### 3. Spawn one Explore sub-agent per bundle
+This re-calls `findPromotionByCode` + `getPromotionDetail` + `qcMtTncHyperlink` for each brand (Node-side, no auth touches the sub-agent) and rewrites each bundle's `live_state` block on disk. Use whenever:
+- The save happened more than a few hours ago
+- Someone may have edited the BO record manually since the save
+- You want to confirm the state is still correct (compliance, audit, follow-up)
 
-For each bundle, spawn an `Explore` sub-agent with `subagent_type: Explore`. Each agent is **fully isolated** — it does not see the main conversation. Its prompt must include:
+Skip `--refresh` for normal post-save QC within a few minutes of commit — the embedded snapshot is fresh enough.
 
-- The bundle's `source` block (what was requested)
-- The bundle's `live_state` block (what was actually saved on BO)
-- The brand + platform + site
-- A **specific check list** tailored to the bonus type (deposit / FC / FS)
-- **Known false-positive patterns** to skip (see below)
-- A required return shape (JSON)
+### 2. Spawn one promo-qc sub-agent per bundle
 
-Send all sub-agent invocations in **a single message** so they run concurrently.
+For each bundle, invoke the Agent tool with:
 
-### 4. Aggregate results into a pass/fail table
+```
+subagent_type: "promo-qc"
+prompt: |
+  Phase: post
+  Bundle: captures/qc-bundles/<handle>__<brand>.json
+  Read the bundle and run all applicable saved-state checks per your system prompt.
+  Return only the JSON object.
+```
 
-Each sub-agent returns a structured finding list. Aggregate into:
+Send all invocations in **a single message** so they run concurrently. Pass each bundle's absolute file path so the sub-agent can Read it.
+
+The promo-qc sub-agent already has the check list and known false-positives baked into its system prompt — you do NOT need to re-state them here. Keep the prompt short and focused on the bundle path + phase.
+
+### 3. Aggregate results into a pass/fail table
+
+Each sub-agent returns:
+
+```json
+{
+  "brand": "QPRO5",
+  "phase": "post",
+  "status": "pass" | "warn" | "fail",
+  "findings": [...],
+  "summary": "..."
+}
+```
+
+Aggregate into:
 
 ```
 Deep-QC results — <handle>
@@ -74,86 +89,33 @@ Deep-QC results — <handle>
 |---|---|---|
 | QPRO5 | ✓ PASS | — |
 | QPRO11 | ✗ FAIL | MT body missing free_credit value (2 issues) |
-| QP2A | ⚠ WARN | ZH name appears to be EN duplicate (1 issue) |
+| QP2A | ⚠ WARN | ZH name appears to be EN duplicate |
 ```
 
-Then expand FAIL/WARN brands with the specific findings. Recommend next steps (re-run save, fix specific field, escalate).
+For FAIL/WARN brands, expand each finding with:
+- The `field` and `message`
+- The recommended `fix` (manual BO adjustment, since save has already happened)
+- A short `evidence` snippet
 
-## Sub-agent prompt template
+### 4. Recommend next steps
 
-For each brand bundle, use this template (fill in the `<…>` placeholders from the bundle):
-
-```
-You are doing post-save deep QC for an iGaming promo code on a Back Office.
-You are isolated — you do NOT see the main conversation. Return only a JSON object matching the schema at the end.
-
-PROMO HANDLE: <handle>
-BRAND:        <brand> (platform: <platform>, site: <site>)
-PROMO CODE:   <promo_code>
-SAVED IDS:    promotion_id=<promotion_id>, template_id=<template_id>, dialog_popup_id=<dialog_popup_id>
-
-SOURCE REQUEST (what operator asked for):
-<JSON.stringify(bundle.source, null, 2)>
-
-LIVE BO STATE (what was actually saved — captured during QC fetch):
-<JSON.stringify(bundle.live_state, null, 2)>
-
-CHECK LIST — run all that apply to this bonus_type:
-
-UNIVERSAL:
-1. promo_code on live_state.list_row matches the requested code (already checked by inline QC, confirm).
-2. live_state.list_row.name is non-empty and matches one of source.promotion_name_* values.
-3. live_state.list_row.status is set (0=draft / 1=active — flag if unexpected for this brand).
-4. If source.regions has multiple entries, live_state.detail.promotion_currency_list (or per_currency_overrides) must have one row per region.
-5. promotion_name_zh / promotion_name_id (if set) are non-empty AND differ from promotion_name_en (catch "lazy duplicate" bugs).
-
-MESSAGE TEMPLATE (when template_id is set):
-6. live_state.tnc.messages should report ✓ on hyperlink presence for sentence 11 only.
-7. MT body should use the correct brand placeholder: ":merchantname" for platform=qp2, ":brandname" for platform=qpro. Flag if the wrong one appears, or if a literal brand name is hardcoded.
-8. For FC bonus_type, MT body should contain the actual source.parsed.free_credit_amount value (not a placeholder).
-9. For Deposit bonus_type, MT body should reference the rate (source.parsed.bonus_rate_pct) and turnover (source.parsed.to_multiplier).
-
-DIALOG POPUP (when dialog_popup_id is set):
-10. Dialog content body uses correct brand placeholder (same rule as MT — :merchantname for QP2, :brandname for QPRO).
-11. For multi-merchant QP2 brands, confirm live_state.list_row.dialog_popup_list contains the expected dialog_popup_id.
-
-PER-BONUS-TYPE:
-- bonus_type=freespin: live_state.detail.game_provider_ids should be restricted to the FS provider only (typically PP2). Flag if it has the broad Layer-1 inversion list.
-- bonus_type=deposit: max_total_* fields on QP2 promotion_currency should be NULL (= Unlimited) unless source explicitly sets a cap.
-- bonus_type=freecredit: live_state.detail.free_credit_amount must equal source.parsed.free_credit_amount.
-
-KNOWN FALSE-POSITIVES (DO NOT FLAG THESE):
-- On QPRO brands, live_state.list_row.member_group_ids being empty `[]` is INTENTIONAL — never flag.
-- On QP2 brands, live_state.list_row.allow_deposit being false is INTENTIONAL — never flag.
-- max_total_* fields being null on QP2 means "Unlimited" by design — never flag.
-- ZH name containing brand prefix like "BP9 ..." is correct — don't flag as English contamination.
-
-RETURN ONLY this JSON schema (no prose):
-{
-  "brand": "<brand>",
-  "status": "pass" | "fail" | "warn",
-  "findings": [
-    { "severity": "fail" | "warn" | "info",
-      "field": "MT.body" | "dialog.body" | "promotion_name_zh" | ... ,
-      "message": "short description",
-      "evidence": "snippet from live_state showing the issue" }
-  ],
-  "summary": "one-line summary"
-}
-
-Set status="pass" if findings is empty. Set status="warn" if all findings are severity=warn. Set status="fail" if any finding is severity=fail.
-```
+- **All PASS** → confirm the save is clean. Move on.
+- **Any FAIL** → list what needs to be manually fixed in the BO. For high-risk fields (MT body, dialog body), provide the exact BO path (`/api/bo/messagetemplate/<id>` etc.).
+- **All WARN, no FAIL** → user decides whether to fix or accept. Explain each warning's rule.
 
 ## Notes
 
-- Sub-agents run in **parallel** when invoked in a single message — total wall-clock = slowest single brand check (~10-15s) regardless of how many brands.
-- Sub-agents are read-only — they cannot break a save. Worst case: false alarm.
-- If a bundle is missing `live_state` (older bundle before the inline-state field was added), the sub-agent should mark status=warn with a finding about insufficient data — do not auto-pass.
-- After aggregation, **always** present the summary table even if all brands pass. Confidence on a clean run is itself a signal.
-- For batch saves (P063-P070), run /deep-qc once per request — do not bundle multiple requests into one sub-agent call.
+- Sub-agents run **in parallel** when invoked in one message. Wall-clock = slowest single check (~10-15s) regardless of brand count.
+- Sub-agents are **read-only** — they cannot modify the save (save has already happened).
+- Bundles persist on disk. `/deep-qc` can be re-invoked on any handle whose save happened with the current code (after 2026-06-22).
+- The sub-agent's `promo-qc.md` system prompt is the source of truth for what gets checked and what gets suppressed.
+
+## Pairs with
+
+- `/pre-qc P###` — runs BEFORE `--commit`. Uses the same `promo-qc` sub-agent with `phase: pre`.
 
 ## Out of scope
 
-- This skill does NOT modify the BO. It is read-only verification.
-- It does NOT re-run the save if findings are reported. The user decides whether to fix manually, re-run the canary, or accept warnings.
-- It does NOT cover WS1/IGMP brands yet — bundles are only written by QPRO/QP2 runners. WS1 deep-QC can be added once `canary-api-igmp.js` writes bundles.
+- Does NOT modify the BO, source sheet, or bundle. Read-only verification.
+- Does NOT auto-rollback or re-save. User decides what to fix manually.
+- Does NOT cover WS1/IGMP brands yet — bundles only written by QPRO/QP2 runners.
