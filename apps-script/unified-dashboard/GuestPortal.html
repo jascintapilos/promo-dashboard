@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><base target="_top">
+<title>Promo Ops — Submit a Request</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Segoe UI","Inter",Arial,sans-serif}
+body{background:linear-gradient(135deg,#f4f6fb 0%,#e0e7ff 100%);color:#1f2937;min-height:100vh;padding:32px 16px}
+.shell{max-width:760px;margin:0 auto}
+.card{background:white;border-radius:18px;box-shadow:0 8px 30px rgba(31,56,100,.08);overflow:hidden;margin-bottom:18px}
+.header{padding:28px 32px;background:linear-gradient(135deg,#0b1437 0%,#1a1f4d 100%);color:white;position:relative;overflow:hidden}
+.header::before{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.4) 0%,transparent 70%)}
+.header h1{font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px;position:relative}
+.header .logo-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#4f7cff,#6c5dd3);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(79,124,255,.4)}
+.header p{font-size:13px;color:#cbd5e1;margin-top:6px;position:relative}
+.body{padding:28px 32px}
+.section{margin-bottom:24px}
+.section-title{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title .num{background:linear-gradient(135deg,#4f7cff,#6c5dd3);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:0}
+.type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.type-card{border:2px solid #e5e7eb;border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;transition:all .15s;background:white}
+.type-card:hover{border-color:#4f7cff;background:#fafbff}
+.type-card.selected{border-color:#4f7cff;background:linear-gradient(135deg,#eef2ff 0%,#fce7f3 100%);box-shadow:0 4px 12px rgba(79,124,255,.15)}
+.type-icon{font-size:24px;flex-shrink:0;width:38px;height:38px;border-radius:9px;background:#f3f4f6;display:flex;align-items:center;justify-content:center}
+.type-card.selected .type-icon{background:white}
+.type-name{font-weight:600;color:#0b1437;font-size:14px;margin-bottom:3px}
+.type-desc{font-size:11.5px;color:#6b7280;line-height:1.45}
+.type-eta{font-size:10.5px;color:#9ca3af;margin-top:4px;font-weight:500}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field label{font-size:11.5px;color:#374151;font-weight:600;display:block;margin-bottom:6px}
+.field label .req{color:#dc2626;margin-left:2px}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13.5px;color:#1f2937;font-family:inherit;background:white}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#4f7cff;box-shadow:0 0 0 3px rgba(79,124,255,.1)}
+.field textarea{resize:vertical;min-height:110px;line-height:1.5}
+.dropzone{border:2px dashed #cbd5e1;border-radius:11px;padding:24px;text-align:center;cursor:pointer;transition:all .15s;background:#fafbff}
+.dropzone:hover,.dropzone.drag{border-color:#4f7cff;background:#eef2ff}
+.dropzone-icon{font-size:32px;margin-bottom:6px;opacity:.6}
+.dropzone-text{font-size:13px;color:#4b5563;font-weight:500}
+.dropzone-sub{font-size:11px;color:#9ca3af;margin-top:4px}
+.file-list{margin-top:12px}
+.file-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f3f4f6;border-radius:8px;margin-bottom:6px;font-size:12.5px}
+.file-item .name{flex:1;font-weight:500;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item .size{color:#9ca3af;font-size:11px}
+.file-item .remove{cursor:pointer;color:#dc2626;font-weight:700;padding:0 6px}
+.priority-row{display:flex;gap:8px}
+.priority-btn{flex:1;padding:10px;border:1.5px solid #e5e7eb;border-radius:9px;background:white;cursor:pointer;font-size:12.5px;font-weight:600;color:#6b7280;transition:all .15s}
+.priority-btn:hover{border-color:#cbd5e1}
+.priority-btn.selected.low{border-color:#10b981;background:#ecfdf5;color:#15803d}
+.priority-btn.selected.medium{border-color:#f59e0b;background:#fef3c7;color:#b45309}
+.priority-btn.selected.high{border-color:#dc2626;background:#fee2e2;color:#991b1b}
+.submit-row{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#f9fafb;border-top:1px solid #e5e7eb}
+.submit-info{font-size:11.5px;color:#6b7280}
+.btn-submit{background:linear-gradient(135deg,#4f7cff,#6c5dd3);color:white;border:none;padding:12px 28px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(79,124,255,.35)}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,124,255,.45)}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.success,.error{padding:14px 18px;border-radius:10px;margin-bottom:18px;display:none}
+.success{background:#ecfdf5;color:#15803d;border:1px solid #86efac}
+.error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.guest-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:14px;background:rgba(255,255,255,.15);color:#e2e8f0;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;backdrop-filter:blur(6px)}
+</style></head><body>
+<div class="shell">
+  <div class="card">
+    <div class="header">
+      <span class="guest-badge">🔓 Guest Access</span>
+      <h1><span class="logo-icon">🚀</span>Submit a Request to Promo Ops</h1>
+      <p>You don't need a login. Fill the form, attach files, and our team will receive it instantly.</p>
+    </div>
+    <div class="body">
+      <div class="success" id="successMsg"></div>
+      <div class="error" id="errorMsg"></div>
+      <div class="section">
+        <div class="section-title"><span class="num">1</span>What do you need?</div>
+        <div class="type-grid" id="typeGrid"></div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="num">2</span>Tell us about you</div>
+        <div class="row">
+          <div class="field"><label>Your name <span class="req">*</span></label><input type="text" id="reqName" required></div>
+          <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="reqEmail" required></div>
+        </div>
+        <div class="field"><label>Organisation / Studio</label><input type="text" id="reqOrg" placeholder="Optional — your company or team"></div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="num">3</span>Request details</div>
+        <div class="row">
+          <div class="field"><label>Brand <span class="req">*</span></label><select id="brand"><option value="">Select brand...</option></select></div>
+          <div class="field"><label>Title <span class="req">*</span></label><input type="text" id="title" placeholder="Short title for this request"></div>
+        </div>
+        <div class="field"><label>Description <span class="req">*</span></label><textarea id="description" placeholder="Describe what you need in detail. Include amounts, dates, target audience, references — anything that helps us deliver faster."></textarea></div>
+        <div class="row">
+          <div class="field"><label>Priority preference</label>
+            <div class="priority-row">
+              <button type="button" class="priority-btn low" data-p="Low">Low</button>
+              <button type="button" class="priority-btn medium selected" data-p="Medium">Medium</button>
+              <button type="button" class="priority-btn high" data-p="High">High</button>
+            </div>
+          </div>
+          <div class="field"><label>Preferred deadline</label><input type="date" id="deadline"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="num">4</span>Attachments (optional)</div>
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">📎</div>
+          <div class="dropzone-text">Drop files here or click to browse</div>
+          <div class="dropzone-sub">Briefs, mockups, reference images, CSVs — up to 10 MB each</div>
+          <input type="file" id="fileInput" multiple style="display:none">
+        </div>
+        <div class="file-list" id="fileList"></div>
+      </div>
+    </div>
+    <div class="submit-row">
+      <div class="submit-info">📨 You'll get an email confirmation + a request ID to track.</div>
+      <button class="btn-submit" id="submitBtn" onclick="submitRequest()">Submit request →</button>
+    </div>
+  </div>
+</div>
+<script>
+let CATALOG = [], BRANDS = [], FILES = [], SELECTED_TYPE = null, PRIORITY = 'Medium';
+
+google.script.run.withSuccessHandler(c => { CATALOG = c; renderTypes(); }).getRequestCatalog();
+google.script.run.withSuccessHandler(b => { BRANDS = b; renderBrands(); }).getBrandsForGuestForm();
+
+function renderTypes(){
+  const g = document.getElementById('typeGrid');
+  g.innerHTML = CATALOG.map(c => `<div class="type-card" data-type="${c.Request_Type}" onclick="selectType('${c.Request_Type}')">
+    <div class="type-icon">${c.Icon}</div>
+    <div><div class="type-name">${c.Display_Name}</div><div class="type-desc">${c.Description}</div><div class="type-eta">⏱ ${c.Estimated_Turnaround}</div></div>
+  </div>`).join('');
+}
+function selectType(t){
+  SELECTED_TYPE = t;
+  document.querySelectorAll('.type-card').forEach(el => el.classList.toggle('selected', el.dataset.type === t));
+}
+function renderBrands(){
+  const sel = document.getElementById('brand');
+  BRANDS.forEach(b => { const o = document.createElement('option'); o.value = b.code; o.textContent = `${b.code} — ${b.name}`; sel.appendChild(o); });
+}
+document.querySelectorAll('.priority-btn').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.priority-btn').forEach(x => x.classList.remove('selected'));
+  b.classList.add('selected'); PRIORITY = b.dataset.p;
+});
+const dz = document.getElementById('dropzone'), fi = document.getElementById('fileInput');
+dz.onclick = () => fi.click();
+dz.ondragover = e => { e.preventDefault(); dz.classList.add('drag'); };
+dz.ondragleave = () => dz.classList.remove('drag');
+dz.ondrop = e => { e.preventDefault(); dz.classList.remove('drag'); handleFiles(e.dataTransfer.files); };
+fi.onchange = e => handleFiles(e.target.files);
+function handleFiles(fl){
+  Array.from(fl).forEach(f => {
+    if (f.size > 10*1024*1024) { showError(`${f.name} is too large (max 10MB)`); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      FILES.push({name: f.name, mimeType: f.type, size: f.size, base64: r.result.split(',')[1]});
+      renderFiles();
+    };
+    r.readAsDataURL(f);
+  });
+}
+function renderFiles(){
+  document.getElementById('fileList').innerHTML = FILES.map((f,i) =>
+    `<div class="file-item"><span>📄</span><span class="name">${f.name}</span><span class="size">${(f.size/1024).toFixed(1)} KB</span><span class="remove" onclick="removeFile(${i})">×</span></div>`
+  ).join('');
+}
+function removeFile(i){ FILES.splice(i,1); renderFiles(); }
+function showError(m){ const el = document.getElementById('errorMsg'); el.textContent = m; el.style.display='block'; setTimeout(()=>el.style.display='none', 6000); }
+function showSuccess(m){ const el = document.getElementById('successMsg'); el.innerHTML = m; el.style.display='block'; }
+function submitRequest(){
+  const v = id => document.getElementById(id).value.trim();
+  if (!SELECTED_TYPE) return showError('Pick a request type at the top.');
+  if (!v('reqName') || !v('reqEmail') || !v('brand') || !v('title') || !v('description'))
+    return showError('Please fill all required fields marked with *');
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  const payload = {
+    requestor_name: v('reqName'), requestor_email: v('reqEmail'), requestor_org: v('reqOrg'),
+    request_type: SELECTED_TYPE, brand: v('brand'), title: v('title'), description: v('description'),
+    priority_hint: PRIORITY, deadline_hint: v('deadline'), attachments: FILES
+  };
+  google.script.run
+    .withSuccessHandler(r => {
+      btn.disabled = false; btn.textContent = 'Submit request →';
+      if (r.ok) {
+        showSuccess(`<b>✓ Submitted.</b> Your request ID is <b>${r.id}</b>. Confirmation email sent to ${v('reqEmail')}. The Promo Ops team will reach out if anything's unclear.`);
+        document.querySelectorAll('input,textarea,select').forEach(i => i.value = '');
+        FILES = []; SELECTED_TYPE = null; renderFiles();
+        document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+        window.scrollTo({top:0, behavior:'smooth'});
+      } else { showError(r.error || 'Submission failed'); }
+    })
+    .withFailureHandler(e => { btn.disabled = false; btn.textContent = 'Submit request →'; showError(String(e)); })
+    .handleGuestSubmission(payload);
+}
+</script>
+</body></html>

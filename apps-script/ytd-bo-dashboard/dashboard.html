@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>Promo Operations Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f8fa; --card: #fff; --border: #e1e4e8; --text: #24292f; --muted: #57606a;
+    --accent: #0969da; --green: #1a7f37; --red: #cf222e; --amber: #bf8700;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0; padding: 20px; background: var(--bg); color: var(--text); }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { background: var(--card); border: 1px solid var(--border); padding: 7px 14px;
+    border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); }
+  .btn:hover { background: #f0f3f7; }
+  .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .filter-bar { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; margin-bottom: 16px; display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-group label { font-size: 11px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px; }
+  .filter-group select, .filter-group input { padding: 7px 10px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); }
+  .filter-group select:focus, .filter-group input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .clear-btn { background: transparent; border: 1px dashed var(--muted); color: var(--muted);
+    padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .clear-btn:hover { background: var(--card); color: var(--text); border-color: var(--text); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; cursor: pointer; transition: transform 0.1s; }
+  .kpi:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .kpi.on { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(9,105,218,0.2); }
+  .kpi .label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600; }
+  .kpi .value { font-size: 28px; font-weight: 700; margin: 4px 0; }
+  .kpi .sub { font-size: 12px; color: var(--muted); }
+  .kpi .delta { font-size: 12px; font-weight: 500; margin-top: 2px; }
+  .kpi .delta.up { color: var(--green); }
+  .kpi .delta.down { color: var(--red); }
+  .kpi .delta.warn { color: var(--amber); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .panel h2 { font-size: 14px; margin: 0 0 12px; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted); }
+  .chart-wrap { position: relative; height: 280px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px; background: #f6f8fa; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th.sorted::after { content: ' \25BE'; }
+  th.sorted.asc::after { content: ' \25B4'; }
+  td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); font-style: italic; padding: 16px; text-align: center; }
+  @media (max-width: 800px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Promo Operations Hub</h1>
+    <div class="meta" id="meta">Loading...</div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="exportCsv()">Export CSV</button>
+    <button class="btn primary" onclick="refreshFromServer()">Refresh from BO</button>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <label for="fMetric">Metric</label>
+    <select id="fMetric"></select>
+  </div>
+  <div class="filter-group">
+    <label for="fPlatform">Platform</label>
+    <select id="fPlatform"></select>
+  </div>
+  <div class="filter-group">
+    <label for="fPeriodGroup">Period type</label>
+    <select id="fPeriodGroup">
+      <option value="YTD">YTD</option>
+      <option value="Quarterly">Quarterly</option>
+      <option value="Monthly">Monthly</option>
+      <option value="Weekly">Weekly</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="fPeriod">Period</label>
+    <select id="fPeriod"></select>
+  </div>
+  <div class="filter-group">
+    <label for="fFrom">From date</label>
+    <input type="date" id="fFrom" min="2026-01-01" max="2026-12-31">
+  </div>
+  <div class="filter-group">
+    <label for="fTo">To date</label>
+    <input type="date" id="fTo" min="2026-01-01" max="2026-12-31">
+  </div>
+  <div class="filter-group" id="fBonusTypeGroup" style="display:none">
+    <label for="fBonusType">Bonus Type</label>
+    <select id="fBonusType">
+      <option value="ALL">All types</option>
+      <option value="Bonus">Bonus</option>
+      <option value="FreeCredit">Free Credit</option>
+      <option value="FreeSpin">Free Spin</option>
+    </select>
+  </div>
+  <div class="filter-group" style="justify-content:flex-end">
+    <button class="clear-btn" onclick="resetFilters()">Reset filters</button>
+  </div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid3">
+  <div class="panel">
+    <h2 id="chart1Title">Counts by Brand</h2>
+    <div class="chart-wrap"><canvas id="chartByBrand"></canvas></div>
+  </div>
+  <div class="panel">
+    <h2>Platform Mix</h2>
+    <div class="chart-wrap"><canvas id="chartByPlatform"></canvas></div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <h2 id="chart2Title">Trend</h2>
+    <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+  </div>
+  <div class="panel">
+    <h2>BO vs Dashboard Variance</h2>
+    <div class="chart-wrap"><canvas id="chartVariance"></canvas></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Detailed Breakdown &mdash; <span id="tableSubtitle"></span></h2>
+  <div style="overflow-x:auto">
+    <table id="dataTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let ROWS = [], PERIODS = [];
+let META = {};
+let STATE = {
+  metric: 'promo', platform: 'ALL',
+  periodGroup: 'YTD', period: 'YTD',
+  from: '', to: '',
+  sort: { col: 'count', dir: 'desc' },
+  tableBrandFilter: null,
+  bonusTypeFilter: 'ALL',
+};
+let CHARTS = {};
+
+const PLATFORM_COLORS = {
+  QPRO: '#0969da', QP2: '#8250df', 'QPRO+QP2': '#5b3fa8',
+  WS1: '#1a7f37', WS2: '#bf8700',
+  'WS1-CMS': '#0a3069', 'WS2-CMS': '#9a6700',
+  Utilization: '#8a3ffc', Dashboard: '#6e7781',
+};
+
+google.script.run.withSuccessHandler(onData).withFailureHandler(err => {
+  document.getElementById('meta').innerHTML = '<span style="color:var(--red)">Error: ' + err + '</span>';
+}).getRows();
+
+function onData(p) {
+  ROWS = p.rows;
+  PERIODS = p.periods || [];
+  META = { generatedAt: p.generatedAt, sourceSheet: p.sourceSheet };
+  document.getElementById('meta').innerHTML =
+    `Generated ${new Date(META.generatedAt).toLocaleString()} | ${ROWS.length} data points | ` +
+    `<a href="${META.sourceSheet}" target="_blank">source sheet</a>`;
+  buildFilters();
+  render();
+}
+
+function buildFilters() {
+  // Build dropdown options
+  const realMetrics = uniq(ROWS.map(r => r.metric)).filter(m => m && m !== 'creator-promo');
+  const platforms = uniq(ROWS.map(r => r.platform)).filter(p => p && p !== 'Dashboard');
+
+  // Build dropdown: synthetic family options + actual subtype options
+  const metricOptions = [{ value: 'ALL', label: 'All metrics' }];
+  if (realMetrics.includes('promo')) metricOptions.push({ value: 'promo', label: 'Promo codes' });
+  if (realMetrics.includes('banner-homepage') || realMetrics.includes('banner-promo-page') || realMetrics.includes('banner'))
+    metricOptions.push({ value: 'banner', label: 'Banners' });
+  if (realMetrics.includes('game')) metricOptions.push({ value: 'game', label: 'New games' });
+  if (realMetrics.includes('crm')) metricOptions.push({ value: 'crm', label: 'CRM tasks' });
+  if (realMetrics.includes('utilization-hours')) metricOptions.push({ value: 'utilization-hours', label: 'Utilization (hrs)' });
+  fillSelect('fMetric', metricOptions, STATE.metric);
+  fillSelect('fPlatform', [{ value: 'ALL', label: 'All platforms' }, ...platforms.map(p => ({ value: p, label: p }))], STATE.platform);
+
+  // Period list filtered by selected group
+  const periodOpts = PERIODS.filter(p => p.group === STATE.periodGroup);
+  fillSelect('fPeriod', periodOpts.map(p => ({ value: p.period, label: p.label })), STATE.period);
+
+  // Set date input values
+  document.getElementById('fFrom').value = STATE.from;
+  document.getElementById('fTo').value = STATE.to;
+
+  // Wire change handlers
+  document.getElementById('fMetric').onchange = e => { STATE.metric = e.target.value; render(); };
+  document.getElementById('fPlatform').onchange = e => { STATE.platform = e.target.value; render(); };
+  document.getElementById('fPeriodGroup').onchange = e => {
+    STATE.periodGroup = e.target.value;
+    const list = PERIODS.filter(p => p.group === STATE.periodGroup);
+    STATE.period = list[0]?.period || 'YTD';
+    buildFilters();
+    render();
+  };
+  document.getElementById('fPeriod').onchange = e => { STATE.period = e.target.value; render(); };
+  document.getElementById('fFrom').onchange = e => { STATE.from = e.target.value; render(); };
+  document.getElementById('fTo').onchange = e => { STATE.to = e.target.value; render(); };
+
+  // Show/hide bonus type filter
+  const btGroup = document.getElementById('fBonusTypeGroup');
+  btGroup.style.display = STATE.metric === 'promo' ? '' : 'none';
+  const btSel = document.getElementById('fBonusType');
+  btSel.value = STATE.bonusTypeFilter;
+  btSel.onchange = e => { STATE.bonusTypeFilter = e.target.value; renderTable(); };
+}
+
+function fillSelect(id, options, active) {
+  const el = document.getElementById(id);
+  el.innerHTML = options.map(o => `<option value="${o.value}" ${o.value === active ? 'selected' : ''}>${o.label}</option>`).join('');
+}
+
+function metricLabel(m) {
+  return {
+    ALL: 'All metrics', promo: 'Promo codes',
+    banner: 'Banners (all)', 'banner-homepage': 'Banners: Homepage', 'banner-promo-page': 'Banners: Promo page',
+    game: 'New games', crm: 'CRM tasks',
+    'utilization-hours': 'Utilization (hrs)',
+  }[m] || m;
+}
+
+// Metrics that aggregate into a parent KPI card
+const METRIC_FAMILIES = {
+  promo:  ['promo'],
+  banner: ['banner', 'banner-homepage', 'banner-promo-page'],
+  game:   ['game'],
+  crm:    ['crm'],
+  'utilization-hours': ['utilization-hours'],
+};
+
+function resetFilters() {
+  STATE = { metric: 'promo', platform: 'ALL', periodGroup: 'YTD', period: 'YTD',
+    from: '', to: '', sort: { col: 'count', dir: 'desc' },
+    tableBrandFilter: null, bonusTypeFilter: 'ALL' };
+  buildFilters();
+  render();
+}
+
+// Return periods overlapping [from, to] range. If no range, returns null = no filter.
+function periodsInDateRange() {
+  if (!STATE.from && !STATE.to) return null;
+  const from = STATE.from ? new Date(STATE.from).getTime() : -Infinity;
+  const to   = STATE.to   ? new Date(STATE.to).getTime()   :  Infinity;
+  return PERIODS.filter(p => {
+    const pf = new Date(p.from).getTime();
+    const pt = new Date(p.to).getTime();
+    return pf <= to && pt >= from;
+  }).map(p => p.period);
+}
+
+function filtered() {
+  const inRange = periodsInDateRange();
+  const wanted = STATE.metric === 'ALL' ? null : (METRIC_FAMILIES[STATE.metric] || [STATE.metric]);
+  return ROWS.filter(r => {
+    if (wanted && !wanted.includes(r.metric)) return false;
+    if (STATE.platform !== 'ALL' && r.platform !== STATE.platform) return false;
+    if (inRange) {
+      if (!inRange.includes(String(r.period))) return false;
+    } else {
+      if (STATE.period && r.period !== STATE.period) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  renderKpis();
+  renderChartByBrand();
+  renderChartByPlatform();
+  renderChartTrend();
+  renderChartVariance();
+  renderTable();
+}
+
+function renderKpis() {
+  // KPIs always look at the selected (or first) period, ignoring metric filter
+  const period = STATE.period;
+  const ytdRows = ROWS.filter(r => r.period === period && r.platform !== 'Dashboard');
+  const dashRows = ROWS.filter(r => r.period === period && r.platform === 'Dashboard');
+  const metricLabels = { promo: 'Promo Codes', banner: 'Banners', game: 'New Games', crm: 'CRM Tasks', 'utilization-hours': 'Utilization (hrs)' };
+  const html = Object.entries(metricLabels).map(([m, label]) => {
+    const family = METRIC_FAMILIES[m] || [m];
+    const bo = sum(ytdRows.filter(r => family.includes(r.metric)).map(r => r.count));
+    const dash = sum(dashRows.filter(r => family.includes(r.metric)).map(r => r.count));
+    const hasBo = ytdRows.some(r => family.includes(r.metric));
+    const diff = hasBo ? bo - dash : 0;
+    const pct = dash ? Math.round((diff / dash) * 100) : 0;
+    const cls = STATE.metric === m ? 'on' : '';
+    const deltaCls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'warn';
+    return `
+      <div class="kpi ${cls}" data-metric="${m}" onclick="STATE.metric='${m}';document.getElementById('fMetric').value='${m}';render()">
+        <div class="label">${label}</div>
+        <div class="value">${hasBo ? bo.toLocaleString() : '-'}</div>
+        <div class="sub">Dashboard: ${dash.toLocaleString() || '-'}</div>
+        ${hasBo && dash ? `<div class="delta ${deltaCls}">${diff > 0 ? '+' : ''}${diff.toLocaleString()} (${pct > 0 ? '+' : ''}${pct}%)</div>` : '<div class="sub">No comparison</div>'}
+      </div>`;
+  }).join('');
+  document.getElementById('kpis').innerHTML = html;
+}
+
+function renderChartByBrand() {
+  const data = filtered().filter(r => r.platform !== 'Dashboard');
+  const grouped = {};
+  for (const r of data) {
+    const k = r.brand || '(unknown)';
+    if (!grouped[k]) grouped[k] = { count: 0, platform: r.platform };
+    grouped[k].count += Number(r.count) || 0;
+  }
+  const entries = Object.entries(grouped).sort((a, b) => b[1].count - a[1].count).slice(0, 20);
+  document.getElementById('chart1Title').textContent = `Top ${entries.length} brands by ${metricLabel(STATE.metric)}`;
+  destroyChart('chartByBrand');
+  CHARTS.chartByBrand = new Chart(document.getElementById('chartByBrand'), {
+    type: 'bar',
+    data: {
+      labels: entries.map(e => e[0]),
+      datasets: [{ label: STATE.metric, data: entries.map(e => e[1].count),
+        backgroundColor: entries.map(e => PLATFORM_COLORS[e[1].platform] || '#6e7781') }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } },
+      onClick: (e, els) => {
+        if (!els.length) return;
+        const brand = entries[els[0].index][0];
+        // Drill: filter table to that brand, keep other filters
+        STATE.tableBrandFilter = STATE.tableBrandFilter === brand ? null : brand;
+        renderTable();
+      }
+    }
+  });
+}
+
+function renderChartByPlatform() {
+  const data = filtered().filter(r => r.platform !== 'Dashboard');
+  const grouped = {};
+  for (const r of data) grouped[r.platform] = (grouped[r.platform] || 0) + (Number(r.count) || 0);
+  const labels = Object.keys(grouped);
+  destroyChart('chartByPlatform');
+  CHARTS.chartByPlatform = new Chart(document.getElementById('chartByPlatform'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => grouped[l]), backgroundColor: labels.map(l => PLATFORM_COLORS[l] || '#6e7781') }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      onClick: (e, els) => {
+        if (!els.length) return;
+        const p = labels[els[0].index];
+        STATE.platform = STATE.platform === p ? 'ALL' : p;
+        document.getElementById('fPlatform').value = STATE.platform;
+        render();
+      }
+    }
+  });
+}
+
+function renderChartTrend() {
+  // Trend = current metric across all periods of currently selected group
+  const group = STATE.periodGroup === 'YTD' ? 'Monthly' : STATE.periodGroup;
+  const periods = PERIODS.filter(p => p.group === group);
+  const wanted = STATE.metric === 'ALL' ? null : (METRIC_FAMILIES[STATE.metric] || [STATE.metric]);
+  const series = periods.map(p => {
+    const rows = ROWS.filter(r => r.period === p.period
+      && (!wanted || wanted.includes(r.metric))
+      && r.platform !== 'Dashboard');
+    if (STATE.platform !== 'ALL') return sum(rows.filter(r => r.platform === STATE.platform).map(r => r.count));
+    return sum(rows.map(r => r.count));
+  });
+  document.getElementById('chart2Title').textContent =
+    `${metricLabel(STATE.metric)} trend - ${group}${STATE.platform !== 'ALL' ? ' | ' + STATE.platform : ''}`;
+  destroyChart('chartTrend');
+  CHARTS.chartTrend = new Chart(document.getElementById('chartTrend'), {
+    type: 'line',
+    data: {
+      labels: periods.map(p => p.label),
+      datasets: [{ label: metricLabel(STATE.metric), data: series, borderColor: '#0969da',
+        backgroundColor: 'rgba(9,105,218,0.15)', fill: true, tension: 0.25, pointRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+function renderChartVariance() {
+  const period = STATE.period;
+  const metrics = ['promo', 'banner', 'game', 'crm'];
+  const labels = ['Promos', 'Banners', 'Games', 'CRM'];
+  const boData = metrics.map(m => {
+    const fam = METRIC_FAMILIES[m] || [m];
+    return sum(ROWS.filter(r => fam.includes(r.metric) && r.period === period && r.platform !== 'Dashboard').map(r => r.count));
+  });
+  const dashData = metrics.map(m => {
+    const fam = METRIC_FAMILIES[m] || [m];
+    return sum(ROWS.filter(r => fam.includes(r.metric) && r.period === period && r.platform === 'Dashboard').map(r => r.count));
+  });
+  destroyChart('chartVariance');
+  CHARTS.chartVariance = new Chart(document.getElementById('chartVariance'), {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label: 'BO reality', data: boData, backgroundColor: '#0969da' },
+      { label: 'Dashboard',  data: dashData, backgroundColor: '#bf8700' },
+    ] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+function renderTable() {
+  const m = STATE.metric;
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+
+  // -- ALL METRICS: pivot table (brand x metric family) ---------------------
+  if (m === 'ALL') {
+    const pivotData = filtered().filter(r => r.platform !== 'Dashboard' && r.metric !== 'creator-promo');
+    // Build pivot keyed by platform||brand
+    const pivot = {};
+    for (const r of pivotData) {
+      const k = r.platform + '||' + (r.brand || '');
+      if (!pivot[k]) pivot[k] = { platform: r.platform, brand: r.brand, promo: 0, banner: 0, game: 0, crm: 0, util: 0 };
+      if (METRIC_FAMILIES.promo.includes(r.metric))              pivot[k].promo  += Number(r.count) || 0;
+      if (METRIC_FAMILIES.banner.includes(r.metric))             pivot[k].banner += Number(r.count) || 0;
+      if (METRIC_FAMILIES.game.includes(r.metric))               pivot[k].game   += Number(r.count) || 0;
+      if (METRIC_FAMILIES.crm.includes(r.metric))                pivot[k].crm    += Number(r.count) || 0;
+      if (METRIC_FAMILIES['utilization-hours'].includes(r.metric)) pivot[k].util += Number(r.count) || 0;
+    }
+    let rows = Object.values(pivot);
+    const { col, dir } = STATE.sort;
+    const pCols = ['_promo','_banner','_game','_crm','_util'];
+    rows.sort((a, b) => {
+      const colMap = { platform: 'platform', brand: 'brand', _promo: 'promo', _banner: 'banner', _game: 'game', _crm: 'crm', _util: 'util' };
+      const k = colMap[col] || 'promo';
+      const av = a[k], bv = b[k];
+      if (typeof av === 'number' && typeof bv === 'number') return dir === 'asc' ? av - bv : bv - av;
+      return dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const hCols = [
+      { k: 'platform', label: 'Platform' }, { k: 'brand', label: 'Brand' },
+      { k: '_promo', label: 'Promos', num: true }, { k: '_banner', label: 'Banners', num: true },
+      { k: '_game', label: 'Games', num: true }, { k: '_crm', label: 'CRM', num: true },
+      { k: '_util', label: 'Util (hrs)', num: true },
+    ];
+    thead.innerHTML = '<tr>' + hCols.map(c => `<th data-sort="${c.k}" ${c.num ? 'class="num"' : ''}>${c.label}</th>`).join('') + '</tr>';
+    thead.querySelectorAll('th').forEach(th => {
+      th.onclick = () => {
+        if (STATE.sort.col === th.dataset.sort) STATE.sort.dir = STATE.sort.dir === 'asc' ? 'desc' : 'asc';
+        else { STATE.sort.col = th.dataset.sort; STATE.sort.dir = 'desc'; }
+        renderTable();
+      };
+    });
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">No data.</td></tr>`; return; }
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PLATFORM_COLORS[r.platform]||'#6e7781'};margin-right:6px"></span>${r.platform}</td>
+      <td>${r.brand}</td>
+      ${[r.promo, r.banner, r.game, r.crm, r.util].map(v => `<td class="num">${v ? v.toLocaleString(undefined, {maximumFractionDigits:1}) : '-'}</td>`).join('')}
+    </tr>`).join('');
+    document.getElementById('tableSubtitle').textContent =
+      `All metrics | ${STATE.platform === 'ALL' ? 'All platforms' : STATE.platform} | ${STATE.period} (${rows.length} brands)`;
+    document.querySelectorAll('th').forEach(th => {
+      th.classList.toggle('sorted', th.dataset.sort === col);
+      th.classList.toggle('asc', th.dataset.sort === col && dir === 'asc');
+    });
+    return;
+  }
+
+  // -- Per-metric column definitions -----------------------------------------
+  const cols =
+    m === 'promo' ? [
+      { k: 'brand',    label: 'Brand' },
+      { k: 'platform', label: 'Platform' },
+      { k: '_bonus',   label: 'Bonus',       num: true },
+      { k: '_fc',      label: 'Free Credit',  num: true },
+      { k: '_fs',      label: 'Free Spin',    num: true },
+      { k: 'count',    label: 'Total',        num: true },
+    ] : m === 'banner' ? [
+      { k: 'brand',    label: 'Brand' },
+      { k: '_subtype', label: 'Type' },
+      { k: 'count',    label: 'Total',     num: true },
+    ] : m === 'utilization-hours' ? [
+      { k: 'brand',      label: 'Person / Team' },
+      { k: '_headcount', label: 'Active people' },
+      { k: 'count',      label: 'Hours',     num: true },
+    ] : [
+      { k: 'platform', label: 'Platform' },
+      { k: 'brand',    label: 'Brand' },
+      { k: 'metric',   label: 'Metric' },
+      { k: 'count',    label: 'Count',     num: true },
+      { k: 'period',   label: 'Period' },
+    ];
+
+  function val(r, k) {
+    if (k === '_bonus')    return typeof r.meta === 'object' ? (r.meta.Bonus      || '') : '';
+    if (k === '_fc')       return typeof r.meta === 'object' ? (r.meta.FreeCredit || '') : '';
+    if (k === '_fs')       return typeof r.meta === 'object' ? (r.meta.FreeSpin   || '') : '';
+    if (k === '_subtype') {
+      if (r.metric === 'banner-homepage')   return 'Homepage';
+      if (r.metric === 'banner-promo-page') return 'Promo page';
+      if (typeof r.meta === 'object' && r.meta.source) return r.meta.source;
+      return '-';
+    }
+    if (k === '_headcount') return r.meta?.headcount_active || '-';
+    return r[k];
+  }
+
+  thead.innerHTML = '<tr>' + cols.map(c => `<th data-sort="${c.k}" ${c.num ? 'class="num"' : ''}>${c.label}</th>`).join('') + '</tr>';
+  thead.querySelectorAll('th[data-sort]').forEach(th => {
+    th.onclick = () => {
+      const c = th.dataset.sort;
+      if (STATE.sort.col === c) STATE.sort.dir = STATE.sort.dir === 'asc' ? 'desc' : 'asc';
+      else { STATE.sort.col = c; STATE.sort.dir = 'desc'; }
+      renderTable();
+    };
+  });
+
+  let data = filtered().slice();
+  if (STATE.tableBrandFilter) data = data.filter(r => r.brand === STATE.tableBrandFilter);
+  // Bonus type filter (promo only)
+  if (m === 'promo' && STATE.bonusTypeFilter !== 'ALL') {
+    const typeKey = STATE.bonusTypeFilter; // 'Bonus', 'FreeCredit', 'FreeSpin'
+    data = data.filter(r => typeof r.meta === 'object' && Number(r.meta[typeKey]) > 0);
+  }
+
+  const { col, dir } = STATE.sort;
+  data.sort((a, b) => {
+    const av = val(a, col), bv = val(b, col);
+    if (typeof av === 'number' && typeof bv === 'number') return dir === 'asc' ? av - bv : bv - av;
+    const as = String(av || ''), bs = String(bv || '');
+    return dir === 'asc' ? as.localeCompare(bs) : bs.localeCompare(as);
+  });
+
+  if (!data.length) { tbody.innerHTML = `<tr><td colspan="${cols.length}" class="empty">No data matches filters.</td></tr>`; return; }
+  tbody.innerHTML = data.map(r => '<tr>' + cols.map(c => {
+    const v = val(r, c.k);
+    if (c.k === 'brand') {
+      return `<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PLATFORM_COLORS[r.platform] || '#6e7781'};margin-right:6px"></span>${r.brand}</td>`;
+    }
+    if (c.num) {
+      const n = Number(v);
+      return `<td class="num">${v !== '' && v != null && !isNaN(n) ? n.toLocaleString(undefined, {maximumFractionDigits:1}) : (v || '-')}</td>`;
+    }
+    return `<td>${v == null ? '' : v}</td>`;
+  }).join('') + '</tr>').join('');
+
+  const bonusTag = (m === 'promo' && STATE.bonusTypeFilter !== 'ALL') ? ` | ${STATE.bonusTypeFilter}` : '';
+  const brandTag = STATE.tableBrandFilter ? ` | >> ${STATE.tableBrandFilter}` : '';
+  document.getElementById('tableSubtitle').textContent =
+    `${metricLabel(STATE.metric)}${bonusTag}${brandTag} | ${STATE.platform === 'ALL' ? 'All platforms' : STATE.platform} | ` +
+    `${STATE.from || STATE.to ? `Date filter ${STATE.from || '...'} -> ${STATE.to || '...'}` : STATE.period} ` +
+    `(${data.length} rows)`;
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === col);
+    th.classList.toggle('asc', th.dataset.sort === col && dir === 'asc');
+  });
+}
+
+function refreshFromServer() {
+  document.getElementById('meta').textContent = 'Refreshing...';
+  google.script.run.withSuccessHandler(() => location.reload()).clearCache();
+}
+
+function exportCsv() {
+  const rows = filtered();
+  const csv = ['platform,brand,metric,count,period,meta'];
+  for (const r of rows) {
+    const meta = typeof r.meta === 'object' ? JSON.stringify(r.meta || {}).replace(/"/g, '""') : (r.meta || '');
+    csv.push(`${r.platform},"${r.brand}",${r.metric},${r.count},${r.period},"${meta}"`);
+  }
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `promo-ops-${STATE.metric}-${STATE.platform}-${Date.now()}.csv`;
+  a.click();
+}
+
+function uniq(arr) { return [...new Set(arr)]; }
+function sum(arr) { return arr.reduce((a, b) => a + (Number(b) || 0), 0); }
+function destroyChart(id) { if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; } }
+</script>
+</body>
+</html>

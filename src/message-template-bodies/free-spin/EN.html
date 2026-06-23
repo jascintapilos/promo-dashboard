@@ -1,0 +1,52 @@
+<!--
+  Free Spin — English body (QPRO platform).
+  Authored from "EN - Inbox T&C (QPRO/QPLY)" (Drive 1iqUhvE…), Section 3.
+
+  Placeholders:
+    {{currency_symbol}}            currency code
+    {{min_deposit}}                request's min deposit (may be 0 = no-deposit FS)
+    {{transfer_amount}}            amount user transfers in (often = min_deposit)
+    {{spin_count}}                 number of free spins (e.g., 188)
+    {{game_provider}}              upper-case provider (e.g., PRAGMATIC PLAY)
+    {{game_name}}                  game title (e.g., Fortune of Olympus)
+    {{promotion_name_en}}          marketing name of the promo
+    {{turnover}}                   turnover multiplier
+    {{turnover_words}}             same in words
+    {{validity_days}}              claim window in days
+    {{validity_days_words}}        same in words
+    {{rewards_validity_days}}      bonus validity after claim (days)
+    {{rewards_validity_days_words}}  same in words
+
+  :brandname is left LITERAL.
+-->
+
+<p>As a reward for joining us, you are entitled to claim <strong>{{spin_count}} Free Spins</strong> with just <strong>{{currency_symbol}} {{transfer_amount}}</strong>!</p>
+
+<p><strong>How to Apply:</strong></p>
+<ol>
+  <li>Make a deposit and wait for it to be approved.</li>
+  <li>Once approved, head over to the <strong>Transfer</strong> page.</li>
+  <li>On the Transfer page, fill up and submit the form with the following details:
+    <ul>
+      <li><strong>From:</strong> MAIN WALLET</li>
+      <li><strong>To:</strong> {{game_provider}}</li>
+      <li><strong>Amount:</strong> {{transfer_amount}} or more</li>
+      <li><strong>Promotion:</strong> {{promotion_name}}</li>
+    </ul>
+  </li>
+  <li>After the wallet transfer is successful, go to <strong>Home &gt; Slots &gt; [{{game_provider}}]</strong> and launch the game <strong>{{game_name}}</strong>.</li>
+  <li>Spin and enjoy!</li>
+</ol>
+
+<p><strong>Terms &amp; Conditions</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}A minimum deposit of {{currency_symbol}} {{min_deposit}} is required to claim this promotion.{{else}}No minimum deposit is required to claim this promotion.{{/if}}</li>
+  <li>Each member can claim this promotion only once.</li>
+  <li>This promotion applies exclusively to one game under [{{game_provider}}]. Your [{{game_provider}}] wallet will be locked until the turnover requirement is fulfilled.</li>
+  <li>The turnover requirement for this promotion is {{turnover_words}} ({{turnover}}) time{{#if_turnover_plural}}s{{/if}} the sum of the transfer amount and any winnings from Free Spins.</li>
+  <li>The promotion must be claimed within {{validity_days_words}} ({{validity_days}}) day{{#if_validity_days_plural}}s{{/if}}, and the bonus will expire {{rewards_validity_days_words}} ({{rewards_validity_days}}) day{{#if_rewards_validity_days_plural}}s{{/if}} after the claim.</li>
+  <li>Promotion codes are time-limited and cannot be extended once expired.</li>
+  <li>Members are advised to use the Refresh button on the Home page to get the latest promotion status before performing any transactions e.g. deposit or withdrawal.</li>
+  <li>General :brandname Terms and Conditions apply. :url/terms-conditions</li>
+</ol>

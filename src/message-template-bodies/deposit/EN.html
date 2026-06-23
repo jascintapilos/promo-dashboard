@@ -1,0 +1,65 @@
+<!--
+  Deposit Bonus — English body (QPRO platform).
+  Authored from "EN - Inbox T&C (QPRO/QPLY)" (Drive 1iqUhvE-9rsPsueBBXDy7ymiHbJpT480W2AeFW4WdvSQ),
+  structural HTML modelled on FT_REL_ALLGAMES_50PCT (cleanest pulled reference).
+
+  Placeholders the canary substitutes BEFORE pasting into the CKEditor:
+    {{currency_symbol}}            currency code (RM / S$ / Rp / ฿ / AUD / KH)
+    {{min_deposit}}                request's min deposit (number)
+    {{bonus_pct}}                  bonus % (number)
+    {{max_bonus}}                  request's max bonus (number)
+    {{turnover}}                   turnover multiplier (number)
+    {{turnover_words}}             same multiplier in spelled-out form ("fifteen")
+    {{bonus_amount_example}}       computed = min_deposit * bonus_pct / 100
+    {{total_received_example}}     computed = min_deposit + bonus_amount_example
+    {{turnover_requirement_example}}  computed = total_received_example * turnover
+    {{validity_days}}              promo claim window (days)
+    {{validity_days_words}}        same in words
+    {{rewards_validity_days}}      bonus validity after claim (days)
+    {{rewards_validity_days_words}}  same in words
+    {{eligible_categories}}        comma-joined list, e.g. "Slots, Live Casino Crash, and Fishing"
+
+  :brandname is left LITERAL — the canary's placeholder-substitution pass swaps
+  it with the brand's displayName (from data/brand-directory.json) at runtime.
+-->
+
+<p><strong>Promo Details:</strong></p>
+
+<table style="width:100%;">
+  <thead>
+    <tr>
+      <th style="text-align:center;"><strong>Min Deposit</strong></th>
+      <th style="text-align:center;"><strong>Max Bonus</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:center;">{{currency_symbol}} {{min_deposit}}</td>
+      <td style="text-align:center;">{{currency_symbol}} {{max_bonus}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Bonus play condition: <strong>{{turnover}}x turnover</strong></p>
+
+<p><strong>Bonus Condition Example</strong></p>
+
+<ul>
+  <li>Deposit [{{currency_symbol}} {{example_deposit}}]</li>
+  <li>Bonus amount = {{currency_symbol}} {{example_deposit}} × {{bonus_pct}}% = {{currency_symbol}} {{bonus_amount_example}}</li>
+  <li>Total received amount [{{currency_symbol}} {{example_deposit}} + {{currency_symbol}} {{bonus_amount_example}}] = {{currency_symbol}} {{total_received_example}}</li>
+  <li>Turnover requirement [{{currency_symbol}} {{total_received_example}} x {{turnover}}] = {{currency_symbol}} {{turnover_requirement_example}}</li>
+</ul>
+
+<p><strong>Terms &amp; Conditions</strong></p>
+
+<ol>
+  <li>A minimum deposit of {{currency_symbol}} {{min_deposit}} is required to claim this promotion. Max bonus for this promotion is {{currency_symbol}} {{max_bonus}}.</li>
+  <li>A turnover requirement of {{turnover_words}} ({{turnover}}) time{{#if_turnover_plural}}s{{/if}} applies before any withdrawals can be made.</li>
+  <li>Each member can claim this promotion only once.</li>
+  <li>{{#if_all_categories}}All game categories are eligible for this promotion except {{excluded_categories}}.{{else}}{{deposit_cat_clause}}{{/if}}</li>
+  <li>The promotion must be claimed within {{validity_days_words}} ({{validity_days}}) day{{#if_validity_days_plural}}s{{/if}}, and the bonus will expire {{rewards_validity_days_words}} ({{rewards_validity_days}}) day{{#if_rewards_validity_days_plural}}s{{/if}} after the claim.</li>
+  <li>Promotion codes are time-limited and cannot be extended once expired.</li>
+  <li>Members are advised to use the Refresh button on the Home page to get the latest promotion status before performing any transactions e.g. deposit or withdrawal.</li>
+  <li>General :brandname Terms and Conditions apply.  :url/terms-conditions</li>
+</ol>

@@ -1,0 +1,46 @@
+<!--
+  Deposit Bonus — Chinese body (QPRO platform).
+  Authored from "ZH - Inbox T&C (QPRO/QPLY)" (Drive 1E8483fBEI2UT1dWOh58r8vkCvSUeXwezQKIBF5OGKF8),
+  structure parallel to deposit/EN.html. Placeholders the same.
+-->
+
+<p><strong>优惠详情：</strong></p>
+
+<table style="width:100%;">
+  <thead>
+    <tr>
+      <th style="text-align:center;"><strong>最低存款金额</strong></th>
+      <th style="text-align:center;"><strong>最高奖金</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:center;">{{currency_symbol}} {{min_deposit}}</td>
+      <td style="text-align:center;">{{currency_symbol}} {{max_bonus}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>奖金条件：<strong>{{turnover}} 倍流水</strong></p>
+
+<p><strong>奖金计算示例</strong></p>
+
+<ul>
+  <li>存款 [{{currency_symbol}} {{example_deposit}}]</li>
+  <li>奖金 = {{currency_symbol}} {{example_deposit}} × {{bonus_pct}}% = {{currency_symbol}} {{bonus_amount_example}}</li>
+  <li>存款 + 奖金 [{{currency_symbol}} {{example_deposit}} + {{currency_symbol}} {{bonus_amount_example}}] = {{currency_symbol}} {{total_received_example}}</li>
+  <li>流水量需求 [{{currency_symbol}} {{total_received_example}} x {{turnover}}] = {{currency_symbol}} {{turnover_requirement_example}}</li>
+</ul>
+
+<p><strong>条款与条件（摘要）</strong></p>
+
+<ol>
+  <li>申请此优惠需最低存款 {{currency_symbol}} {{min_deposit}}。本次优惠的最高奖金为 {{currency_symbol}} {{max_bonus}}。</li>
+  <li>在进行任何提款前，需完成 {{turnover}} 倍流水要求。</li>
+  <li>每位会员仅限领取一次此优惠。</li>
+  <li>{{#if_all_categories}}除了 {{excluded_categories}} 外，所有游戏类别均适用于此优惠活动。{{else}}{{deposit_cat_clause}}{{/if}}</li>
+  <li>优惠需在 {{validity_days}} 天内领取，并将在领取后 {{rewards_validity_days}} 天内过期。</li>
+  <li>优惠码有时间限制，一旦过期将无法延长。</li>
+  <li>会员在进行任何交易（如存款或提款）前，建议点击首页的刷新按钮以获取最新的优惠状态。</li>
+  <li>适用 :brandname 一般条款与条件。  :url/terms-conditions</li>
+</ol>

@@ -1,0 +1,32 @@
+# Secrets — never commit
+*.local.json
+bo-sites.json
+bo-sites.local.json
+google-credentials.local.json
+google-oauth-client.local.json
+google-oauth-token.local.json
+igmp-creds.local.json
+cms-creds.local.json
+
+# Runtime artifacts
+.session/
+captures/
+logs/
+tmp/
+tmp-plans/
+tmp-runs/
+canary-input.tmp
+debug-*.html
+debug-*.txt
+debug-*.png
+*.log
+
+# Dependencies
+node_modules/
+
+# OS junk
+.DS_Store
+__MACOSX/
+Thumbs.db
+Desktop.ini
+igmp-sessions.local.json

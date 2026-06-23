@@ -1,0 +1,23 @@
+<!--
+  Free Credit — Chinese body.
+  Rewritten 2026-05-14 from operator's live QP2A templates.
+  Structure parallels free-credit/EN.html.
+-->
+
+<p>恭喜！您已获得了免费彩金！</p>
+
+<p><strong>如何领取</strong><br>
+1. 前往 <strong>[奖励]</strong> 页面。<br>
+2. 搜索 <strong>[{{reward_name}}]</strong> 奖励并点击领取。</p>
+
+<p><strong>条款和条件</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}申请此优惠需最低存款 {{currency_symbol}} {{min_deposit}}。{{else}}领取此优惠无需存款。{{/if}}{{#if_max_transfer_out}}游戏钱包最高可转出金额仅为 {{currency_symbol}} {{max_transfer_out}}。{{else}}游戏钱包无最高转出限制。{{/if}}</li>
+  <li>在进行任何提款前，需完成 {{turnover}} 倍流水要求。</li>
+  <li>优惠需在 {{validity_days}} 天内领取，并将在领取后 {{rewards_validity_days}} 天内过期。</li>
+  <li>优惠码有时间限制，一旦过期将无法延长。</li>
+  <li>除了 {{excluded_categories}} 外，所有游戏类别均适用于此优惠活动。</li>
+  <li>会员在进行任何交易（如存款或提款）前，建议点击首页的 刷新按钮 以获取最新的优惠状态。</li>
+  <li>适用 :brandname 一般条款与条件。 :url/terms-conditions</li>
+</ol>

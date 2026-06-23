@@ -1,0 +1,129 @@
+<!--
+  CANONICAL HTML TEMPLATE for promo-translation-html.
+  Mirror this structure exactly per output file — only swap text for translated content.
+
+  Notes:
+    - Inline styles only (Google Docs preserves them on paste)
+    - Calibri 12pt body; black on white
+    - Tables: thin black border, white bg, bold headers only, centered cells, 10pt padding
+    - Section headings: bold paragraph, body-size (NOT a larger H1/H2)
+    - Title: bold paragraph, body-size
+    - Inline bold on dates and emphasis phrases only
+    - Use language-appropriate font fallbacks:
+        ZH:  Calibri, 'Microsoft YaHei', 'PingFang SC', sans-serif (line-height 1.5)
+        TH:  Calibri, 'Helvetica Neue', Arial, sans-serif (line-height 1.6)
+        KM:  Calibri, 'Khmer OS', 'Khmer UI', 'Helvetica Neue', sans-serif (line-height 1.7)
+        ID:  Calibri, 'Helvetica Neue', Arial, sans-serif (line-height 1.5)
+        BM:  Calibri, 'Helvetica Neue', Arial, sans-serif (line-height 1.5)
+    - Replace <html lang="..."> with the target ISO code
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>[BRAND] [PROMO TITLE] — [LANGUAGE] Translation</title>
+</head>
+<body style="font-family: Calibri, 'Microsoft YaHei', 'PingFang SC', sans-serif; font-size: 12pt; color: #000000; max-width: 720px; margin: 40px auto; line-height: 1.5;">
+
+<!-- TITLE -->
+<p style="margin: 0 0 12pt 0;"><strong>[Translated Title with BRAND kept in English]</strong></p>
+
+<!-- TAGLINE -->
+<p style="margin: 0 0 12pt 0;">[Translated tagline — regular weight]</p>
+
+<!-- INTRO -->
+<p style="margin: 0 0 12pt 0;">[Translated intro paragraph. Brand names, product names, MYR amounts, and dates stay in English.]</p>
+
+<!-- REWARDS / PRIZES TABLE (2-column) -->
+<table style="border-collapse: collapse; margin: 12pt 0; width: 100%;">
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[Header 1, e.g. 奖品]</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[Header 2, e.g. 数量]</td>
+</tr>
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">[Product name in EN]</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">x1 [Grand Prize translated]</td>
+</tr>
+<!-- repeat <tr> for each row -->
+</table>
+
+<!-- OPTIONAL: SINGLE-COLUMN TABLE (e.g. Participating Games for tournament docs) -->
+<!--
+<table style="border-collapse: collapse; margin: 12pt 0; width: 100%;">
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[Translated header, e.g. 参与游戏]</td>
+</tr>
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">[Comma-separated game names in EN]</td>
+</tr>
+</table>
+-->
+
+<!-- SECTION HEADING -->
+<p style="margin: 18pt 0 12pt 0;"><strong>[Translated section heading, e.g. 活动详情]</strong></p>
+
+<!-- NUMBERED LIST (with embedded table inside item 2 if source has it) -->
+<ol style="padding-left: 28pt; margin: 0;">
+<li style="margin: 6pt 0;">[Item 1 — bold inline dates: <strong>DD/MM/YYYY HH:MM</strong>]</li>
+<li style="margin: 6pt 0;">[Item 2 with embedded table:]
+
+<table style="border-collapse: collapse; margin: 8pt 0; width: 100%;">
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[Header]</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[Header]</td>
+</tr>
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">MYR 200 x 1</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">2</td>
+</tr>
+<!-- repeat as needed -->
+</table>
+
+</li>
+<li style="margin: 6pt 0;">[Item 3]</li>
+<li style="margin: 6pt 0;">[Item 4]</li>
+</ol>
+
+<!-- TOURNAMENT-STYLE RANK/REWARDS TABLE (if applicable) -->
+<!--
+<p style="margin: 18pt 0 12pt 0;"><strong>[Tournament heading, e.g. 每日锦标赛]</strong></p>
+
+<ol style="padding-left: 28pt; margin: 0;">
+<li style="margin: 6pt 0;">[Tournament rule 1]</li>
+<li style="margin: 6pt 0;">[Tournament rule 2]</li>
+</ol>
+
+<table style="border-collapse: collapse; margin: 12pt 0; width: 100%;">
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[排名]</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center; font-weight: bold;">[奖励 (MYR)]</td>
+</tr>
+<tr>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">1 - 15</td>
+<td style="border: 1px solid #000000; padding: 10pt; text-align: center;">160</td>
+</tr>
+</table>
+-->
+
+<!-- TERMS AND CONDITIONS -->
+<!--
+  Heading hyperlinking (QPRO + QP2 brands only, scope set 2026-05-17):
+    - Look up the brand × target-language URL in references/tnc-links.md
+    - If a URL exists → wrap the heading text in <a href="..."> (Google Docs will
+      preserve the link on paste and apply its default link styling).
+    - If no URL → emit plain <strong> as the fallback (the variant below the linked one).
+    - Other brands (WS1, WS2, etc.) → always plain text for now.
+-->
+<p style="margin: 18pt 0 12pt 0;"><strong><a href="https://bp9mys.com/zh-my/info-center/terms-and-conditions">[Translated T&amp;C heading, e.g. 条款与条件]</a></strong></p>
+<!-- Plain-text fallback when no URL is available for this brand × language: -->
+<!-- <p style="margin: 18pt 0 12pt 0;"><strong>[Translated T&amp;C heading]</strong></p> -->
+
+<ol style="padding-left: 28pt; margin: 0;">
+<li style="margin: 6pt 0;">[T&amp;C item 1 — brand name in EN]</li>
+<li style="margin: 6pt 0;">[T&amp;C item 2]</li>
+<li style="margin: 6pt 0;">[T&amp;C item 3 — with inline bold dates if source has them: <strong>15/07/2026</strong>]</li>
+<!-- continue for as many items as the source has — typically 12-13 items -->
+</ol>
+
+</body>
+</html>

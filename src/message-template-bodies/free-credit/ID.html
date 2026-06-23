@@ -1,0 +1,25 @@
+<!--
+  Free Credit — Bahasa Indonesia body.
+  Rewritten 2026-05-14 to parallel free-credit/EN.html. ID only required
+  for QPRO1 / WS1 / QP2 brands (operator rule); filled here for test/canary
+  consistency. Plural inflections collapsed (Indonesian doesn't pluralize).
+  "Turnover" and "Free Credit" kept in English per glossary.
+-->
+
+<p>Selamat! Anda telah mendapatkan kredit gratis!</p>
+
+<p><strong>Cara Klaim</strong><br>
+1. Buka halaman <strong>[Reward]</strong>.<br>
+2. Cari reward <strong>[{{reward_name}}]</strong> dan klik CLAIM.</p>
+
+<p><strong>Syarat dan Ketentuan</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}Deposit minimum sebesar {{currency_symbol}} {{min_deposit}} diperlukan untuk mengklaim promosi ini.{{else}}Tidak ada deposit yang diperlukan untuk mengklaim promosi ini.{{/if}} {{#if_max_transfer_out}}Penarikan maksimum dari dompet permainan adalah {{currency_symbol}} {{max_transfer_out}} saja.{{else}}Tidak ada batas penarikan maksimum dari dompet permainan.{{/if}}</li>
+  <li>Persyaratan Turnover sebanyak {{turnover}} kali berlaku sebelum penarikan dapat dilakukan.</li>
+  <li>Promosi harus diklaim dalam {{validity_days}} hari, dan bonus akan kedaluwarsa {{rewards_validity_days}} hari setelah klaim.</li>
+  <li>Kode promosi memiliki batas waktu dan tidak dapat diperpanjang setelah kedaluwarsa.</li>
+  <li>Semua kategori permainan memenuhi syarat untuk promosi ini kecuali {{excluded_categories}}.</li>
+  <li>Anggota disarankan untuk menggunakan tombol Refresh di halaman Beranda untuk mendapatkan status promosi terbaru sebelum melakukan transaksi apa pun seperti deposit atau penarikan.</li>
+  <li>Syarat dan Ketentuan umum :brandname berlaku. :url/terms-conditions</li>
+</ol>

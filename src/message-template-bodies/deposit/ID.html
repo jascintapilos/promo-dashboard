@@ -1,0 +1,49 @@
+<!--
+  Deposit Bonus — Bahasa Indonesia body (QPRO + QP2 platform).
+  Authored 2026-05-14 to satisfy QP2 BO's all-tabs-required Submit validation.
+  Structure parallel to deposit/EN.html. Placeholders identical.
+  Indonesian doesn't have plural inflection, so {{#if_*_plural}} forms are
+  collapsed to the bare number form ("kali", "hari"). Glossary terms
+  (Turnover, Free Spin) are kept in English per the iGaming convention.
+-->
+
+<p><strong>Detail Promosi:</strong></p>
+
+<table style="width:100%;">
+  <thead>
+    <tr>
+      <th style="text-align:center;"><strong>Deposit Minimum</strong></th>
+      <th style="text-align:center;"><strong>Bonus Maksimum</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:center;">{{currency_symbol}} {{min_deposit}}</td>
+      <td style="text-align:center;">{{currency_symbol}} {{max_bonus}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Syarat permainan bonus: <strong>{{turnover}}x Turnover</strong></p>
+
+<p><strong>Contoh Perhitungan Bonus</strong></p>
+
+<ul>
+  <li>Deposit [{{currency_symbol}} {{min_deposit}} &amp; ke atas]</li>
+  <li>Jumlah bonus = {{currency_symbol}} {{max_bonus}}</li>
+  <li>Total jumlah diterima [{{currency_symbol}} {{min_deposit}} + {{currency_symbol}} {{max_bonus}}] = {{currency_symbol}} {{total_received_example}}</li>
+  <li>Persyaratan Turnover [{{currency_symbol}} {{total_received_example}} x {{turnover}}] = {{currency_symbol}} {{turnover_requirement_example}}</li>
+</ul>
+
+<p><strong>Syarat dan Ketentuan</strong></p>
+
+<ol>
+  <li>Deposit minimum sebesar {{currency_symbol}} {{min_deposit}} diperlukan untuk mengklaim promosi ini. Bonus maksimum untuk promosi ini adalah {{currency_symbol}} {{max_bonus}}.</li>
+  <li>Persyaratan Turnover sebanyak {{turnover}} kali berlaku sebelum penarikan dapat dilakukan.</li>
+  <li>Setiap anggota hanya dapat mengklaim promosi ini sekali.</li>
+  <li>{{#if_all_categories}}Semua kategori permainan memenuhi syarat untuk promosi ini kecuali {{excluded_categories}}.{{else}}Kategori permainan yang memenuhi syarat untuk promosi ini adalah {{eligible_categories}}.{{/if}}</li>
+  <li>Promosi harus diklaim dalam {{validity_days}} hari, dan bonus akan kedaluwarsa {{rewards_validity_days}} hari setelah klaim.</li>
+  <li>Kode promosi memiliki batas waktu dan tidak dapat diperpanjang setelah kedaluwarsa.</li>
+  <li>Anggota disarankan untuk menggunakan tombol Refresh di halaman Beranda untuk mendapatkan status promosi terbaru sebelum melakukan transaksi apa pun seperti deposit atau penarikan.</li>
+  <li>Syarat dan Ketentuan umum :brandname berlaku.  :url/terms-conditions</li>
+</ol>

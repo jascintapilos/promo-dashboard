@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "defaultSite": "ibc22",
+  "sites": {
+    "ibc22": {
+      "label": "IBC22 BO — QP2A/B/C/D (qtp777)",
+      "platform": "qp2",
+      "baseUrl": "https://ibc22.qtp777.com",
+      "apiHost": "https://54505721qp2api.960806.com",
+      "reqSignKey": "kbXbAEotZ64nueRXt0+fWKBndGADLrQiaL6VrhM+mSw=",
+      "loginMerchantCode": "I22",
+      "username": "REPLACE_ME"
+    },
+    "qpro1-example": {
+      "label": "QPRO1 example — BP9 (MY/SG/ID)",
+      "platform": "qpro",
+      "baseUrl": "https://bo.mei707.com",
+      "username": "REPLACE_ME"
+    },
+    "example-other-qp2-bo": {
+      "label": "Another QP2 deployment",
+      "platform": "qp2",
+      "baseUrl": "https://example.com",
+      "apiHost": "https://api.example.com",
+      "reqSignKey": "FIND_IN_main.<hash>.js_grep_for_reqSignKey",
+      "loginMerchantCode": "ABC",
+      "username": "REPLACE_ME"
+    }
+  },
+  "_secrets_note": "Passwords are NOT stored here. Put them in bo-sites.local.json (also gitignored): {\"passwords\": {\"<username>\": \"<password>\"}}. Multiple sites can share a username/password via the same lookup key."
+}

@@ -1,0 +1,53 @@
+<!--
+  Free Credit — English body.
+  Rewritten 2026-05-14 to match operator's live QP2A templates
+  (FT_VIP_30FC_10X, VIP_15FC_0X, VIP_30FC_5X, VIP_50FC_5X).
+
+  Sections:
+    1. Intro celebratory line
+    2. How to Redeem — points the user at the [Reward] page
+    3. Terms and Conditions
+    4. Footer (:brandname / :url/terms-conditions LITERAL)
+
+  Placeholders:
+    {{reward_name}}                computed = subject; the operator's
+                                   FC reward names match the subject text
+    {{currency_symbol}}            currency code
+    {{min_deposit}}                request's min deposit (0 = no-deposit FC)
+    {{max_transfer_out}}           per-currency cap (0 = no cap)
+    {{turnover}}                   turnover multiplier
+    {{turnover_words}}             same in words
+    {{validity_days}}              claim window (days)
+    {{validity_days_words}}        same in words
+    {{rewards_validity_days}}      bonus validity after claim (days)
+    {{rewards_validity_days_words}}  same in words
+    {{excluded_categories}}        renderer derives from eligible cats:
+                                   - Slots in eligible → "Arcade and Table games"
+                                   - Sports only       → "Virtual Sports and Number games"
+                                   - Default           → "Blackjack and Virtual Sports"
+
+  Conditionals:
+    {{#if_min_deposit}} … {{else}} … {{/if}}           min_deposit > 0
+    {{#if_max_transfer_out}} … {{else}} … {{/if}}     max_transfer_out > 0
+
+  :brandname / :merchantname / :url/terms-conditions stay LITERAL — the BO
+  substitutes them per brand at display time. NEVER substitute client-side.
+-->
+
+<p>Congratulations! You have been rewarded with a free credit!</p>
+
+<p><strong>How to Redeem</strong><br>
+1. Head over to the <strong>[Reward]</strong> page.<br>
+2. Search for <strong>[{{reward_name}}]</strong> reward and click CLAIM.</p>
+
+<p><strong>Terms and Conditions</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}A minimum deposit of {{currency_symbol}} {{min_deposit}} is required to claim this promotion.{{else}}No deposit is required to claim this promotion.{{/if}} {{#if_max_transfer_out}}Max transfer out from the game wallet is {{currency_symbol}} {{max_transfer_out}} only.{{else}}There is no maximum transfer out from the game wallet.{{/if}}</li>
+  <li>A turnover requirement of {{turnover_words}} ({{turnover}}) time{{#if_turnover_plural}}s{{/if}} applies before any withdrawals can be made.</li>
+  <li>The promotion must be claimed within {{validity_days_words}} ({{validity_days}}) day{{#if_validity_days_plural}}s{{/if}}, and the bonus will expire {{rewards_validity_days_words}} ({{rewards_validity_days}}) day{{#if_rewards_validity_days_plural}}s{{/if}} after the claim.</li>
+  <li>Promotion codes are time-limited and cannot be extended once expired.</li>
+  <li>All game categories are eligible for this promotion except {{excluded_categories}}.</li>
+  <li>Members are advised to use the Refresh button on the Home page to get the latest promotion status before performing any transactions e.g. deposit or withdrawal.</li>
+  <li>General :brandname Terms and Conditions apply. :url/terms-conditions</li>
+</ol>

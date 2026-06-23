@@ -1,0 +1,35 @@
+<!--
+  Free Spin — Chinese body (QPRO platform).
+  Authored from "ZH - Inbox T&C (QPRO/QPLY)" (Drive 1E8483fBEI2UT…), Section 3.
+-->
+
+<p>作为加入我们的奖励，您仅需 <strong>{{currency_symbol}} {{transfer_amount}}</strong>，即可申领 <strong>{{spin_count}} 次免费旋转</strong>！</p>
+
+<p><strong>申请方法：</strong></p>
+<ol>
+  <li>完成存款并等待审核通过。</li>
+  <li>审核通过后，前往 <strong>转账</strong> 页面。</li>
+  <li>在转账页面，填写并提交以下信息：
+    <ul>
+      <li><strong>从：</strong>主钱包</li>
+      <li><strong>至：</strong>{{game_provider}}</li>
+      <li><strong>金额：</strong>{{transfer_amount}} 或以上</li>
+      <li><strong>优惠：</strong>{{promotion_name}}</li>
+    </ul>
+  </li>
+  <li>钱包转账成功后，前往 <strong>首页 &gt; 老虎机 &gt; [{{game_provider}}]</strong>，启动 <strong>{{game_name}}</strong> 游戏。</li>
+  <li>开始旋转，尽情享受！</li>
+</ol>
+
+<p><strong>条款与条件（摘要）</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}申请此优惠需最低存款 {{currency_symbol}} {{min_deposit}}。{{else}}领取此优惠无需存款。{{/if}}</li>
+  <li>每位会员仅限领取一次此优惠。</li>
+  <li>本优惠仅适用于 [{{game_provider}}] 旗下指定的一款游戏。在完成流水要求前，您的 [{{game_provider}}] 钱包将被锁定。</li>
+  <li>本优惠的流水要求为：（转入金额 + 免费旋转所产生的盈利）× {{turnover}} 倍。</li>
+  <li>优惠需在 {{validity_days}} 天内领取，并将在领取后 {{rewards_validity_days}} 天内过期。</li>
+  <li>优惠码有时间限制，一旦过期将无法延长。</li>
+  <li>会员在进行任何交易（如存款或提款）前，建议点击首页的刷新按钮以获取最新的优惠状态。</li>
+  <li>适用 :brandname 一般条款与条件。 :url/terms-conditions</li>
+</ol>

@@ -1,0 +1,46 @@
+{
+  "source": "https://docs.google.com/document/d/1ll2EEdlcHhfzc4Z637YN1oibhaQ6LQPomclUD-HfApA/edit",
+  "last_updated": "2026-06-18",
+  "limits": [
+    {
+      "region": "Malaysia",
+      "currency": "MYR",
+      "min_deposit": 30,
+      "max_deposit": 50000,
+      "min_withdrawal": 50,
+      "max_withdrawal": 50000
+    },
+    {
+      "region": "Singapore",
+      "currency": "SGD",
+      "min_deposit": 50,
+      "max_deposit": 30000,
+      "min_withdrawal": 200,
+      "max_withdrawal": 30000
+    },
+    {
+      "region": "Indonesia",
+      "currency": "IDR",
+      "min_deposit": 25000,
+      "max_deposit": 100000000,
+      "min_withdrawal": 50000,
+      "max_withdrawal": 100000000
+    },
+    {
+      "region": "Thailand",
+      "currency": "THB",
+      "min_deposit": 50,
+      "max_deposit": 300000,
+      "min_withdrawal": 300,
+      "max_withdrawal": 300000
+    },
+    {
+      "region": "Cambodia",
+      "currency": "USD",
+      "min_deposit": 5,
+      "max_deposit": 10000,
+      "min_withdrawal": 10,
+      "max_withdrawal": 10000
+    }
+  ]
+}

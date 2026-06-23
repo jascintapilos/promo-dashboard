@@ -1,0 +1,30 @@
+{
+  "name": "qpro-bo-auto",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "promo-contents": "bin/promo-contents.js",
+    "promotions": "bin/promotions.js",
+    "bo-sessions": "bin/sessions.js"
+  },
+  "scripts": {
+    "setup": "node bin/setup.js",
+    "promo-contents": "node bin/promo-contents.js",
+    "promotions": "node bin/promotions.js",
+    "sessions": "node bin/sessions.js",
+    "browser": "node src/browser/phase1-browser.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "jsqr": "^1.4.0",
+    "otplib": "^13.4.1",
+    "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}

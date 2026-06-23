@@ -1,0 +1,36 @@
+{
+  "_source": "Directory Google Sheet (1AKFsxkNuFILj7Ge7jlq5aYlcEDTAvVsN4zWGftxmY68), 'BO & Brands' tab. Pulled 2026-05-13.",
+  "_doc": "Maps the canary's 'targetBrand' code to (a) the brand/merchant display name used in :brandname / :merchantname placeholders, (b) the brand's public website used to build :url and (c) the tncDomain used to build the T&C hyperlink. tncDomain is often a different domain from website (e.g. QP2C marketing = ace66.com, T&C = ace66my.co). Probed live BO 2026-05-20.",
+  "_doc_qpro": "QPRO templates use :brandname → displayName. URL is normally the brand's marketing site. T&C path: <tncDomain>/en-my/info-center/terms-and-conditions (no target).",
+  "_doc_qp2": "QP2 templates use :merchantname → displayName. URL is the per-merchant marketing site even though the BO is shared at ibc22.qtp777.com. T&C path: <tncDomain>/terms-conditions?lang=<LOCALE> (target=_blank).",
+  "_doc_notes": "QPRO11 / QPRO13 / QPRO14 are flagged 'Not Live yet' upstream — websites and tncDomain are placeholders. Update once they go live.",
+
+  "qpro": {
+    "QPRO1":  { "displayName": "BP9",            "website": "https://bp9mys.com",       "tncDomain": "https://bp9mys.com" },
+    "QPRO2":  { "displayName": "12HUAT",         "website": "https://12huat.com",       "tncDomain": "https://12huatmy.com" },
+    "QPRO3":  { "displayName": "BX99",           "website": "https://bx99my.com",       "tncDomain": "https://bx99myr.com" },
+    "QPRO4":  { "displayName": "YE55",           "website": "https://ye55my.com",       "tncDomain": "https://ye55my.com" },
+    "QPRO5":  { "displayName": "U388",           "website": "https://u388.com",         "tncDomain": "https://u388my.net" },
+    "QPRO6":  { "displayName": "WYN8",           "website": "https://wyn8.com",         "tncDomain": "https://wyn8my.com" },
+    "QPRO7":  { "displayName": "MBS66",          "website": "https://mbs66.com",        "tncDomain": "https://mbs66.com" },
+    "QPRO8":  { "displayName": "WILD33",         "website": "https://wild33.com",       "tncDomain": "https://wild33.com" },
+    "QPRO9":  { "displayName": "MINT33",         "website": "https://mint33my.com",     "tncDomain": "https://mint33my.com" },
+    "QPRO10": { "displayName": "UO8",            "website": "https://uo8my.com",        "tncDomain": "https://uo8my.com" },
+    "QPRO11": { "displayName": "MSB66",          "website": "https://msb66.com",        "tncDomain": "https://msb66.com",        "_status": "Not Live yet — website + tncDomain are best-guess placeholders" },
+    "QPRO12": { "displayName": "SBO18",          "website": "https://sbo18.com",        "tncDomain": "https://sbo18.com" },
+    "QPRO13": { "displayName": "IBC7",           "website": "https://ibc7.com",         "tncDomain": "https://ibc7.com",         "_status": "Not Live yet — placeholders" },
+    "QPRO14": { "displayName": "SBO28",          "website": "https://sbo28.com",        "tncDomain": "https://sbo28.com",        "_status": "Not Live yet — placeholders" },
+    "QPRO15": { "displayName": "E688",           "website": "https://e688.me",          "tncDomain": "https://e688my.com" },
+    "QPRO16": { "displayName": "ED98",           "website": "https://ed98my.com",       "tncDomain": "https://ed98my.com" },
+    "QPRO17": { "displayName": "XE38",           "website": "https://xe38.com",         "tncDomain": "https://xe38.com" },
+    "QPRO18": { "displayName": "Pokies Palace",  "website": "https://pokiespalace.com", "tncDomain": "https://pokiespalace.com" },
+    "QPRO19": { "displayName": "OzPokies77",     "website": "https://ozpokies77.com",   "tncDomain": "https://ozpokies77.com" }
+  },
+
+  "qp2": {
+    "QP2A": { "displayName": "IBC22",   "website": "https://ibc22.com",     "tncDomain": "https://ibc22myr.com" },
+    "QP2B": { "displayName": "KING333", "website": "https://king333mys.com", "tncDomain": "https://king333mys.com" },
+    "QP2C": { "displayName": "ACE66",   "website": "https://ace66.com",     "tncDomain": "https://ace66my.co" },
+    "QP2D": { "displayName": "SPADE66", "website": "https://spade66.com",   "tncDomain": "https://spade66myr.com" }
+  }
+}

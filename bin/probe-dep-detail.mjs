@@ -1,0 +1,11 @@
+import { authedFetch } from '../src/api-client.js';
+import { getSite } from '../src/sites.js';
+const site = getSite('ibc22');
+const det = (await authedFetch(site, '/api/bo/promotion/1180')).data.rows;
+console.log('free_spin_game_code:', JSON.stringify(det.free_spin_game_code), '|', typeof det.free_spin_game_code);
+console.log('deposit_status    :', JSON.stringify(det.deposit_status), '|', typeof det.deposit_status);
+console.log('last_deposit      :', JSON.stringify(det.last_deposit), '|', typeof det.last_deposit);
+console.log('first_deposit     :', JSON.stringify(det.first_deposit));
+console.log('active_period     :', JSON.stringify(det.active_period));
+console.log('eligible_types    :', JSON.stringify(det.eligible_types));
+console.log('all keys:', Object.keys(det).join(', '));

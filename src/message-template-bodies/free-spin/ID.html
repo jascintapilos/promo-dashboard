@@ -1,0 +1,37 @@
+<!--
+  Free Spin — Bahasa Indonesia body (QPRO + QP2 platform).
+  Authored 2026-05-14. Structure parallel to free-spin/EN.html. Plural
+  inflections collapsed. "Free Spin" kept in English per glossary; Turnover
+  also kept in English.
+-->
+
+<p>Sebagai hadiah karena bergabung dengan kami, Anda berhak mengklaim <strong>{{spin_count}} Free Spin</strong> hanya dengan <strong>{{currency_symbol}} {{transfer_amount}}</strong>!</p>
+
+<p><strong>Cara Klaim:</strong></p>
+<ol>
+  <li>Lakukan deposit dan tunggu hingga disetujui.</li>
+  <li>Setelah disetujui, buka halaman <strong>Transfer</strong>.</li>
+  <li>Pada halaman Transfer, isi dan kirimkan formulir dengan detail berikut:
+    <ul>
+      <li><strong>Dari:</strong> MAIN WALLET</li>
+      <li><strong>Ke:</strong> {{game_provider}}</li>
+      <li><strong>Jumlah:</strong> {{transfer_amount}} atau lebih</li>
+      <li><strong>Promosi:</strong> {{promotion_name}}</li>
+    </ul>
+  </li>
+  <li>Setelah transfer dompet berhasil, buka <strong>Beranda &gt; Slots &gt; [{{game_provider}}]</strong> dan jalankan permainan <strong>{{game_name}}</strong>.</li>
+  <li>Putar dan nikmati!</li>
+</ol>
+
+<p><strong>Syarat dan Ketentuan</strong></p>
+
+<ol>
+  <li>{{#if_min_deposit}}Deposit minimum sebesar {{currency_symbol}} {{min_deposit}} diperlukan untuk mengklaim promosi ini.{{else}}Tidak ada deposit minimum yang diperlukan untuk mengklaim promosi ini.{{/if}}</li>
+  <li>Setiap anggota hanya dapat mengklaim promosi ini sekali.</li>
+  <li>Promosi ini berlaku eksklusif untuk satu permainan di [{{game_provider}}]. Dompet [{{game_provider}}] Anda akan dikunci hingga persyaratan Turnover terpenuhi.</li>
+  <li>Persyaratan Turnover untuk promosi ini adalah {{turnover}} kali jumlah transfer dan kemenangan dari Free Spin.</li>
+  <li>Promosi harus diklaim dalam {{validity_days}} hari, dan bonus akan kedaluwarsa {{rewards_validity_days}} hari setelah klaim.</li>
+  <li>Kode promosi memiliki batas waktu dan tidak dapat diperpanjang setelah kedaluwarsa.</li>
+  <li>Anggota disarankan untuk menggunakan tombol Refresh di halaman Beranda untuk mendapatkan status promosi terbaru sebelum melakukan transaksi apa pun seperti deposit atau penarikan.</li>
+  <li>Syarat dan Ketentuan umum :brandname berlaku. :url/terms-conditions</li>
+</ol>
