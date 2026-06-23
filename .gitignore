@@ -1,14 +1,9 @@
-# Secrets — never commit
+# ─── Secrets — NEVER commit ───────────────────────────────────────────────────
 *.local.json
 bo-sites.json
-bo-sites.local.json
 google-credentials.local.json
-google-oauth-client.local.json
-google-oauth-token.local.json
-igmp-creds.local.json
-cms-creds.local.json
 
-# Runtime artifacts
+# ─── Runtime artifacts ────────────────────────────────────────────────────────
 .session/
 captures/
 logs/
@@ -20,13 +15,16 @@ debug-*.html
 debug-*.txt
 debug-*.png
 *.log
+*.tmp
 
-# Dependencies
+# ─── Large dev-only data files ────────────────────────────────────────────────
+ft-api-calls-ws1.json
+
+# ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 
-# OS junk
+# ─── OS junk ──────────────────────────────────────────────────────────────────
 .DS_Store
 __MACOSX/
 Thumbs.db
 Desktop.ini
-igmp-sessions.local.json
