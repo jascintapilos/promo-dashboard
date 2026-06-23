@@ -6,9 +6,9 @@ Working directory: `C:\Users\vdiuser\Downloads\promo-automation\promo-automation
 
 ## Auto-flow rules (MUST follow)
 
-When the user prompts a promo request — phrasings like **"run P172"**, **"canary P172"**, **"run P175-P180"**, **"check this request"**, **"set up this promo"** (with a P### / B### in context), or a pasted Slack delegation with P### / B### — Claude **MUST** execute this sequence automatically without asking for permission step-by-step:
+When the user prompts a promo request — phrasings like **"canary P172"**, **"fire P172"**, **"go P172"**, **"canary P175-P180"**, or a pasted Slack delegation with P### / B### — Claude **MUST** execute this sequence automatically without asking for permission step-by-step:
 
-> **Do NOT use the phrase "process P###"** — that triggers the Anthropic built-in `promo-batch-runner` skill and bypasses this flow. Use "run P###" or "canary P###" instead.
+> **AVOID "process P###" and "run P###"** — both trigger the Anthropic built-in `promo-batch-runner` skill and bypass this flow. Use **"canary P###"** or **"fire P###"** as the primary triggers.
 
 1. **`node bin/ingest-requests.js`** — refresh from sheet
 2. **`/qc-engine <handle>`** — Triage Officer (READY / NOTE / RETURN). If RETURN, STOP and surface what to fix.
