@@ -214,7 +214,7 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 | provider | `source.parsed.fs_provider` (FS); Layer-1 exclusion list (Dep/FC) | `live_state.detail.game_provider_ids` / `game_provider_codes` |
 | T&C hyperlink | implicit (sentence 11 only) | `live_state.tnc.checks.sentence_11_has_link` (must be true) |
 | brand placeholder | `:brandname` (QPRO) or `:merchantname` (QP2) | scan `live_state.tnc.messages` / MT body for literal hardcoded brand names |
-| LC Blackjack exclusion | `source.instructions.categories_only` contains `"LC"` or `"LIVE CASINO"` AND `source.bonus_type = "Deposit"` | `live_state.tnc.messages` EN body must contain `"Blackjack"`, ZH body must contain `"二十一点"`. FAIL if absent. INCONCLUSIVE if tnc block is null. |
+| Category sub-exclusion in T&C | When `source.instructions.categories_only` is set AND `source.bonus_type = "Deposit"`, check EN + ZH MT body for the correct sub-exclusion phrase per category: **LC/LIVE CASINO** → EN `"Blackjack"` / ZH `"二十一点"`; **SLOTS/SLOT** → EN `"Table games"` + `"Arcade games"` / ZH `"桌面游戏"` + `"街机"`; **SPORTS** → EN `"Virtual Sports"` + `"Number Games"` / ZH `"虚拟体育"` + `"数字游戏"`. FAIL if the category is set but its required exclusion phrase is absent from the body. INCONCLUSIVE if tnc block is null. |
 
 When a row's "Live BO field" is missing from the bundle → INCONCLUSIVE for that field.
 
