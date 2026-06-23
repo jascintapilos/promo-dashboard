@@ -122,6 +122,7 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | Dialog linkage present | `plan.dialogPopup` (if expected per `source.instructions.popup_dialog`) | popup_dialog requested but `plan.dialogPopup` is null |
 | Provider assignment present | FS: `plan.promotion.game_provider_codes` includes FS provider; Dep/FC: `plan.promotion.game_provider_ids` set per Layer-1 rules | empty when bonus_type requires provider scoping |
 | Promotion linkage present | per-locale names cover all `source.locales` | a locale in source has no corresponding `plan.names` row |
+| LC Blackjack exclusion in MT | When `source.instructions.categories_only` contains `"LC"` or `"LIVE CASINO"` AND `bonus_type = "Deposit"` → check `plan.messageTemplate.details["1"].message` (EN) contains `"Blackjack"` and ZH key contains `"二十一点"` | FAIL if LC category is set but the exclusion clause is missing from the MT body |
 
 ---
 
