@@ -225,13 +225,19 @@
   .empty-state i{font-size:28px;display:block;margin-bottom:8px;opacity:.5;}
 
   /* ── SOURCE STRIP ── */
-  .source-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:6px 0 18px;font-size:11px;color:var(--ink3);}
-  .src-sep{margin:0 10px;opacity:.3;}
-  .src-item strong{color:var(--ink2);font-weight:600;}
-  .src-item .src-ts{color:var(--ink3);margin-left:3px;}
-  .src-item .src-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--good);margin-right:4px;vertical-align:1px;}
-  .src-item .src-dot.stale{background:var(--warn);}
-  .src-item .src-dot.fail{background:var(--risk);}
+  .source-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0 0;font-size:11px;color:var(--ink3);}
+  .src-pill{position:relative;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;background:var(--card);border:1px solid var(--line2);box-shadow:var(--shadow);cursor:default;font-size:11px;color:var(--ink2);transition:border-color .12s;}
+  .src-pill:hover{border-color:var(--accent);}
+  .src-pill .src-pill-label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);}
+  .src-pill .src-pill-summary{font-weight:500;color:var(--ink);}
+  .src-pop{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:var(--card);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--shadow-md);padding:10px 12px;font-size:11.5px;color:var(--ink2);display:none;z-index:50;line-height:1.7;}
+  .src-pill:hover .src-pop{display:block;}
+  .src-pop-row{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .src-pop-row strong{color:var(--ink);font-weight:600;font-size:11.5px;}
+  .src-pop-row .src-ts{color:var(--ink3);font-size:11px;}
+  .src-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:5px;vertical-align:1px;}
+  .src-dot.stale{background:var(--warn);}
+  .src-dot.fail{background:var(--risk);}
 
   /* ── WEEKLY UTIL TOGGLE ── */
   .cap-tabs{display:flex;gap:4px;margin-bottom:14px;}
@@ -264,8 +270,10 @@
     <div class="head-left">
       <h1>Promo Team Operations</h1>
       <p class="sub" id="sub">Loading…</p>
-      <div class="source-strip" id="source-strip" style="display:none;"></div>
-      <div class="source-strip" id="pull-strip" style="display:none;margin-top:2px;"></div>
+      <div class="source-strip" id="source-strip" style="display:none;">
+        <span id="last-entry-pill"></span>
+        <span id="last-pull-pill"></span>
+      </div>
     </div>
     <div class="head-right">
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
@@ -830,6 +838,7 @@ function renderRegionalDonut(regionList, total){
 
 /* ── DATA SOURCE TIMESTAMPS ── */
 function renderDataSources(data){
+  const pill=document.getElementById('last-entry-pill');
   const strip=document.getElementById('source-strip');
   const today=new Date(); today.setHours(23,59,59,999);
   const maxDate=(arr,key)=>{
@@ -850,17 +859,21 @@ function renderDataSources(data){
     {label:'Games',      d:maxDate(data.games)},
     {label:'Adhoc',      d:maxDate(data.adhoc)},
   ];
-  const items=sources.map((s,i)=>`${i>0?'<span class="src-sep">·</span>':''}<span class="src-item"><span class="src-dot${stale(s.d)?' stale':''}"></span><strong>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></span>`).join('');
-  strip.innerHTML='<span style="font-size:10px;font-weight:600;color:var(--ink3);margin-right:8px;letter-spacing:.04em;text-transform:uppercase;">Last entry</span>'+items;
+  const staleCount=sources.filter(s=>stale(s.d)).length;
+  const allDates=sources.map(s=>s.d).filter(Boolean).sort((a,b)=>b-a);
+  const newest=allDates.length?fmt(allDates[0]):'—';
+  const aggDot=staleCount?(staleCount===sources.length?'fail':'stale'):'';
+  const summary=staleCount?`${staleCount} stale · newest ${newest}`:`newest ${newest}`;
+  const rows=sources.map(s=>`<div class="src-pop-row"><strong><span class="src-dot ${stale(s.d)?'stale':''}"></span>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></div>`).join('');
+  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last entry</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rows}</span></span>`;
   strip.style.display='flex';
 }
 
-/* ── PULL HEALTH STRIP (when sheet last got fresh data per source) ── */
+/* ── PULL HEALTH PILL (when sheet last got fresh data per source) ── */
 function renderPullHealth(rows){
-  const strip=document.getElementById('pull-strip');
-  if(!rows||!rows.length){strip.style.display='none';return;}
+  const pill=document.getElementById('last-pull-pill');
+  if(!rows||!rows.length){pill.innerHTML='';return;}
 
-  // Data pull instances (not FT session statuses ws1/qpro1/qp2)
   const PULL_ORDER=['bo-ytd','bo-banners','cms-banners','new-games','utilisation','smartico','ft-ws1','ft-qpro1','ft-qp2'];
   const SHORT={
     'bo-ytd':'Promos','bo-banners':'Banners (BO)','cms-banners':'Banners (CMS)',
@@ -868,7 +881,6 @@ function renderPullHealth(rows){
     'ft-ws1':'FT WS1','ft-qpro1':'FT QPRO1','ft-qp2':'FT QP2',
   };
 
-  // Most recent row per instance
   const latest={};
   rows.forEach(r=>{
     if(!r.Instance||!r.Timestamp) return;
@@ -884,14 +896,19 @@ function renderPullHealth(rows){
     const failed=(r.Status||'').toUpperCase()!=='OK';
     const stale=ageH>30;
     const cls=failed?'fail':stale?'stale':'';
-    const detail=r.Detail?` — ${r.Detail}`:'';
-    const tip=`${SHORT[k]}: ${r.Status}${detail} (${ageStr})`;
-    return `<span class="src-item" title="${tip}"><span class="src-dot ${cls}"></span><strong>${SHORT[k]}</strong><span class="src-ts">${ageStr}</span></span>`;
-  }).join('<span class="src-sep">·</span>');
+    const detail=r.Detail?` <span style="color:var(--ink3);">— ${r.Detail}</span>`:'';
+    return {k,cls,failed,stale,ageH,ageStr,detail,label:SHORT[k]};
+  });
 
-  if(!items){strip.style.display='none';return;}
-  strip.innerHTML='<span style="font-size:10px;font-weight:600;color:var(--ink3);margin-right:8px;letter-spacing:.04em;text-transform:uppercase;">Last pull</span>'+items;
-  strip.style.display='flex';
+  if(!items.length){pill.innerHTML='';return;}
+  const failCount=items.filter(i=>i.failed).length;
+  const staleCount=items.filter(i=>i.stale&&!i.failed).length;
+  const newest=Math.min(...items.map(i=>i.ageH));
+  const newestStr=newest<1?`${Math.round(newest*60)}m ago`:newest<24?`${Math.round(newest)}h ago`:`${Math.round(newest/24)}d ago`;
+  const aggDot=failCount?'fail':staleCount?'stale':'';
+  const summary=failCount?`${failCount} failed`:staleCount?`${staleCount} stale`:`all OK · ${newestStr}`;
+  const rowsHtml=items.map(i=>`<div class="src-pop-row"><strong><span class="src-dot ${i.cls}"></span>${i.label}</strong><span class="src-ts">${i.ageStr}${i.detail}</span></div>`).join('');
+  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last pull</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rowsHtml}</span></span>`;
 }
 
 /* ── CRM STATUS (header) ── */
