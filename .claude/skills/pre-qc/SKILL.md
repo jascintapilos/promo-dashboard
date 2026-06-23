@@ -1,11 +1,21 @@
 ---
 name: pre-qc
-description: Pre-commit deep QC for a promo request using sub-agent fan-out. Spawns one promo-qc sub-agent per brand to review the planned API bodies BEFORE the user commits. Catches plan-level issues (naming convention, brand placeholder, FS provider restriction, mechanics within platform limits, stale clone references). Pairs with /deep-qc (post-save). Trigger on `/pre-qc P###`, "pre qc this plan", "check plan before commit", "review before saving", or any pre-commit verification request.
+description: Fast pre-execution promo plan review using sub-agent fan-out. Spawns the Pre-QC Agent (promo-qc) per brand to check the canary's planned API bodies for completeness — required fields, naming standards, brand/currency/validity/reward/dialog/provider/promotion linkage presence. Defers deep business-rule validation to Sentinel (post-save). Pairs with /qc-engine (source-row) and /deep-qc (post-save Sentinel). Trigger on `/pre-qc P###`, "pre qc this plan", "check plan before commit", "review before saving", or auto-fired by the assistant after dry-run.
 ---
 
-# Pre-QC — sub-agent fan-out for pre-commit plan review
+# Pre-QC — completeness gate before execution
 
-This skill orchestrates **independent pre-commit verification** of the canary's planned API bodies before the user adds `--commit`. It spawns one `promo-qc` sub-agent per brand. The sub-agent already knows the QC rules and false-positive list — see [`.claude/agents/promo-qc.md`](../../agents/promo-qc.md) — so this skill stays thin.
+This skill orchestrates **fast pre-execution completeness review** of the canary's planned API bodies. It spawns one **Pre-QC Agent** (`promo-qc`) per brand. The agent already knows what completeness means in this pipeline — see [`.claude/agents/promo-qc.md`](../../agents/promo-qc.md) — so this skill stays thin.
+
+**Position in the QC chain:**
+
+```
+ingest → [/qc-engine]  → dry-run → [/pre-qc]   → commit → [/deep-qc Sentinel]
+         ↑ source row             ↑ THIS skill            ↑ post-save audit
+         (promo-qc-engine)        (promo-qc)              (sentinel)
+```
+
+**Why this is the fast gate:** Pre-QC's job is "is everything present?" — not "is every business rule correct?" Deep business-rule validation is reserved for **Sentinel** (post-save), which runs adversarial audits against persisted BO state. Pre-QC is the cheap, fast check before commit. Catches the obvious blockers without slowing down good saves.
 
 ## Trigger
 
@@ -14,13 +24,14 @@ User says:
 - "pre qc this plan"
 - "check P073 before commit"
 - "review before saving"
-- "fan out QC on the plan"
+
+Also **auto-fired by the assistant** after the canary dry-run for any P### request — see `feedback_auto_pre_qc_on_request`.
 
 ## Pre-requisite
 
-Plan bundles must exist for the handle. The canary runners (`bin/canary-api.js`, `bin/canary-api-qp2.js`) auto-write `captures/qc-plans/<handle>__<brand>.json` on every dry-run. If no bundle exists, tell the user to run the canary dry-run first (without `--commit`).
+Plan bundles must exist for the handle. The canary runners (`bin/canary-api.js`, `bin/canary-api-qp2.js`) auto-write `captures/qc-plans/<handle>__<brand>.json` on every dry-run. If no bundle exists, tell the user to run the canary dry-run first.
 
-**Important:** the idempotency check fires before the dry-run branch — if the promo_code already exists on BO, no plan bundle gets written for that brand.
+**Important:** the canary's idempotency check fires BEFORE the dry-run branch — if the promo_code already exists on BO, no plan bundle gets written for that brand.
 
 ## Steps
 
@@ -30,35 +41,31 @@ Plan bundles must exist for the handle. The canary runners (`bin/canary-api.js`,
 node bin/pre-qc-fanout.mjs <handle> --pretty
 ```
 
-Shows: `▸ <BRAND> (<platform>)  code=...  bonus=...`. If it errors with "No plan bundles found", stop and tell the user to run the canary dry-run first.
+Shows: `▸ <BRAND> (<platform>)  code=...  bonus=...`. If "No plan bundles found", stop and tell the user to run the canary dry-run first.
 
-### 2. Spawn one promo-qc sub-agent per bundle
+### 2. Spawn one Pre-QC Agent per bundle
 
 For each bundle, invoke the Agent tool with:
 
 ```
 subagent_type: "promo-qc"
 prompt: |
-  Phase: pre
-  Bundle: captures/qc-plans/<handle>__<brand>.json
-  Read the bundle and run all applicable plan-level checks per your system prompt.
-  Return only the JSON object.
+  Pre-QC — review the planned promotion at: captures/qc-plans/<handle>__<brand>.json
+  Return only the JSON.
 ```
 
-Send all invocations in **a single message** so they run concurrently. Pass each bundle's absolute file path so the sub-agent can Read it.
+Send all invocations in **a single message** so they run concurrently. The agent's system prompt has the completeness check list + suppression list — keep the orchestrator prompt short.
 
-The promo-qc sub-agent already has the check list and known false-positives baked into its system prompt — you do NOT need to re-state them here. Keep the prompt short and focused on the bundle path + phase.
+### 3. Aggregate verdicts into a table
 
-### 3. Aggregate results into a pass/fail table
-
-Each sub-agent returns:
+Each Pre-QC Agent returns:
 
 ```json
 {
   "brand": "QPRO5",
-  "phase": "pre",
-  "status": "pass" | "warn" | "fail",
-  "findings": [...],
+  "status": "PASS" | "WARNING" | "FAIL",
+  "issues": [...],
+  "recommendation": "Proceed to Sentinel (deep-qc)" | "Return to Creator (fix source sheet, re-ingest, re-dry-run)",
   "summary": "..."
 }
 ```
@@ -66,44 +73,54 @@ Each sub-agent returns:
 Aggregate into:
 
 ```
-Pre-QC results — <handle>
-| Brand | Status | Findings |
-|---|---|---|
-| QPRO5 | ✓ PASS | — |
-| QPRO11 | ✗ FAIL | promo_code missing FT_ prefix; MT body has stale "BP9" reference |
-| QP2A | ⚠ WARN | FS spins=92 exceeds 88-spin limit |
+PRE-QC RESULT — <handle>
+
+| Brand | Status | Issues | Recommendation |
+|---|---|---|---|
+| QPRO5 | ✓ PASS | — | Proceed to Sentinel |
+| QPRO11 | ✗ FAIL | promo_code missing for FS request; no provider scoping | Return to Creator |
+| QP2A | ⚠ WARNING | unusual TO multiplier (16x — outside 12-15 range) | Proceed to Sentinel |
 ```
 
-For FAIL/WARN brands, expand each finding with:
-- The `field` and `message`
-- The recommended `fix`
-- A short `evidence` snippet
+For FAIL/WARNING brands, expand each issue with:
+- `field` and `message`
+- `evidence` snippet
 
 ### 4. Recommend next steps
 
-- **All PASS** → tell the user they're clear to commit:
+- **All PASS** → tell the user to proceed:
   ```
   node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc
   ```
-- **Any FAIL** → list what to fix in the source sheet, then:
-  1. Re-ingest: `node bin/ingest-requests.js`
-  2. Re-dry-run: `node bin/canary-multi-brand.js <handle>`
-  3. Re-invoke `/pre-qc <handle>`
-- **All WARN, no FAIL** → user decides whether to proceed or fix. Explain the rule each warning cites.
+  Note: Sentinel will perform the deep audit post-save via `/deep-qc`.
+- **Any FAIL** → list each FAIL's `recommended_action`. Typical recovery:
+  1. Fix the source sheet (col W/M/N/etc.) per the issue evidence
+  2. `node bin/ingest-requests.js`
+  3. `node bin/canary-multi-brand.js <handle> --parallel` (re-dry-run; overwrites plan bundle)
+  4. Re-invoke `/pre-qc <handle>`
+- **WARNINGS only, no FAIL** → user decides. WARNING means "complete but unusual" — often safe to proceed; Sentinel will catch any actual business-rule violations after save.
+
+## Auto-flow integration
+
+When auto-fired (per `feedback_auto_pre_qc_on_request.md`):
+- Show ONLY the table + expanded FAIL/WARNING findings (no verbose JSON in chat)
+- If any FAIL: wait for user direction; do NOT auto-commit
+- If all PASS or WARNING-only: say "plan validated — ready to commit when you are" and wait for explicit user confirmation
 
 ## Notes
 
-- Sub-agents run **in parallel** when invoked in one message. Wall-clock = slowest single check (~10-15s) regardless of brand count.
-- Sub-agents are **read-only** — they cannot break a save (no save has happened yet).
-- Plan bundles are stale until the next dry-run. If `/pre-qc` is invoked long after the dry-run, remind the user the bundle may be outdated.
-- The sub-agent's `promo-qc.md` system prompt is the source of truth for what gets checked and what gets suppressed. To change check rules or add false-positives, edit that file — not this skill.
+- Sub-agents run **in parallel** within a single Agent-tool message. Wall-clock ~5-10s per batch.
+- Sub-agent is **read-only** (Read/Glob/Grep). Cannot modify plan, source, or BO.
+- The Pre-QC Agent intentionally does NOT do deep business-rule checks (FS spin count math, brand placeholder semantics, T&C hyperlink verification, etc.). That depth happens post-save in Sentinel where persisted state can be verified against intent.
+- Plan bundles are stale until the next dry-run. If `/pre-qc` is invoked long after the dry-run and source has changed, remind the user to re-dry-run.
 
 ## Pairs with
 
-- `/deep-qc P###` — runs AFTER `--commit`. Uses the same `promo-qc` sub-agent with `phase: post`.
+- `/qc-engine P###` — runs BEFORE dry-run (source-row validation). Uses `promo-qc-engine`.
+- `/deep-qc P###` — runs AFTER `--commit` (Sentinel adversarial audit). Uses `sentinel`.
 
 ## Out of scope
 
-- Does NOT modify the BO, source sheet, or bundle. Read-only verification.
-- Does NOT auto-fix findings. User decides.
+- Does NOT modify the BO, source sheet, plan bundle, or canary run logs. Read-only.
+- Does NOT auto-fix issues. User confirms before changes.
 - Does NOT cover WS1/IGMP brands yet — plan bundles only written by QPRO/QP2 runners.
