@@ -377,7 +377,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   const currency = LOCALE_TO_CURRENCY[localeRegion] || r.currencies?.[0] || 'MYR';
   const currencySymbol = getCurrencySymbol(currency);
 
-  const minDeposit = Number(r2.min_deposit || 0);
+  // Per-currency override must be resolved before minDeposit so SG/ID/TH locales
+  // use their own min_deposit (e.g. SGD 150) rather than the base MYR value (500).
+  const ccyOverride = r.per_currency_overrides?.[currency] || {};
+  const minDeposit = Number(ccyOverride.min_deposit || r2.min_deposit || 0);
   const bonusPct = Number(r2.bonus_rate_pct || 0);
   const maxBonus = Number(r2.max_bonus || 0);
   const turnover = Number(r2.to_multiplier || 1);
@@ -404,7 +407,6 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   // FC-specific: max_transfer_out is per-currency. Operator-targeted VIP
   // FC typically has NO cap (max_transfer_out = 0 → body says "no maximum
   // transfer out"). FastTrack public FC has a cap.
-  const ccyOverride = r.per_currency_overrides?.[currency] || {};
   const maxTransferOut = Number(ccyOverride.max_transfer_out || r2.max_transfer_out || 0);
   // FC: actual free-credit amount the customer receives. Distinct from
   // max_transfer_out (the withdrawal cap). Per-currency-overridable.

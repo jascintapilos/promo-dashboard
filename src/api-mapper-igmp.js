@@ -479,6 +479,20 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = true } = {}) {
   // siteId (which is always ws1-v3-my and corrupts SG/ID/TH/KH content).
   if (siteId) normalizedRec.__site_override = siteId;
 
+  // Apply per-currency min_deposit override based on the target site's currency.
+  // Without this, ws1-v3-sg would use MYR's min_deposit (e.g. 500) instead of
+  // SGD's (e.g. 150), producing the wrong MinimumActionAmount in the API body.
+  if (siteId && rec.per_currency_overrides) {
+    const SITE_CURRENCY_MAP = {
+      'ws1-v3-my': 'MYR', 'ws1-v3-sg': 'SGD', 'ws1-v3-id': 'IDR',
+      'ws1-v3-th': 'THB', 'ws1-v3-kh': 'KHR',
+    };
+    const siteCur = SITE_CURRENCY_MAP[siteId];
+    if (siteCur && rec.per_currency_overrides[siteCur]?.min_deposit != null) {
+      normalizedRec.min_deposit = rec.per_currency_overrides[siteCur].min_deposit;
+    }
+  }
+
   const bt = String(normalizedRec.bonus_type || '').toLowerCase();
   if (bt.includes('deposit')) return buildAddBonus(normalizedRec);
   if (bt.includes('free credit') || bt === 'fc') return buildAddFreeCredit(normalizedRec);
