@@ -204,6 +204,7 @@ await (async () => {
         instructions: rec.instructions || null,
         remark: rec.remark || null,
         requestor: rec.requestor || null,
+        per_currency_overrides: rec.per_currency_overrides ?? {},
       },
       plan: {
         promotion: plan.body,
@@ -253,6 +254,40 @@ await (async () => {
     console.log('');
     console.log('(dry-run — pass --commit to send)');
     return bail(0);
+  }
+
+  // ── PromotionName uniqueness check ──────────────────────────────────
+  {
+    const plannedName = plan.body.PromotionName;
+    if (plannedName) {
+      console.log('');
+      console.log('── PromotionName uniqueness ─────────────────────────────────────');
+      try {
+        let allRows = [];
+        for (let pg = 1; pg <= 40; pg++) {
+          const r = await igmpPost(siteId, `/PM/GetPromotionsList?pageNum=${pg}&rowPerPage=200`, {
+            PromotionCode: '', PromotionName: '', PromotionType: 0, IsActive: '', IsPublished: '',
+          });
+          const rows = r?.data ?? [];
+          if (!rows.length) break;
+          allRows = allRows.concat(rows);
+          if (rows.length < 200) break;
+        }
+        const collisions = allRows.filter(p => (p.PromotionName || '') === plannedName);
+        if (collisions.length > 0) {
+          console.error(`✗ PromotionName collision — "${plannedName}" already exists on ${siteId}:`);
+          for (const c of collisions) {
+            console.error(`    id=${c.PromotionId}  code=${c.PromotionCode}  active=${c.IsActive}`);
+          }
+          console.error('  Manual Reward Assignment picks by name — duplicates break selection.');
+          console.error('  Fix: adjust the promo name in the source sheet and re-ingest.');
+          return bail(8);
+        }
+        console.log(`✓ "${plannedName}" unique on ${siteId}`);
+      } catch (e) {
+        console.warn(`⚠ Name collision check failed (non-fatal): ${e.message.split('\n')[0]}`);
+      }
+    }
   }
 
   // ── Commit path ─────────────────────────────────────────────────────
@@ -605,6 +640,7 @@ await (async () => {
         bonus_type: rec.bonus_type,
         remark: rec.remark || null,
         requestor: rec.requestor || null,
+        per_currency_overrides: rec.per_currency_overrides ?? {},
       },
       live_state: {
         list_row: savedListRow,

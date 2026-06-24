@@ -198,6 +198,7 @@ if (!commit) {
         instructions: resolved.instructions || null,
         remark: resolved.remark || null,
         requestor: resolved.requestor || null,
+        per_currency_overrides: resolved.per_currency_overrides ?? {},
       },
       plan: {
         promotion: plan.promotion,

@@ -119,11 +119,13 @@ export function buildTncLinkHtml({ platform, locale, brandInfo }) {
 function hyperlinkTnc(html, docKey, platform) {
   const term = TNC_TERM_BY_DOCKEY[docKey] || TNC_TERM_BY_DOCKEY.EN;
   const targetAttr = String(platform || '').toLowerCase() === 'qp2' ? ' target="_blank"' : '';
-  return html.replace(/<li>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/li>/, (m, before, after) => {
+  const link = `<a${targetAttr} href=":url/terms-conditions">${term}</a>`;
+  // Matches both <li> and <p> wrappers — FS templates use <p>, Dep/FC use <li>.
+  return html.replace(/<(li|p)>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/(li|p)>/, (m, tag, before, after) => {
     const linked = before.includes(term)
-      ? before.replace(term, `<a${targetAttr} href=":url/terms-conditions">${term}</a>`)
-      : before;
-    return `<li>${(linked + after).trimEnd()}</li>`;
+      ? before.replace(term, link)
+      : before.trimEnd() + ' ' + link;  // term not inline — append link
+    return `<${tag}>${(linked + after).trimEnd()}</${tag}>`;
   });
 }
 
