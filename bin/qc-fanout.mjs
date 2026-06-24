@@ -32,7 +32,7 @@ import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
 import { getSite } from '../src/sites.js';
-import { findPromotionByCode, getPromotionDetail } from '../src/api-client.js';
+import { findPromotionByCode, getPromotionDetail, getPopupDetail } from '../src/api-client.js';
 import { qcMtTncHyperlink } from '../src/qc-mt-tnc.js';
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
@@ -103,15 +103,17 @@ if (refresh) {
     try {
       const site = getSite(b.site);
       const platform = b.platform || (b.site.startsWith('ibc') ? 'qp2' : 'qpro');
-      const [r1, r2, r3] = await Promise.all([
+      const [r1, r2, r3, r4] = await Promise.all([
         wrap(findPromotionByCode(site, b.promo_code)),
         b.promotion_id ? wrap(getPromotionDetail(site, b.promotion_id)) : Promise.resolve(null),
         b.template_id ? wrap(qcMtTncHyperlink(site, b.template_id, platform)) : Promise.resolve(null),
+        b.dialog_popup_id ? wrap(getPopupDetail(site, b.dialog_popup_id)) : Promise.resolve(null),
       ]);
       b.live_state = {
         list_row: r1?.ok ? r1.value : null,
         detail:   r2?.ok ? r2.value : null,
         tnc:      r3?.ok ? r3.value : null,
+        popup:    r4?.ok ? r4.value : null,
         refreshed_at: new Date().toISOString(),
       };
       // Rewrite bundle on disk (drop __file before serializing).

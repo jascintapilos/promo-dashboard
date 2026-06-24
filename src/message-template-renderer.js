@@ -110,15 +110,18 @@ export function buildTncLinkHtml({ platform, locale, brandInfo }) {
   return `<a href="${base}/en-my/info-center/terms-and-conditions">${term}</a>`;
 }
 
-// QPRO body post-process: in the <li> that has `:url/terms-conditions` as
-// plain text, wrap the localized T&C term with a hyperlink using :url placeholder.
-// Captures BEFORE and AFTER the plain-text :url/terms-conditions so the regex
-// doesn't accidentally strip it from inside the href attribute.
-function hyperlinkQproTnc(html, docKey) {
+// Sentence-11 T&C post-process: in the <li> that has `:url/terms-conditions`
+// as plain text, wrap the localized T&C term with a hyperlink using the :url
+// placeholder. Applies to both QPRO and QP2 — the BO substitutes :url per
+// brand/merchant at display time. Captures BEFORE and AFTER the plain-text
+// :url/terms-conditions so the regex doesn't accidentally strip it from
+// inside the href attribute.
+function hyperlinkTnc(html, docKey, platform) {
   const term = TNC_TERM_BY_DOCKEY[docKey] || TNC_TERM_BY_DOCKEY.EN;
+  const targetAttr = String(platform || '').toLowerCase() === 'qp2' ? ' target="_blank"' : '';
   return html.replace(/<li>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/li>/, (m, before, after) => {
     const linked = before.includes(term)
-      ? before.replace(term, `<a href=":url/terms-conditions">${term}</a>`)
+      ? before.replace(term, `<a${targetAttr} href=":url/terms-conditions">${term}</a>`)
       : before;
     return `<li>${(linked + after).trimEnd()}</li>`;
   });
@@ -126,8 +129,8 @@ function hyperlinkQproTnc(html, docKey) {
 
 // Sub-exclusion items per eligible category (Sports+Slots combination).
 const CAT_SUB_EXCLUSIONS = {
-  EN: { Sports: ['Virtual Sports', 'Number Games'], Slots: ['Table games', 'Arcade games'] },
-  ZH: { Sports: ['虚拟体育', '数字游戏'],           Slots: ['桌面游戏', '街机'] },
+  EN: { Sports: ['Virtual Sports', 'Number Games'], Slots: ['Table games', 'Arcade games'], 'Live Casino': ['Blackjack'] },
+  ZH: { Sports: ['虚拟体育', '数字游戏'],           Slots: ['桌面游戏', '街机'],             'Live Casino': ['二十一点'] },
 };
 
 // Build the complete category clause sentence for deposit promos.
@@ -241,7 +244,7 @@ const BONUS_SUBTYPE_ZH = {
 const INSTRUCTION_CAT_MAP = {
   'SPORT': 'Sports', 'SPORTS': 'Sports',
   'SLOTS': 'Slot',   'SLOT': 'Slot',
-  'LC': 'Live Casino', 'LIVE_CASINO': 'Live Casino',
+  'LC': 'Live Casino', 'LIVE_CASINO': 'Live Casino', 'LIVE CASINO': 'Live Casino',
   'ESPORT': 'E-Sports', 'ESPORTS': 'E-Sports',
   'FISHING': 'Fishing', 'CRASH': 'Crash', 'ARCADE': 'Arcade',
   'LOTTERY': 'Lottery', 'TABLE': 'Table',
@@ -590,6 +593,8 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   if (pf === 'qp2') {
     template = template.split(':brandname').join(':merchantname');
     subject  = subject.split(':brandname').join(':merchantname');
+    // QP2 also needs sentence-11 T&C hyperlinked (BO substitutes :url per-merchant).
+    template = hyperlinkTnc(template, docKey, pf);
   } else if (pf === 'igmp') {
     const merchantName = BRAND_TO_SITE[brand]?.merchantName || brand || 'MB8';
     template = template.split(':brandname').join(merchantName);
@@ -597,7 +602,7 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   } else {
     // QPRO: hyperlink the T&C term using the :url placeholder.
     // The BO substitutes :url per-brand at display time, same as :brandname.
-    template = hyperlinkQproTnc(template, docKey);
+    template = hyperlinkTnc(template, docKey, pf);
   }
 
   return {

@@ -485,6 +485,16 @@ export async function createDialogPopup(site, body) {
   return authedFetch(site, '/api/bo/popups', { method: 'POST', body });
 }
 
+// Fetch a single dialog popup by id. There is no individual-record endpoint
+// (GET /api/bo/popups/{id} returns 405), so we fetch the list and filter.
+// Returns the full popup row including per-locale `contents[]`
+// (title, content, cta_button_text_1/_2, cta_button_link_1/_2).
+export async function getPopupDetail(site, popupId) {
+  const r = await authedFetch(site, '/api/bo/popups?perPage=500&page=1&sort_by=id&sort_order=desc');
+  const rows = r?.data?.rows || [];
+  return rows.find((p) => p.id === popupId) ?? null;
+}
+
 // ── Promo Content + Banner (Section 3.3 + 14.2) ─────────────────────────
 // Endpoints confirmed live on QPRO4 (2026-05-18). Body shapes are inferred
 // from the form-control map captured at captures/qpro-3-3-form-schema.md
