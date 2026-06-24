@@ -273,6 +273,7 @@
       <div class="source-strip" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
         <span id="last-pull-pill"></span>
+        <span id="banner-health-pill"></span>
       </div>
     </div>
     <div class="head-right">
@@ -452,8 +453,8 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -623,6 +624,7 @@ function render(data,_skipStore){
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
   renderPullHealth((_fullData&&_fullData.sysStatus)||data.sysStatus||[]);
+  renderBannerHealth((_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
   renderWorkloadMix(total);
   renderTopBrands(total);
   renderRegionalDonut(regionList, total);
@@ -909,6 +911,37 @@ function renderPullHealth(rows){
   const summary=failCount?`${failCount} failed`:staleCount?`${staleCount} stale`:`all OK · ${newestStr}`;
   const rowsHtml=items.map(i=>`<div class="src-pop-row"><strong><span class="src-dot ${i.cls}"></span>${i.label}</strong><span class="src-ts">${i.ageStr}${i.detail}</span></div>`).join('');
   pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last pull</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rowsHtml}</span></span>`;
+}
+
+/* ── BANNER HEALTH PILL ── */
+function renderBannerHealth(rows){
+  const pill=document.getElementById('banner-health-pill');
+  if(!pill) return;
+  if(!rows||!rows.length){
+    pill.innerHTML=`<span class="src-pill"><span class="src-dot"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">all clear</span></span>`;
+    return;
+  }
+  const TYPE_LABEL={
+    'TOO_FEW_BANNERS':'too few',
+    'OUT_OF_ORDER':'out of order',
+    'NOT_ACTIVATED':'not activated',
+    'ALREADY_EXPIRED':'already expired',
+    'EXPIRING_SOON':'expiring soon',
+    'ENDS_BEFORE_CAMPAIGN':'ends before campaign',
+  };
+  const TYPE_ORDER=['TOO_FEW_BANNERS','OUT_OF_ORDER','NOT_ACTIVATED','ENDS_BEFORE_CAMPAIGN','EXPIRING_SOON','ALREADY_EXPIRED'];
+  const URGENT=new Set(['TOO_FEW_BANNERS','OUT_OF_ORDER','NOT_ACTIVATED','ENDS_BEFORE_CAMPAIGN']);
+  const counts={};
+  rows.forEach(r=>{const t=r.Type||'OTHER'; counts[t]=(counts[t]||0)+1;});
+  const urgentCount=Object.entries(counts).filter(([t])=>URGENT.has(t)).reduce((a,[,n])=>a+n,0);
+  const total=rows.length;
+  const aggDot=urgentCount?'fail':(total?'stale':'');
+  const summary=`${total} issue${total!==1?'s':''}${urgentCount?` · ${urgentCount} need action`:''}`;
+  const popRows=TYPE_ORDER.filter(t=>counts[t]).map(t=>{
+    const cls=URGENT.has(t)?'fail':'stale';
+    return `<div class="src-pop-row"><strong><span class="src-dot ${cls}"></span>${TYPE_LABEL[t]}</strong><span class="src-ts">${counts[t]}</span></div>`;
+  }).join('');
+  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${popRows}</span></span>`;
 }
 
 /* ── CRM STATUS (header) ── */
