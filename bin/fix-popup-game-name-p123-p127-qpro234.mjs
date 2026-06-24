@@ -60,7 +60,7 @@ function buildPopupPutBody(row) {
   return {
     label:                 row.label,
     position:              row.position,
-    session:               row.session,
+    session:               String(row.session),  // API requires string, GET returns int
     start_date:            toMysqlDatetime(row.start_date),
     end_date:              toMysqlDatetime(row.end_date),
     status:                row.status,
@@ -69,21 +69,28 @@ function buildPopupPutBody(row) {
     affiliates_visibility: row.affiliates_visibility ?? 0,
     always_pop:            row.always_pop ?? 0,
     do_not_show_again:     row.do_not_show_again ?? 0,
-    // Contents: keep structural fields, exclude read-only audit fields.
-    contents: (row.contents || []).map((c) => ({
-      id:                c.id,
-      popup_id:          c.popup_id,
-      locale_id:         c.locale_id,
-      media_type:        c.media_type,
-      desktop_link:      c.desktop_link,
-      mobile_link:       c.mobile_link,
-      title:             c.title,
-      content:           c.content,  // patched below
-      cta_button_text_1: c.cta_button_text_1,
-      cta_button_link_1: c.cta_button_link_1,
-      cta_button_text_2: c.cta_button_text_2,
-      cta_button_link_2: c.cta_button_link_2,
-    })),
+    // POST/PUT expects contents as an object keyed by locale_id (string),
+    // not the array shape returned by GET.
+    contents: Object.fromEntries(
+      (row.contents || []).map((c) => [
+        String(c.locale_id),
+        {
+          id:                c.id,
+          popup_id:          c.popup_id,
+          locale_id:         c.locale_id,
+          media_type:        c.media_type,
+          desktop_link:      c.desktop_link,
+          mobile_link:       c.mobile_link,
+          title:             c.title,
+          content:           c.content,  // patched below
+          cta_button_type:   c.cta_button_type,
+          cta_button_text_1: c.cta_button_text_1,
+          cta_button_link_1: c.cta_button_link_1,
+          cta_button_text_2: c.cta_button_text_2,
+          cta_button_link_2: c.cta_button_link_2,
+        },
+      ])
+    ),
   };
 }
 
