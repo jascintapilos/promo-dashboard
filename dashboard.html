@@ -306,6 +306,7 @@
       <div class="pg-tabs">
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
+        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
       </div>
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
@@ -475,16 +476,6 @@
           <button class="more" id="am"></button>
         </div>
       </details>
-      <details class="rec" id="rec-banner-health"><summary><i class="ti ti-photo" aria-hidden="true"></i> Homepage banner <span class="cnt" id="rc-banner-health"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-        <div class="rec-body">
-          <div class="rec-tools">
-            <select id="bhf-p"><option value="all">All brands</option></select>
-            <select id="bhf-st"><option value="all">All statuses</option><option value="issues">Only with issues</option><option value="ok">Only OK</option></select>
-          </div>
-          <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
-          <button class="more" id="bhm"></button>
-        </div>
-      </details>
     </div>
 
     </div><!-- /view-ops -->
@@ -548,6 +539,24 @@
     </div>
     <!-- ── /ESCALATION TRACKER MODULE ── -->
     </div><!-- /view-esc -->
+    <div id="view-hk" style="display:none;">
+
+    <div class="kpis" id="hk-kpis" style="margin-bottom:24px;"></div>
+    <p class="section-label">Homepage banner status</p>
+    <div class="records">
+      <details class="rec" id="rec-banner-health" open><summary><i class="ti ti-photo" aria-hidden="true"></i> Homepage banner <span class="cnt" id="rc-banner-health"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="bhf-p"><option value="all">All brands</option></select>
+            <select id="bhf-st"><option value="all">All statuses</option><option value="issues">Only with issues</option><option value="ok">Only OK</option></select>
+          </div>
+          <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
+          <button class="more" id="bhm"></button>
+        </div>
+      </details>
+    </div>
+
+    </div><!-- /view-hk -->
 
   </div>
 </div>
@@ -747,6 +756,8 @@ function render(data,_skipStore){
 function openRecordSection(id){
   const el=document.getElementById(id);
   if(!el) return;
+  const hkPanel=document.getElementById('view-hk');
+  if(hkPanel&&hkPanel.contains(el)&&hkPanel.style.display==='none') switchView('hk');
   el.open=true;
   setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
@@ -1679,6 +1690,29 @@ function renderBannerHealthRecords(){
   if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
 }
 
+function renderHKKpis(){
+  const bh=(_fullData&&_fullData.bannerHealth)||[];
+  const hkData=(_fullData&&_fullData.homepageBannerStatus)||[];
+  const counts={};
+  bh.forEach(r=>{const t=r.Type||r.type||'';counts[t]=(counts[t]||0)+1;});
+  const issues=hkData.filter(r=>(r.Status||'OK')!=='OK').length;
+  const ok=hkData.length-issues;
+  const el=document.getElementById('hk-kpis');
+  if(!el) return;
+  el.innerHTML=[
+    {icon:'ti-home-2',val:hkData.length,lbl:'Brands monitored',hint:'Homepage banner coverage'},
+    {icon:'ti-alert-triangle',val:issues,lbl:'With issues',hint:'Need attention'},
+    {icon:'ti-circle-check',val:ok,lbl:'OK',hint:'All good'},
+    {icon:'ti-photo-off',val:counts['ALREADY_EXPIRED']||0,lbl:'Expired',hint:'Banner already expired'},
+    {icon:'ti-clock',val:counts['EXPIRING_SOON']||0,lbl:'Expiring soon',hint:'Within 3 days'},
+    {icon:'ti-eye-off',val:counts['NOT_ACTIVATED']||0,lbl:'Not activated',hint:'Draft showing live'},
+  ].map(k=>`<div class="kpi"><div class="kpi-icon"><i class="ti ${k.icon}"></i></div><div class="kpi-body"><div class="kpi-val">${k.val}</div><div class="kpi-label">${k.lbl}</div><div class="kpi-hint">${k.hint}</div></div></div>`).join('');
+}
+function renderHousekeepingTab(){
+  renderHKKpis();
+  renderBannerHealthRecords();
+}
+
 function renderAdhoc(){
   let rows=ADHOC;
   const aft=document.getElementById('af-t'),afa=document.getElementById('af-a');
@@ -1850,18 +1884,23 @@ loadData();
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  document.getElementById('view-ops').style.display = v==='ops' ? '' : 'none';
-  document.getElementById('view-esc').style.display = v==='esc' ? '' : 'none';
-  document.getElementById('pg-ops').classList.toggle('active', v==='ops');
-  document.getElementById('pg-esc').classList.toggle('active', v==='esc');
-  document.getElementById('date-btn').style.display = v==='ops' ? '' : 'none';
-  document.getElementById('refresh').style.display  = v==='ops' ? '' : 'none';
+  ['ops','esc','hk'].forEach(n=>{
+    document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
+    document.getElementById('pg-'+n).classList.toggle('active', v===n);
+  });
+  const showCtrl = v==='ops';
+  document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
+  document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
   if(v==='esc' && !_escInit && document.getElementById('content').style.display!=='none'){
     initEscalationCharts(); renderEscTable(); _escInit=true;
   }
-  try{history.replaceState(null,'',v==='esc'?'#escalations':'#');}catch(e){}
+  if(v==='hk') renderHousekeepingTab();
+  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':'#');}catch(e){}
 }
-(function(){if(location.hash==='#escalations') switchView('esc');})();
+(function(){
+  if(location.hash==='#escalations') switchView('esc');
+  else if(location.hash==='#housekeeping') switchView('hk');
+})();
 
 /* ════════════ ESCALATION MODULE ════════════ */
 const ESC_ROWS=[
