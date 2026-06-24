@@ -444,6 +444,17 @@
           <button class="more" id="am"></button>
         </div>
       </details>
+      <details class="rec" id="rec-banner-health"><summary><i class="ti ti-alert-triangle" aria-hidden="true"></i> Banner health findings <span class="cnt" id="rc-banner-health"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="bhf-t"><option value="all">All issue types</option></select>
+            <select id="bhf-s"><option value="all">All sites</option></select>
+            <select id="bhf-b"><option value="all">All brands</option></select>
+          </div>
+          <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
+          <button class="more" id="bhm"></button>
+        </div>
+      </details>
     </div>
 
   </div>
@@ -462,9 +473,9 @@ const REGION_ORDER = ['MY','SG','ID','TH','KH'];
 const PAGE = 15;
 
 let DELIV=[], UTIL=[], ADHOC=[], rawData=null, _fullData=null;
-let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false;
+let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false, bhShowAll=false;
 let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
-let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'};
+let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'}, bhSort={col:null,dir:'asc'};
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
@@ -633,6 +644,7 @@ function render(data,_skipStore){
   renderCoverageDetail(total, regionList, regionsSet);
   renderRecords();
   renderAdhoc();
+  renderBannerHealthRecords();
 
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='block';
@@ -918,7 +930,7 @@ function renderBannerHealth(rows){
   const pill=document.getElementById('banner-health-pill');
   if(!pill) return;
   if(!rows||!rows.length){
-    pill.innerHTML=`<span class="src-pill"><span class="src-dot"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">all clear</span></span>`;
+    pill.innerHTML=`<span class="src-pill" onclick="openRecordSection('rec-banner-health')" style="cursor:pointer;" title="No banner issues"><span class="src-dot"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">all clear</span></span>`;
     return;
   }
   const TYPE_LABEL={
@@ -941,7 +953,7 @@ function renderBannerHealth(rows){
     const cls=URGENT.has(t)?'fail':'stale';
     return `<div class="src-pop-row"><strong><span class="src-dot ${cls}"></span>${TYPE_LABEL[t]}</strong><span class="src-ts">${counts[t]}</span></div>`;
   }).join('');
-  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${popRows}</span></span>`;
+  pill.innerHTML=`<span class="src-pill" onclick="openRecordSection('rec-banner-health')" style="cursor:pointer;" title="Click for details"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${popRows}</span></span>`;
 }
 
 /* ── CRM STATUS (header) ── */
@@ -1517,6 +1529,53 @@ function renderGames(){
   document.getElementById('gt').innerHTML=shown.map(r=>
     `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="text-align:right;color:var(--ink2);">${r.Brand||''}</td></tr>`).join('');
   const m=document.getElementById('gm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=gShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function sortBh(col){toggleSort(bhSort,col);renderBannerHealthRecords();}
+function renderBannerHealthRecords(){
+  const data=(_fullData&&_fullData.bannerHealth)||(rawData&&rawData.bannerHealth)||[];
+  let rows=data.slice();
+  const ft=document.getElementById('bhf-t'),fs=document.getElementById('bhf-s'),fb=document.getElementById('bhf-b');
+  if(ft&&fs&&fb){
+    const prevT=ft.value,prevS=fs.value,prevB=fb.value;
+    const TYPE_LABEL={'TOO_FEW_BANNERS':'Too few banners','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Already expired','EXPIRING_SOON':'Expiring soon','ENDS_BEFORE_CAMPAIGN':'Ends before campaign'};
+    const types=uniq(data.map(x=>x.Type).filter(Boolean)).sort();
+    ft.innerHTML='<option value="all">All issue types</option>'+types.map(x=>`<option value="${x}">${TYPE_LABEL[x]||x}</option>`).join('');
+    fs.innerHTML='<option value="all">All sites</option>'+uniq(data.map(x=>x.Site).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    fb.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Brand).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...ft.options].some(o=>o.value===prevT)) ft.value=prevT;
+    if([...fs.options].some(o=>o.value===prevS)) fs.value=prevS;
+    if([...fb.options].some(o=>o.value===prevB)) fb.value=prevB;
+    ft.onchange=fs.onchange=fb.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
+    const mBtn=document.getElementById('bhm');
+    if(mBtn) mBtn.onclick=()=>{bhShowAll=!bhShowAll;renderBannerHealthRecords();};
+    if(ft.value!=='all') rows=rows.filter(r=>r.Type===ft.value);
+    if(fs.value!=='all') rows=rows.filter(r=>r.Site===fs.value);
+    if(fb.value!=='all') rows=rows.filter(r=>r.Brand===fb.value);
+  }
+  rows=applySort(rows,bhSort);
+  const cnt=document.getElementById('rc-banner-health');
+  if(cnt) cnt.textContent=`${rows.length} finding${rows.length!==1?'s':''}`;
+  const shown=bhShowAll?rows:rows.slice(0,PAGE);
+  const TYPE_BADGE={'TOO_FEW_BANNERS':'b-warn','OUT_OF_ORDER':'b-warn','NOT_ACTIVATED':'b-warn','ENDS_BEFORE_CAMPAIGN':'b-warn','EXPIRING_SOON':'b-warn','ALREADY_EXPIRED':'b-done'};
+  const TYPE_LABEL_S={'TOO_FEW_BANNERS':'Too few','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Expired','EXPIRING_SOON':'Expiring','ENDS_BEFORE_CAMPAIGN':'Ends < campaign'};
+  const th=document.getElementById('bh-th');
+  const tb=document.getElementById('bht');
+  if(!th||!tb) return;
+  th.innerHTML='<tr>'
+    +thHtml('Issue','Type',bhSort,'sortBh','13%')
+    +thHtml('Site','Site',bhSort,'sortBh','9%')
+    +thHtml('Brand','Brand',bhSort,'sortBh','10%')
+    +thHtml('Banner','Label',bhSort,'sortBh','38%')
+    +thHtml('Ends','End Date',bhSort,'sortBh','12%')
+    +thHtml('Detail','Detail',bhSort,'sortBh','18%',true)+'</tr>';
+  tb.innerHTML=shown.map(r=>{
+    const t=r.Type||'';
+    const cls=TYPE_BADGE[t]||'b-warn';
+    return `<tr><td><span class="badge ${cls}">${TYPE_LABEL_S[t]||t}</span></td><td style="color:var(--ink2);">${r.Site||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Label||'').replace(/"/g,'&quot;')}">${r.Label||''}</td><td style="color:var(--ink2);">${r['End Date']||''}</td><td style="text-align:right;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Detail||'').replace(/"/g,'&quot;')}">${r.Detail||''}</td></tr>`;
+  }).join('');
+  const m=document.getElementById('bhm');
+  if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
 }
 
 function renderAdhoc(){
