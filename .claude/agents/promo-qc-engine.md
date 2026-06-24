@@ -83,6 +83,9 @@ Verify presence and basic shape only:
   * Deposit → `min_deposit`, `bonus_rate_pct`, `to_multiplier`, `max_bonus`
   * Free Credit → `free_credit_amount`, `to_multiplier`
   * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`, FS provider
+* FS hard platform limits (RETURN immediately — save will fail):
+  * `parsed.spin_count` ≤ 88
+  * `parsed.value_per_spin` ≥ 0.50
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
