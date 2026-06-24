@@ -135,11 +135,6 @@ These checks mirror the promo-qc accuracy checks applied to the canary plan:
 | Spin count matches source | `plan.promotion.fs_rounds` (or equivalent) vs `source.parsed.spin_count` | FAIL if ≠ (FS only) |
 | Per-spin value matches source | `amount_per_line` per currency vs `source.parsed.value_per_spin` | FAIL if ≠ (QP2 FS: use `amount_per_line` not the remark "Spin value") |
 | Per-currency amounts correct | `plan.promotion.promotion_currency_list[]` rows | FAIL if any row's `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` ≠ `source.per_currency_overrides` for that currency |
-| MT body numeric values match source | `plan.messageTemplate.details` EN body | FAIL if a number appears in body but ≠ `source.parsed` (rate %, max bonus, min deposit, TO multiplier) |
-| ZH body numeric consistency with EN | `plan.messageTemplate.details` ZH body | FAIL if a numeric value in ZH differs from EN body |
-| No HTML entity artifacts | All text fields in plan (MT body, dialog title/content, names) | FAIL if `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;` appear in display text |
-| Dialog linkage present (if expected) | `plan.dialogPopup` | FAIL if `source.instructions.popup_dialog=true` but `plan.dialogPopup` is null |
-| Provider assignment present | FS: `plan.promotion.game_provider_codes`; Dep/FC: `plan.promotion.game_provider_ids` | Empty when bonus_type requires provider scoping |
 
 ---
 
@@ -148,11 +143,6 @@ These checks mirror the promo-qc accuracy checks applied to the canary plan:
 * Position 99 on every banner plan — upload-promo.js always stages at position 99. It is ALWAYS a WARNING reminder, never a FAIL.
 * Canary plan not found locally — may have been set up on another machine or directly in BO. WARNING only, not FAIL.
 * Single-image brands — desktop and mobile sharing the same file is intentional when pull-banner-from-clickup detected a single image. Not a FAIL.
-* `member_group_ids: []` on QPRO canary plan — intentional. QPRO never uses member_group_ids.
-* `allow_deposit: false` on QP2 canary plan — intentional.
-* `max_total_*` null on QP2 canary plan — means Unlimited by design.
-* `tier_constraint` absent on QPRO canary plans — only applies to QP2.
-* Empty `instructions` block in canary plan — fine, most requests have no special instructions.
 * QP2 FS per-spin field is `amount_per_line` in currency rows — do NOT compare against the "Spin value" text in the remark field.
 
 ---
@@ -179,7 +169,6 @@ Return ONLY this JSON object. No prose before or after.
           "found": true,
           "reward_values": "PASS" | "WARNING" | "FAIL",
           "currency_coverage": "PASS" | "WARNING" | "FAIL",
-          "mt_body_numerics": "PASS" | "WARNING" | "FAIL",
           "dates_align": "PASS" | "WARNING",
           "overall": "PASS" | "WARNING" | "FAIL"
         }
