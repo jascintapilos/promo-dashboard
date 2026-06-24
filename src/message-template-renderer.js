@@ -112,20 +112,18 @@ export function buildTncLinkHtml({ platform, locale, brandInfo }) {
 
 // Sentence-11 T&C post-process: in the <li> that has `:url/terms-conditions`
 // as plain text, wrap the localized T&C term with a hyperlink using the :url
-// placeholder. Applies to both QPRO and QP2 — the BO substitutes :url per
-// brand/merchant at display time. Captures BEFORE and AFTER the plain-text
-// :url/terms-conditions so the regex doesn't accidentally strip it from
-// inside the href attribute.
+// placeholder. Applies to Deposit/FC templates (which use <li>). FS templates
+// use <p> and the `:url/terms-conditions` parameter is left as-is — the BO
+// resolves it at display time without needing an explicit <a> tag.
 function hyperlinkTnc(html, docKey, platform) {
   const term = TNC_TERM_BY_DOCKEY[docKey] || TNC_TERM_BY_DOCKEY.EN;
   const targetAttr = String(platform || '').toLowerCase() === 'qp2' ? ' target="_blank"' : '';
   const link = `<a${targetAttr} href=":url/terms-conditions">${term}</a>`;
-  // Matches both <li> and <p> wrappers — FS templates use <p>, Dep/FC use <li>.
-  return html.replace(/<(li|p)>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/(li|p)>/, (m, tag, before, after) => {
+  return html.replace(/<li>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/li>/, (m, before, after) => {
     const linked = before.includes(term)
       ? before.replace(term, link)
-      : before.trimEnd() + ' ' + link;  // term not inline — append link
-    return `<${tag}>${(linked + after).trimEnd()}</${tag}>`;
+      : before.trimEnd() + ' ' + link;
+    return `<li>${(linked + after).trimEnd()}</li>`;
   });
 }
 

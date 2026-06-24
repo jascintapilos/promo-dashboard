@@ -243,7 +243,7 @@ These are intentional behaviors confirmed by the operator. You may still NOTE th
 - ZH name with brand prefix like "BP9 ..." — correct.
 - `blacklist_id` INCONCLUSIVE on QPRO — QPRO list/detail endpoints do not return `blacklist_id`; this field is unverifiable from bundle data. Mark INCONCLUSIVE, not FAIL. The blacklist template is set at create time; absence from the live endpoint is a known API limitation, not a save defect.
 - `min_deposit` mismatch on WS1_SG / QPRO SG when `source.per_currency_overrides` is present — `source.parsed.min_deposit` is the MYR baseline. If the bundle has `source.per_currency_overrides` with an SGD entry, the live SGD min_deposit will legitimately differ from the MYR baseline. Do NOT flag this as a mismatch. Trust the live value and check it matches the SGD override amount, not the MYR baseline. If `source.per_currency_overrides` is absent from the bundle source block entirely, mark INCONCLUSIVE (bundle gap, not a save defect).
-- **T&C hyperlink on QP2 Free Spin** — Fixed 2026-06-24 (hyperlinkTnc extended to handle `<p>` wrapper + term-not-found fallback). New QP2 FS saves should have a correct `<a>` link. If bundle predates this fix, mark INCONCLUSIVE rather than FAIL.
+- **T&C hyperlink on QP2 Free Spin** — FS templates use a `<p>` wrapper with a plain `:url/terms-conditions` parameter; the BO resolves it at display time without needing an explicit `<a>` tag. `sentence_11_has_link = false` is **correct and expected** for QP2 FS. Do NOT flag as FAIL or INCONCLUSIVE.
 
 If you encounter these and the rest of the row is consistent, do NOT raise them as fail. Sentinel is strict but not pedantic.
 
