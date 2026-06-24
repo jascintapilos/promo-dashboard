@@ -142,6 +142,8 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | MT body has 3-section structure | `plan.messageTemplate.details["1"].message` (EN body) | WARNING if the EN body appears to be missing the How to Redeem section or the closing T&C sentence. A complete MT body should have: (1) intro paragraph with reward details, (2) How to Redeem steps, (3) T&C closing sentence |
 | Dialog body matches bonus type | `plan.dialogPopup.dialog_popup_locales[].content` (if popup present) | FAIL if dialog body contains vocabulary that contradicts `bonus_type` (same cross-type rule as MT above). WARNING if dialog body appears to be a copy of the full MT body rather than the short-form dialog body (dialog content should be significantly shorter than MT body) |
 | max_per_player / daily_max configured | `source.max_per_player`, `source.daily_max` | WARNING if both are null or 0 — unlimited claims per player is unusual; confirm operator intentionally left uncapped |
+| QP2 tier_constraint matches code prefix | `plan.tierConstraint` and `promo_code` (QP2 only) | FAIL if promo_code has a tier prefix (BR_/SIL_/GLD_/PLT_/DMD_/NRM_) but `plan.tierConstraint` is null or empty; FAIL if tier in code doesn't match the tier level in `tierConstraint`; tier constraints only apply to QP2 — skip on QPRO/WS1 |
+| Min deposit within platform limits | `source.parsed.min_deposit` and `source.per_currency_overrides` per currency | FAIL if any currency's effective min_deposit is below the platform floor: MYR < 30, SGD < 50, IDR < 25000, THB < 50, USD < 5. Check baseline for all regions in `source.regions`; check per-currency override amounts in `source.per_currency_overrides` for each currency present |
 
 ---
 

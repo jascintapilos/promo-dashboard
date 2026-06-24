@@ -558,6 +558,7 @@ try {
         max_withdraw: resolved.max_withdraw,
         instructions: resolved.instructions || null,
         remark: resolved.remark || null,
+        per_currency_overrides: resolved.per_currency_overrides ?? {},
       },
       qc_endpoints: {
         list:       `GET /api/bo/promotion?code=${resolved.promo_code}`,
