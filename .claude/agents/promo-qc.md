@@ -123,6 +123,10 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | Provider assignment present | FS: `plan.promotion.game_provider_codes` includes FS provider; Dep/FC: `plan.promotion.game_provider_ids` set per Layer-1 rules | empty when bonus_type requires provider scoping |
 | Promotion linkage present | per-locale names cover all `source.locales` | a locale in source has no corresponding `plan.names` row |
 | Category sub-exclusion in MT | When `source.instructions.categories_only` is set AND `bonus_type = "Deposit"` → check `plan.messageTemplate.details["1"].message` (EN) and ZH key for the correct phrase per category: **LC/LIVE CASINO** → EN `"Blackjack"` / ZH `"二十一点"`; **SLOTS/SLOT** → EN `"Table games"` + `"Arcade games"` / ZH `"桌面游戏"` + `"街机"`; **SPORTS** → EN `"Virtual Sports"` + `"Number Games"` / ZH `"虚拟体育"` + `"数字游戏"` | FAIL if category is set but its required exclusion phrase is absent from the MT body |
+| MT body numeric values match source | `plan.messageTemplate.details` — scan EN body text for numeric mentions of `source.parsed.bonus_rate_pct` (as %), `source.parsed.max_bonus`, `source.parsed.min_deposit`, `source.parsed.to_multiplier` (as Nx) | FAIL if a value appears in the body but does not match source.parsed (e.g. body says "30%" but source is 50%); WARNING if a source value is absent from the body entirely |
+| ZH body numeric consistency with EN | `plan.messageTemplate.details` — ZH locale body | FAIL if a numeric value (rate, amount, TO) in ZH body differs from the same value in EN body |
+| Dialog title matches promo name | `plan.dialogPopup.dialog_popup_locales[].title` per locale | FAIL if EN dialog title ≠ `source.promotion_name_en`; FAIL if ZH dialog title ≠ `source.promotion_name_zh_id` |
+| No HTML entity artifacts in text | All text fields: MT body (all locales), dialog title + content (all locales), `plan.names[].name` | FAIL if raw HTML entities appear in display text: `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;`, `&lsquo;` — these mean the content was stored encoded and will display as literal characters to the player |
 
 ---
 
