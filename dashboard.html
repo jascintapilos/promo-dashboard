@@ -466,8 +466,8 @@
       <details class="rec" id="rec-banner-health"><summary><i class="ti ti-photo" aria-hidden="true"></i> Homepage banner <span class="cnt" id="rc-banner-health"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
           <div class="rec-tools">
-            <select id="bhf-t"><option value="all">All issue types</option></select>
-            <select id="bhf-b"><option value="all">All brands</option></select>
+            <select id="bhf-p"><option value="all">All brands</option></select>
+            <select id="bhf-st"><option value="all">All statuses</option><option value="issues">Only with issues</option><option value="ok">Only OK</option></select>
           </div>
           <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
           <button class="more" id="bhm"></button>
@@ -540,8 +540,8 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health','Homepage Banner Status'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth','homepageBannerStatus'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -1619,43 +1619,46 @@ function platformFromSite(site){
   return s.toUpperCase();
 }
 function renderBannerHealthRecords(){
-  const data=((_fullData&&_fullData.bannerHealth)||(rawData&&rawData.bannerHealth)||[])
-    .map(r=>({...r,Platform:platformFromSite(r.Site)}));
+  // Per-merchant view: one row per Brand/merchant with Active Count, Banner Names dropdown, Status.
+  const data=((_fullData&&_fullData.homepageBannerStatus)||(rawData&&rawData.homepageBannerStatus)||[])
+    .map(r=>({...r,Platform:platformFromSite(r.Site),ActiveN:Number(r['Active Count'])||0}));
   let rows=data.slice();
-  const ft=document.getElementById('bhf-t'),fb=document.getElementById('bhf-b');
-  if(ft&&fb){
-    const prevT=ft.value,prevB=fb.value;
-    const TYPE_LABEL={'TOO_FEW_BANNERS':'Too few banners','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Already expired','EXPIRING_SOON':'Expiring soon','ENDS_BEFORE_CAMPAIGN':'Ends before campaign'};
-    const types=uniq(data.map(x=>x.Type).filter(Boolean)).sort();
-    ft.innerHTML='<option value="all">All issue types</option>'+types.map(x=>`<option value="${x}">${TYPE_LABEL[x]||x}</option>`).join('');
-    fb.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Platform).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
-    if([...ft.options].some(o=>o.value===prevT)) ft.value=prevT;
-    if([...fb.options].some(o=>o.value===prevB)) fb.value=prevB;
-    ft.onchange=fb.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
+  const fp=document.getElementById('bhf-p'),fst=document.getElementById('bhf-st');
+  if(fp&&fst){
+    const prevP=fp.value,prevS=fst.value;
+    fp.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Platform).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...fp.options].some(o=>o.value===prevP)) fp.value=prevP;
+    if([...fst.options].some(o=>o.value===prevS)) fst.value=prevS;
+    fp.onchange=fst.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
     const mBtn=document.getElementById('bhm');
     if(mBtn) mBtn.onclick=()=>{bhShowAll=!bhShowAll;renderBannerHealthRecords();};
-    if(ft.value!=='all') rows=rows.filter(r=>r.Type===ft.value);
-    if(fb.value!=='all') rows=rows.filter(r=>r.Platform===fb.value);
+    if(fp.value!=='all') rows=rows.filter(r=>r.Platform===fp.value);
+    if(fst.value==='issues') rows=rows.filter(r=>(r.Status||'OK')!=='OK');
+    else if(fst.value==='ok') rows=rows.filter(r=>(r.Status||'OK')==='OK');
   }
   rows=applySort(rows,bhSort);
   const cnt=document.getElementById('rc-banner-health');
-  if(cnt) cnt.textContent=`${rows.length} finding${rows.length!==1?'s':''}`;
+  if(cnt) cnt.textContent=`${rows.length} brand${rows.length!==1?'s':''}`;
   const shown=bhShowAll?rows:rows.slice(0,PAGE);
-  const TYPE_BADGE={'TOO_FEW_BANNERS':'b-warn','OUT_OF_ORDER':'b-warn','NOT_ACTIVATED':'b-warn','ENDS_BEFORE_CAMPAIGN':'b-warn','EXPIRING_SOON':'b-warn','ALREADY_EXPIRED':'b-done'};
-  const TYPE_LABEL_S={'TOO_FEW_BANNERS':'Too few','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Expired','EXPIRING_SOON':'Expiring','ENDS_BEFORE_CAMPAIGN':'Ends < campaign'};
   const th=document.getElementById('bh-th');
   const tb=document.getElementById('bht');
   if(!th||!tb) return;
   th.innerHTML='<tr>'
-    +thHtml('Issue','Type',bhSort,'sortBh','14%')
-    +thHtml('Brand','Platform',bhSort,'sortBh','10%')
-    +thHtml('Banner','Label',bhSort,'sortBh','42%')
-    +thHtml('Ends','End Date',bhSort,'sortBh','13%')
-    +thHtml('Detail','Detail',bhSort,'sortBh','21%',true)+'</tr>';
+    +thHtml('Brand','Brand',bhSort,'sortBh','13%')
+    +thHtml('Platform','Platform',bhSort,'sortBh','10%')
+    +thHtml('Active','ActiveN',bhSort,'sortBh','9%')
+    +'<th style="width:33%;">Banner Names</th>'
+    +thHtml('Status','Status',bhSort,'sortBh','35%',true)+'</tr>';
   tb.innerHTML=shown.map(r=>{
-    const t=r.Type||'';
-    const cls=TYPE_BADGE[t]||'b-warn';
-    return `<tr><td><span class="badge ${cls}">${TYPE_LABEL_S[t]||t}</span></td><td style="color:var(--ink2);">${r.Platform||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Label||'').replace(/"/g,'&quot;')}">${r.Label||''}</td><td style="color:var(--ink2);">${r['End Date']||''}</td><td style="text-align:right;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Detail||'').replace(/"/g,'&quot;')}">${r.Detail||''}</td></tr>`;
+    const status=r.Status||'OK';
+    const isOk=status==='OK';
+    const badgeCls=isOk?'b-done':(status.toLowerCase().includes('need')||status.toLowerCase().includes('expir')||status.toLowerCase().includes('draft live')||status.toLowerCase().includes('out of order'))?'b-warn':'b-info';
+    const names=(r['Banner Names']||'').split('\n').filter(Boolean);
+    const opts=names.length
+      ? `<option>${names.length} banner${names.length!==1?'s':''} ▾</option>`+names.map(n=>`<option disabled>${(n||'').replace(/</g,'&lt;')}</option>`).join('')
+      : '<option>No banners</option>';
+    const sel=`<select onchange="this.selectedIndex=0;" style="width:100%;padding:3px 6px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink2);font-size:0.78rem;">${opts}</select>`;
+    return `<tr><td style="font-weight:600;color:var(--ink);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Platform||''}</td><td style="color:var(--ink2);font-variant-numeric:tabular-nums;">${r.ActiveN}</td><td>${sel}</td><td style="text-align:right;"><span class="badge ${badgeCls}">${status}</span></td></tr>`;
   }).join('');
   const m=document.getElementById('bhm');
   if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
