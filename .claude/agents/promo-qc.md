@@ -119,6 +119,13 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | Currency assigned | `plan.promotion.promotion_currency_list` or per-currency overrides | empty, OR doesn't cover every region in `source.regions` |
 | Validity period configured | `plan.promotion.start_date`, `end_date` | either missing |
 | Reward settings populated | per bonus_type: Deposit→`plan.promotion.bonus_rate_pct`+`to_multiplier`+`max_bonus`; FC→`free_credit_amount`+`to_multiplier`; FS→`spin_count`+`value_per_spin`+`to_multiplier` | any required field missing for the bonus_type |
+| Bonus rate value matches source | `plan.promotion.bonus_rate_pct` (Deposit) | FAIL if ≠ `source.parsed.bonus_rate_pct` |
+| Free credit amount value matches source | `plan.promotion.free_credit_amount` (FC) | FAIL if ≠ `source.parsed.free_credit_amount` |
+| Spin count value matches source | `plan.promotion.fs_rounds` or equivalent (FS) | FAIL if ≠ `source.parsed.spin_count` |
+| Per-spin value matches source | `plan.promotion.value_per_spin` or `amount_per_line` per currency (FS) | FAIL if ≠ `source.parsed.value_per_spin`; on QP2 FS, the per-spin field is `amount_per_line` in each currency row — do NOT compare against "Spin value" from the remark |
+| Deposit status correct (QP2 only) | `plan.promotion.deposit_status` | FAIL on QP2 if `source.parsed.min_deposit = 0` but deposit_status ≠ 1 (None); or `min_deposit > 0` but deposit_status ≠ 2 (Last Deposit) |
+| Validity days match source | `plan.promotion.validity` and `reward_validity` | WARNING if `validity` ≠ `source.validity_days` or `reward_validity` ≠ `source.rewards_validity_days`; note known code bug: validity=expiry after claim, reward_validity=claim window before claim — values may appear swapped |
+| Per-currency amounts correct | `plan.promotion.promotion_currency_list[]` rows | FAIL if any currency row has a different `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` than source.parsed or source.per_currency_overrides for that currency |
 | Dialog linkage present | `plan.dialogPopup` (if expected per `source.instructions.popup_dialog`) | popup_dialog requested but `plan.dialogPopup` is null |
 | Provider assignment present | FS: `plan.promotion.game_provider_codes` includes FS provider; Dep/FC: `plan.promotion.game_provider_ids` set per Layer-1 rules | empty when bonus_type requires provider scoping |
 | Promotion linkage present | per-locale names cover all `source.locales` | a locale in source has no corresponding `plan.names` row |

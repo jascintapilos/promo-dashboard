@@ -211,6 +211,15 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 | turnover | `source.parsed.to_multiplier` | `live_state.detail.to_multiplier` |
 | min deposit | `source.parsed.min_deposit` | `live_state.detail.min_deposit` |
 | max bonus | `source.parsed.max_bonus` | `live_state.detail.max_bonus` |
+| bonus_rate_pct | `source.parsed.bonus_rate_pct` | `live_state.detail.bonus_rate_pct` — Deposit promos only; FAIL if ≠ source |
+| free_credit_amount | `source.parsed.free_credit_amount` | `live_state.detail.free_credit_amount` — FC promos only; FAIL if ≠ source |
+| spin_count / fs_rounds | `source.parsed.spin_count` | FS round field in `live_state.detail` — FS promos only; FAIL if ≠ source |
+| amount_per_line / per-spin value | `source.parsed.value_per_spin` | `live_state.detail.promotion_currency_list[].amount_per_line` (QP2 FS) or platform equivalent — FAIL if ≠ source; on QP2 FS do NOT compare against the "Spin value" in the remark field — use the actual `amount_per_line` from the currency row |
+| deposit_status | derived: `source.parsed.min_deposit = 0` → 1 (None); `min_deposit > 0` → 2 (Last Deposit) | `live_state.detail.deposit_status` — QP2 only; FAIL if wrong value |
+| promo activation status | implicit: promo must be active after save | WS1: `live_state.list_row.IsActive` must be `true`; QPRO/QP2: `live_state.list_row.status` must indicate active (1); FAIL if promo is inactive — players cannot see or claim it |
+| validity_days | `source.validity_days` (bonus expiry after claim) | `live_state.detail.validity` — WARNING if value appears swapped with reward_validity; known code bug: `validity`=expiry after claim, `reward_validity`=claim window before claim |
+| rewards_validity_days | `source.rewards_validity_days` (claim window before claim) | `live_state.detail.reward_validity` — WARNING if swapped with validity; see above |
+| per-currency reward amounts | `source.parsed` + `source.per_currency_overrides` per currency | `live_state.detail.promotion_currency_list[]` per currency_id — FAIL if any row's `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` doesn't match source intent for that currency; INCONCLUSIVE if promotion_currency_list is missing from bundle |
 | provider | `source.parsed.fs_provider` (FS); Layer-1 exclusion list (Dep/FC) | `live_state.detail.game_provider_ids` / `game_provider_codes` |
 | T&C hyperlink | implicit (sentence 11 only) | `live_state.tnc.checks.sentence_11_has_link` (must be true) |
 | brand placeholder | `:brandname` (QPRO) or `:merchantname` (QP2) | scan `live_state.tnc.messages` / MT body for literal hardcoded brand names |
