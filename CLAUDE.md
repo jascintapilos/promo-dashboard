@@ -113,10 +113,11 @@ git log --oneline origin/main -5
 
 ### Collaborator setup (new teammate)
 1. Clone: `git clone https://github.com/jascintapilos/promo-automation.git`
-2. Install deps: `npm install`
-3. Install Claude Code skills (Windows): `install-skills.bat`
-4. Get credentials from Jascinta: `bo-sites.local.json` + `google-oauth-token.local.json`
-5. Verify: `node bin/sheets-test.mjs`
+2. **Open the cloned `promo-automation` folder directly in Claude Code** — do NOT open a parent folder that contains it. The QC agents (`promo-qc-engine`, `promo-qc`, `sentinel`) only load when Claude Code is launched from this folder.
+3. Install deps: `npm install`
+4. Install Claude Code skills (Windows): `install-skills.bat`
+5. Get credentials from Jascinta: `bo-sites.local.json` + `google-oauth-token.local.json`
+6. Verify: `node bin/sheets-test.mjs`
 
 Full guide: `docs/TEAM-QUICKSTART.md`
 
