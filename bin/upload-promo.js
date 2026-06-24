@@ -28,7 +28,7 @@
 //   --banner-dir whose name starts with the brand code (prefers *-min over *-ext).
 //   Date formats accepted: YYYY-MM-DD, DD/MM/YYYY, DD-Mon-YYYY (e.g. 21-Apr-2026).
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { getSite } from '../src/sites.js';
@@ -628,7 +628,11 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
       console.log(`      [banners]    mobile:  ${path.basename(mobilePath)}`);
       console.log(`      [promotions] content: ${path.basename(mobilePath)}  (mup — mobile crop)`);
     }
-    return { b_id, status: 'dry-run', promoCode: codeDry };
+    return {
+      b_id, status: 'dry-run', promoCode: codeDry,
+      site_id, label, campaign, startUtc, endUtc,
+      stagedImages: imageLocales.map((il) => ({ localeSuffix: il.localeSuffix, desktop: il.desktopPath, mobile: il.mobilePath })),
+    };
   }
 
   // ── Upload banner images ─────────────────────────────────────────────────
@@ -814,7 +818,11 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
   const bannerId = bannerRes?.data?.rows?.id ?? bannerRes?.data?.id;
   console.log(`  [${b_id}] ✅ banner created id=${bannerId}  link=${bannerBody.link}`);
 
-  return { b_id, status: 'ok', promoCode, bannerId };
+  return {
+    b_id, status: 'ok', promoCode, bannerId, pcId,
+    site_id, label, campaign, startUtc, endUtc,
+    imageRows, bannerPosition: bannerBody.position,
+  };
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -943,4 +951,40 @@ for (const r of results) {
   const badge = r.status === 'ok' ? '✅' : r.status === 'dry-run' ? '🔵' : r.status === 'skipped' ? '⚪' : '❌';
   const detail = r.status === 'ok' ? `  code=${r.promoCode}  banner_id=${r.bannerId}` : `  ${r.reason || ''}`;
   console.log(`  ${badge} ${r.b_id}${detail}`);
+}
+
+// ── QC bundle writing ─────────────────────────────────────────────────────────
+// dry-run  → captures/banner-qc-plans/{b_id}__{site_id}.json   (for /banner-pre-qc)
+// --commit → captures/banner-qc-bundles/{b_id}__{site_id}.json (for /banner-deep-qc)
+const brandDir = (() => {
+  try { return JSON.parse(readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname.slice(1)), '..', 'data', 'brand-directory.json'), 'utf8')); }
+  catch { return {}; }
+})();
+
+function getBrandWebsite(siteId) {
+  const qproM = siteId.match(/^qpro(\d+)$/i);
+  if (qproM) return brandDir.qpro?.[`QPRO${qproM[1]}`]?.website || null;
+  const qp2Map = { ibc22: 'QP2A', king333: 'QP2B', ace66: 'QP2C', spade66: 'QP2D' };
+  const qp2Key = qp2Map[siteId.toLowerCase()];
+  if (qp2Key) return brandDir.qp2?.[qp2Key]?.website || null;
+  return null;
+}
+
+const bundlesWritten = [];
+for (const r of results) {
+  if (r.status !== 'ok' && r.status !== 'dry-run') continue;
+  const isplan = r.status === 'dry-run';
+  const dir = path.join(path.dirname(new URL(import.meta.url).pathname.slice(1)), '..', isplan ? 'captures/banner-qc-plans' : 'captures/banner-qc-bundles');
+  mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${r.b_id}__${r.site_id}.json`);
+  const bundle = isplan
+    ? { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, start_datetime: r.startUtc, end_datetime: r.endUtc, staged_images: r.stagedImages, website: getBrandWebsite(r.site_id), type: 'plan', created_at: new Date().toISOString() }
+    : { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, banner_id: r.bannerId, content_id: r.pcId, start_datetime: r.startUtc, end_datetime: r.endUtc, position: r.bannerPosition, image_rows: r.imageRows, website: getBrandWebsite(r.site_id), type: 'saved', created_at: new Date().toISOString() };
+  writeFileSync(file, JSON.stringify(bundle, null, 2));
+  bundlesWritten.push(file);
+}
+if (bundlesWritten.length) {
+  const label = dryRun ? 'banner-qc-plans' : 'banner-qc-bundles';
+  console.log(`\n[qc] ${bundlesWritten.length} bundle(s) written to captures/${label}/`);
+  console.log(`[qc] Next: ${dryRun ? 'node bin/upload-promo.js --range=... --commit → /banner-pre-qc' : '/banner-deep-qc'}`);
 }
