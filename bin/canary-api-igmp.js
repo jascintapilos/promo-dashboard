@@ -585,6 +585,13 @@ await (async () => {
       const actOk = actRes?.success === true || (Array.isArray(actRes?.message) && actRes.message.some(m => /success/i.test(m)));
       if (actOk) {
         console.log(`✓ Activated (PromotionId=${promoId})`);
+        // Re-fetch list_row post-activation so IsActive=true in the QC bundle.
+        try {
+          const postActRes = await igmpPost(siteId, '/PM/GetPromotionInfoByCode', { PromotionCode: plan.body.PromotionCode });
+          if (postActRes?.data) savedListRow = postActRes.data;
+        } catch (e) {
+          console.warn(`⚠ Post-activation list_row refresh failed (bundle will show IsActive=false): ${e.message.split('\n')[0]}`);
+        }
       } else {
         console.error(`✗ Activation returned unexpected response: ${JSON.stringify(actRes)}`);
         return bail(9);
