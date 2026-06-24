@@ -34,6 +34,7 @@ import { loadAllRequests, resolveHandle } from '../src/planner.js';
 import { getSite } from '../src/sites.js';
 import { findPromotionByCode, getPromotionDetail, getPopupDetail } from '../src/api-client.js';
 import { qcMtTncHyperlink } from '../src/qc-mt-tnc.js';
+import { igmpPost } from '../src/igmp-client.js';
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
 const userInput = positional[0];
@@ -101,6 +102,43 @@ if (refresh) {
   const refreshResults = await Promise.all(bundles.map(async (b) => {
     if (!b.site) return { brand: b.brand, ok: false, error: 'bundle missing site' };
     try {
+      // ── IGMP (WS1/WS2) refresh ──────────────────────────────────────
+      if (b.platform === 'igmp') {
+        const bonusType = String(b.source?.bonus_type || '').toLowerCase();
+        const IGMP_DETAIL_EP = {
+          deposit: '/PM/GetBonusInfo',
+          'free credit': '/PM/GetFreeCreditInfo',
+          'free spin': '/PM/GetFreeSpinPromotionInfo',
+        }[bonusType];
+        const [r1, r2] = await Promise.all([
+          wrap(igmpPost(b.site, '/PM/GetPromotionInfoByCode', { PromotionCode: b.promo_code }).then(r => r?.data ?? null)),
+          b.promotion_id && IGMP_DETAIL_EP
+            ? wrap(igmpPost(b.site, IGMP_DETAIL_EP, { PromotionId: b.promotion_id }).then(r => r?.data?.Promotion || r?.data || null))
+            : Promise.resolve(null),
+        ]);
+        const rewardId = b.reward_id ?? (r2?.ok ? r2.value?.PromotionRewards?.[0]?.RewardId : null);
+        let tncResult = null;
+        if (rewardId) {
+          tncResult = await wrap(igmpPost(b.site, '/PM/GetPromotionRewardContents', { RewardId: rewardId }).then(tcRes => {
+            const rows = Array.isArray(tcRes?.data) ? tcRes.data : [];
+            const messages = rows.map(r => ({ locale: r.Locale, subject: r.PromotionRewardName || '', message: r.Content || '' }));
+            const sentence_11_has_link = rows.some(r =>
+              typeof r.Content === 'string' && /<a[^>]+href=[^>]+info-center\/tnc[^>]*>/i.test(r.Content));
+            return { messages, checks: { sentence_11_has_link } };
+          }));
+        }
+        b.live_state = {
+          list_row: r1?.ok ? r1.value : null,
+          detail:   r2?.ok ? r2.value : null,
+          tnc:      tncResult?.ok ? tncResult.value : null,
+          refreshed_at: new Date().toISOString(),
+        };
+        const { __file: _f, ...persistable } = b;
+        await writeFile(b.__file, JSON.stringify(persistable, null, 2));
+        return { brand: b.brand, ok: true };
+      }
+
+      // ── QPRO / QP2 refresh ──────────────────────────────────────────
       const site = getSite(b.site);
       const platform = b.platform || (b.site.startsWith('ibc') ? 'qp2' : 'qpro');
       const [r1, r2, r3, r4] = await Promise.all([
