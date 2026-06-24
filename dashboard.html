@@ -270,9 +270,8 @@
   .ep-unk{background:#f3f4f6;color:#6b7280;}
   .ep-res{background:var(--good-soft);color:var(--good);} .ep-inv{background:var(--warn-soft);color:var(--warn);}
   .ep-ong{background:var(--risk-soft);color:var(--risk);} .ep-none{background:#f3f4f6;color:#9ca3af;}
-  .esc-tbl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;}
-  .esc-tbl-bar input,.esc-tbl-bar select{font-size:12px;padding:5px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);outline:none;cursor:pointer;}
-  .esc-tbl-bar input{flex:1;min-width:180px;} .esc-tbl-bar input:focus{border-color:var(--accent);}
+  .esc-search-input{flex:1;min-width:180px;padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:12px;outline:none;}
+  .esc-search-input:focus{border-color:var(--accent);}
   .esc-tbl-cnt{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap;}
   .esc-code{font-family:'SF Mono','Cascadia Code',monospace;font-size:11px;color:#2563eb;max-width:165px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
   .esc-desc{max-width:220px;color:var(--ink2);font-size:11.5px;line-height:1.4;}
@@ -476,8 +475,8 @@
     </div>
 
     <!-- ── ESCALATION TRACKER MODULE ── -->
-    <p class="section-label">Escalation tracker</p>
-    <div class="row2" style="margin-bottom:18px;">
+    <p class="section-label" style="margin-top:28px;">Escalation tracker</p>
+    <div class="row2" style="margin-bottom:28px;">
       <div class="card">
         <div class="card-header">
           <div class="card-header-info">
@@ -506,8 +505,8 @@
       <details class="rec" id="rec-escalation">
         <summary><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalation log <span class="cnt">81 cases · Jan–Jun 2026</span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
         <div class="rec-body">
-          <div class="esc-tbl-bar">
-            <input type="text" id="esc-q" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
+          <div class="rec-tools">
+            <input type="text" id="esc-q" class="esc-search-input" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
             <select onchange="renderEscTable()" id="esc-cause"><option value="">All Root Causes</option><option>Human Error</option><option>System Limitation</option><option>Unclassified</option></select>
             <select onchange="renderEscTable()" id="esc-cat"><option value="">All Categories</option><option>T&amp;C / Message Mismatch</option><option>Reward Not Assigned</option><option>Wrong Promo Setting</option><option>Game / Provider Not Added</option><option>Member Group Missing</option><option>Claim Restriction Bug</option><option>Duplicate Reward</option><option>Sync / Technical Issue</option><option>Unclassified</option></select>
             <select onchange="renderEscTable()" id="esc-status"><option value="">All Statuses</option><option>Resolved</option><option>Investigating</option><option>Ongoing</option></select>
@@ -1621,18 +1620,18 @@ function platformFromSite(site){
 function renderBannerHealthRecords(){
   // Per-merchant view: one row per Brand/merchant with Active Count, Banner Names dropdown, Status.
   const data=((_fullData&&_fullData.homepageBannerStatus)||(rawData&&rawData.homepageBannerStatus)||[])
-    .map(r=>({...r,Platform:platformFromSite(r.Site),ActiveN:Number(r['Active Count'])||0}));
+    .map(r=>({...r,ActiveN:Number(r['Active Count'])||0}));
   let rows=data.slice();
   const fp=document.getElementById('bhf-p'),fst=document.getElementById('bhf-st');
   if(fp&&fst){
     const prevP=fp.value,prevS=fst.value;
-    fp.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Platform).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    fp.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Brand).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
     if([...fp.options].some(o=>o.value===prevP)) fp.value=prevP;
     if([...fst.options].some(o=>o.value===prevS)) fst.value=prevS;
     fp.onchange=fst.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
     const mBtn=document.getElementById('bhm');
     if(mBtn) mBtn.onclick=()=>{bhShowAll=!bhShowAll;renderBannerHealthRecords();};
-    if(fp.value!=='all') rows=rows.filter(r=>r.Platform===fp.value);
+    if(fp.value!=='all') rows=rows.filter(r=>r.Brand===fp.value);
     if(fst.value==='issues') rows=rows.filter(r=>(r.Status||'OK')!=='OK');
     else if(fst.value==='ok') rows=rows.filter(r=>(r.Status||'OK')==='OK');
   }
@@ -1644,10 +1643,9 @@ function renderBannerHealthRecords(){
   const tb=document.getElementById('bht');
   if(!th||!tb) return;
   th.innerHTML='<tr>'
-    +thHtml('Brand','Brand',bhSort,'sortBh','13%')
-    +thHtml('Platform','Platform',bhSort,'sortBh','10%')
-    +thHtml('Active','ActiveN',bhSort,'sortBh','9%')
-    +'<th style="width:33%;">Banner Names</th>'
+    +thHtml('Brand','Brand',bhSort,'sortBh','20%')
+    +thHtml('Active','ActiveN',bhSort,'sortBh','10%')
+    +'<th style="width:35%;">Banner Names</th>'
     +thHtml('Status','Status',bhSort,'sortBh','35%',true)+'</tr>';
   tb.innerHTML=shown.map(r=>{
     const status=r.Status||'OK';
@@ -1658,7 +1656,7 @@ function renderBannerHealthRecords(){
       ? `<option>${names.length} banner${names.length!==1?'s':''} ▾</option>`+names.map(n=>`<option disabled>${(n||'').replace(/</g,'&lt;')}</option>`).join('')
       : '<option>No banners</option>';
     const sel=`<select onchange="this.selectedIndex=0;" style="width:100%;padding:3px 6px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink2);font-size:0.78rem;">${opts}</select>`;
-    return `<tr><td style="font-weight:600;color:var(--ink);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Platform||''}</td><td style="color:var(--ink2);font-variant-numeric:tabular-nums;">${r.ActiveN}</td><td>${sel}</td><td style="text-align:right;"><span class="badge ${badgeCls}">${status}</span></td></tr>`;
+    return `<tr><td style="font-weight:600;color:var(--ink);">${r.Brand||''}</td><td style="color:var(--ink2);font-variant-numeric:tabular-nums;">${r.ActiveN}</td><td>${sel}</td><td style="text-align:right;"><span class="badge ${badgeCls}">${status}</span></td></tr>`;
   }).join('');
   const m=document.getElementById('bhm');
   if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
