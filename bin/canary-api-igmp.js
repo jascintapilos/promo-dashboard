@@ -22,6 +22,23 @@ import { buildIgmpPlan } from '../src/api-mapper-igmp.js';
 import { igmpPost, listIgmpSites } from '../src/igmp-client.js';
 import { resolveFsCatalog } from '../src/igmp-fs-resolver.js';
 import { BRAND_TO_SITE } from '../src/ingest.js';
+import { buildTncRow } from '../src/igmp-tnc.js';
+
+// ZH content is only saved on the MY + SG BOs. Mirror the runtime gate used
+// for QC Level 3 so the plan bundle's locale set matches what the BO will
+// actually persist for this site.
+const ZH_SITES = new Set(['ws1-v3-my', 'ws1-v3-sg']);
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+// Compose a file-safe brand label for bundle paths. Used to disambiguate
+// per-region WS1 jobs (WS1_MY, WS1_SG, ...) and keep WS2 single.
+function bundleBrand(siteId) {
+  if (siteId === 'ws2') return 'WS2';
+  const m = String(siteId || '').match(/^ws1-v3-(\w+)$/);
+  if (m) return `WS1_${m[1].toUpperCase()}`;
+  return String(siteId || 'UNKNOWN').toUpperCase().replace(/-/g, '_');
+}
 
 function bail(code) {
   process.exitCode = code;
@@ -47,10 +64,12 @@ await (async () => {
   // Load the resolved request record. Reuses the existing planner so the
   // canary speaks the same input shape as canary-api / canary-api-qp2.
   let rec;
+  let resolvedHandle = handle;
   try {
     const { byHandle, byId } = await loadAllRequests();
     const resolved = resolveHandle(handle, { byHandle, byId });
     rec = resolved ? byHandle.get(resolved) : null;
+    if (resolved) resolvedHandle = resolved;
   } catch (e) {
     console.error(`error loading request "${handle}": ${e.message}`);
     return bail(3);
@@ -138,6 +157,66 @@ await (async () => {
           : `${code}${codeSuffix}`;
       }
     }
+  }
+
+  // ── Plan bundle (Pre-QC) ────────────────────────────────────────────
+  // Written in BOTH dry-run and commit paths so /pre-qc has something to read
+  // before the live save. Mirrors QPRO/QP2 shape:
+  //   plan.promotion             — main POST body
+  //   plan.messageTemplate.details["1"|"2"] — EN/ZH T&C body so the agents'
+  //   category sub-exclusion check works platform-agnostically.
+  // failure to write is non-fatal.
+  const targetBrand = bundleBrand(siteId);
+  const bonusTypeLower = String(rec.bonus_type || '').toLowerCase();
+  try {
+    const planDir = path.resolve('captures/qc-plans');
+    await mkdir(planDir, { recursive: true });
+
+    // Extract the already-rendered T&C from plan.body so the bundle mirrors
+    // exactly what will be POSTed (and what the BO will persist). Calling
+    // buildTncRow again here would skip api-mapper-igmp.js's per-currency
+    // min_deposit override, producing a divergent body in the bundle.
+    const rewardContents = plan.body?.PromotionRewards?.[0]?.PromotionRewardContents || [];
+    const tncEn = rewardContents.find((c) => c.Locale === 'en') || null;
+    const tncZh = rewardContents.find((c) => c.Locale === 'zh') || null;
+    const messageTemplate = { details: {} };
+    if (tncEn) messageTemplate.details['1'] = { subject: tncEn.PromotionRewardName || '', message: tncEn.Content || '' };
+    if (tncZh && ZH_SITES.has(siteId)) messageTemplate.details['2'] = { subject: tncZh.PromotionRewardName || '', message: tncZh.Content || '' };
+
+    const planBundle = {
+      handle: resolvedHandle, brand: targetBrand, platform: 'igmp', site: siteId,
+      promo_code: plan.body.PromotionCode,
+      bonus_type: rec.bonus_type,
+      bonus_sub_type: rec.bonus_sub_type || null,
+      planned_at: new Date().toISOString(),
+      source: {
+        categories: rec.categories || rec.parsed?.categories || null,
+        regions: rec.regions || null,
+        currencies: rec.currencies || null,
+        locales: rec.locales || null,
+        parsed: rec.parsed || {},
+        promotion_name_en: rec.promotion_name_en,
+        promotion_name_zh: rec.promotion_name_zh,
+        promotion_name_id: rec.promotion_name_id,
+        max_per_player: rec.max_per_player,
+        daily_max: rec.daily_max,
+        max_withdraw: rec.max_withdraw,
+        instructions: rec.instructions || null,
+        remark: rec.remark || null,
+        requestor: rec.requestor || null,
+      },
+      plan: {
+        promotion: plan.body,
+        messageTemplate,
+        dialogPopup: null,
+        followups: plan.followups || [],
+      },
+    };
+    const planPath = path.join(planDir, `${resolvedHandle}__${targetBrand}.json`);
+    await writeFile(planPath, JSON.stringify(planBundle, null, 2));
+    console.log(`Pre-QC plan bundle: ${planPath}`);
+  } catch (e) {
+    console.log(`  ⚠ Pre-QC plan bundle write failed (non-fatal): ${e.message.split('\n')[0]}`);
   }
 
   // ── Dry-run output ──────────────────────────────────────────────────
@@ -244,6 +323,11 @@ await (async () => {
   console.log('✓ All steps complete');
 
   // ── QC: verify saved record, mechanics, and T&C content ─────────────────
+  // Outer-scope captures so the post-activation QC bundle write can include
+  // the persisted state without re-fetching.
+  let savedListRow = null;
+  let savedDetail = null;
+  let savedTncRows = [];
   console.log('');
   console.log('── QC (Level 1: Record exists) ─────────────────────────────');
   const bonusType = String(rec.bonus_type || '').toLowerCase();
@@ -256,6 +340,7 @@ await (async () => {
       console.error('✗ QC FAIL — record not found on BO after save');
       return bail(8);
     }
+    savedListRow = promo;
     if (!promoId) promoId = promo.PromotionId;
     const checks = {
       codeMatch:  promo.PromotionCode === plan.body.PromotionCode,
@@ -294,6 +379,7 @@ await (async () => {
       if (!det) {
         console.warn(`⚠ QC L2 skipped — detail response empty`);
       } else {
+        savedDetail = det;
         const rew = det.PromotionRewards?.[0];
         rewardId = rew?.RewardId ?? null;
         const sentReward = plan.body.PromotionRewards?.[0];
@@ -377,10 +463,10 @@ await (async () => {
     try {
       const tcRes = await igmpPost(siteId, '/PM/GetPromotionRewardContents', { RewardId: rewardId });
       const rows = Array.isArray(tcRes?.data) ? tcRes.data : [];
+      savedTncRows = rows;
       const locales = rows.map((r) => r.Locale);
       const enRow = rows.find((r) => r.Locale === 'en');
       const zhRow = rows.find((r) => r.Locale === 'zh');
-      const ZH_SITES = new Set(['ws1-v3-my', 'ws1-v3-sg']);
       const expectZh = ZH_SITES.has(siteId);
 
       const tcChecks = {};
@@ -474,6 +560,71 @@ await (async () => {
     }
   } else {
     console.warn('⚠ Activation skipped — PromotionId not available');
+  }
+
+  // ── QC bundle (Sentinel) ─────────────────────────────────────────────
+  // Mirror QPRO/QP2 shape so /deep-qc's sentinel can read it directly:
+  //   live_state.list_row   — GetPromotionInfoByCode response (QC L1)
+  //   live_state.detail     — GetBonusInfo/GetFreeCreditInfo (QC L2)
+  //   live_state.tnc.messages — PromotionRewardContents (QC L3)
+  // failure to write is non-fatal.
+  try {
+    const bundleDir = path.resolve('captures/qc-bundles');
+    await mkdir(bundleDir, { recursive: true });
+
+    const tncMessages = savedTncRows.map((r) => ({
+      locale: r.Locale,
+      subject: r.PromotionRewardName || '',
+      message: r.Content || '',
+    }));
+    // sentence_11_has_link mirrors QPRO/QP2 — true if any locale row has an
+    // anchor wrapping a T&C URL fragment ("info-center/tnc").
+    const sentence11HasLink = savedTncRows.some((r) =>
+      typeof r.Content === 'string'
+        && /<a[^>]+href=[^>]+info-center\/tnc[^>]*>/i.test(r.Content));
+
+    const bundle = {
+      handle: resolvedHandle, brand: targetBrand, platform: 'igmp', site: siteId,
+      promo_code: plan.body.PromotionCode,
+      promotion_id: promoId,
+      reward_id: rewardId,
+      saved_at: new Date().toISOString(),
+      source: {
+        categories: rec.categories || rec.parsed?.categories || null,
+        regions: rec.regions || null,
+        currencies: rec.currencies || null,
+        locales: rec.locales || null,
+        parsed: rec.parsed || {},
+        promotion_name_en: rec.promotion_name_en,
+        promotion_name_zh: rec.promotion_name_zh,
+        promotion_name_id: rec.promotion_name_id,
+        max_per_player: rec.max_per_player,
+        daily_max: rec.daily_max,
+        max_withdraw: rec.max_withdraw,
+        instructions: rec.instructions || null,
+        bonus_type: rec.bonus_type,
+        remark: rec.remark || null,
+        requestor: rec.requestor || null,
+      },
+      live_state: {
+        list_row: savedListRow,
+        detail: savedDetail,
+        tnc: savedTncRows.length
+          ? { messages: tncMessages, checks: { sentence_11_has_link: sentence11HasLink } }
+          : null,
+      },
+      qc_endpoints: {
+        list: `/PM/GetPromotionInfoByCode (PromotionCode=${plan.body.PromotionCode})`,
+        detail: DETAIL_ENDPOINT && promoId ? `${DETAIL_ENDPOINT} (PromotionId=${promoId})` : null,
+        tnc: rewardId ? `/PM/GetPromotionRewardContents (RewardId=${rewardId})` : null,
+      },
+    };
+    const bundlePath = path.join(bundleDir, `${resolvedHandle}__${targetBrand}.json`);
+    await writeFile(bundlePath, JSON.stringify(bundle, null, 2));
+    console.log('');
+    console.log(`Deep-QC bundle: ${bundlePath}`);
+  } catch (e) {
+    console.log(`  ⚠ Deep-QC bundle write failed (non-fatal): ${e.message.split('\n')[0]}`);
   }
 
   return bail(0);

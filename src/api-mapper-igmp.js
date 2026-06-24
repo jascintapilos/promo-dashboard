@@ -129,7 +129,12 @@ function resolvePromoDateRange(rec, { endOfYearDefault = false } = {}) {
 //
 //   Deposit:     "20% Reload Bonus (MIN50 / CAP100 / TO3x / LC)"
 //   Free Credit: "Exclusive Offer - 50 Free Credit (FC50 / TO15x / WC50)"
-//   Free Spin:   "28 Free Spins on Gates Of Olympus (FS28 / 0.20/spin / TO15x)"
+//   Free Spin:   "28 Free Spins on Gates Of Olympus (FS28 / 0.20/spin / TO15x / MIN300)"
+//
+// MIN suffix is the LOCAL currency value at save time (per-currency override
+// applied upstream). Adding it disambiguates multi-bracket FS batches (e.g.
+// the same spin_count across MIN500/300/100 brackets) for the Manual Reward
+// Assignment team, who pick by PromotionName.
 //
 function buildMechanicsTag(rec) {
   const bt = String(rec.bonus_type || '').toLowerCase();
@@ -158,9 +163,11 @@ function buildMechanicsTag(rec) {
     const rounds = Number(rec.fs_rounds ?? 0);
     const perSpin = rec.fs_amount_per_bet != null ? Number(rec.fs_amount_per_bet) : null;
     const to = Number(rec.turnover_multiplier ?? rec.rollover_multiplier ?? 0);
+    const minD = Number(rec.min_deposit ?? 0);
     if (rounds > 0) parts.push(`FS${rounds}`);
     if (perSpin != null && perSpin > 0) parts.push(`${perSpin.toFixed(2)}/spin`);
     if (to > 0) parts.push(`TO${to}x`);
+    if (minD > 0) parts.push(`MIN${minD}`);
   }
 
   return parts.length > 0 ? ` (${parts.join(' / ')})` : '';

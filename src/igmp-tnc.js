@@ -248,7 +248,7 @@ function tncLinkPhrase(url, isZh) {
 const INSTRUCTION_CAT_MAP = {
   'SPORT': 'Sports', 'SPORTS': 'Sports',
   'SLOTS': 'Slot',   'SLOT': 'Slot',
-  'LC': 'Live Casino', 'LIVE_CASINO': 'Live Casino',
+  'LC': 'Live Casino', 'LIVE_CASINO': 'Live Casino', 'LIVE CASINO': 'Live Casino',
   'ESPORT': 'E-Sports', 'ESPORTS': 'E-Sports',
   'FISHING': 'Fishing', 'CRASH': 'Crash', 'ARCADE': 'Arcade',
   'LOTTERY': 'Lottery', 'TABLE': 'Table',
