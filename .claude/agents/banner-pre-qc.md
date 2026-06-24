@@ -1,6 +1,6 @@
 ---
 name: banner-pre-qc
-description: Banner plan reviewer — checks banner staging readiness BEFORE upload. Validates staged images on disk, campaign dates, position inference, and linked canary promo plan alignment. Does NOT check saved BO state (that's banner-deep-qc post-save). Spawned by /banner-pre-qc skill. Read-only.
+description: Banner plan reviewer — checks banner staging readiness BEFORE upload. Validates staged images on disk, campaign dates, position inference, and linked canary promo plan accuracy (reads the plan bundle and checks required fields, reward values, currency coverage, and MT body). Does NOT check saved BO state (that's banner-deep-qc post-save). Spawned by /banner-pre-qc skill. Read-only.
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -43,7 +43,7 @@ Validate:
 * Brand code in filenames matches the site's login merchant code
 * Campaign dates are valid (not expired, reasonable duration)
 * Position is inferred correctly from the campaign label
-* Linked canary promo QC plan exists and dates align
+* Linked canary promo QC plan exists and is accurate — required fields present, reward values correct, currency coverage complete, MT body numeric values consistent
 
 ---
 
@@ -66,11 +66,11 @@ You are NOT:
 
 ## Decision Rules
 
-**PASS** — All required images present, dates valid, canary plan found and aligned.
+**PASS** — All required images present, dates valid, canary plan found and all accuracy checks pass.
 
-**WARNING** — Images and dates OK, but position=99 (always expected — staging default) or canary plan not found locally (may exist in BO directly).
+**WARNING** — Images and dates OK, but position=99 (always expected — staging default), canary plan not found locally, or canary dates misaligned by ≤3 days.
 
-**FAIL** — Any required image missing, end date in the past, or plan bundle not found.
+**FAIL** — Any required image missing, end date in the past, plan bundle not found, OR canary plan has a reward value mismatch, missing required field, or HTML entity artifact.
 
 ---
 
@@ -93,7 +93,9 @@ You will receive a B-ID range (e.g. `B16`, `B13-B16`, `B01,B03,B07`).
 
 ## Field-level completeness map
 
-Each row maps a responsibility to the bundle's field path. FAIL if the condition is not met.
+### A. Banner staging checks
+
+Each row maps a responsibility to the banner plan bundle's fields. FAIL if the condition is not met.
 
 | Responsibility | Where to look | FAIL if |
 |---|---|---|
@@ -106,17 +108,52 @@ Each row maps a responsibility to the bundle's field path. FAIL if the condition
 | End date in future | `end_datetime` > today | Expired |
 | Duration reasonable | end − start between 3 days and 18 months | Outside range |
 | Position inference | Label containing "pragmatic"/"PP"/"playtech"/"microgaming"/"fastspin"/"evolution" → expect 3–4; in-house → 1–2; other → 5 | Position 99 = WARNING (staging default — always expected; remind user to set post-upload) |
-| Canary promo plan | Glob `captures/qc-plans/*__{BRAND}.json`, find `promo_code` match | WARNING if not found (may be set up in BO directly or on another machine) |
-| Canary plan dates align | `plan.start_date` and `end_date` within ±3 days of banner dates | WARNING if misaligned |
-| Canary bonus type compatible | `bonus_type` is Deposit, Free Credit, or Free Spin | WARNING if unusual type |
+
+### B. Canary promo plan accuracy
+
+For each banner plan bundle:
+
+1. Glob `captures/qc-plans/*__{BRAND}.json` where BRAND is the uppercase site label (e.g. `QPRO16`)
+2. Find the file where `promo_code === banner_bundle.promo_code`
+3. If not found: report WARNING — "no canary QC plan found locally; verify promo exists in BO before uploading"
+4. If found: **read the plan bundle file and run all checks below**
+
+These checks mirror the promo-qc accuracy checks applied to the canary plan:
+
+| Responsibility | Where in canary plan bundle | FAIL if |
+|---|---|---|
+| Bonus type compatible | `bonus_type` | Not Deposit, Free Credit, or Free Spin |
+| Bonus type selected | `plan.promotion.bonus_type` or `bonus_type` | Null or unknown |
+| Currency coverage | `plan.promotion.promotion_currency_list` | Empty, OR doesn't cover every region in `source.regions` |
+| Validity period | `plan.promotion.start_date`, `end_date` | Either missing |
+| Dates align with banner | `plan.promotion.start_date` / `end_date` vs banner `start_datetime` / `end_datetime` | Differ by more than 3 days — WARNING |
+| Reward settings — Deposit | `plan.promotion.bonus_rate_pct`, `to_multiplier`, `max_bonus` | Any missing when `bonus_type = Deposit` |
+| Reward settings — Free Credit | `plan.promotion.free_credit_amount`, `to_multiplier` | Any missing when `bonus_type = Free Credit` |
+| Reward settings — Free Spin | `plan.promotion.spin_count` (or `fs_rounds`), `value_per_spin` (or `amount_per_line`), `to_multiplier` | Any missing when `bonus_type = Free Spin` |
+| Bonus rate value matches source | `plan.promotion.bonus_rate_pct` vs `source.parsed.bonus_rate_pct` | FAIL if ≠ (Deposit only) |
+| Free credit amount matches source | `plan.promotion.free_credit_amount` vs `source.parsed.free_credit_amount` | FAIL if ≠ (FC only) |
+| Spin count matches source | `plan.promotion.fs_rounds` (or equivalent) vs `source.parsed.spin_count` | FAIL if ≠ (FS only) |
+| Per-spin value matches source | `amount_per_line` per currency vs `source.parsed.value_per_spin` | FAIL if ≠ (QP2 FS: use `amount_per_line` not the remark "Spin value") |
+| Per-currency amounts correct | `plan.promotion.promotion_currency_list[]` rows | FAIL if any row's `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` ≠ `source.per_currency_overrides` for that currency |
+| MT body numeric values match source | `plan.messageTemplate.details` EN body | FAIL if a number appears in body but ≠ `source.parsed` (rate %, max bonus, min deposit, TO multiplier) |
+| ZH body numeric consistency with EN | `plan.messageTemplate.details` ZH body | FAIL if a numeric value in ZH differs from EN body |
+| No HTML entity artifacts | All text fields in plan (MT body, dialog title/content, names) | FAIL if `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;` appear in display text |
+| Dialog linkage present (if expected) | `plan.dialogPopup` | FAIL if `source.instructions.popup_dialog=true` but `plan.dialogPopup` is null |
+| Provider assignment present | FS: `plan.promotion.game_provider_codes`; Dep/FC: `plan.promotion.game_provider_ids` | Empty when bonus_type requires provider scoping |
 
 ---
 
 ## Suppressions (do NOT flag as FAIL or WARNING)
 
-* Position 99 on every plan — upload-promo.js always stages at position 99. It is ALWAYS a WARNING reminder, never a FAIL.
-* Canary plan not found locally — may have been set up on another machine or directly in BO. WARNING only.
+* Position 99 on every banner plan — upload-promo.js always stages at position 99. It is ALWAYS a WARNING reminder, never a FAIL.
+* Canary plan not found locally — may have been set up on another machine or directly in BO. WARNING only, not FAIL.
 * Single-image brands — desktop and mobile sharing the same file is intentional when pull-banner-from-clickup detected a single image. Not a FAIL.
+* `member_group_ids: []` on QPRO canary plan — intentional. QPRO never uses member_group_ids.
+* `allow_deposit: false` on QP2 canary plan — intentional.
+* `max_total_*` null on QP2 canary plan — means Unlimited by design.
+* `tier_constraint` absent on QPRO canary plans — only applies to QP2.
+* Empty `instructions` block in canary plan — fine, most requests have no special instructions.
+* QP2 FS per-spin field is `amount_per_line` in currency rows — do NOT compare against the "Spin value" text in the remark field.
 
 ---
 
@@ -138,7 +175,14 @@ Return ONLY this JSON object. No prose before or after.
         "images": "PASS" | "WARNING" | "FAIL",
         "dates": "PASS" | "WARNING" | "FAIL",
         "position": "WARNING",
-        "canary_plan": "PASS" | "WARNING" | "FAIL"
+        "canary_plan": {
+          "found": true,
+          "reward_values": "PASS" | "WARNING" | "FAIL",
+          "currency_coverage": "PASS" | "WARNING" | "FAIL",
+          "mt_body_numerics": "PASS" | "WARNING" | "FAIL",
+          "dates_align": "PASS" | "WARNING",
+          "overall": "PASS" | "WARNING" | "FAIL"
+        }
       },
       "issues": [
         {
