@@ -44,7 +44,11 @@ echo [10/11] Pulling FastTrack QP2 CRM segments... >> %LOG%
 node bin\pull-ft-campaigns.mjs --instance=qp2 --write --append >> %LOG% 2>&1
 if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT QP2 PULL FAILED - session may have expired, re-run capture-ft-session.mjs --instance=qp2 >> %LOG%)
 
-echo [11/11] Sorting all tabs by date descending (latest on top)... >> %LOG%
+echo [11/12] Running banner health check (writes findings to Banner Health tab + dashboard)... >> %LOG%
+node bin\banner-health-check.mjs --dashboard --no-sheet >> %LOG% 2>&1
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs banner-health "Banner Health Check" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs banner-health "Banner Health Check" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo BANNER HEALTH FAILED (exit %ERRORLEVEL%) >> %LOG%)
+
+echo [12/12] Sorting all tabs by date descending (latest on top)... >> %LOG%
 node bin\sort-sheet-tabs.mjs >> %LOG% 2>&1
 if %ERRORLEVEL% neq 0 echo SORT FAILED (exit %ERRORLEVEL%) >> %LOG%
 

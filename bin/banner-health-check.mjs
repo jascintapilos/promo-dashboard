@@ -49,14 +49,15 @@
 //                                                     # tab (surfaces in the dashboard feed)
 //   node bin/banner-health-check.mjs --slack --slack-channel=C07KKVD1GTE
 //
-// WS1/WS2 (BIA/Directus) banners are NOT covered yet -- they use a different
-// CMS and auth scheme with no banner-read helper in src/. They're listed in
-// the report footer as a known gap.
+// WS1/WS2 (BIA/Directus) banners are probed via src/cms-client.js (JWT auth
+// against the MB8/RWS77 Directus hosts). Credentials in cms-creds.local.json.
+// ws1-classic-my (kiosk) is skipped -- it shares the same MB8 CMS as ws1.
 
 import { parseArgs } from './_args.js';
 import { listSites, getSite } from '../src/sites.js';
 import { getSession, getAllBanners } from '../src/api-client.js';
 import { lookupBrand } from '../src/banner-schedule.js';
+import { cmsClient, loadCmsCreds } from '../src/cms-client.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
@@ -73,6 +74,14 @@ const POST_DASHBOARD = !!flags.dashboard;
 
 // qpro11 (MSB66) and qpro13 (IBC7) are flagged NOT LIVE / canary in bo-sites.json.
 const CANARY_SITES = new Set(['qpro11', 'qpro13']);
+
+// QP2 multi-merchant BO: reverse-map the BO merchant displayName → brand label (QP2A…QP2D).
+// Source: data/brand-directory.json qp2 section (displayName = BO merchant name).
+const _brandDir = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../data/brand-directory.json'), 'utf8'));
+const QP2_MERCHANT_LABEL = Object.fromEntries(
+  Object.entries(_brandDir.qp2 || {}).map(([label, info]) => [info.displayName, label])
+);
+// { IBC22: 'QP2A', KING333: 'QP2B', ACE66: 'QP2C', SPADE66: 'QP2D' }
 
 const NOW = Date.now();
 const EXPIRING_WINDOW_MS = EXPIRING_DAYS * 86400000;
@@ -110,6 +119,15 @@ function parseScheduleDate(s, edge /* 'start' | 'end' */) {
   const day = String(m[1]).padStart(2, '0');
   const time = edge === 'end' ? '23:59:59' : '00:00:00';
   const d = new Date(`${m[3]}-${String(mon).padStart(2, '0')}-${day}T${time}+08:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// BIA/Directus dates are "YYYY-MM-DD" stored in the team's GMT+8 timezone.
+function parseBiaDate(s, edge /* 'start' | 'end' */) {
+  const iso = String(s || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const time = edge === 'end' ? '23:59:59' : '00:00:00';
+  const d = new Date(`${iso}T${time}+08:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -345,6 +363,20 @@ async function probeSite(site, scheduleIndex) {
     }
   }
 
+  // Per-merchant snapshot for the dashboard's "Homepage banner" view: count of
+  // live homepage banners + their labels (sorted by carousel position).
+  const merchantsSnap = [];
+  for (const [merchant, list] of liveByMerchant) {
+    const sorted = list
+      .slice()
+      .sort((a, b) => ((Number(a.position) || 0) - (Number(b.position) || 0)) || (a.id - b.id));
+    merchantsSnap.push({
+      merchant,
+      activeCount: sorted.length,
+      bannerNames: sorted.map((r) => `#${r.id} ${r.label || '(no label)'}`),
+    });
+  }
+
   return {
     siteId: site.id,
     label: site.label || site.id,
@@ -352,6 +384,89 @@ async function probeSite(site, scheduleIndex) {
     findings,
     staleBacklog,
     parkedDrafts,
+    merchants: merchantsSnap,
+  };
+}
+
+// -- WS1/WS2 probe via Directus CMS ------------------------------------------
+// site.id 'ws2' → RWS77 host; everything else (ws1, ws1-classic-my) → MB8 host.
+// Returns the same shape as probeSite so the main loop and write-backs are
+// platform-agnostic.
+async function probeBiaSite(site) {
+  const creds = loadCmsCreds();
+  const host = site.id === 'ws2'
+    ? (creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com')
+    : (creds.hosts?.MB8   || 'https://cms.best-in-asia.com');
+  const brandLabel = siteToLabel(site.id); // 'WS1' or 'WS2'
+
+  const cms = await cmsClient(host, creds);
+  const [carousels, images] = await Promise.all([
+    cms.get('/items/UICarousel?limit=-1&fields=id,component_name,status').then((r) => r.data || []),
+    cms.get('/items/UICarousel_images?limit=-1&fields=id,startDate,endDate,UICarousel_id').then((r) => r.data || []),
+  ]);
+  const carById = new Map(carousels.map((c) => [c.id, c]));
+
+  const findings = [];
+  let staleBacklog = 0;
+  let parkedDrafts = 0;
+  const liveNow = []; // published carousel images whose date window is open right now
+
+  for (const img of images) {
+    const car = carById.get(img.UICarousel_id);
+    if (!car) continue;
+    const start = parseBiaDate(img.startDate, 'start');
+    const end   = parseBiaDate(img.endDate, 'end');
+    if (!start || !end) continue;
+
+    const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
+    const isPublished = car.status === 'published';
+
+    if (isPublished) {
+      if (end.getTime() < NOW) {
+        if (end.getTime() >= NOW - LOOKBACK_MS) {
+          findings.push({ row, merchant: brandLabel, start, end, type: 'ALREADY_EXPIRED' });
+        } else {
+          staleBacklog++;
+        }
+      } else if (end.getTime() <= NOW + EXPIRING_WINDOW_MS) {
+        findings.push({ row, merchant: brandLabel, start, end, type: 'EXPIRING_SOON' });
+      }
+      if (start.getTime() <= NOW && end.getTime() >= NOW) liveNow.push({ img, car });
+    } else {
+      // Draft/archived carousel with an open date window — not activated.
+      if (start.getTime() <= NOW && end.getTime() >= NOW) {
+        if (start.getTime() >= NOW - LOOKBACK_MS) {
+          findings.push({ row, merchant: brandLabel, start, end, type: 'NOT_ACTIVATED' });
+        } else {
+          parkedDrafts++;
+        }
+      }
+    }
+  }
+
+  if (liveNow.length < HOMEPAGE_MIN) {
+    findings.push({
+      type: 'TOO_FEW_BANNERS', merchant: brandLabel, row: null, count: liveNow.length,
+      detail: `${liveNow.length} live carousel slide(s), want >=${HOMEPAGE_MIN}`,
+    });
+  }
+
+  const merchants = [{
+    merchant: brandLabel,
+    activeCount: liveNow.length,
+    bannerNames: liveNow
+      .sort((a, b) => new Date(a.img.startDate) - new Date(b.img.startDate))
+      .map(({ img, car }) => `#${img.id} ${car.component_name || '(no label)'}`),
+  }];
+
+  return {
+    siteId: site.id,
+    label: site.label || site.id,
+    scanned: images.length,
+    findings,
+    staleBacklog,
+    parkedDrafts,
+    merchants,
   };
 }
 
@@ -402,6 +517,126 @@ async function appendDashboardNotification({ type, title, message }) {
   });
 }
 
+// Convert a siteId + optional merchant name to the readable brand label shown in
+// the dashboard Brand column. For QP2's single multi-merchant BO (ibc22), the
+// merchant name (IBC22/KING333/ACE66/SPADE66) maps to QP2A/B/C/D via brand-directory.
+function siteToLabel(siteId, merchant = null) {
+  if (merchant && QP2_MERCHANT_LABEL[merchant]) return QP2_MERCHANT_LABEL[merchant];
+  const s = (siteId || '').toLowerCase();
+  if (s.startsWith('qpro')) return 'QPRO' + s.slice(4);
+  if (s.startsWith('qp2')) return 'QP2' + s.slice(3).toUpperCase();
+  if (s.startsWith('ws1')) return 'WS1';
+  if (s.startsWith('ws2')) return 'WS2';
+  return siteId.toUpperCase();
+}
+
+// Per-merchant homepage banner snapshot — one row per merchant, with the
+// active banner count, the list of banner names, and a status message.
+// Surfaces on the dashboard's "Homepage banner" detail table.
+async function writeMerchantStatusToWeeklyReport(siteResults, allFindings) {
+  const { getSheetsClient } = await import('../src/sheets-client.js');
+  const { getOpsSheetId } = await import('../src/ops-sheet.js');
+  const { sheets } = await getSheetsClient();
+  const OPS_ID = getOpsSheetId();
+  const TAB = 'Homepage Banner Status';
+  const NOW = new Date().toISOString();
+
+  // Ensure tab exists
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: OPS_ID, fields: 'sheets.properties.title' });
+  if (!meta.data.sheets.some((s) => s.properties.title === TAB)) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: OPS_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: TAB } } }] },
+    });
+  }
+
+  // Build per-merchant rows. Key by siteId|merchant — unique per BO/merchant.
+  const rows = [];
+  for (const sr of siteResults) {
+    const siteFindings = allFindings.filter((f) => f.siteId === sr.siteId);
+    for (const m of (sr.merchants || [])) {
+      const merchFindings = siteFindings.filter((f) => f.merchant === m.merchant);
+      const statusParts = [];
+      // Composition issues
+      const tooFew = merchFindings.find((f) => f.type === 'TOO_FEW_BANNERS');
+      if (tooFew) statusParts.push(`Need ${HOMEPAGE_MIN - m.activeCount} more banner${HOMEPAGE_MIN - m.activeCount !== 1 ? 's' : ''}`);
+      const outOfOrder = merchFindings.find((f) => f.type === 'OUT_OF_ORDER');
+      if (outOfOrder) statusParts.push('Out of order');
+      // Action-needed flags
+      const notAct = merchFindings.filter((f) => f.type === 'NOT_ACTIVATED').length;
+      if (notAct) statusParts.push(`${notAct} draft live now`);
+      const endsBefore = merchFindings.filter((f) => f.type === 'ENDS_BEFORE_CAMPAIGN').length;
+      if (endsBefore) statusParts.push(`${endsBefore} ends before campaign`);
+      // Time-based
+      const expiring = merchFindings.filter((f) => f.type === 'EXPIRING_SOON').length;
+      if (expiring) statusParts.push(`${expiring} expiring soon`);
+      const expired = merchFindings.filter((f) => f.type === 'ALREADY_EXPIRED').length;
+      if (expired) statusParts.push(`${expired} expired`);
+      const status = statusParts.length ? statusParts.join(' · ') : 'OK';
+      rows.push([
+        NOW,
+        sr.siteId,
+        siteToLabel(sr.siteId, m.merchant),
+        String(m.activeCount),
+        m.bannerNames.join('\n'),
+        status,
+      ]);
+    }
+  }
+
+  const header = ['Timestamp', 'Site', 'Brand', 'Active Count', 'Banner Names', 'Status'];
+  await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${TAB}'!A:Z` });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: OPS_ID,
+    range: `'${TAB}'!A1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [header, ...rows] },
+  });
+  return rows.length;
+}
+
+// Write detailed findings to the Weekly Report's 'Banner Health' tab so they
+// surface on the team dashboard. This REPLACES the tab content each run — only
+// the latest scan's findings are shown; historical findings live in git log via
+// the Slack channel + Control Layer feed.
+async function writeBannerHealthToWeeklyReport(findings) {
+  const { getSheetsClient } = await import('../src/sheets-client.js');
+  const { getOpsSheetId } = await import('../src/ops-sheet.js');
+  const { sheets } = await getSheetsClient();
+  const OPS_ID = getOpsSheetId();
+  const TAB = 'Banner Health';
+  const NOW = new Date().toISOString();
+
+  // Ensure tab exists
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: OPS_ID, fields: 'sheets.properties.title' });
+  if (!meta.data.sheets.some((s) => s.properties.title === TAB)) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: OPS_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: TAB } } }] },
+    });
+  }
+
+  const header = ['Timestamp', 'Type', 'Site', 'Brand', 'Banner ID', 'Label', 'End Date', 'Detail'];
+  const rows = findings.map((f) => [
+    NOW,
+    f.type,
+    f.siteId || '',
+    f.merchant || '',
+    f.row?.id ? String(f.row.id) : '',
+    f.row?.label || '',
+    f.end ? fmtDate(f.end) : (f.campaignEnd ? fmtDate(f.campaignEnd) : ''),
+    findingLine(f),
+  ]);
+
+  await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${TAB}'!A:Z` });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: OPS_ID,
+    range: `'${TAB}'!A1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [header, ...rows] },
+  });
+}
+
 // One-line rendering of any finding (shared by dashboard digest + Slack). Brand-
 // level composition findings have no single banner row; per-banner findings do.
 function findingLine(f) {
@@ -440,15 +675,19 @@ function buildDashboardDigest() {
 // -- Main -------------------------------------------------------------------
 
 const targets = (flags.site ? [getSite(flags.site)] : listSites())
-  .filter((s) => s.platform === 'qpro' || s.platform === 'qp2')
+  .filter((s) => s.platform === 'qpro' || s.platform === 'qp2' || (s.platform === 'bia' && s.id !== 'ws1-classic-my'))
   .filter((s) => INCLUDE_CANARY || !CANARY_SITES.has(s.id));
 
+// ws1-classic-my is the kiosk variant of WS1 on the same MB8 CMS — probing it
+// separately would duplicate the results from the 'ws1' probe.
 const biaSkipped = (flags.site ? [getSite(flags.site)] : listSites())
-  .filter((s) => s.platform === 'bia')
+  .filter((s) => s.platform === 'bia' && s.id === 'ws1-classic-my')
   .map((s) => s.id);
 
 log(`\n== Banner Health Check -- ${new Date().toISOString()} ==`);
-log(`Sites   : ${targets.length} (QPRO+QP2)${INCLUDE_CANARY ? ' incl. canary' : ''}`);
+const _biaTargets = targets.filter((s) => s.platform === 'bia');
+const _qpTargets  = targets.filter((s) => s.platform !== 'bia');
+log(`Sites   : ${_qpTargets.length} (QPRO+QP2) + ${_biaTargets.length} (WS1/WS2)${INCLUDE_CANARY ? ' incl. canary' : ''}`);
 log(`Windows : expiring <=${EXPIRING_DAYS}d | backlog lookback ${LOOKBACK_DAYS}d`);
 
 // Load the schedule cross-reference once (shared across sites).
@@ -469,7 +708,9 @@ const siteResults = [];
 const errors = [];
 for (const site of targets) {
   try {
-    const r = await probeSite(site, scheduleIndex);
+    const r = site.platform === 'bia'
+      ? await probeBiaSite(site)
+      : await probeSite(site, scheduleIndex);
     siteResults.push(r);
     const n = r.findings.length;
     log(`${n ? '!' : 'OK'} ${site.id.padEnd(8)} ${String(r.scanned).padStart(4)} banners scanned | ${n} flag(s)`);
@@ -563,7 +804,7 @@ if (AS_JSON) {
     log(`Suppressed (backlog, not alerted): ${bits.join(' | ')} -- raise --lookback to include`);
   }
   if (errors.length) log(`Probe errors: ${errors.map((e) => e.siteId).join(', ')}`);
-  if (biaSkipped.length) log(`Not covered (Directus/BIA -- separate tool): ${biaSkipped.join(', ')}`);
+  if (biaSkipped.length) log(`Not covered (kiosk variant, same CMS as WS1): ${biaSkipped.join(', ')}`);
   log('');
 
   // -- Slack alert (opt-in, outward-facing) -----------------------------------
@@ -603,7 +844,21 @@ if (AS_JSON) {
       await appendDashboardNotification({ type, title, message: buildDashboardDigest() });
       log('Dashboard: digest appended to Control Layer Notifications feed');
     } catch (e) {
-      console.error(`Dashboard write failed: ${e.message}`);
+      console.error(`Control Layer write failed: ${e.message}`);
+      process.exitCode = 2;
+    }
+    try {
+      await writeBannerHealthToWeeklyReport(allFindings);
+      log(`Dashboard: ${allFindings.length} finding(s) written to Weekly Report 'Banner Health' tab`);
+    } catch (e) {
+      console.error(`Weekly Report write failed: ${e.message}`);
+      process.exitCode = 2;
+    }
+    try {
+      const n = await writeMerchantStatusToWeeklyReport(siteResults, allFindings);
+      log(`Dashboard: ${n} merchant row(s) written to 'Homepage Banner Status' tab`);
+    } catch (e) {
+      console.error(`Merchant status write failed: ${e.message}`);
       process.exitCode = 2;
     }
   }
