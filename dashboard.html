@@ -258,6 +258,25 @@
   .wk-missing-notice i{flex-shrink:0;font-size:15px;margin-top:1px;}
   .wk-missing-notice strong{display:block;font-weight:600;margin-bottom:2px;}
 
+  /* ── ESCALATION MODULE ── */
+  .esc-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+  .esc-mini{text-align:center;padding:12px 8px;background:var(--bg);border-radius:12px;}
+  .esc-mini .em-val{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  .esc-mini .em-lbl{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.4;}
+  .esc-cat-tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;white-space:nowrap;}
+  .esc-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;display:inline-block;}
+  .ep{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;display:inline-block;white-space:nowrap;}
+  .ep-he{background:#fff3ed;color:#ea580c;} .ep-sl{background:#eff6ff;color:#2563eb;}
+  .ep-unk{background:#f3f4f6;color:#6b7280;}
+  .ep-res{background:var(--good-soft);color:var(--good);} .ep-inv{background:var(--warn-soft);color:var(--warn);}
+  .ep-ong{background:var(--risk-soft);color:var(--risk);} .ep-none{background:#f3f4f6;color:#9ca3af;}
+  .esc-tbl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;}
+  .esc-tbl-bar input,.esc-tbl-bar select{font-size:12px;padding:5px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);outline:none;cursor:pointer;}
+  .esc-tbl-bar input{flex:1;min-width:180px;} .esc-tbl-bar input:focus{border-color:var(--accent);}
+  .esc-tbl-cnt{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap;}
+  .esc-code{font-family:'SF Mono','Cascadia Code',monospace;font-size:11px;color:#2563eb;max-width:165px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+  .esc-desc{max-width:220px;color:var(--ink2);font-size:11.5px;line-height:1.4;}
+
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
   @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.exec-mix{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
@@ -456,6 +475,64 @@
       </details>
     </div>
 
+    <!-- ── ESCALATION TRACKER MODULE ── -->
+    <p class="section-label">Escalation tracker</p>
+    <div class="row2" style="margin-bottom:18px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Error sub-categories</div>
+            <div class="card-hint">Jan–Jun 2026 · 81 cases · categories inferred from elaboration text</div>
+          </div>
+        </div>
+        <div style="position:relative;height:275px;margin-top:4px;"><canvas id="esc-cat-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Volume &amp; root cause</div>
+            <div class="card-hint">Monthly trend · snapshot 24 Jun 2026</div>
+          </div>
+        </div>
+        <div style="position:relative;height:150px;"><canvas id="esc-month-chart"></canvas></div>
+        <div class="esc-mini-row">
+          <div class="esc-mini"><div class="em-val" style="color:#ea580c;">45</div><div class="em-lbl">Human Error<br>56%</div></div>
+          <div class="esc-mini"><div class="em-val" style="color:#2563eb;">30</div><div class="em-lbl">Sys Limitation<br>37%</div></div>
+          <div class="esc-mini"><div class="em-val" style="color:#16a34a;">58</div><div class="em-lbl">Resolved<br>89% tracked</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="records" style="margin-bottom:28px;">
+      <details class="rec" id="rec-escalation">
+        <summary><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalation log <span class="cnt">81 cases · Jan–Jun 2026</span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="esc-tbl-bar">
+            <input type="text" id="esc-q" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
+            <select onchange="renderEscTable()" id="esc-cause"><option value="">All Root Causes</option><option>Human Error</option><option>System Limitation</option><option>Unclassified</option></select>
+            <select onchange="renderEscTable()" id="esc-cat"><option value="">All Categories</option><option>T&amp;C / Message Mismatch</option><option>Reward Not Assigned</option><option>Wrong Promo Setting</option><option>Game / Provider Not Added</option><option>Member Group Missing</option><option>Claim Restriction Bug</option><option>Duplicate Reward</option><option>Sync / Technical Issue</option><option>Unclassified</option></select>
+            <select onchange="renderEscTable()" id="esc-status"><option value="">All Statuses</option><option>Resolved</option><option>Investigating</option><option>Ongoing</option></select>
+            <select onchange="renderEscTable()" id="esc-tab"><option value="">All Months</option><option value="Jan-Feb">Jan–Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option></select>
+            <span class="esc-tbl-cnt" id="esc-cnt"></span>
+          </div>
+          <table style="table-layout:fixed;">
+            <thead><tr>
+              <th style="width:74px">Date</th>
+              <th style="width:90px">Agent</th>
+              <th style="width:170px">Promo Code</th>
+              <th style="width:82px">Platform</th>
+              <th style="width:84px">Creator</th>
+              <th style="width:110px">Root Cause</th>
+              <th style="width:155px">Error Category</th>
+              <th>Description</th>
+              <th style="width:90px">Status</th>
+            </tr></thead>
+            <tbody id="esc-tbody"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+    <!-- ── /ESCALATION TRACKER MODULE ── -->
+
   </div>
 </div>
 
@@ -478,7 +555,7 @@ let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
-let _donutChart=null, _trendChart=null;
+let _donutChart=null, _trendChart=null, _escInit=false;
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -648,6 +725,7 @@ function render(data,_skipStore){
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='block';
   document.getElementById('refresh').disabled=false;
+  if(!_escInit){initEscalationCharts();renderEscTable();_escInit=true;}
 }
 
 function openRecordSection(id){
@@ -1751,6 +1829,198 @@ loadData();
   const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
   const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
 })();
+
+/* ════════════ ESCALATION MODULE ════════════ */
+const ESC_ROWS=[
+ {tab:'Jan-Feb',date:'2026-01-30',agent:'Yeremia',code:'FT_PP_208FS_DEP100_C',plat:'QP2A/C/D',creator:'jascinta',cause:'Human Error',cat:'Member Group Missing',desc:'Member group not included for QP2A, C, D',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-01-31',agent:'Phearum',code:'FT_REL_299FS_HCV2_15X',plat:'',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after In-App message',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-01',agent:'Simon',code:'FC30_ADHOC_RET',plat:'QPRO3-MYR',creator:'garyhon',cause:'Unclassified',cat:'Duplicate Reward',desc:'Player got 2 similar promo codes within 30 minutes',status:''},
+ {tab:'Jan-Feb',date:'2026-02-01',agent:'Hem Makara',code:'REL_150FS_C_GOO_RET_190325',plat:'QPRO4-MYR',creator:'ryanlee',cause:'Unclassified',cat:'Duplicate Reward',desc:'Player got 2 similar promo codes within 30 minutes',status:''},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Fong/Rawi',code:'FC30_ADHOC_RET_300425',plat:'QP2C-MYR',creator:'garyhon',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Should be claimable once/day for 3 days; system only allowed once total',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Fong/Rawi',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QP2C-MYR',creator:'garyhon',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Should be claimable once/day for 3 days; system only allowed once total',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Sophath',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QPRO2',creator:'michelle',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after In-App message',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Ben',code:'F3_120%WELCOMEBONUS',plat:'',creator:'',cause:'Unclassified',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Reaksa',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QPRO2',creator:'michelle',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Amending Max Per Player Lifetime setting',status:''},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'So Meth',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'Sokmean',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-04',agent:'Phearum',code:'FT_REL_388FS_MCV2_5X',plat:'QPRO8',creator:'michelle91',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Wrong T&C promotion turnover multiplier',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Simon',code:'FT_ADHOC_REL_200FS_FOO_5X',plat:'QPRO8',creator:'michelle91',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Limit Provider Transfer Out was disabled',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'So Meth',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'CRM system limitation; player undetected; Day 3 manually assigned',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Phearum',code:'VM_DEP300_GET122_1X',plat:'QPRO1-IDR',creator:'michelle91',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Turnover not updated; PGS3 slot game was blacklisted',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Pichchanty',code:'FT_CNY_88FS_GOO_5X_DY4',plat:'WS1-SGD',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'CRM limitation; player undetected; Day 3 reward manually assigned',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'Pichchanty',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:''},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'Phanit',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Unclassified',desc:'No elaboration recorded',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Phanit',code:'FT_ADHOC_FC50_5X',plat:'WS1-SGD',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C max withdrawal clause needed amending',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'So Meth',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'No per-day claim limit; system allowed unlimited daily assignments',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'So Meth',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Delayed reward assignment to member',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-08',agent:'Reaksa',code:'FT_CNY_88FS_FOO_5X',plat:'QPRO8-MYR',creator:'michelle91',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Amending Daily Max setting',status:''},
+ {tab:'Jan-Feb',date:'2026-02-08',agent:'Reaksa',code:'VM_FC_VARIABLE_5X',plat:'QPRO4-MYR',creator:'jordan',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Claim requires Last Deposit setting; amendment completed',status:''},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'Vathna',code:'REFERRAL_NEW_REFERRER',plat:'QPRO5-MYR',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Promotion set to Slots only; other categories not excluded in BO',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'So Meth',code:'FT_DY4_VIP_FC588_5X',plat:'WS1-MYR',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Member deposited before receiving promo message; deposits not counted',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'Chandy',code:'FT_DY4_VIP_FC588_5X',plat:'WS1-SGD',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Day 4 reward not credited despite meeting Day 1 deposit on 5 Feb',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Ben',code:'FT_CNY8_299FS_ACTIVE_HIGH',plat:'QP2B',creator:'',cause:'Human Error',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Vathna',code:'FT_CNY_99FS_ACTIVE_LOW',plat:'QPRO1-MYR',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Claim requires Last Deposit setting; amendment completed',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Sophath',code:'VM_FC_288_8X',plat:'QPRO2',creator:'michelle',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'No promotion name set; turnover differs between message and BO settings',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-12',agent:'Phearum',code:'FT_CNY8_299FS_ACTIVE_HIGH',plat:'QPRO1-MYR',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member on Day 8 streak track received Day 3 reward instead',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-12',agent:'Hari',code:'FT_ADHOC_REL_200FS_GOO_5X',plat:'WS1-SGD',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Wrong T&C: incorrect expiry date and promotion validity period',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-16',agent:'Sokleang',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QPRO1-SGD',creator:'alysa',cause:'System Limitation',cat:'Duplicate Reward',desc:'Member received duplicate promotion',status:''},
+ {tab:'Jan-Feb',date:'2026-02-18',agent:'Phearum',code:'WELCOME-PP-SLOTS-108FS-OLYMP',plat:'QPRO1-MYR',creator:'ckay',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Inactive promo in MYR market still being assigned by system',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-13',agent:'So Meth',code:'FT_REL_DepBoost2_V1_2506',plat:'QP2A-MYR',creator:'elyssa',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'So Meth',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QP2B-MYR',creator:'alysa',cause:'System Limitation',cat:'Duplicate Reward',desc:'System caused duplicate reward assignment',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'So Meth',code:'FT_CNY8_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'alysa',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'Hari',code:'FT_REL_DepBoost_V2_2506',plat:'QP2A/B/C',creator:'',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-20',agent:'Sophath',code:'FT_REL_60PCT_8X',plat:'QPRO4-MYR',creator:'michelle91',cause:'Human Error',cat:'Game / Provider Not Added',desc:'JILI video slot blacklisted; turnover not updating as a result',status:''},
+ {tab:'Jan-Feb',date:'2026-02-26',agent:'Phearum',code:'VIP-UPGRADE-GOLD1',plat:'QPRO3-MYR',creator:'',cause:'System Limitation',cat:'Sync / Technical Issue',desc:'Member unable to transfer credit to BT Gaming',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-10-05',agent:'Hari',code:'FT_REL_20PCT_10X',plat:'',creator:'',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C allowed Live Casino but LC not added to promotion settings',status:'Ongoing'},
+ {tab:'Mar',date:'2026-03-02',agent:'Vathna',code:'VM_DEP500_GET222_2X',plat:'QPRO1-IDR',creator:'michelle',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Wrong max claim limit configuration',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-05',agent:'Sokleang',code:'REL_288FS_GOO_220725',plat:'QPRO6-MYR',creator:'shernming',cause:'Human Error',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Mar',date:'2026-03-08',agent:'Reaksa',code:'FT_REL_DepBoost_88FS_FOO_V2',plat:'QPRO2-MYR/SGD',creator:'michelle',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Amending Max Per Player Lifetime setting',status:''},
+ {tab:'Mar',date:'2026-03-09',agent:'Ben',code:'REL_208FS_PP_FOO_040325',plat:'N/A',creator:'michelle',cause:'Unclassified',cat:'Wrong Promo Setting',desc:'Setting issue — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-12',agent:'Ben',code:'MATCH_BONUS_50PCT',plat:'N/A',creator:'',cause:'Unclassified',cat:'T&C / Message Mismatch',desc:'T&C wrong — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-12',agent:'Vathna',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QPRO1-MYR',creator:'alysa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Freespin completed but member could not play other game categories',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-20',agent:'Ben',code:'FT_REL_158FS_LCV_15X',plat:'QP2A',creator:'',cause:'Unclassified',cat:'T&C / Message Mismatch',desc:'Wrong information — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-20',agent:'Leang Channdy',code:'FT_REL_20PCT_10X',plat:'QP2C',creator:'garyhon',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Live Casino category not added to promotion',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-26',agent:'Vathna',code:'REL_228FS_FOO_5X',plat:'QPRO5-MYR',creator:'michelle91',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Member unable to claim; conflict with mid-month promotion settings',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-30',agent:'Sophath',code:'REL_199FS_GOO_100425',plat:'QPRO6',creator:'ryanlee',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C states deposit required but promotion settings do not match',status:''},
+ {tab:'Apr',date:'2026-04-15',agent:'Reaksa',code:'WELC_ACQ199FS_GOOSS',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Member unable to select Pragmatic provider to claim Free Spins',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-16',agent:'Reaksa',code:'FT_REL_108FS_GSS_IDR',plat:'',creator:'michelle',cause:'System Limitation',cat:'Sync / Technical Issue',desc:'Unable to sync; promotion turnover not updated',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-16',agent:'Reaksa',code:'WELC_ACQ199FS_GOOSS',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Member unable to use Free Spins bonus after claiming',status:'Ongoing'},
+ {tab:'Apr',date:'2026-04-17',agent:'Phearum',code:'FT_FC20_20X',plat:'QPRO1',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:"System assigned 20 FS; member's inbox message showed 30 FC",status:'Resolved'},
+ {tab:'Apr',date:'2026-04-17',agent:'Vins',code:'MATCH_BONUS_50PCT',plat:'',creator:'jascinta',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Misinformation in T&C content',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-20',agent:'Vins',code:'FT_FC20_20X',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; promotion expired after only 7 days',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-20',agent:'Vins',code:'WELCOME-PP-SLOTS-188FS-OLYMP-V2',plat:'',creator:'esther',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Message template code not assigned to promotion code',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-23',agent:'Vins',code:'REL_88FS_GOO_BS_081225',plat:'',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Game name not set in promo code; member did not receive Free Spins',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-28',agent:'Vins',code:'REL_188FS_GOO_RET_190225',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Turnover shown as x5 in platform UI; T&C description states x20',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-30',agent:'Vins',code:'Welc_96_PP_GOO4',plat:'',creator:'elaine',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Free spin rounds in promo code differ from promotion title',status:'Resolved'},
+ {tab:'Apr',date:'2026-05-04',agent:'Sokmean',code:'SPECIAL_BONUS_MD_50',plat:'QP2B',creator:'yuegene',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C restricts to 918Kiss & Mega888; setting does not match',status:'Resolved'},
+ {tab:'May',date:'2026-05-01',agent:'Pichchanty',code:'EXCLUSIVE_KICKSTART_50FC',plat:'',creator:'amirul',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'ZH content version incorrectly displays MYR instead of SGD',status:'Resolved'},
+ {tab:'May',date:'2026-05-05',agent:'Pichchanty',code:'FT_REL_DOUBLEDATE_MAY_250FS_GOO_8X',plat:'',creator:'alysa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Mass inbox sent for Day 2 reward; no reward visible on My Reward page',status:'Resolved'},
+ {tab:'May',date:'2026-05-06',agent:'Sophath',code:'FT_VM_88FC_8X',plat:'',creator:'waiyip',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; bonus expired after 7 days',status:'Resolved'},
+ {tab:'May',date:'2026-05-07',agent:'Phearum',code:'FT-HD-20-DEPOSIT-BONUS',plat:'',creator:'jordan',cause:'Human Error',cat:'Game / Provider Not Added',desc:'PTI provider not in Target Game Provider list',status:'Resolved'},
+ {tab:'May',date:'2026-05-08',agent:'Rem Sarath',code:'FT_199FS_STREAK',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member met TO requirement and streak; system did not assign reward',status:'Resolved'},
+ {tab:'May',date:'2026-05-08',agent:'Rem Sarath',code:'FT_FC50_8X',plat:'',creator:'ryanlee',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member met TO requirement and streak; system did not assign reward',status:'Resolved'},
+ {tab:'May',date:'2026-05-10',agent:'Sophath',code:'REL_VIP_100PCT_100MX',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; bonus expired after 7 days',status:'Ongoing'},
+ {tab:'May',date:'2026-05-21',agent:'Vins',code:'VIP_REL_100PCT_MIN1500_5X',plat:'',creator:'promo_testbot',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promo states 100% bonus with min dep 1500; max bonus & withdrawal only 500',status:'Resolved'},
+ {tab:'May',date:'2026-05-24',agent:'So Meth',code:'REL_225FS_FOO_270325_V2',plat:'',creator:'alysa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promotion message content differs from actual promotion setting',status:'Resolved'},
+ {tab:'May',date:'2026-05-29',agent:'So Meth',code:'REL_333FS_FOO_2_270325_V2',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promotion message content differs from actual promotion setting',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-02',agent:'Sophath',code:'RELOAD-SLOTS-10PCT',plat:'QPRO3',creator:'yuegene',cause:'Human Error',cat:'Member Group Missing',desc:'Promotion not linked to Member Group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-01',agent:'So Meth',code:'FT_ADHOC_FC50_5X',plat:'QP2C',creator:'michelle91',cause:'System Limitation',cat:'Member Group Missing',desc:'FastTrack started assigning to QP2C players; member not in promo group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-04',agent:'Orkphearum',code:'WELCOME/RELOAD (multiple)',plat:'QPRO2',creator:'',cause:'Human Error',cat:'Member Group Missing',desc:'General promos not available; member group not added to promotion settings',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-05',agent:'Ben Ng',code:'FT_DOUDLEDATE_JUNE_100FS_GOO',plat:'WS1-SGD',creator:'',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'SMS: 0.60/spin vs BO setting: 0.20/spin — spin value mismatch',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-09',agent:'Phanny',code:'FT_REL_PayDay_Promo_B',plat:'QPRO1-MYR',creator:'joelwan',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'SMS stated bonus expires 30 days after claim; actual expiry was 7 days',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-13',agent:'So Meth',code:'FT_REL_TLEO_45PCT_228MX',plat:'',creator:'elyssa',cause:'System Limitation',cat:'T&C / Message Mismatch',desc:'Promotion message differs from promotion setting',status:'Investigating'},
+ {tab:'Jun',date:'2026-06-16',agent:'Orkphearum',code:'WELCOME-SLOTS-100PCT',plat:'QPRO1',creator:'System',cause:'System Limitation',cat:'Game / Provider Not Added',desc:'Relax Gaming provider not added to promotion (auto-created promo)',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-04',agent:'Orkphearum',code:'RELOAD-SLOTS-10PCT',plat:'QPRO2',creator:'yuegene',cause:'Human Error',cat:'Member Group Missing',desc:'Promotion not linked to Member Group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-21',agent:'Orkphearum',code:'FT_RELBONUS_25PCT_MidMonth_SIL_070825',plat:'QPRO5',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Categories not added; turnover not updated after sync',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-19',agent:'Reaksa',code:'FT_WC26_DEP_30PCT_2K_PLTDMD',plat:'WS1-MYR',creator:'testbot',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Wrong eligibility reset day configured (should reset on Sundays only)',status:'Resolved'},
+];
+
+const ESC_CAT_COLOR={
+  'T&C / Message Mismatch':'#f97316',
+  'Reward Not Assigned':'#dc2626',
+  'Wrong Promo Setting':'#d97706',
+  'Game / Provider Not Added':'#7c3aed',
+  'Member Group Missing':'#0891b2',
+  'Claim Restriction Bug':'#059669',
+  'Duplicate Reward':'#e11d48',
+  'Sync / Technical Issue':'#64748b',
+  'Unclassified':'#9ca3af',
+};
+const ESC_CAT_ORDER=['T&C / Message Mismatch','Reward Not Assigned','Wrong Promo Setting','Game / Provider Not Added','Member Group Missing','Claim Restriction Bug','Duplicate Reward','Sync / Technical Issue','Unclassified'];
+
+function initEscalationCharts(){
+  const catCounts={};
+  ESC_ROWS.forEach(r=>{catCounts[r.cat]=(catCounts[r.cat]||0)+1;});
+  const catCanvas=document.getElementById('esc-cat-chart');
+  if(catCanvas){
+    new Chart(catCanvas,{
+      type:'bar',
+      data:{
+        labels:ESC_CAT_ORDER,
+        datasets:[{
+          data:ESC_CAT_ORDER.map(c=>catCounts[c]||0),
+          backgroundColor:ESC_CAT_ORDER.map(c=>ESC_CAT_COLOR[c]),
+          borderRadius:6,borderSkipped:false
+        }]
+      },
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>`${ctx.parsed.x} cases`}}
+        },
+        scales:{
+          x:{grid:{color:'#eceef1'},ticks:{font:{size:11}},beginAtZero:true},
+          y:{grid:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+  }
+  const monthCanvas=document.getElementById('esc-month-chart');
+  if(monthCanvas){
+    new Chart(monthCanvas,{
+      type:'bar',
+      data:{
+        labels:['Jan','Feb','Mar','Apr','May','Jun'],
+        datasets:[
+          {label:'Human Error',data:[1,14,7,7,8,7],backgroundColor:'#ea580c',borderRadius:4,stack:'s'},
+          {label:'System Limitation',data:[1,20,0,3,3,3],backgroundColor:'#2563eb',borderRadius:4,stack:'s'},
+          {label:'Unclassified',data:[0,3,3,0,0,0],backgroundColor:'#9ca3af',borderRadius:4,stack:'s'}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:10}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+          y:{stacked:true,grid:{color:'#eceef1'},ticks:{stepSize:5,font:{size:11}}}
+        }
+      }
+    });
+  }
+}
+
+function renderEscTable(){
+  const q=(document.getElementById('esc-q').value||'').toLowerCase().trim();
+  const fC=document.getElementById('esc-cause').value;
+  const fT=document.getElementById('esc-cat').value.replace(/&amp;/g,'&');
+  const fS=document.getElementById('esc-status').value;
+  const fM=document.getElementById('esc-tab').value;
+  const rows=ESC_ROWS.filter(r=>{
+    if(fC&&r.cause!==fC)return false;
+    if(fT&&r.cat!==fT)return false;
+    if(fS&&r.status!==fS)return false;
+    if(fM&&r.tab!==fM)return false;
+    if(q){const h=[r.code,r.agent,r.creator,r.desc,r.plat].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    return true;
+  });
+  document.getElementById('esc-cnt').textContent=`${rows.length} of ${ESC_ROWS.length}`;
+  function ecauseTag(c){
+    const m={'Human Error':'ep-he','System Limitation':'ep-sl','Unclassified':'ep-unk'};
+    return`<span class="ep ${m[c]||'ep-unk'}">${c}</span>`;
+  }
+  function estatusTag(s){
+    if(!s)return`<span class="ep ep-none">—</span>`;
+    const m={Resolved:'ep-res',Investigating:'ep-inv',Ongoing:'ep-ong'};
+    return`<span class="ep ${m[s]||'ep-none'}">${s}</span>`;
+  }
+  function ecatTag(cat){
+    const c=ESC_CAT_COLOR[cat]||'#9ca3af';
+    return`<span class="esc-cat-tag"><span class="esc-cat-dot" style="background:${c}"></span>${cat}</span>`;
+  }
+  document.getElementById('esc-tbody').innerHTML=rows.map(r=>`<tr>
+    <td style="white-space:nowrap;font-size:11.5px;">${r.date}</td>
+    <td style="font-size:12px;">${r.agent}</td>
+    <td><span class="esc-code" title="${r.code}">${r.code}</span></td>
+    <td style="font-size:11.5px;">${r.plat||'—'}</td>
+    <td style="font-size:12px;">${r.creator||'—'}</td>
+    <td>${ecauseTag(r.cause)}</td>
+    <td>${ecatTag(r.cat)}</td>
+    <td class="esc-desc">${r.desc}</td>
+    <td>${estatusTag(r.status)}</td>
+  </tr>`).join('');
+}
+/* ════════════ /ESCALATION MODULE ════════════ */
 </script>
 
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Scroll to top">

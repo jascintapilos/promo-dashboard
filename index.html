@@ -1,6 +1,2039 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=./dashboard.html">
-<title>Promo Team Operations</title></head>
-<body><a href="./dashboard.html">Go to dashboard</a></body>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Promo Team Operations</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#13161c; --ink2:#5b6472; --ink3:#9aa1ad;
+    --line:#eceef1; --line2:#e2e5ea;
+    --accent:#4c6ef5; --accent-soft:#eaeeff;
+    --teal:#0ca678; --teal-soft:#e3f6ef;
+    --good:#16a34a; --good-soft:#e9f7ef; --warn:#d97706; --warn-soft:#fdf3e4; --risk:#dc2626; --risk-soft:#fcebeb;
+    --gold:#d97706; --gold-soft:#fef3c7;
+    --silver:#64748b; --silver-soft:#f1f5f9;
+    --bronze:#b45309; --bronze-soft:#fdf3e4;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 2px 6px rgba(16,24,40,.06);
+    --shadow-md:0 2px 4px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.08);
+    --radius:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);
+       font-size:14px;line-height:1.5;padding:28px 20px 72px;-webkit-font-smoothing:antialiased;}
+  .page{max-width:1160px;margin:0 auto;}
+
+  /* ── HEADER ── */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
+  .head-left h1{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);}
+  .head-left .sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
+  .head-right{display:flex;gap:8px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
+       border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
+  .btn:hover{background:#fafbfc;} .btn:disabled{opacity:.5;cursor:default;}
+
+  /* ── SECTION LABELS ── */
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin:0 2px 12px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  /* ── CARD BASE ── */
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;}
+  .card-title{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink);}
+  .card-hint{font-size:12px;color:var(--ink3);margin-top:2px;}
+  .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;}
+  .card-header-info{}
+
+  /* ── EXECUTIVE SUMMARY ── */
+  .exec-card{
+    background:linear-gradient(135deg,#3c5de7 0%,#1a3190 100%);
+    color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:28px;
+    position:relative;overflow:hidden;box-shadow:var(--shadow-md);
+  }
+  .exec-card::before{
+    content:'';position:absolute;top:-60px;right:-60px;
+    width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.05);
+  }
+  .exec-card::after{
+    content:'';position:absolute;bottom:-80px;right:120px;
+    width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);
+  }
+  .exec-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .exec-badge{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    opacity:.7;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .exec-badge i{font-size:13px;}
+  .exec-text{font-size:15px;line-height:1.65;max-width:780px;position:relative;}
+  .exec-text strong{font-weight:700;}
+  .exec-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;}
+  .exec-pill{font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);
+    padding:4px 12px;border-radius:20px;color:rgba(255,255,255,.95);transition:background .15s,border-color .15s;}
+  .exec-pill i{font-size:12px;margin-right:4px;opacity:.8;}
+  .exec-pill-link{cursor:pointer;}
+  .exec-pill-link:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.45);}
+  .exec-range{font-size:11.5px;opacity:.6;margin-top:10px;position:relative;}
+  .exec-mix{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:20px;position:relative;}
+  .exec-mix-item{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;
+    padding:14px 10px;text-align:center;cursor:pointer;transition:background .15s,transform .12s;}
+  .exec-mix-item:hover{background:rgba(255,255,255,.22);transform:translateY(-2px);}
+  .exec-mix-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    margin:0 auto 8px;font-size:19px;background:rgba(255,255,255,.15);}
+  .exec-mix-val{font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;}
+  .exec-mix-label{font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;}
+  .exec-mix-pct{font-size:11.5px;color:rgba(255,255,255,.92);font-weight:600;margin-top:5px;}
+
+  /* ── KPI CARDS ── */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px;}
+  .kpi{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 20px 18px;transition:box-shadow .15s;}
+  .kpi:hover{box-shadow:var(--shadow-md);}
+  .kpi-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+  .kpi-icon i{font-size:17px;}
+  .kpi .lab{font-size:11.5px;color:var(--ink2);font-weight:500;}
+  .kpi .val{font-size:36px;font-weight:700;letter-spacing:-.04em;margin-top:6px;line-height:1;color:var(--ink);}
+  .kpi .note{font-size:11px;color:var(--ink3);margin-top:7px;line-height:1.4;}
+
+  /* ── TWO-COL ROWS ── */
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px;}
+
+  /* ── WORKLOAD MIX ── */
+  .mix-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+  .mix-item{background:var(--bg);border-radius:14px;padding:20px 14px;text-align:center;transition:background .15s;}
+  .mix-item:hover{background:#eef0f3;}
+  .mix-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;}
+  .mix-val{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  .mix-label{font-size:12px;color:var(--ink2);margin-top:6px;font-weight:500;}
+  .mix-pct{font-size:11px;color:var(--ink2);min-width:28px;text-align:right;}
+
+  /* ── TOP BRANDS + REGIONAL MIX ── */
+  .view-all-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;font-family:inherit;}
+  .view-all-link:hover{text-decoration:underline;}
+  .mix-legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-bottom:14px;}
+  .mix-legend-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);}
+  .mix-legend-dot i{width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0;}
+  .mix-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--line2);}
+  .mix-row:last-child{border-bottom:none;}
+  .mix-row-lbl{display:flex;align-items:center;gap:7px;width:120px;flex-shrink:0;overflow:hidden;}
+  .mix-rank{font-size:11px;font-weight:500;color:var(--ink2);min-width:16px;text-align:right;}
+  .mix-nm{font-size:13px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mix-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .mix-track{flex:1;min-width:0;height:10px;background:var(--line2);border-radius:5px;overflow:hidden;}
+  .mix-fill{height:100%;display:flex;gap:1px;border-radius:5px;overflow:hidden;}
+  .mix-fill span{min-width:2px;}
+  .mix-ct{font-size:13px;font-weight:500;color:var(--ink);min-width:28px;text-align:right;}
+  .donut-insight{margin-top:14px;padding:10px 14px;background:var(--accent-soft);border-radius:10px;font-size:12.5px;color:var(--accent);font-weight:500;}
+
+  /* ── TEAM CAPACITY ── */
+  .cap-summary{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .cap-avg-label{font-size:12.5px;color:var(--ink2);}
+  .cap-avg-val{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--ink);}
+  .pill{font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:20px;}
+  .pill-good{background:var(--good-soft);color:var(--good);}
+  .pill-warn{background:var(--warn-soft);color:var(--warn);}
+  .pill-risk{background:var(--risk-soft);color:var(--risk);}
+  .pill-idle{background:var(--line);color:var(--ink3);}
+  #scroll-top{position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9999;
+    font-family:inherit;}
+  #scroll-top.visible{opacity:1;pointer-events:auto;}
+  #scroll-top:hover{transform:translateY(-3px);}
+  #scroll-top i{font-size:18px;line-height:1;}
+  #scroll-top span{font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.85;white-space:nowrap;}
+  .cap-row{display:grid;grid-template-columns:88px 1fr 58px auto;align-items:center;gap:12px;margin-bottom:10px;}
+  .cap-row:last-child{margin-bottom:0;}
+  .cap-name{font-size:13px;font-weight:500;color:var(--ink);}
+  .cap-track{background:#e2e5ea;border-radius:6px;height:11px;overflow:hidden;display:block;}
+  .cap-fill{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .cap-val{font-size:12px;text-align:right;font-weight:600;color:var(--ink2);}
+  .cap-highlights{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
+  .cap-note-item{font-size:12px;padding:5px 11px;border-radius:8px;display:flex;align-items:center;gap:6px;}
+  .cap-note-item i{font-size:14px;}
+
+  /* ── TRENDS ── */
+  .trend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .trend-legend{display:flex;gap:14px;}
+  .trend-legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);}
+  .trend-legend-dot{width:8px;height:8px;border-radius:50%;}
+  .trend-container{height:180px;position:relative;}
+  .trend-placeholder{height:180px;display:flex;align-items:center;justify-content:center;
+    color:var(--ink3);font-size:13px;background:var(--bg);border-radius:10px;}
+
+  /* ── BAR LISTS (coverage + workload) ── */
+  .bar-list{margin-top:16px;display:flex;flex-direction:column;gap:11px;}
+  .bar{display:grid;grid-template-columns:88px 1fr 38px;align-items:center;gap:12px;cursor:default;border-radius:8px;padding:2px 4px;margin:0 -4px;}
+  .bar.clickable{cursor:pointer;} .bar.clickable:hover{background:#f7f8fa;}
+  .bar.active{background:var(--accent-soft);}
+  .bar .bl{font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar .bt{background:#eef0f3;border-radius:6px;height:9px;overflow:hidden;display:block;}
+  .bar .bf{display:block;height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .bar .bv{font-size:13px;font-weight:600;text-align:right;color:var(--ink);}
+  .bar .bv small{font-weight:400;color:var(--ink3);font-size:11px;}
+
+  .drill{margin-top:18px;border-top:1px solid var(--line);padding-top:16px;display:none;}
+  .drill.show{display:block;}
+  .drill .dt{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .drill .dt .x{margin-left:auto;font-size:12px;color:var(--ink3);cursor:pointer;font-weight:400;}
+  .mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .mini{background:var(--bg);border-radius:10px;padding:12px;text-align:center;}
+  .mini .mv{font-size:22px;font-weight:600;letter-spacing:-.02em;}
+  .mini .ml{font-size:11px;color:var(--ink2);margin-top:2px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .chip{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--bg);color:var(--ink);border:1px solid var(--line2);}
+  .sub-h{font-size:12px;color:var(--ink2);font-weight:600;margin:14px 0 7px;}
+
+  /* ── DETAILED RECORDS ── */
+  .records{margin-top:8px;}
+  details.rec{background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;scroll-margin-top:16px;}
+  details.rec>summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;user-select:none;}
+  details.rec>summary::-webkit-details-marker{display:none;}
+  details.rec>summary .cnt{font-size:12px;font-weight:400;color:var(--ink3);}
+  details.rec>summary .chev{margin-left:auto;color:var(--ink3);transition:transform .2s;}
+  details.rec[open]>summary .chev{transform:rotate(180deg);}
+  .rec-body{padding:0 22px 20px;}
+  .rec-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  select{font-size:12.5px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:8px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);}
+  td{padding:8px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink);}
+  tr:last-child td{border-bottom:none;}
+  .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;}
+  .b-done{background:var(--good-soft);color:var(--good);}
+  .b-info{background:var(--accent-soft);color:var(--accent);}
+  .b-warn{background:var(--warn-soft);color:var(--warn);}
+  .mono{font-family:'SF Mono','Cascadia Code',monospace;font-size:11.5px;}
+  .more{margin-top:10px;width:100%;font-size:12.5px;padding:8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);cursor:pointer;color:var(--ink2);}
+  .more:hover{background:#fafbfc;}
+
+  /* ── CRM STATUS (header compact strip) ── */
+  .crm-status-bar{display:flex;align-items:center;gap:7px;padding:0 10px 0 0;border-right:1px solid var(--line);margin-right:2px;}
+  .crm-status-label{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);}
+  .crm-ts{font-size:10px;color:var(--ink3);}
+  .crm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;cursor:default;}
+  .crm-dot-ok{background:var(--good);}
+  .crm-dot-warn{background:var(--warn);}
+  .crm-dot-err{background:var(--risk);}
+
+  /* ── STATES ── */
+  .loading{text-align:center;padding:5rem 0;color:var(--ink2);font-size:13px;}
+  .spin{display:inline-block;width:18px;height:18px;border:2.5px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-4px;margin-right:9px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .errbox{background:var(--risk-soft);border-radius:12px;padding:16px;color:var(--risk);font-size:13px;}
+  .empty-state{text-align:center;color:var(--ink3);font-size:13px;padding:40px 20px;}
+  .empty-state i{font-size:28px;display:block;margin-bottom:8px;opacity:.5;}
+
+  /* ── SOURCE STRIP ── */
+  .source-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0 0;font-size:11px;color:var(--ink3);}
+  .src-pill{position:relative;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;background:var(--card);border:1px solid var(--line2);box-shadow:var(--shadow);cursor:default;font-size:11px;color:var(--ink2);transition:border-color .12s;}
+  .src-pill:hover{border-color:var(--accent);}
+  .src-pill .src-pill-label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);}
+  .src-pill .src-pill-summary{font-weight:500;color:var(--ink);}
+  .src-pop{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:var(--card);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--shadow-md);padding:10px 12px;font-size:11.5px;color:var(--ink2);display:none;z-index:50;line-height:1.7;}
+  .src-pill:hover .src-pop{display:block;}
+  .src-pop-row{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .src-pop-row strong{color:var(--ink);font-weight:600;font-size:11.5px;}
+  .src-pop-row .src-ts{color:var(--ink3);font-size:11px;}
+  .src-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:5px;vertical-align:1px;}
+  .src-dot.stale{background:var(--warn);}
+  .src-dot.fail{background:var(--risk);}
+
+  /* ── WEEKLY UTIL TOGGLE ── */
+  .cap-tabs{display:flex;gap:4px;margin-bottom:14px;}
+  .cap-tab{font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--line2);background:transparent;color:var(--ink2);cursor:pointer;transition:background .12s;}
+  .cap-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .wk-grid{overflow-x:auto;margin-top:4px;}
+  .wk-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+  .wk-tbl th{font-weight:600;color:var(--ink3);text-align:center;padding:3px 6px;white-space:nowrap;border-bottom:1px solid var(--line);}
+  .wk-tbl th:first-child{text-align:left;}
+  .wk-tbl td{text-align:center;padding:3px 6px;color:var(--ink);border-bottom:1px solid var(--line2);}
+  .wk-tbl td:first-child{text-align:left;font-weight:500;white-space:nowrap;}
+  .wk-tbl tr:last-child td{border-bottom:none;}
+  .wk-cell-0{color:var(--ink3)!important;font-weight:400!important;}
+  .wk-cell-nodata{color:var(--ink3)!important;font-style:italic;font-size:9px!important;}
+  .wk-avg-row td{border-top:2px solid var(--line)!important;}
+  .wk-missing-notice{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:10px 14px;
+    background:var(--warn-soft);border-radius:8px;color:var(--warn);font-size:11.5px;line-height:1.6;}
+  .wk-missing-notice i{flex-shrink:0;font-size:15px;margin-top:1px;}
+  .wk-missing-notice strong{display:block;font-weight:600;margin-bottom:2px;}
+
+  /* ── ESCALATION MODULE ── */
+  .esc-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+  .esc-mini{text-align:center;padding:12px 8px;background:var(--bg);border-radius:12px;}
+  .esc-mini .em-val{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  .esc-mini .em-lbl{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.4;}
+  .esc-cat-tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;white-space:nowrap;}
+  .esc-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;display:inline-block;}
+  .ep{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;display:inline-block;white-space:nowrap;}
+  .ep-he{background:#fff3ed;color:#ea580c;} .ep-sl{background:#eff6ff;color:#2563eb;}
+  .ep-unk{background:#f3f4f6;color:#6b7280;}
+  .ep-res{background:var(--good-soft);color:var(--good);} .ep-inv{background:var(--warn-soft);color:var(--warn);}
+  .ep-ong{background:var(--risk-soft);color:var(--risk);} .ep-none{background:#f3f4f6;color:#9ca3af;}
+  .esc-tbl-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;}
+  .esc-tbl-bar input,.esc-tbl-bar select{font-size:12px;padding:5px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);outline:none;cursor:pointer;}
+  .esc-tbl-bar input{flex:1;min-width:180px;} .esc-tbl-bar input:focus{border-color:var(--accent);}
+  .esc-tbl-cnt{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap;}
+  .esc-code{font-family:'SF Mono','Cascadia Code',monospace;font-size:11px;color:#2563eb;max-width:165px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+  .esc-desc{max-width:220px;color:var(--ink2);font-size:11.5px;line-height:1.4;}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}}
+  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.exec-mix{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <div class="head-left">
+      <h1>Promo Team Operations</h1>
+      <p class="sub" id="sub">Loading…</p>
+      <div class="source-strip" id="source-strip" style="display:none;">
+        <span id="last-entry-pill"></span>
+        <span id="last-pull-pill"></span>
+        <span id="banner-health-pill"></span>
+      </div>
+    </div>
+    <div class="head-right">
+      <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
+      <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
+    </div>
+  </div>
+
+  <div id="loading" class="loading"><span class="spin"></span>Loading live data from Google Sheets…</div>
+  <div id="error" style="display:none;"></div>
+
+  <div id="content" style="display:none;">
+
+    <!-- 1. EXECUTIVE SUMMARY -->
+    <div class="exec-card" id="exec-card">
+      <div class="exec-badge"><i class="ti ti-chart-pie"></i>This period at a glance</div>
+      <div class="exec-text" id="exec-text"></div>
+      <div class="exec-mix" id="exec-mix"></div>
+      <div class="exec-range" id="exec-range"></div>
+    </div>
+
+    <!-- 2. KPI OVERVIEW -->
+    <p class="section-label">Key metrics</p>
+    <div class="kpis" id="kpis"></div>
+
+    <!-- 4 + 5. TOP BRANDS + REGIONAL DISTRIBUTION -->
+    <div class="row2" style="margin-bottom:28px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Top brands</div>
+            <div class="card-hint">Ranked by deliverables this period</div>
+          </div>
+          <button class="view-all-link" id="brands-toggle" onclick="toggleFullBrands()">View full ranking <i class="ti ti-chevron-down" style="font-size:12px;"></i></button>
+        </div>
+        <div class="brand-rank-list" id="brand-rank-list"></div>
+        <div id="brand-rank-more" style="display:none;">
+          <div class="bar-list" id="brand-bars-full" style="margin-top:12px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Regional distribution</div>
+            <div class="card-hint">Share of deliverables per region</div>
+          </div>
+        </div>
+        <div id="region-mix-list"></div>
+        <div class="donut-insight" id="donut-insight" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 6. TEAM CAPACITY (full width) -->
+    <p class="section-label">Coverage &amp; capacity</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
+        <div>
+          <div class="card-title">Team capacity</div>
+          <div class="card-hint">Utilisation against expected hours</div>
+        </div>
+        <div class="cap-tabs">
+          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
+          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
+        </div>
+      </div>
+      <div id="cap-ytd-view" style="display:none;">
+        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+        <div id="cap-bars"></div>
+        <div class="cap-highlights" id="cap-highlights"></div>
+      </div>
+      <div id="cap-weekly-view">
+        <div class="wk-grid" id="cap-weekly-grid"></div>
+      </div>
+    </div>
+
+    <!-- 7. TRENDS -->
+    <p class="section-label">Deliverables trend</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="trend-header">
+        <div>
+          <div class="card-title">Deliverables over time</div>
+          <div class="card-hint">Weekly totals — follows selected date range</div>
+        </div>
+        <div class="trend-legend" id="trend-legend"></div>
+      </div>
+      <div class="trend-container" id="trend-container">
+        <canvas id="trend-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- COVERAGE DRILL (hidden region/brand drill-down) -->
+    <div id="coverage-section" style="display:none;">
+      <p class="section-label">Coverage detail</p>
+      <div class="row2" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="card-title">Coverage by brand</div>
+          <div class="card-hint">Click a brand to break it down</div>
+          <div class="bar-list" id="brand-bars"></div>
+          <div class="drill" id="brand-drill"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Coverage by region</div>
+          <div class="card-hint">Click a region to see brands &amp; campaigns</div>
+          <div class="bar-list" id="region-bars"></div>
+          <div class="drill" id="region-drill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. DETAILED RECORDS -->
+    <p class="section-label">Detailed records</p>
+    <div class="records">
+      <details class="rec" id="rec-banner"><summary><i class="ti ti-photo" aria-hidden="true"></i> Banner queue <span class="cnt" id="rc-banner"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="bf-c"><option value="all">All campaigns</option></select>
+            <select id="bf-b"><option value="all">All brands</option></select>
+            <select id="bf-r"><option value="all">All regions</option></select>
+            <select id="bf-u"><option value="all">All uploaded by</option></select>
+          </div>
+          <table id="b-tbl" style="table-layout:fixed;"><thead id="b-th"></thead><tbody id="bt"></tbody></table>
+          <button class="more" id="bm"></button>
+        </div>
+      </details>
+      <details class="rec" id="rec-promo"><summary><i class="ti ti-ticket" aria-hidden="true"></i> Promo code log <span class="cnt" id="rc-promo"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <input type="text" id="pf-q" placeholder="Search code…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
+            <select id="pf-b"><option value="all">All brands</option></select>
+            <select id="pf-r"><option value="all">All regions</option></select>
+            <select id="pf-t"><option value="all">All types</option></select>
+          </div>
+          <table id="p-tbl" style="table-layout:fixed;"><thead id="p-th"></thead><tbody id="pt"></tbody></table>
+          <button class="more" id="pm"></button>
+        </div>
+      </details>
+      <details class="rec" id="rec-crm"><summary><i class="ti ti-send" aria-hidden="true"></i> CRM assignment log <span class="cnt" id="rc-crm"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="cf-c"><option value="all">All tools</option></select>
+            <select id="cf-b"><option value="all">All brands</option></select>
+            <select id="cf-a"><option value="all">All assignees</option></select>
+            <select id="cf-s"><option value="all">All segments</option></select>
+          </div>
+          <table id="c-tbl" style="table-layout:fixed;"><thead id="c-th"></thead><tbody id="ct"></tbody></table>
+          <button class="more" id="cm"></button>
+        </div>
+      </details>
+      <details class="rec" id="rec-game"><summary><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Game addition log <span class="cnt" id="rc-game"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <input type="text" id="gf-q" placeholder="Search game…" style="padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--bg);color:var(--ink);font-size:0.8rem;outline:none;min-width:130px;">
+            <select id="gf-b"><option value="all">All brands</option></select>
+            <select id="gf-p"><option value="all">All providers</option></select>
+            <select id="gf-cat"><option value="all">All categories</option></select>
+          </div>
+          <table id="g-tbl"><thead id="g-th"></thead><tbody id="gt"></tbody></table>
+          <button class="more" id="gm"></button>
+        </div>
+      </details>
+      <details class="rec" id="rec-adhoc"><summary><i class="ti ti-checkbox" aria-hidden="true"></i> Adhoc tasks <span class="cnt" id="rc-adhoc"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="af-t"><option value="all">All task types</option></select>
+            <select id="af-a"><option value="all">All assignees</option></select>
+          </div>
+          <table id="a-tbl" style="table-layout:fixed;"><thead id="a-th"></thead><tbody id="at"></tbody></table>
+          <button class="more" id="am"></button>
+        </div>
+      </details>
+      <details class="rec" id="rec-banner-health"><summary><i class="ti ti-photo" aria-hidden="true"></i> Homepage banner <span class="cnt" id="rc-banner-health"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <select id="bhf-t"><option value="all">All issue types</option></select>
+            <select id="bhf-b"><option value="all">All brands</option></select>
+          </div>
+          <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
+          <button class="more" id="bhm"></button>
+        </div>
+      </details>
+    </div>
+
+    <!-- ── ESCALATION TRACKER MODULE ── -->
+    <p class="section-label">Escalation tracker</p>
+    <div class="row2" style="margin-bottom:18px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Error sub-categories</div>
+            <div class="card-hint">Jan–Jun 2026 · 81 cases · categories inferred from elaboration text</div>
+          </div>
+        </div>
+        <div style="position:relative;height:275px;margin-top:4px;"><canvas id="esc-cat-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Volume &amp; root cause</div>
+            <div class="card-hint">Monthly trend · snapshot 24 Jun 2026</div>
+          </div>
+        </div>
+        <div style="position:relative;height:150px;"><canvas id="esc-month-chart"></canvas></div>
+        <div class="esc-mini-row">
+          <div class="esc-mini"><div class="em-val" style="color:#ea580c;">45</div><div class="em-lbl">Human Error<br>56%</div></div>
+          <div class="esc-mini"><div class="em-val" style="color:#2563eb;">30</div><div class="em-lbl">Sys Limitation<br>37%</div></div>
+          <div class="esc-mini"><div class="em-val" style="color:#16a34a;">58</div><div class="em-lbl">Resolved<br>89% tracked</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="records" style="margin-bottom:28px;">
+      <details class="rec" id="rec-escalation">
+        <summary><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalation log <span class="cnt">81 cases · Jan–Jun 2026</span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="esc-tbl-bar">
+            <input type="text" id="esc-q" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
+            <select onchange="renderEscTable()" id="esc-cause"><option value="">All Root Causes</option><option>Human Error</option><option>System Limitation</option><option>Unclassified</option></select>
+            <select onchange="renderEscTable()" id="esc-cat"><option value="">All Categories</option><option>T&amp;C / Message Mismatch</option><option>Reward Not Assigned</option><option>Wrong Promo Setting</option><option>Game / Provider Not Added</option><option>Member Group Missing</option><option>Claim Restriction Bug</option><option>Duplicate Reward</option><option>Sync / Technical Issue</option><option>Unclassified</option></select>
+            <select onchange="renderEscTable()" id="esc-status"><option value="">All Statuses</option><option>Resolved</option><option>Investigating</option><option>Ongoing</option></select>
+            <select onchange="renderEscTable()" id="esc-tab"><option value="">All Months</option><option value="Jan-Feb">Jan–Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option></select>
+            <span class="esc-tbl-cnt" id="esc-cnt"></span>
+          </div>
+          <table style="table-layout:fixed;">
+            <thead><tr>
+              <th style="width:74px">Date</th>
+              <th style="width:90px">Agent</th>
+              <th style="width:170px">Promo Code</th>
+              <th style="width:82px">Platform</th>
+              <th style="width:84px">Creator</th>
+              <th style="width:110px">Root Cause</th>
+              <th style="width:155px">Error Category</th>
+              <th>Description</th>
+              <th style="width:90px">Status</th>
+            </tr></thead>
+            <tbody id="esc-tbody"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+    <!-- ── /ESCALATION TRACKER MODULE ── -->
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
+const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth'];
+
+const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
+const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
+const REGION_ORDER = ['MY','SG','ID','TH','KH'];
+const PAGE = 15;
+
+let DELIV=[], UTIL=[], ADHOC=[], rawData=null, _fullData=null;
+let bShowAll=false, cShowAll=false, pShowAll=false, gShowAll=false, aShowAll=false, bhShowAll=false;
+let bSort={col:null,dir:'asc'}, pSort={col:null,dir:'asc'};
+let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:'asc'}, bhSort={col:null,dir:'asc'};
+let _capTab='weekly';
+let _filterFrom=null, _filterTo=null;
+let _brandsExpanded=false;
+let _donutChart=null, _trendChart=null, _escInit=false;
+
+/* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const _TZ='Asia/Kuala_Lumpur';
+function fmtDate(d){try{return d.toLocaleDateString('en-GB',{timeZone:_TZ,day:'numeric',month:'short',year:'numeric'});}catch(e){return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}}
+function fmtDateShort(d){try{return d.toLocaleDateString('en-GB',{timeZone:_TZ,month:'short',day:'numeric'});}catch(e){return d.toLocaleDateString('en-GB',{month:'short',day:'numeric'});}}
+function fmtTime(d){try{return d.toLocaleTimeString('en-GB',{timeZone:_TZ,hour:'2-digit',minute:'2-digit'})+' MYT';}catch(e){return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}}
+function fmtMYT(ts){if(!ts) return ''; try{return new Date(ts).toLocaleTimeString('en-GB',{timeZone:_TZ,hour:'2-digit',minute:'2-digit'})+' MYT';}catch(e){return new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}}
+
+/* ── HELPERS ── */
+function parseDMY(s){
+  if(!s) return null;
+  s=String(s).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  // "17 Jun" or "17 Jun 2026" — manual entry format
+  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,})(?:\s+(\d{4}))?/);
+  if(m){const mo={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11}[m[2].slice(0,3)];if(mo!=null)return new Date(m[3]?+m[3]:new Date().getFullYear(),mo,+m[1]);}
+  return null;
+}
+function applyDateFilter(data){
+  if(!_filterFrom&&!_filterTo) return data;
+  function keep(r,key){
+    const d=parseDMY(r[key]);if(!d) return false;
+    if(_filterFrom&&d<_filterFrom) return false;
+    if(_filterTo&&d>_filterTo) return false;
+    return true;
+  }
+  return{...data,
+    promos:(data.promos||[]).filter(r=>keep(r,'Date')),
+    banners:(data.banners||[]).filter(r=>keep(r,r['Uploaded Date']?'Uploaded Date':'Start')),
+    crm:(data.crm||[]).filter(r=>keep(r,'Date')),
+    games:(data.games||[]).filter(r=>keep(r,'Date')),
+    adhoc:(data.adhoc||[]).filter(r=>keep(r,'Date')),
+  };
+}
+function rerender(){if(_fullData) render(_fullData,true);}
+function rangeNote(){
+  if(!_filterFrom&&!_filterTo) return 'all time';
+  const f=d=>fmtDate(d);
+  if(_filterFrom&&_filterTo) return f(_filterFrom)+' – '+f(_filterTo);
+  return _filterFrom?('since '+f(_filterFrom)):('through '+f(_filterTo));
+}
+function normBrand(b){return (b||'').trim().toUpperCase().replace(/\s+/g,'');}
+function splitRegions(r){return (r||'').split(/[+,/]/).map(s=>s.trim().toUpperCase()).filter(Boolean);}
+function platformOf(b){
+  if(!b||b==='ALLBRANDS') return null;
+  if(b==='WS1'||b==='WS2') return b;
+  if(b==='MB8') return 'WS1';
+  if(b==='RWS77') return 'WS2';
+  if(b.startsWith('QPRO')||b.startsWith('QPLY')) return 'QPRO';
+  if(b.startsWith('QP2')) return 'QP2';
+  if(b.startsWith('G8')) return 'G8';
+  if(b.startsWith('UG')||b.startsWith('NX')) return 'UG/NX';
+  return b;
+}
+function countBy(arr,fn){return arr.reduce((m,x)=>{const k=fn(x);if(k!=null){m[k]=(m[k]||0)+1;}return m;},{});}
+function uniq(arr){return [...new Set(arr)];}
+function statusBadge(s){
+  if(!s) return '<span class="badge b-warn">Pending</span>';
+  const l=s.toLowerCase();
+  if(l.includes('complet')||l.includes('done')||l.includes('upload')) return `<span class="badge b-done">${s}</span>`;
+  if(l.includes('creat')||l.includes('assign')) return `<span class="badge b-info">${s}</span>`;
+  return `<span class="badge b-warn">${s}</span>`;
+}
+function build(data){
+  const out=[];
+  (data.banners||[]).forEach(b=>out.push({type:'Banner',brand:normBrand(b.Brand),brandRaw:b.Brand,regions:splitRegions(b.Region),campaign:b['Banner Title'],raw:b}));
+  (data.promos||[]).forEach(p=>out.push({type:'Promo Code',brand:normBrand(p.Brand),brandRaw:p.Brand,regions:splitRegions(p.Region),campaign:p.Code,raw:p}));
+  (data.crm||[]).forEach(c=>out.push({type:'CRM',brand:normBrand(c.Brand),brandRaw:c.Brand,regions:splitRegions(c.Region),campaign:c['Segment Name'],raw:c}));
+  (data.games||[]).forEach(g=>out.push({type:'Game',brand:normBrand(g.Brand),brandRaw:g.Brand,regions:splitRegions(g.Region),campaign:g['Game Name'],raw:g}));
+  (data.adhoc||[]).forEach(a=>out.push({type:'Adhoc',brand:'',brandRaw:'',regions:[],campaign:a.Task,raw:a}));
+  return out;
+}
+
+/* ── BARS (coverage drill) ── */
+function bars(el,rows,total,color,opts){
+  opts=opts||{};
+  const max=Math.max(...rows.map(r=>r[1]),1);
+  el.innerHTML=rows.map(([label,val])=>{
+    const w=Math.round(val/max*100);
+    const pct=opts.pct?` <small>${total>0?Math.round(val/total*100):0}%</small>`:'';
+    const cls='bar'+(opts.click?' clickable':'')+(opts.active===label?' active':'');
+    const dataAttr=opts.click?`data-key="${encodeURIComponent(label)}"`:'';
+    return `<div class="${cls}" ${dataAttr}>
+      <span class="bl" title="${label}">${label}</span>
+      <span class="bt"><span class="bf" style="width:${w}%;background:${color};"></span></span>
+      <span class="bv">${val}${pct}</span></div>`;
+  }).join('');
+}
+
+/* ── WEEKLY TREND DATA ── */
+function getWeekMonday(d){
+  const date=new Date(d);const day=date.getDay();
+  const diff=date.getDate()-(day===0?6:day-1);
+  const mon=new Date(date);mon.setDate(diff);mon.setHours(0,0,0,0);
+  return mon.toISOString().split('T')[0];
+}
+function buildWeeklyTotals(allDeliv){
+  const wm={};
+  allDeliv.forEach(d=>{
+    const dateStr=d.raw.Date||d.raw.Start||'';
+    const date=parseDMY(dateStr);
+    if(!date) return;
+    const wk=getWeekMonday(date);
+    if(!wm[wk]) wm[wk]={total:0,banner:0,crm:0,promo:0,game:0,adhoc:0};
+    wm[wk].total++;
+    if(d.type==='Banner') wm[wk].banner++;
+    if(d.type==='CRM') wm[wk].crm++;
+    if(d.type==='Promo Code') wm[wk].promo++;
+    if(d.type==='Game') wm[wk].game++;
+    if(d.type==='Adhoc') wm[wk].adhoc++;
+  });
+  const sorted=Object.keys(wm).sort();
+  return sorted.map(wk=>{
+    const d=new Date(wk);
+    const label=`W${isoWeekNum(d)} · ${fmtDateShort(d)}`;
+    return{label,...wm[wk]};
+  });
+}
+
+/* ── MAIN RENDER ── */
+function render(data,_skipStore){
+  if(!_skipStore) _fullData=data;
+  // Merge manual entry tabs into their auto-pulled counterparts (idempotent: do AFTER storing raw)
+  data={...data,
+    promos:[...(data.promos||[]),...(data.manualPromo||[])],
+    banners:[...(data.banners||[]),...(data.manualBanner||[])],
+    crm:[...(data.crm||[]),...(data.manualCrm||[])],
+  };
+  data=applyDateFilter(data);
+  rawData=data;
+  DELIV=build(data);
+  UTIL=data.utilisation||[];
+  ADHOC=data.adhoc||[];
+  const total=DELIV.length;
+
+  const brandsSet=uniq(DELIV.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS'));
+  const regionList=DELIV.flatMap(d=>d.regions);
+  const regionsSet=uniq(regionList);
+  const platsSet=uniq(DELIV.map(d=>platformOf(d.brand)).filter(Boolean));
+  const teamUtil=calcWeeklyTeamUtil();
+
+  const ts=new Date(data.lastUpdated);
+  const dStr=fmtDate(ts);
+  const tStr=fmtTime(ts);
+  document.getElementById('sub').textContent=`Operations overview · ${rangeNote()}`;
+  document.getElementById('refresh-ts').textContent=`${tStr} · ${dStr}`;
+
+  renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
+  renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
+  renderDataSources(_fullData||data);
+  renderPullHealth((_fullData&&_fullData.sysStatus)||data.sysStatus||[]);
+  renderBannerHealth((_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
+  renderWorkloadMix(total);
+  renderTopBrands(total);
+  renderRegionalDonut(regionList, total);
+  renderCapacity();
+  renderTrends();
+  renderCoverageDetail(total, regionList, regionsSet);
+  renderRecords();
+  renderAdhoc();
+  renderBannerHealthRecords();
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+  document.getElementById('refresh').disabled=false;
+  if(!_escInit){initEscalationCharts();renderEscTable();_escInit=true;}
+}
+
+function openRecordSection(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.open=true;
+  setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+/* ── AUTOMATION START DATE ── */
+function firstBotDate(){
+  const allP=(_fullData&&_fullData.promos)||[];
+  const botRows=allP.filter(p=>String(p['Created By']||'').toLowerCase().trim()==='promo_testbot');
+  if(!botRows.length) return null;
+  const dates=botRows.map(p=>{
+    const[dd,mm,yyyy]=String(p['Date']||'').split('/').map(Number);
+    return new Date(yyyy,mm-1,dd);
+  }).filter(d=>!isNaN(d.getTime()));
+  if(!dates.length) return null;
+  const earliest=new Date(Math.min(...dates.map(d=>d.getTime())));
+  return earliest.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+/* ── EXECUTIVE SUMMARY ── */
+function renderExecSummary(total, brands, regions, platforms, teamUtil){
+  if(total===0){
+    document.getElementById('exec-text').innerHTML='No deliverables found for this period.';
+    document.getElementById('exec-range').textContent=rangeNote();
+    return;
+  }
+
+  const dominant=Object.entries({
+    'CRM':DELIV.filter(d=>d.type==='CRM').length,
+    'Banner Upload':DELIV.filter(d=>d.type==='Banner').length,
+    'Promo Code':DELIV.filter(d=>d.type==='Promo Code').length,
+    'Game Addition':DELIV.filter(d=>d.type==='Game').length,
+    'Adhoc Task':DELIV.filter(d=>d.type==='Adhoc').length,
+  }).sort((a,b)=>b[1]-a[1])[0];
+  const topBrand=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1])[0];
+  const botCount=DELIV.filter(d=>{
+    const cb=String(d.raw['Created By']||d.raw['created_by']||'').toLowerCase().trim();
+    return cb==='promo_testbot';
+  }).length;
+  const botPct=total>0?Math.round(botCount/total*100):0;
+
+  let text=`The team handled <strong>${total} deliverables</strong> across <strong>${brands.length} brand${brands.length!==1?'s':''}</strong> and <strong>${regions.length} region${regions.length!==1?'s':''}</strong>`;
+  if(dominant&&dominant[1]>0&&total>0) text+=`. <strong>${dominant[0]}</strong> led workload at <strong>${Math.round(dominant[1]/total*100)}%</strong>`;
+  if(topBrand) text+=`, with <strong>${topBrand[0]}</strong> as the top brand (<strong>${topBrand[1]}</strong> item${topBrand[1]!==1?'s':''})`;
+  if(!isNaN(teamUtil)) text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
+  if(botCount>0){const bStart=firstBotDate();text+=`. <strong>${botPct}%</strong> of deliverables automated${bStart?` (since ${bStart})`:''}`;}
+  text+='.';
+
+  document.getElementById('exec-text').innerHTML=text;
+  document.getElementById('exec-range').textContent=rangeNote()==='all time'?'All-time data':'Period: '+rangeNote();
+}
+
+/* ── KPI CARDS ── */
+function renderKpis(total, brands, regions, platforms, teamUtil, tStr, dStr){
+  const kpiDefs=[
+    {icon:'ti-stack-2',color:'#4c6ef5',soft:'#eaeeff',lab:'Total deliverables',val:total,note:rangeNote()},
+    {icon:'ti-building-store',color:'#0ca678',soft:'#e3f6ef',lab:'Brands supported',val:brands.length,note:'active brands'},
+    {icon:'ti-world',color:'#8b5cf6',soft:'#f3f0ff',lab:'Regions',val:regions.length,note:regions.slice(0,3).join(' · ')+(regions.length>3?' +more':'')},
+    {icon:'ti-layout-grid',color:'#f59e0b',soft:'#fef3c7',lab:'Platforms',val:platforms.length,note:platforms.slice(0,3).join(' · ')},
+    {icon:'ti-users',color:isNaN(teamUtil)?'#64748b':teamUtil>=85?'#dc2626':teamUtil>=60?'#d97706':'#16a34a',
+     soft:isNaN(teamUtil)?'#f1f5f9':teamUtil>=85?'#fcebeb':teamUtil>=60?'#fdf3e4':'#e9f7ef',
+     lab:'Team utilisation',val:isNaN(teamUtil)?'—':teamUtil.toFixed(0)+'%',note:'against expected hrs'},
+  ];
+  document.getElementById('kpis').innerHTML=kpiDefs.map(k=>
+    `<div class="kpi">
+      <div class="kpi-icon" style="background:${k.soft};"><i class="ti ${k.icon}" style="color:${k.color};"></i></div>
+      <div class="lab">${k.lab}</div>
+      <div class="val" style="color:${k.color};">${k.val}</div>
+      <div class="note">${k.note}</div>
+    </div>`
+  ).join('');
+}
+
+/* ── WORKLOAD MIX (inside exec card) ── */
+function renderWorkloadMix(total){
+  const recIds={'CRM':'rec-crm','Banner':'rec-banner','Promo Code':'rec-promo','Game':'rec-game','Adhoc':'rec-adhoc'};
+  const types=[
+    {key:'CRM',label:'CRM Assignments',icon:'ti-send'},
+    {key:'Banner',label:'Banner Uploads',icon:'ti-photo'},
+    {key:'Promo Code',label:'Promo Codes',icon:'ti-ticket'},
+    {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2'},
+    {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox'},
+  ].map(t=>({...t,count:DELIV.filter(d=>d.type===t.key).length}));
+  document.getElementById('exec-mix').innerHTML=types.map(t=>{
+    const pct=total>0?Math.round(t.count/total*100):0;
+    const rid=recIds[t.key];
+    return `<div class="exec-mix-item" onclick="openRecordSection('${rid}')" role="button" tabindex="0" title="Jump to ${t.label}">
+      <div class="exec-mix-icon"><i class="ti ${t.icon}"></i></div>
+      <div class="exec-mix-val">${t.count}</div>
+      <div class="exec-mix-label">${t.label}</div>
+      <div class="exec-mix-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── TOP BRANDS ── */
+function renderTopBrands(total){
+  const brandCounts=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand))
+    .sort((a,b)=>b[1]-a[1]);
+  const top5=brandCounts.slice(0,5);
+  const maxCount=top5[0]?top5[0][1]:1;
+
+  const TYPE_INFO=[
+    {key:'Promo Code',short:'Promo',color:'#f59e0b'},
+    {key:'CRM',short:'CRM',color:'#4c6ef5'},
+    {key:'Banner',short:'Banner',color:'#0ca678'},
+    {key:'Game',short:'Game',color:'#8b5cf6'},
+    {key:'Adhoc',short:'Adhoc',color:'#06b6d4'},
+  ];
+  const brandMix={};
+  DELIV.forEach(d=>{
+    if(!d.brand||d.brand==='ALLBRANDS') return;
+    if(!brandMix[d.brand]) brandMix[d.brand]={};
+    brandMix[d.brand][d.type]=(brandMix[d.brand][d.type]||0)+1;
+  });
+
+  const legend=`<div class="mix-legend">${TYPE_INFO.map(t=>`<span class="mix-legend-dot"><i style="background:${t.color};"></i>${t.short}</span>`).join('')}</div>`;
+
+  document.getElementById('brand-rank-list').innerHTML=legend+top5.map(([brand,count],i)=>{
+    const pct=total>0?Math.round(count/total*100):0;
+    const fillW=Math.round(count/maxCount*100);
+    const mix=brandMix[brand]||{};
+    const segs=TYPE_INFO.map(t=>{const n=mix[t.key]||0;if(!n) return '';const tp=Math.round(n/count*100);return `<span style="flex:${n};background:${t.color};" title="${t.short}: ${n} (${tp}%)"></span>`;}).join('');
+    return `<div class="mix-row">
+      <div class="mix-row-lbl"><span class="mix-rank">${i+1}</span><span class="mix-nm" title="${brand}">${brand}</span></div>
+      <div class="mix-track"><div class="mix-fill" style="width:${fillW}%;">${segs}</div></div>
+      <span class="mix-ct">${count}</span><span class="mix-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Full ranking (hidden by default)
+  bars(document.getElementById('brand-bars-full'), brandCounts, total, C_BRAND, {pct:true});
+}
+
+function toggleFullBrands(){
+  _brandsExpanded=!_brandsExpanded;
+  document.getElementById('brand-rank-more').style.display=_brandsExpanded?'block':'none';
+  document.getElementById('brands-toggle').innerHTML=_brandsExpanded
+    ?'Hide full ranking <i class="ti ti-chevron-up" style="font-size:12px;"></i>'
+    :'View full ranking <i class="ti ti-chevron-down" style="font-size:12px;"></i>';
+}
+
+/* ── REGIONAL MIX ── */
+function renderRegionalDonut(regionList, total){
+  const counts=REGION_ORDER.map(r=>({r,count:(countBy(regionList.map(x=>({r:x})),x=>x.r)[r]||0)}));
+  const regionTotal=regionList.length;
+
+  if(_donutChart){_donutChart.destroy();_donutChart=null;}
+
+  const el=document.getElementById('region-mix-list');
+  if(regionTotal===0){
+    el.innerHTML='<div class="empty-state" style="padding:20px 0;"><i class="ti ti-world-off"></i>No regional data</div>';
+    document.getElementById('donut-insight').style.display='none';
+    return;
+  }
+
+  const TYPE_INFO=[
+    {key:'Promo Code',short:'Promo',color:'#f59e0b'},
+    {key:'CRM',short:'CRM',color:'#4c6ef5'},
+    {key:'Banner',short:'Banner',color:'#0ca678'},
+    {key:'Game',short:'Game',color:'#8b5cf6'},
+    {key:'Adhoc',short:'Adhoc',color:'#06b6d4'},
+  ];
+  const regionMix={};
+  DELIV.forEach(d=>d.regions.forEach(r=>{
+    if(!regionMix[r]) regionMix[r]={};
+    regionMix[r][d.type]=(regionMix[r][d.type]||0)+1;
+  }));
+
+  const active=counts.filter(c=>c.count>0);
+  const maxRegCount=Math.max(...active.map(c=>c.count),1);
+  const legend=`<div class="mix-legend">${TYPE_INFO.map(t=>`<span class="mix-legend-dot"><i style="background:${t.color};"></i>${t.short}</span>`).join('')}</div>`;
+
+  el.innerHTML=legend+active.map(c=>{
+    const pct=Math.round(c.count/regionTotal*100);
+    const fillW=Math.round(c.count/maxRegCount*100);
+    const mix=regionMix[c.r]||{};
+    const segs=TYPE_INFO.map(t=>{const n=mix[t.key]||0;if(!n) return '';const tp=Math.round(n/c.count*100);return `<span style="flex:${n};background:${t.color};" title="${t.short}: ${n} (${tp}%)"></span>`;}).join('');
+    return `<div class="mix-row">
+      <div class="mix-row-lbl"><span class="mix-dot" style="background:${REGION_COLORS[c.r]||'#9aa1ad'};"></span><span class="mix-nm">${c.r}</span></div>
+      <div class="mix-track"><div class="mix-fill" style="width:${fillW}%;">${segs}</div></div>
+      <span class="mix-ct">${c.count}</span><span class="mix-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Insight
+  const top2=counts.filter(c=>c.count>0).sort((a,b)=>b.count-a.count).slice(0,2);
+  if(top2.length>=2){
+    const combinedPct=Math.round((top2[0].count+top2[1].count)/regionTotal*100);
+    const ins=document.getElementById('donut-insight');
+    ins.style.display='block';
+    ins.innerHTML=`<i class="ti ti-info-circle" style="margin-right:6px;vertical-align:-2px;"></i><strong>${top2[0].r}</strong> and <strong>${top2[1].r}</strong> account for <strong>${combinedPct}%</strong> of all regional deliverables this period.`;
+  } else {
+    document.getElementById('donut-insight').style.display='none';
+  }
+}
+
+/* ── DATA SOURCE TIMESTAMPS ── */
+function renderDataSources(data){
+  const pill=document.getElementById('last-entry-pill');
+  const strip=document.getElementById('source-strip');
+  const today=new Date(); today.setHours(23,59,59,999);
+  const maxDate=(arr,key)=>{
+    let max=null;
+    (arr||[]).forEach(r=>{
+      const val=key?r[key]:(r.Date||r.Start||r.Uploaded||'');
+      const d=parseDMY(val||'');
+      if(d&&d<=today&&(!max||d>max)) max=d;
+    });
+    return max;
+  };
+  const fmt=d=>{if(!d) return '—'; return fmtDateShort(d);};
+  const stale=d=>{if(!d) return false; const diff=(today-d)/864e5; return diff>3;};
+  const sources=[
+    {label:'Promo Code', d:maxDate(data.promos)},
+    {label:'Banner',     d:maxDate(data.banners,'Uploaded Date')},
+    {label:'CRM',        d:maxDate(data.crm)},
+    {label:'Games',      d:maxDate(data.games)},
+    {label:'Adhoc',      d:maxDate(data.adhoc)},
+  ];
+  const staleCount=sources.filter(s=>stale(s.d)).length;
+  const allDates=sources.map(s=>s.d).filter(Boolean).sort((a,b)=>b-a);
+  const newest=allDates.length?fmt(allDates[0]):'—';
+  const aggDot=staleCount?(staleCount===sources.length?'fail':'stale'):'';
+  const summary=staleCount?`${staleCount} stale · newest ${newest}`:`newest ${newest}`;
+  const rows=sources.map(s=>`<div class="src-pop-row"><strong><span class="src-dot ${stale(s.d)?'stale':''}"></span>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></div>`).join('');
+  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last entry</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rows}</span></span>`;
+  strip.style.display='flex';
+}
+
+/* ── PULL HEALTH PILL (when sheet last got fresh data per source) ── */
+function renderPullHealth(rows){
+  const pill=document.getElementById('last-pull-pill');
+  if(!rows||!rows.length){pill.innerHTML='';return;}
+
+  const PULL_ORDER=['bo-ytd','bo-banners','cms-banners','new-games','utilisation','smartico','ft-ws1','ft-qpro1','ft-qp2'];
+  const SHORT={
+    'bo-ytd':'Promos','bo-banners':'Banners (BO)','cms-banners':'Banners (CMS)',
+    'new-games':'Games','utilisation':'Utilisation','smartico':'Smartico',
+    'ft-ws1':'FT WS1','ft-qpro1':'FT QPRO1','ft-qp2':'FT QP2',
+  };
+
+  const latest={};
+  rows.forEach(r=>{
+    if(!r.Instance||!r.Timestamp) return;
+    if(!latest[r.Instance]||r.Timestamp>latest[r.Instance].Timestamp) latest[r.Instance]=r;
+  });
+
+  const now=Date.now();
+  const items=PULL_ORDER.filter(k=>latest[k]).map(k=>{
+    const r=latest[k];
+    const ts=new Date(r.Timestamp).getTime();
+    const ageH=(now-ts)/3.6e6;
+    const ageStr=ageH<1?`${Math.round(ageH*60)}m ago`:ageH<24?`${Math.round(ageH)}h ago`:`${Math.round(ageH/24)}d ago`;
+    const failed=(r.Status||'').toUpperCase()!=='OK';
+    const stale=ageH>30;
+    const cls=failed?'fail':stale?'stale':'';
+    const detail=r.Detail?` <span style="color:var(--ink3);">— ${r.Detail}</span>`:'';
+    return {k,cls,failed,stale,ageH,ageStr,detail,label:SHORT[k]};
+  });
+
+  if(!items.length){pill.innerHTML='';return;}
+  const failCount=items.filter(i=>i.failed).length;
+  const staleCount=items.filter(i=>i.stale&&!i.failed).length;
+  const newest=Math.min(...items.map(i=>i.ageH));
+  const newestStr=newest<1?`${Math.round(newest*60)}m ago`:newest<24?`${Math.round(newest)}h ago`:`${Math.round(newest/24)}d ago`;
+  const aggDot=failCount?'fail':staleCount?'stale':'';
+  const summary=failCount?`${failCount} failed`:staleCount?`${staleCount} stale`:`all OK · ${newestStr}`;
+  const rowsHtml=items.map(i=>`<div class="src-pop-row"><strong><span class="src-dot ${i.cls}"></span>${i.label}</strong><span class="src-ts">${i.ageStr}${i.detail}</span></div>`).join('');
+  pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last pull</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rowsHtml}</span></span>`;
+}
+
+/* ── BANNER HEALTH PILL ── */
+function renderBannerHealth(rows){
+  const pill=document.getElementById('banner-health-pill');
+  if(!pill) return;
+  if(!rows||!rows.length){
+    pill.innerHTML=`<span class="src-pill" onclick="openRecordSection('rec-banner-health')" style="cursor:pointer;" title="No banner issues"><span class="src-dot"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">all clear</span></span>`;
+    return;
+  }
+  const TYPE_LABEL={
+    'TOO_FEW_BANNERS':'too few',
+    'OUT_OF_ORDER':'out of order',
+    'NOT_ACTIVATED':'not activated',
+    'ALREADY_EXPIRED':'already expired',
+    'EXPIRING_SOON':'expiring soon',
+    'ENDS_BEFORE_CAMPAIGN':'ends before campaign',
+  };
+  const TYPE_ORDER=['TOO_FEW_BANNERS','OUT_OF_ORDER','NOT_ACTIVATED','ENDS_BEFORE_CAMPAIGN','EXPIRING_SOON','ALREADY_EXPIRED'];
+  const URGENT=new Set(['TOO_FEW_BANNERS','OUT_OF_ORDER','NOT_ACTIVATED','ENDS_BEFORE_CAMPAIGN']);
+  const counts={};
+  rows.forEach(r=>{const t=r.Type||'OTHER'; counts[t]=(counts[t]||0)+1;});
+  const urgentCount=Object.entries(counts).filter(([t])=>URGENT.has(t)).reduce((a,[,n])=>a+n,0);
+  const total=rows.length;
+  const aggDot=urgentCount?'fail':(total?'stale':'');
+  const summary=`${total} issue${total!==1?'s':''}${urgentCount?` · ${urgentCount} need action`:''}`;
+  const popRows=TYPE_ORDER.filter(t=>counts[t]).map(t=>{
+    const cls=URGENT.has(t)?'fail':'stale';
+    return `<div class="src-pop-row"><strong><span class="src-dot ${cls}"></span>${TYPE_LABEL[t]}</strong><span class="src-ts">${counts[t]}</span></div>`;
+  }).join('');
+  pill.innerHTML=`<span class="src-pill" onclick="openRecordSection('rec-banner-health')" style="cursor:pointer;" title="Click for details"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Banners</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${popRows}</span></span>`;
+}
+
+/* ── CRM STATUS (header) ── */
+function renderAutoHealth(rows){
+  const bar=document.getElementById('crm-status');
+  const dotsEl=document.getElementById('crm-dots');
+  const tsEl=document.getElementById('crm-ts');
+  if(!rows||!rows.length){bar.style.display='none';return;}
+
+  const dataRows=rows.filter(r=>r.Instance&&r.Instance!=='Instance');
+  if(!dataRows.length){bar.style.display='none';return;}
+
+  const ts=dataRows[0].Timestamp||'';
+  const tsFmt=fmtMYT(ts);
+  tsEl.textContent=tsFmt;
+
+  dotsEl.innerHTML=dataRows.map(r=>{
+    const st=(r.Status||'').toUpperCase();
+    const cls=st==='OK'?'crm-dot-ok':['EXPIRED','ERROR','MISSING','NO TOKEN'].includes(st)?'crm-dot-err':'crm-dot-warn';
+    const tip=`${r.Label||r.Instance}: ${st}${r.Detail?' — '+r.Detail:''}`;
+    return `<span class="crm-dot ${cls}" title="${tip}"></span>`;
+  }).join('');
+
+  bar.style.display='flex';
+}
+
+/* ── TEAM CAPACITY ── */
+function renderCapacity(){
+  const rows=UTIL.filter(u=>(u.Staff||'').toLowerCase()!=='total'&&(u.Staff||'').trim()&&!HIDDEN_STAFF.has(u.Staff));
+  const totalRow=UTIL.find(u=>(u.Staff||'').toLowerCase()==='total');
+  const avg=totalRow&&totalRow['% Utilisation']?parseFloat(totalRow['% Utilisation']):NaN;
+
+  const colorFor=p=>p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#94a3b8';
+  const pillFor=p=>p>=85?'pill-risk':p>=60?'pill-good':p>=40?'pill-warn':'pill-idle';
+  const pillText=p=>p>=85?'At capacity':p>=60?'Approaching capacity':p>=40?'Moderate':'Capacity available';
+
+  // Summary row
+  const summaryEl=document.getElementById('cap-summary-row');
+  if(!isNaN(avg)){
+    summaryEl.innerHTML=`
+      <div>
+        <div style="font-size:10.5px;color:var(--ink3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px;">Team avg</div>
+        <div style="font-size:36px;font-weight:700;letter-spacing:-.04em;line-height:1;color:${colorFor(avg)};">${avg.toFixed(0)}%</div>
+      </div>
+      <span class="pill ${pillFor(avg)}">${pillText(avg)}</span>`;
+  } else {
+    summaryEl.innerHTML='<div style="font-size:13px;color:var(--ink3);">No utilisation data</div>';
+  }
+
+  // Per-person bars
+  document.getElementById('cap-bars').innerHTML=rows.map(u=>{
+    const raw=(u['% Utilisation']||'').replace('%','').trim();
+    const p=parseFloat(raw);const leave=isNaN(p);
+    const w=leave?0:Math.min(100,p);
+    const notesTxt=(u.Notes||'').trim();
+    const isResigned=RESIGNED_STAFF.has(u.Staff);
+    // Build remark: parse "actual / expected" written by pull-utilisation.mjs
+    let remark='';
+    const slashMatch=notesTxt.match(/^([\d.]+)h\s*\/\s*([\d.]+)h/);
+    if(slashMatch&&!leave){
+      remark=`${Math.round(parseFloat(slashMatch[1]))}h / ${Math.round(parseFloat(slashMatch[2]))}h`;
+    } else if(notesTxt&&!/^\d/.test(notesTxt)){
+      remark=notesTxt;
+    }
+    const barColor=isResigned?'#cbd2dc':(leave?'#cbd2dc':colorFor(p));
+    const valColor=isResigned?'var(--ink3)':(leave?'var(--ink3)':colorFor(p));
+    const nameBadge=isResigned?` <span style="font-size:8px;background:var(--line);color:var(--ink3);padding:1px 4px;border-radius:3px;font-weight:600;letter-spacing:.02em;vertical-align:2px;">resigned</span>`:'';
+    return `<div class="cap-row"${isResigned?' style="opacity:0.55;"':''}>
+      <span class="cap-name" style="${isResigned?'color:var(--ink3);':''}">${u.Staff}${nameBadge}</span>
+      <span class="cap-track"><span class="cap-fill" style="width:${w}%;background:${barColor};"></span></span>
+      <span class="cap-val" style="color:${valColor};">${leave?'—':p.toFixed(0)+'%'}</span>
+      <span style="font-size:10.5px;color:var(--ink3);min-width:0;white-space:nowrap;">${remark}</span>
+    </div>`;
+  }).join('');
+
+  // Highlights — exclude resigned staff
+  const sorted=rows.filter(u=>!RESIGNED_STAFF.has(u.Staff)&&!isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))))
+    .sort((a,b)=>parseFloat(b['% Utilisation'])-parseFloat(a['% Utilisation']));
+  const highest=sorted[0];
+  const lowest=sorted[sorted.length-1];
+  const onLeave=rows.filter(u=>!RESIGNED_STAFF.has(u.Staff)&&isNaN(parseFloat((u['% Utilisation']||'').replace('%',''))));
+  const notes=[];
+  if(highest&&sorted.length>1){
+    notes.push(`<div class="cap-note-item" style="background:var(--risk-soft);color:var(--risk);"><i class="ti ti-arrow-up"></i><span>Highest: ${highest.Staff} at ${parseFloat(highest['% Utilisation']).toFixed(0)}%</span></div>`);
+  }
+  if(lowest&&sorted.length>1&&lowest!==highest){
+    notes.push(`<div class="cap-note-item" style="background:var(--good-soft);color:var(--good);"><i class="ti ti-arrow-down"></i><span>Lowest: ${lowest.Staff} at ${parseFloat(lowest['% Utilisation']).toFixed(0)}%</span></div>`);
+  }
+  onLeave.forEach(u=>notes.push(`<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-moon"></i><span>${u.Staff} — on leave</span></div>`));
+  document.getElementById('cap-highlights').innerHTML=notes.join('');
+  if(_capTab==='weekly') renderWeeklyCapacity();
+}
+
+function switchCapTab(tab){
+  _capTab=tab;
+  document.getElementById('cap-tab-ytd').classList.toggle('active',tab==='ytd');
+  document.getElementById('cap-tab-weekly').classList.toggle('active',tab==='weekly');
+  document.getElementById('cap-ytd-view').style.display=tab==='ytd'?'':'none';
+  document.getElementById('cap-weekly-view').style.display=tab==='weekly'?'':'none';
+  if(tab==='weekly') renderWeeklyCapacity();
+}
+
+function isoWeekNum(d){
+  const t=new Date(+d);t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+4-(t.getDay()||7));
+  const y1=new Date(t.getFullYear(),0,1);
+  return Math.ceil(((t-y1)/864e5+1)/7);
+}
+function fmtWeekLabel(wKey){
+  const start=new Date(wKey);
+  const end=new Date(start);end.setDate(start.getDate()+6);
+  const wn=isoWeekNum(start);
+  return {wn,label:`W${wn}`,range:`${fmtDateShort(start)}–${fmtDateShort(end)}`,full:`W${wn} (${fmtDateShort(start)}–${fmtDateShort(end)})`};
+}
+function thisWeekMonday(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-(d.getDay()+6)%7);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function renderWeeklyCapacity(){
+  const container=document.getElementById('cap-weekly-grid');
+  const wkData=(_fullData&&_fullData.utilWeekly)||[];
+  if(!wkData.length){
+    container.innerHTML='<div class="empty-state"><i class="ti ti-calendar-stats"></i>No weekly data yet — run pull-utilisation.mjs --write to generate.</div>';
+    return;
+  }
+  // Build week → staff → hours map
+  const staffOrder=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
+  let weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  // Apply date filter: include a week if its Monday falls within the selected range
+  if(_filterFrom||_filterTo){
+    weeks=weeks.filter(w=>{
+      const d=new Date(w);
+      if(_filterFrom&&d<_filterFrom) return false;
+      if(_filterTo&&d>_filterTo) return false;
+      return true;
+    });
+  } else {
+    weeks=weeks.slice(-8); // default: last 8 weeks
+  }
+  const wm={};
+  const we={}; // week → staff → expected hours (from pull script; falls back to 40)
+  wkData.forEach(r=>{
+    if(!r.Week||!r.Staff) return;
+    if(!wm[r.Week]) wm[r.Week]={};
+    wm[r.Week][r.Staff]=parseFloat(r.Hours)||0;
+    if(r.Expected!==undefined&&r.Expected!==''){
+      if(!we[r.Week]) we[r.Week]={};
+      we[r.Week][r.Staff]=parseFloat(r.Expected)||0;
+    }
+  });
+  const displayStaff=staffOrder.filter(s=>!HIDDEN_STAFF.has(s));
+  const colorFor=h=>{const p=h/40*100;return p>=85?'var(--risk)':p>=60?'var(--good)':p>=40?'var(--warn)':'#cbd2dc';};
+
+  // Per-staff tracking start (first we week) and end (last we week, for resigned).
+  // Computed from ALL wkData, not just the filtered display window.
+  const allWkDataWeeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  const staffStart={};const staffEnd={};
+  staffOrder.forEach(s=>{
+    const active=allWkDataWeeks.filter(w=>we[w]?.[s]!==undefined);
+    if(active.length){staffStart[s]=active[0];staffEnd[s]=active[active.length-1];}
+  });
+
+  // Week headers: "W24 · 15–21 Jun"
+  let html='<table class="wk-tbl"><thead><tr><th>Staff</th>'+weeks.map(w=>{
+    const wl=fmtWeekLabel(w);
+    return `<th style="white-space:nowrap;">${wl.label}<br><span style="font-size:9px;font-weight:400;opacity:.7;">${wl.range}</span></th>`;
+  }).join('')+'<th style="border-left:1px solid var(--line);">Total</th></tr></thead><tbody>';
+
+  displayStaff.forEach(staff=>{
+    const isResigned=RESIGNED_STAFF.has(staff);
+    const weekCells=weeks.map(w=>{
+      const h=wm[w]?.[staff];
+      if(h===undefined) return `<td class="wk-cell-nodata" title="No data captured yet">no data</td>`;
+      if(h===0) return `<td class="wk-cell-0" title="0h">—</td>`;
+      return `<td style="color:${colorFor(h)};" title="${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
+    }).join('');
+    const totalActual=weeks.reduce((s,w)=>{const h=wm[w]?.[staff];return s+(h!==undefined?h:0);},0);
+    const totalExp=weeks.reduce((s,w)=>{const e=we[w]?.[staff];return s+(e!==undefined?e:0);},0);
+    const tc=weeks.length?colorFor(totalActual/weeks.length):'#cbd2dc';
+    // Name cell: staff name + tracking window annotation
+    const sw=staffStart[staff],ew=staffEnd[staff];
+    const startLbl=sw?fmtWeekLabel(sw):null;
+    const endLbl=ew?fmtWeekLabel(ew):null;
+    const trackSpan=startLbl
+      ? `<div style="font-size:9px;color:var(--ink3);font-weight:400;margin-top:2px;line-height:1.3;">`
+        +(isResigned&&endLbl?`${startLbl.label}–${endLbl.label} · ${startLbl.range.split('–')[0].trim()}–${endLbl.range.split('–')[1].trim()}`:`from ${startLbl.label} · ${startLbl.range}`)
+        +`</div>`
+      : '';
+    const resignedBadge=isResigned?`<span style="display:inline-block;margin-left:6px;font-size:8px;padding:1px 4px;border-radius:3px;background:var(--line);color:var(--ink3);font-weight:600;vertical-align:2px;letter-spacing:.02em;">resigned</span>`:'';
+    const nameCell=`<td style="${isResigned?'color:var(--ink3);':''}">${staff}${resignedBadge}${trackSpan}</td>`;
+    html+=`<tr${isResigned?' style="opacity:0.55;"':''}>${nameCell}${weekCells}<td style="border-left:1px solid var(--line);font-weight:600;color:${tc};white-space:nowrap;">${Math.round(totalActual)}h / ${totalExp}h</td></tr>`;
+  });
+
+  // Team avg row — uses full staffOrder (including resigned members for their active weeks)
+  const avgCells=weeks.map(w=>{
+    const activeStaff=staffOrder.filter(s=>we[w]?.[s]!==undefined);
+    if(!activeStaff.length) return `<td class="wk-cell-0">—</td>`;
+    const weekTeamExp=activeStaff.reduce((s,st)=>s+(we[w][st]||0),0);
+    const weekTeamAct=activeStaff.reduce((s,st)=>s+(wm[w]?.[st]||0),0);
+    const avg=weekTeamExp>0?weekTeamAct/weekTeamExp*100:0;
+    const c=avg>=85?'var(--risk)':avg>=60?'var(--good)':avg>=40?'var(--warn)':'var(--ink3)';
+    return `<td style="font-weight:700;color:${c};" title="${avg.toFixed(1)}% team avg">${avg.toFixed(0)}%</td>`;
+  }).join('');
+  const teamTotalActual=staffOrder.reduce((sum,s)=>sum+weeks.reduce((ws,w)=>{const h=wm[w]?.[s];return ws+(h!==undefined?h:0);},0),0);
+  const teamTotalExp=staffOrder.reduce((s,st)=>s+weeks.reduce((ws,w)=>{const e=we[w]?.[st];return ws+(e!==undefined?e:0);},0),0);
+  const teamPct=teamTotalExp?teamTotalActual/teamTotalExp*100:0;
+  const ttc=teamPct>=85?'var(--risk)':teamPct>=60?'var(--good)':teamPct>=40?'var(--warn)':'var(--ink3)';
+  html+=`<tr class="wk-avg-row"><td style="font-weight:700;color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;">Team avg</td>${avgCells}<td style="border-left:1px solid var(--line);font-weight:700;color:${ttc};white-space:nowrap;">${Math.round(teamTotalActual)}h / ${teamTotalExp}h</td></tr>`;
+  html+='</tbody></table>';
+
+  // Notice 1: current week not yet in data (pull script hasn't run)
+  const latestDataWeek=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort().pop()||'';
+  const curMon=thisWeekMonday();
+  if(latestDataWeek<curMon){
+    const wl=fmtWeekLabel(curMon);
+    html+=`<div class="wk-missing-notice" style="background:var(--line);color:var(--ink2);"><i class="ti ti-clock"></i><div>
+      <strong>No data captured yet for ${wl.label}</strong>
+      <div style="opacity:.8;">${wl.range} — run <code style="font-size:10px;background:var(--bg);padding:1px 5px;border-radius:4px;">pull-utilisation.mjs --write</code> to refresh</div>
+    </div></div>`;
+  }
+
+  // Notice 2a: staff missing from utilisation tracker entirely (no expected hours for any displayed week)
+  const noTracker=displayStaff.filter(s=>!RESIGNED_STAFF.has(s)&&!weeks.some(w=>we[w]?.[s]!==undefined));
+  if(noTracker.length){
+    html+=`<div class="wk-missing-notice" style="background:var(--line);color:var(--ink2);"><i class="ti ti-user-off"></i><div>
+      <strong>Not yet in utilisation tracker</strong>
+      <div style="opacity:.8;">${noTracker.join(', ')} — add their Work Hours Tracker sheets to pull-utilisation.mjs</div>
+    </div></div>`;
+  }
+
+  // Notice 2b: staff with expected hours in some weeks but no actual hours logged (genuine gap)
+  const missing={};
+  displayStaff.forEach(staff=>{
+    weeks.forEach(w=>{
+      if(we[w]?.[staff]!==undefined && wm[w]?.[staff]===undefined){
+        if(!missing[staff]) missing[staff]=[];
+        missing[staff].push(fmtWeekLabel(w).full);
+      }
+    });
+  });
+  const missingEntries=Object.entries(missing);
+  if(missingEntries.length){
+    html+=`<div class="wk-missing-notice"><i class="ti ti-alert-triangle"></i><div>
+      <strong>Incomplete data — hours not submitted</strong>
+      ${missingEntries.map(([s,dates])=>`<div><span style="font-weight:600;">${s}:</span> from ${dates[0]}</div>`).join('')}
+    </div></div>`;
+  }
+
+  container.innerHTML=html;
+}
+
+const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Michelle'];
+const HIDDEN_STAFF=new Set([]); // no one hidden
+const RESIGNED_STAFF=new Set(['Michelle']); // shown in muted style; still counted in team avg for their active weeks
+
+function calcWeeklyTeamUtil(){
+  const wkData=(_fullData&&_fullData.utilWeekly)||[];
+  if(!wkData.length) return NaN;
+  let weeks=[...new Set(wkData.map(r=>r.Week).filter(Boolean))].sort();
+  if(_filterFrom||_filterTo){
+    weeks=weeks.filter(w=>{
+      const d=new Date(w);
+      if(_filterFrom&&d<_filterFrom) return false;
+      if(_filterTo&&d>_filterTo) return false;
+      return true;
+    });
+  } else {
+    weeks=weeks.slice(-8);
+  }
+  if(!weeks.length) return NaN;
+  const wm={};
+  const we={};
+  wkData.forEach(r=>{
+    if(!r.Week||!r.Staff) return;
+    if(!wm[r.Week]) wm[r.Week]={};
+    wm[r.Week][r.Staff]=parseFloat(r.Hours||0)||0;
+    if(r.Expected!==undefined&&r.Expected!==''){
+      if(!we[r.Week]) we[r.Week]={};
+      we[r.Week][r.Staff]=parseFloat(r.Expected)||0;
+    }
+  });
+  const staff=TRACKERS_ORDER.filter(s=>wkData.some(r=>r.Staff===s));
+  if(!staff.length) return NaN;
+  let totalH=0,totalExp=0;
+  for(const w of weeks){
+    for(const s of staff){
+      const exp=we[w]?.[s];
+      if(exp===undefined) continue; // pre-join / post-resignation / untracked week → skip
+      totalH+=(wm[w]?.[s]||0);
+      totalExp+=exp;
+    }
+  }
+  return totalExp>0?totalH/totalExp*100:NaN;
+}
+
+/* ── TRENDS ── */
+function renderTrends(){
+  if(!_fullData) return;
+  const weeks=buildWeeklyTotals(build(applyDateFilter({..._fullData,adhoc:_fullData.adhoc||[]})));
+
+  if(_trendChart){_trendChart.destroy();_trendChart=null;}
+
+  if(weeks.length===0){
+    document.getElementById('trend-container').innerHTML='<div class="trend-placeholder"><i class="ti ti-chart-line" style="display:block;font-size:28px;opacity:.4;margin-bottom:8px;"></i>No historical data yet — will populate as weeks accumulate.</div>';
+    return;
+  }
+
+  // Restore canvas if replaced by placeholder
+  if(!document.getElementById('trend-canvas')){
+    document.getElementById('trend-container').innerHTML='<canvas id="trend-canvas"></canvas>';
+  }
+
+  const legend=[
+    {label:'Total',color:'#4c6ef5'},
+    {label:'Promo Code',color:'#f43f5e'},
+    {label:'CRM',color:'#0ca678'},
+    {label:'Banner',color:'#f59e0b'},
+    {label:'Game',color:'#8b5cf6'},
+    {label:'Adhoc',color:'#94a3b8'},
+  ];
+  document.getElementById('trend-legend').innerHTML=legend.map(l=>
+    `<div class="trend-legend-item"><div class="trend-legend-dot" style="background:${l.color};"></div>${l.label}</div>`
+  ).join('');
+
+  const sub=(c,a)=>({backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointBackgroundColor:c,borderColor:c,borderWidth:1.5,borderDash:[4,3],...a});
+  const ctx=document.getElementById('trend-canvas').getContext('2d');
+  _trendChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:weeks.map(w=>w.label),
+      datasets:[
+        {label:'Total',data:weeks.map(w=>w.total),borderColor:'#4c6ef5',backgroundColor:'rgba(76,110,245,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#4c6ef5',borderWidth:2},
+        sub('#f43f5e',{label:'Promo Code',data:weeks.map(w=>w.promo)}),
+        sub('#0ca678',{label:'CRM',data:weeks.map(w=>w.crm)}),
+        sub('#f59e0b',{label:'Banner',data:weeks.map(w=>w.banner)}),
+        sub('#8b5cf6',{label:'Game',data:weeks.map(w=>w.game)}),
+        sub('#94a3b8',{label:'Adhoc',data:weeks.map(w=>w.adhoc)}),
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}: ${ctx.raw}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:'#9aa1ad'}},
+        y:{beginAtZero:true,grid:{color:'#eceef1'},ticks:{font:{size:11},color:'#9aa1ad',precision:0}}
+      }
+    }
+  });
+}
+
+/* ── COVERAGE DETAIL (drill-down) ── */
+function renderCoverageDetail(total, regionList, regionsSet){
+  const brandCounts=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1]);
+  const rc=Object.entries(countBy(regionList.map(r=>({r})),x=>x.r)).sort((a,b)=>b[1]-a[1]);
+  const regTotal=regionList.length;
+  bars(document.getElementById('brand-bars'),brandCounts,total,C_BRAND,{click:true});
+  document.getElementById('brand-bars').onclick=e=>{const el=e.target.closest('.bar[data-key]');if(el){document.getElementById('coverage-section').style.display='';drillBrand(decodeURIComponent(el.dataset.key));}};
+  bars(document.getElementById('region-bars'),rc,regTotal,C_REGION,{pct:true,click:true});
+  document.getElementById('region-bars').onclick=e=>{const el=e.target.closest('.bar[data-key]');if(el){document.getElementById('coverage-section').style.display='';drillRegion(decodeURIComponent(el.dataset.key));}};
+}
+
+function drillBrand(brand){
+  const items=DELIV.filter(d=>d.brand===brand);
+  const c=t=>items.filter(d=>d.type===t).length;
+  const regions=uniq(items.flatMap(d=>d.regions));
+  const el=document.getElementById('brand-drill');
+  el.innerHTML=`<div class="dt"><i class="ti ti-building-store" style="color:${C_BRAND}"></i> ${brand} — ${items.length} deliverables <span class="x" onclick="closeDrill('brand')">✕ close</span></div>
+    <div class="mini-grid">
+      <div class="mini"><div class="mv">${c('Banner')}</div><div class="ml">Banners</div></div>
+      <div class="mini"><div class="mv">${c('Promo Code')}</div><div class="ml">Promo Codes</div></div>
+      <div class="mini"><div class="mv">${c('CRM')}</div><div class="ml">CRM</div></div>
+      <div class="mini"><div class="mv">${c('Game')}</div><div class="ml">Games</div></div>
+    </div>
+    <div class="sub-h">Regions</div><div class="chips">${regions.map(r=>`<span class="chip">${r}</span>`).join('')||'<span class="chip">—</span>'}</div>`;
+  el.classList.add('show');
+  document.querySelectorAll('#brand-bars .bar').forEach(b=>b.classList.toggle('active',decodeURIComponent(b.dataset.key||'')===brand));
+}
+
+function drillRegion(region){
+  const items=DELIV.filter(d=>d.regions.includes(region));
+  const brands=uniq(items.map(d=>d.brand).filter(b=>b&&b!=='ALLBRANDS')).sort();
+  const camps=uniq(items.map(d=>d.campaign).filter(Boolean));
+  const c=t=>items.filter(d=>d.type===t).length;
+  const el=document.getElementById('region-drill');
+  el.innerHTML=`<div class="dt"><i class="ti ti-world" style="color:${C_REGION}"></i> ${region} — ${items.length} deliverables <span class="x" onclick="closeDrill('region')">✕ close</span></div>
+    <div class="mini-grid">
+      <div class="mini"><div class="mv">${c('Banner')}</div><div class="ml">Banners</div></div>
+      <div class="mini"><div class="mv">${c('Promo Code')}</div><div class="ml">Promo Codes</div></div>
+      <div class="mini"><div class="mv">${c('CRM')}</div><div class="ml">CRM</div></div>
+      <div class="mini"><div class="mv">${c('Game')}</div><div class="ml">Games</div></div>
+    </div>
+    <div class="sub-h">Brands (${brands.length})</div><div class="chips">${brands.map(b=>`<span class="chip">${b}</span>`).join('')}</div>
+    <div class="sub-h">Campaigns (${camps.length})</div><div class="chips">${camps.slice(0,12).map(x=>`<span class="chip">${x}</span>`).join('')}${camps.length>12?`<span class="chip">+${camps.length-12} more</span>`:''}</div>`;
+  el.classList.add('show');
+  document.querySelectorAll('#region-bars .bar').forEach(b=>b.classList.toggle('active',decodeURIComponent(b.dataset.key||'')===region));
+}
+
+function closeDrill(which){
+  document.getElementById(which+'-drill').classList.remove('show');
+  document.querySelectorAll('#'+which+'-bars .bar').forEach(b=>b.classList.remove('active'));
+}
+
+/* ── SORT / FILTER HELPERS ── */
+function parseAnyDate(s){
+  if(!s)return null; s=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s);
+  return parseDMY(s);
+}
+function applySort(rows,st){
+  if(!st.col)return rows;
+  return [...rows].sort((a,b)=>{
+    const av=String(a[st.col]||''),bv=String(b[st.col]||'');
+    const ad=parseAnyDate(av),bd=parseAnyDate(bv);
+    const cmp=ad&&bd?ad-bd:av.localeCompare(bv,undefined,{numeric:true});
+    return st.dir==='asc'?cmp:-cmp;
+  });
+}
+function toggleSort(st,col){
+  if(st.col===col)st.dir=st.dir==='asc'?'desc':'asc';
+  else{st.col=col;st.dir='asc';}
+}
+function thHtml(label,field,st,fn,w,right){
+  const active=st.col===field;
+  const icon=active?(st.dir==='asc'?'▲':'▼'):'⇕';
+  const op=active?'1':'0.25';
+  const s=(w?'width:'+w+';':'')+'cursor:pointer;user-select:none;white-space:nowrap;'+(right?'text-align:right;':'');
+  return '<th style="'+s+'" onclick="'+fn+'(\''+field+'\')">'
+       +label+'<span style="font-size:0.65em;opacity:'+op+';margin-left:3px;">'+icon+'</span></th>';
+}
+function sortBanner(col){toggleSort(bSort,col);renderBanner();}
+function sortPromo(col){toggleSort(pSort,col);renderPromo();}
+function sortCrm(col){toggleSort(cSort,col);renderCrm();}
+function sortGame(col){toggleSort(gSort,col);renderGames();}
+function sortAdhoc(col){toggleSort(aSort,col);renderAdhoc();}
+
+/* ── DETAILED RECORDS ── */
+function renderRecords(){
+  const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=rawData.games||[];
+  document.getElementById('rc-banner').textContent=`${b.length} records`;
+  document.getElementById('rc-promo').textContent=`${p.length} records`;
+  document.getElementById('rc-crm').textContent=`${c.length} records`;
+  document.getElementById('rc-game').textContent=`${g.length} records`;
+
+  // Banner filters
+  const bfc=document.getElementById('bf-c'),bfb=document.getElementById('bf-b'),bfr=document.getElementById('bf-r'),bfu=document.getElementById('bf-u');
+  bfc.innerHTML='<option value="all">All campaigns</option>'+uniq(b.map(x=>x['Banner Title'])).map(x=>`<option value="${x}">${x.length>40?x.slice(0,40)+'…':x}</option>`).join('');
+  bfb.innerHTML='<option value="all">All brands</option>'+uniq(b.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfr.innerHTML='<option value="all">All regions</option>'+uniq(b.map(x=>x.Region).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfu.innerHTML='<option value="all">All uploaded by</option>'+uniq(b.map(x=>x['Uploaded By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  bfc.onchange=bfb.onchange=bfr.onchange=bfu.onchange=()=>{bShowAll=false;renderBanner();};
+  document.getElementById('bm').onclick=()=>{bShowAll=!bShowAll;renderBanner();};
+  renderBanner();
+
+  // Promo filters
+  const pfb=document.getElementById('pf-b'),pfr=document.getElementById('pf-r'),pft=document.getElementById('pf-t');
+  pfb.innerHTML='<option value="all">All brands</option>'+uniq(p.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  pfr.innerHTML='<option value="all">All regions</option>'+uniq(p.map(x=>x.Region).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  pft.innerHTML='<option value="all">All types</option>'+uniq(p.map(x=>x.Type).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  document.getElementById('pf-q').oninput=()=>{pShowAll=false;renderPromo();};
+  pfb.onchange=pfr.onchange=pft.onchange=()=>{pShowAll=false;renderPromo();};
+  document.getElementById('pm').onclick=()=>{pShowAll=!pShowAll;renderPromo();};
+  renderPromo();
+
+  // CRM filters — CRM Tool: "FastTrack (all)" umbrella + individual instances from data
+  const cfc=document.getElementById('cf-c'),cfb=document.getElementById('cf-b'),cfa=document.getElementById('cf-a'),cfs=document.getElementById('cf-s');
+  const crmTools=uniq(c.map(x=>x['CRM Tool']).filter(Boolean));
+  const hasFt=crmTools.some(t=>t.startsWith('FastTrack'));
+  cfc.innerHTML='<option value="all">All tools</option>'
+    +(hasFt?'<option value="FastTrack">FastTrack (all)</option>':'')
+    +crmTools.map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfb.innerHTML='<option value="all">All brands</option>'+uniq(c.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfa.innerHTML='<option value="all">All assignees</option>'+uniq(c.map(x=>x['Created By']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  cfs.innerHTML='<option value="all">All segments</option>'+uniq(c.map(x=>x['Segment Name']).filter(Boolean)).map(x=>`<option value="${x}">${x.length>50?x.slice(0,50)+'…':x}</option>`).join('');
+  cfc.onchange=cfb.onchange=cfa.onchange=cfs.onchange=()=>{cShowAll=false;renderCrm();};
+  document.getElementById('cm').onclick=()=>{cShowAll=!cShowAll;renderCrm();};
+  renderCrm();
+
+  // Games filters
+  const gfb=document.getElementById('gf-b'),gfp=document.getElementById('gf-p'),gfcat=document.getElementById('gf-cat');
+  gfb.innerHTML='<option value="all">All brands</option>'+uniq(g.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  gfp.innerHTML='<option value="all">All providers</option>'+uniq(g.map(x=>x['Game Provider']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  gfcat.innerHTML='<option value="all">All categories</option>'+uniq(g.map(x=>x['Game Category']).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
+  document.getElementById('gf-q').oninput=()=>{gShowAll=false;renderGames();};
+  gfb.onchange=gfp.onchange=gfcat.onchange=()=>{gShowAll=false;renderGames();};
+  document.getElementById('gm').onclick=()=>{gShowAll=!gShowAll;renderGames();};
+  renderGames();
+}
+
+function renderBanner(){
+  let rows=rawData.banners||[];
+  const fc=document.getElementById('bf-c').value,fb=document.getElementById('bf-b').value,fr=document.getElementById('bf-r').value,fu=document.getElementById('bf-u').value;
+  if(fc!=='all')rows=rows.filter(r=>r['Banner Title']===fc);
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(fr!=='all')rows=rows.filter(r=>r.Region===fr);
+  if(fu!=='all')rows=rows.filter(r=>r['Uploaded By']===fu);
+  rows=applySort(rows,bSort);
+  const shown=bShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('b-th').innerHTML='<tr>'
+    +thHtml('Campaign','Banner Title',bSort,'sortBanner','34%')
+    +thHtml('Brand','Brand',bSort,'sortBanner','11%')
+    +thHtml('Region','Region',bSort,'sortBanner','9%')
+    +thHtml('Uploaded By','Uploaded By',bSort,'sortBanner','17%')
+    +thHtml('Status','Status',bSort,'sortBanner','29%',true)+'</tr>';
+  document.getElementById('bt').innerHTML=shown.map(r=>
+    `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+  const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function renderPromo(){
+  let rows=rawData.promos||[];
+  const fq=(document.getElementById('pf-q').value||'').toLowerCase();
+  const fb=document.getElementById('pf-b').value,fr=document.getElementById('pf-r').value,ft=document.getElementById('pf-t').value;
+  if(fq)rows=rows.filter(r=>String(r.Code||'').toLowerCase().includes(fq));
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(fr!=='all')rows=rows.filter(r=>r.Region===fr);
+  if(ft!=='all')rows=rows.filter(r=>r.Type===ft);
+  rows=applySort(rows,pSort);
+  const shown=pShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('p-th').innerHTML='<tr>'
+    +thHtml('Date','Date',pSort,'sortPromo','12%')
+    +thHtml('Code','Code',pSort,'sortPromo','32%')
+    +thHtml('Brand','Brand',pSort,'sortPromo','11%')
+    +thHtml('Region','Region',pSort,'sortPromo','13%')
+    +thHtml('Type','Type',pSort,'sortPromo','32%',true)+'</tr>';
+  document.getElementById('pt').innerHTML=shown.map(r=>
+    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
+  const m=document.getElementById('pm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=pShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function renderCrm(){
+  let rows=rawData.crm||[];
+  const fc=document.getElementById('cf-c').value,fb=document.getElementById('cf-b').value,fa=document.getElementById('cf-a').value,fs=document.getElementById('cf-s').value;
+  if(fc==='FastTrack')rows=rows.filter(r=>(r['CRM Tool']||'').startsWith('FastTrack'));
+  else if(fc!=='all')rows=rows.filter(r=>r['CRM Tool']===fc);
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(fa!=='all')rows=rows.filter(r=>r['Created By']===fa);
+  if(fs!=='all')rows=rows.filter(r=>r['Segment Name']===fs);
+  rows=applySort(rows,cSort);
+  const shown=cShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('c-th').innerHTML='<tr>'
+    +thHtml('Date','Date',cSort,'sortCrm','11%')
+    +thHtml('Brand','Brand',cSort,'sortCrm','10%')
+    +thHtml('Region','Region',cSort,'sortCrm','9%')
+    +thHtml('CRM Tool','CRM Tool',cSort,'sortCrm','16%')
+    +thHtml('Segment','Segment Name',cSort,'sortCrm','34%')
+    +thHtml('By','Created By',cSort,'sortCrm','20%',true)+'</tr>';
+  document.getElementById('ct').innerHTML=shown.map(r=>
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['CRM Tool']||''}</td><td style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Segment Name']||''}</td><td style="text-align:right;">${r['Created By']||''}</td></tr>`).join('');
+  const m=document.getElementById('cm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=cShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function renderGames(){
+  let rows=rawData.games||[];
+  const fq=(document.getElementById('gf-q').value||'').toLowerCase();
+  const fb=document.getElementById('gf-b').value,fp=document.getElementById('gf-p').value,fcat=document.getElementById('gf-cat').value;
+  if(fq)rows=rows.filter(r=>String(r['Game Name']||'').toLowerCase().includes(fq));
+  if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
+  if(fp!=='all')rows=rows.filter(r=>r['Game Provider']===fp);
+  if(fcat!=='all')rows=rows.filter(r=>r['Game Category']===fcat);
+  rows=applySort(rows,gSort);
+  const shown=gShowAll?rows:rows.slice(0,PAGE);
+  document.getElementById('g-th').innerHTML='<tr>'
+    +thHtml('Game','Game Name',gSort,'sortGame','35%')
+    +thHtml('Provider','Game Provider',gSort,'sortGame','18%')
+    +thHtml('Category','Game Category',gSort,'sortGame','18%')
+    +thHtml('Brand','Brand',gSort,'sortGame','29%',true)+'</tr>';
+  document.getElementById('gt').innerHTML=shown.map(r=>
+    `<tr><td>${r['Game Name']||''}</td><td style="color:var(--ink2);">${r['Game Provider']||''}</td><td style="color:var(--ink2);">${r['Game Category']||''}</td><td style="text-align:right;color:var(--ink2);">${r.Brand||''}</td></tr>`).join('');
+  const m=document.getElementById('gm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=gShowAll?'Show fewer':`Show all ${rows.length}`;
+}
+
+function sortBh(col){toggleSort(bhSort,col);renderBannerHealthRecords();}
+// Derive platform code (WS1/WS2/QPRO/QP2) from a Site id like 'qpro7' or 'qp2a' or 'ws1-classic-my'.
+function platformFromSite(site){
+  const s=(site||'').toLowerCase();
+  if(s.startsWith('qpro')) return 'QPRO';
+  if(s.startsWith('qp2')) return 'QP2';
+  if(s.startsWith('ws1')) return 'WS1';
+  if(s.startsWith('ws2')) return 'WS2';
+  return s.toUpperCase();
+}
+function renderBannerHealthRecords(){
+  const data=((_fullData&&_fullData.bannerHealth)||(rawData&&rawData.bannerHealth)||[])
+    .map(r=>({...r,Platform:platformFromSite(r.Site)}));
+  let rows=data.slice();
+  const ft=document.getElementById('bhf-t'),fb=document.getElementById('bhf-b');
+  if(ft&&fb){
+    const prevT=ft.value,prevB=fb.value;
+    const TYPE_LABEL={'TOO_FEW_BANNERS':'Too few banners','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Already expired','EXPIRING_SOON':'Expiring soon','ENDS_BEFORE_CAMPAIGN':'Ends before campaign'};
+    const types=uniq(data.map(x=>x.Type).filter(Boolean)).sort();
+    ft.innerHTML='<option value="all">All issue types</option>'+types.map(x=>`<option value="${x}">${TYPE_LABEL[x]||x}</option>`).join('');
+    fb.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Platform).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...ft.options].some(o=>o.value===prevT)) ft.value=prevT;
+    if([...fb.options].some(o=>o.value===prevB)) fb.value=prevB;
+    ft.onchange=fb.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
+    const mBtn=document.getElementById('bhm');
+    if(mBtn) mBtn.onclick=()=>{bhShowAll=!bhShowAll;renderBannerHealthRecords();};
+    if(ft.value!=='all') rows=rows.filter(r=>r.Type===ft.value);
+    if(fb.value!=='all') rows=rows.filter(r=>r.Platform===fb.value);
+  }
+  rows=applySort(rows,bhSort);
+  const cnt=document.getElementById('rc-banner-health');
+  if(cnt) cnt.textContent=`${rows.length} finding${rows.length!==1?'s':''}`;
+  const shown=bhShowAll?rows:rows.slice(0,PAGE);
+  const TYPE_BADGE={'TOO_FEW_BANNERS':'b-warn','OUT_OF_ORDER':'b-warn','NOT_ACTIVATED':'b-warn','ENDS_BEFORE_CAMPAIGN':'b-warn','EXPIRING_SOON':'b-warn','ALREADY_EXPIRED':'b-done'};
+  const TYPE_LABEL_S={'TOO_FEW_BANNERS':'Too few','OUT_OF_ORDER':'Out of order','NOT_ACTIVATED':'Not activated','ALREADY_EXPIRED':'Expired','EXPIRING_SOON':'Expiring','ENDS_BEFORE_CAMPAIGN':'Ends < campaign'};
+  const th=document.getElementById('bh-th');
+  const tb=document.getElementById('bht');
+  if(!th||!tb) return;
+  th.innerHTML='<tr>'
+    +thHtml('Issue','Type',bhSort,'sortBh','14%')
+    +thHtml('Brand','Platform',bhSort,'sortBh','10%')
+    +thHtml('Banner','Label',bhSort,'sortBh','42%')
+    +thHtml('Ends','End Date',bhSort,'sortBh','13%')
+    +thHtml('Detail','Detail',bhSort,'sortBh','21%',true)+'</tr>';
+  tb.innerHTML=shown.map(r=>{
+    const t=r.Type||'';
+    const cls=TYPE_BADGE[t]||'b-warn';
+    return `<tr><td><span class="badge ${cls}">${TYPE_LABEL_S[t]||t}</span></td><td style="color:var(--ink2);">${r.Platform||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Label||'').replace(/"/g,'&quot;')}">${r.Label||''}</td><td style="color:var(--ink2);">${r['End Date']||''}</td><td style="text-align:right;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="${(r.Detail||'').replace(/"/g,'&quot;')}">${r.Detail||''}</td></tr>`;
+  }).join('');
+  const m=document.getElementById('bhm');
+  if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
+}
+
+function renderAdhoc(){
+  let rows=ADHOC;
+  const aft=document.getElementById('af-t'),afa=document.getElementById('af-a');
+  if(aft&&afa){
+    const prevT=aft.value,prevA=afa.value;
+    aft.innerHTML='<option value="all">All task types</option>'+uniq(ADHOC.map(x=>x['Task Type']).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    afa.innerHTML='<option value="all">All assignees</option>'+uniq(ADHOC.map(x=>x.Assignee).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...aft.options].some(o=>o.value===prevT)) aft.value=prevT;
+    if([...afa.options].some(o=>o.value===prevA)) afa.value=prevA;
+    aft.onchange=afa.onchange=()=>{aShowAll=false;renderAdhoc();};
+    document.getElementById('am').onclick=()=>{aShowAll=!aShowAll;renderAdhoc();};
+    if(aft.value!=='all') rows=rows.filter(r=>r['Task Type']===aft.value);
+    if(afa.value!=='all') rows=rows.filter(r=>r.Assignee===afa.value);
+  }
+  rows=applySort(rows,aSort);
+  const cnt=document.getElementById('rc-adhoc');
+  if(cnt) cnt.textContent=`${rows.length} records`;
+  const shown=aShowAll?rows:rows.slice(0,PAGE);
+  const th=document.getElementById('a-th');
+  const tb=document.getElementById('at');
+  if(!th||!tb) return;
+  th.innerHTML='<tr>'
+    +thHtml('Date','Date',aSort,'sortAdhoc','11%')
+    +thHtml('Task Type','Task Type',aSort,'sortAdhoc','22%')
+    +thHtml('Task','Task',aSort,'sortAdhoc','47%')
+    +thHtml('Assignee','Assignee',aSort,'sortAdhoc','20%',true)+'</tr>';
+  tb.innerHTML=shown.map(r=>
+    `<tr><td style="color:var(--ink2);">${r.Date||''}</td><td style="color:var(--ink2);">${r['Task Type']||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r.Task||''}</td><td style="text-align:right;">${r.Assignee||''}</td></tr>`).join('');
+  const m=document.getElementById('am');
+  if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=aShowAll?'Show fewer':`Show all ${rows.length}`;}
+}
+
+/* ── DEMO DATA (used when Sheets API is blocked on localhost) ── */
+function makeDemoData(){
+  const today=new Date(),brands=['QPRO1','QPRO2','QPRO5','QP2A','QP2B','QPRO11','QPRO3','QPRO7','MB8'],
+    regions=['MY','SG','ID','TH','KH'],types=['CRM','Banner','Promo Code','Game'],
+    members=['Jascinta','Elyssa','Alysa','Michelle','Wen','Bangun','Gaby','Wai Yip'];
+  function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+  function daysAgo(n){const d=new Date(today);d.setDate(d.getDate()-n);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();}
+  const promos=Array.from({length:48},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions)+' + '+rnd(regions),Code:'CODE'+String(i+1).padStart(3,'0'),Type:rnd(['Deposit','Free Credit','Free Spin'])}));
+  const banners=Array.from({length:22},(_,i)=>({Start:daysAgo(i%5),'Banner Title':'Campaign '+String.fromCharCode(65+i%8)+' – '+rnd(brands),Brand:rnd(brands),Region:rnd(regions),'Uploaded By':rnd(members),Status:rnd(['Uploaded','Pending','Completed'])}));
+  const crm=Array.from({length:87},(_,i)=>({Date:daysAgo(i%7),Brand:rnd(brands),Region:rnd(regions),'Campaign Name':['June Reload','Weekly Bonus','VIP Special','New Member','Cashback'][i%5],'Segment Name':'Seg-'+String(i+1).padStart(3,'0'),'Assigned By':rnd(members),Status:'Assigned'}));
+  const games=Array.from({length:14},(_,i)=>({Date:daysAgo(i%6),'Game Name':'Game Title '+String.fromCharCode(65+i),'Game Provider':['PP2','EVO','JILI','PGS','NETENT'][i%5],'Game Category':['Slots','Live','Crash'][i%3],Brand:rnd(['WS1/WS2','QPRO1','QP2A']),Status:'Added'}));
+  const utilisation=[
+    {Staff:'Jascinta','% Utilisation':'72%',Notes:''},
+    {Staff:'Elyssa','% Utilisation':'85%',Notes:''},
+    {Staff:'Alysa','% Utilisation':'55%',Notes:''},
+    {Staff:'Michelle','% Utilisation':'91%',Notes:''},
+    {Staff:'Wen','% Utilisation':''},
+    {Staff:'Bangun','% Utilisation':'68%',Notes:''},
+    {Staff:'Gaby','% Utilisation':'43%',Notes:''},
+    {Staff:'Total','% Utilisation':'69%',Notes:''},
+  ];
+  return{promos,banners,crm,games,utilisation,lastUpdated:new Date().toISOString(),_isDemo:true};
+}
+
+/* ── DATA LOAD ── */
+function rowsToObjects(values){
+  if(!values||values.length<2) return [];
+  const hdrs=values[0];
+  return values.slice(1).reduce((out,row)=>{
+    if(!row||row.every(c=>!c)) return out;
+    const obj={};let hasVal=false;
+    hdrs.forEach((h,j)=>{if(h){obj[h]=row[j]||'';if(row[j])hasVal=true;}});
+    if(hasVal) out.push(obj);
+    return out;
+  },[]);
+}
+let _to;
+function loadData(){
+  document.getElementById('refresh').disabled=true;
+  document.getElementById('loading').style.display='block';
+  document.getElementById('content').style.display='none';
+  document.getElementById('error').style.display='none';
+  clearTimeout(_to);
+  _to=setTimeout(()=>{
+    document.getElementById('loading').style.display='none';
+    document.getElementById('error').style.display='block';
+    document.getElementById('error').innerHTML='<div class="errbox">Request timed out. Try refreshing.</div>';
+    document.getElementById('refresh').disabled=false;
+  },15000);
+  // Step 1: discover which tabs actually exist (avoids 400 when optional tabs aren't created yet)
+  const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${SHEETS_API_KEY}&fields=sheets.properties.title`;
+  fetch(metaUrl,{referrerPolicy:'no-referrer'})
+    .then(r=>r.json())
+    .then(meta=>{
+      if(meta.error) throw new Error('Sheets API error: '+meta.error.message);
+      const existing=new Set((meta.sheets||[]).map(s=>s.properties.title));
+      const availIdx=TABS.map((t,i)=>existing.has(t)?i:-1).filter(i=>i>=0);
+      const availTabs=availIdx.map(i=>TABS[i]);
+      const availKeys=availIdx.map(i=>TAB_KEYS[i]);
+      const qr=availTabs.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
+      return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`,{referrerPolicy:'no-referrer'})
+        .then(r=>r.json())
+        .then(json=>({json,availKeys}));
+    })
+    .then(({json,availKeys})=>{
+      clearTimeout(_to);
+      if(json.error){
+        document.getElementById('loading').style.display='none';
+        document.getElementById('error').style.display='block';
+        document.getElementById('error').innerHTML=`<div class="errbox">Sheets API error: ${json.error.message}</div>`;
+        document.getElementById('refresh').disabled=false;
+        return;
+      }
+      const data={lastUpdated:new Date().toISOString()};
+      (json.valueRanges||[]).forEach((vr,i)=>{data[availKeys[i]]=rowsToObjects(vr.values);});
+      render(data);
+    })
+    .catch(err=>{
+      clearTimeout(_to);
+      document.getElementById('loading').style.display='none';
+      document.getElementById('error').style.display='block';
+      document.getElementById('error').innerHTML=`<div class="errbox">Failed to load: ${err.message}</div>`;
+      document.getElementById('refresh').disabled=false;
+    });
+}
+loadData();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>
+<script>
+(function initPicker(){
+  function weekStart(){
+    const d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1);
+    return new Date(new Date().setDate(diff));
+  }
+  const today=new Date(),yest=new Date(Date.now()-864e5);
+  const picker=new Litepicker({
+    element:document.getElementById('date-btn'),
+    singleMode:false,
+    numberOfMonths:2,
+    numberOfColumns:2,
+    autoApply:false,
+    showTooltip:true,
+    resetButton:true,
+    plugins:['ranges'],
+    ranges:{
+      position:'left',
+      customRanges:{
+        'Today':[today,today],
+        'Yesterday':[yest,yest],
+        'This Week':[weekStart(),today],
+        'Last 7 Days':[new Date(Date.now()-6*864e5),today],
+        'This Month':[new Date(today.getFullYear(),today.getMonth(),1),today],
+        'Last 30 Days':[new Date(Date.now()-29*864e5),today],
+        'Year to Date':[new Date(today.getFullYear(),0,1),today],
+      },
+    },
+    setup(p){
+      p.on('selected',(d1,d2)=>{
+        const f=new Date(d1.dateInstance);f.setHours(0,0,0,0);_filterFrom=f;
+        const t=new Date(d2.dateInstance);t.setHours(23,59,59,999);_filterTo=t;
+        const fmt=d=>fmtDate(d);
+        document.getElementById('date-label').textContent=fmt(_filterFrom)+' – '+fmt(d2.dateInstance);
+        rerender();
+      });
+      p.on('clear:selection',()=>{
+        _filterFrom=null;_filterTo=null;
+        document.getElementById('date-label').textContent='All dates';
+        rerender();
+      });
+    },
+  });
+  picker.setDateRange(weekStart(),today);
+  const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
+  const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
+})();
+
+/* ════════════ ESCALATION MODULE ════════════ */
+const ESC_ROWS=[
+ {tab:'Jan-Feb',date:'2026-01-30',agent:'Yeremia',code:'FT_PP_208FS_DEP100_C',plat:'QP2A/C/D',creator:'jascinta',cause:'Human Error',cat:'Member Group Missing',desc:'Member group not included for QP2A, C, D',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-01-31',agent:'Phearum',code:'FT_REL_299FS_HCV2_15X',plat:'',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after In-App message',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-01',agent:'Simon',code:'FC30_ADHOC_RET',plat:'QPRO3-MYR',creator:'garyhon',cause:'Unclassified',cat:'Duplicate Reward',desc:'Player got 2 similar promo codes within 30 minutes',status:''},
+ {tab:'Jan-Feb',date:'2026-02-01',agent:'Hem Makara',code:'REL_150FS_C_GOO_RET_190325',plat:'QPRO4-MYR',creator:'ryanlee',cause:'Unclassified',cat:'Duplicate Reward',desc:'Player got 2 similar promo codes within 30 minutes',status:''},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Fong/Rawi',code:'FC30_ADHOC_RET_300425',plat:'QP2C-MYR',creator:'garyhon',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Should be claimable once/day for 3 days; system only allowed once total',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Fong/Rawi',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QP2C-MYR',creator:'garyhon',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Should be claimable once/day for 3 days; system only allowed once total',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Sophath',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QPRO2',creator:'michelle',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after In-App message',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Ben',code:'F3_120%WELCOMEBONUS',plat:'',creator:'',cause:'Unclassified',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Jan-Feb',date:'2026-02-02',agent:'Reaksa',code:'FT_REL_DOUBLEDATE_FEB_150FS_8TO',plat:'QPRO2',creator:'michelle',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Amending Max Per Player Lifetime setting',status:''},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'So Meth',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'Sokmean',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-04',agent:'Phearum',code:'FT_REL_388FS_MCV2_5X',plat:'QPRO8',creator:'michelle91',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Wrong T&C promotion turnover multiplier',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Simon',code:'FT_ADHOC_REL_200FS_FOO_5X',plat:'QPRO8',creator:'michelle91',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Limit Provider Transfer Out was disabled',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'So Meth',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'CRM system limitation; player undetected; Day 3 manually assigned',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Phearum',code:'VM_DEP300_GET122_1X',plat:'QPRO1-IDR',creator:'michelle91',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Turnover not updated; PGS3 slot game was blacklisted',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Pichchanty',code:'FT_CNY_88FS_GOO_5X_DY4',plat:'WS1-SGD',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'CRM limitation; player undetected; Day 3 reward manually assigned',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-03',agent:'Pichchanty',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Reward not assigned after deposit',status:''},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'Phanit',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Unclassified',desc:'No elaboration recorded',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-05',agent:'Phanit',code:'FT_ADHOC_FC50_5X',plat:'WS1-SGD',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C max withdrawal clause needed amending',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'So Meth',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QP2B-MYR',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'No per-day claim limit; system allowed unlimited daily assignments',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-06',agent:'So Meth',code:'FT_CNY_88FS_FOO_5X',plat:'QP2A-MYR',creator:'michelle91',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Delayed reward assignment to member',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-08',agent:'Reaksa',code:'FT_CNY_88FS_FOO_5X',plat:'QPRO8-MYR',creator:'michelle91',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Amending Daily Max setting',status:''},
+ {tab:'Jan-Feb',date:'2026-02-08',agent:'Reaksa',code:'VM_FC_VARIABLE_5X',plat:'QPRO4-MYR',creator:'jordan',cause:'System Limitation',cat:'Wrong Promo Setting',desc:'Claim requires Last Deposit setting; amendment completed',status:''},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'Vathna',code:'REFERRAL_NEW_REFERRER',plat:'QPRO5-MYR',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Promotion set to Slots only; other categories not excluded in BO',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'So Meth',code:'FT_DY4_VIP_FC588_5X',plat:'WS1-MYR',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Member deposited before receiving promo message; deposits not counted',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-09',agent:'Chandy',code:'FT_DY4_VIP_FC588_5X',plat:'WS1-SGD',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Day 4 reward not credited despite meeting Day 1 deposit on 5 Feb',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Ben',code:'FT_CNY8_299FS_ACTIVE_HIGH',plat:'QP2B',creator:'',cause:'Human Error',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Vathna',code:'FT_CNY_99FS_ACTIVE_LOW',plat:'QPRO1-MYR',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Claim requires Last Deposit setting; amendment completed',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-10',agent:'Sophath',code:'VM_FC_288_8X',plat:'QPRO2',creator:'michelle',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'No promotion name set; turnover differs between message and BO settings',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-12',agent:'Phearum',code:'FT_CNY8_299FS_ACTIVE_HIGH',plat:'QPRO1-MYR',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member on Day 8 streak track received Day 3 reward instead',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-12',agent:'Hari',code:'FT_ADHOC_REL_200FS_GOO_5X',plat:'WS1-SGD',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Wrong T&C: incorrect expiry date and promotion validity period',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-16',agent:'Sokleang',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QPRO1-SGD',creator:'alysa',cause:'System Limitation',cat:'Duplicate Reward',desc:'Member received duplicate promotion',status:''},
+ {tab:'Jan-Feb',date:'2026-02-18',agent:'Phearum',code:'WELCOME-PP-SLOTS-108FS-OLYMP',plat:'QPRO1-MYR',creator:'ckay',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Inactive promo in MYR market still being assigned by system',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-13',agent:'So Meth',code:'FT_REL_DepBoost2_V1_2506',plat:'QP2A-MYR',creator:'elyssa',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'So Meth',code:'FT_CNY_299FS_ACTIVE_HIGH',plat:'QP2B-MYR',creator:'alysa',cause:'System Limitation',cat:'Duplicate Reward',desc:'System caused duplicate reward assignment',status:'Investigating'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'So Meth',code:'FT_CNY8_199FS_ACTIVE_MID',plat:'QP2B-MYR',creator:'alysa',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-19',agent:'Hari',code:'FT_REL_DepBoost_V2_2506',plat:'QP2A/B/C',creator:'',cause:'Human Error',cat:'Member Group Missing',desc:'Member not added to promotion member group',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-02-20',agent:'Sophath',code:'FT_REL_60PCT_8X',plat:'QPRO4-MYR',creator:'michelle91',cause:'Human Error',cat:'Game / Provider Not Added',desc:'JILI video slot blacklisted; turnover not updating as a result',status:''},
+ {tab:'Jan-Feb',date:'2026-02-26',agent:'Phearum',code:'VIP-UPGRADE-GOLD1',plat:'QPRO3-MYR',creator:'',cause:'System Limitation',cat:'Sync / Technical Issue',desc:'Member unable to transfer credit to BT Gaming',status:'Resolved'},
+ {tab:'Jan-Feb',date:'2026-10-05',agent:'Hari',code:'FT_REL_20PCT_10X',plat:'',creator:'',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C allowed Live Casino but LC not added to promotion settings',status:'Ongoing'},
+ {tab:'Mar',date:'2026-03-02',agent:'Vathna',code:'VM_DEP500_GET222_2X',plat:'QPRO1-IDR',creator:'michelle',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Wrong max claim limit configuration',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-05',agent:'Sokleang',code:'REL_288FS_GOO_220725',plat:'QPRO6-MYR',creator:'shernming',cause:'Human Error',cat:'Unclassified',desc:'No elaboration recorded',status:''},
+ {tab:'Mar',date:'2026-03-08',agent:'Reaksa',code:'FT_REL_DepBoost_88FS_FOO_V2',plat:'QPRO2-MYR/SGD',creator:'michelle',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Amending Max Per Player Lifetime setting',status:''},
+ {tab:'Mar',date:'2026-03-09',agent:'Ben',code:'REL_208FS_PP_FOO_040325',plat:'N/A',creator:'michelle',cause:'Unclassified',cat:'Wrong Promo Setting',desc:'Setting issue — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-12',agent:'Ben',code:'MATCH_BONUS_50PCT',plat:'N/A',creator:'',cause:'Unclassified',cat:'T&C / Message Mismatch',desc:'T&C wrong — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-12',agent:'Vathna',code:'FT_CNY_199FS_ACTIVE_MID',plat:'QPRO1-MYR',creator:'alysa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Freespin completed but member could not play other game categories',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-20',agent:'Ben',code:'FT_REL_158FS_LCV_15X',plat:'QP2A',creator:'',cause:'Unclassified',cat:'T&C / Message Mismatch',desc:'Wrong information — no further elaboration',status:''},
+ {tab:'Mar',date:'2026-03-20',agent:'Leang Channdy',code:'FT_REL_20PCT_10X',plat:'QP2C',creator:'garyhon',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Live Casino category not added to promotion',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-26',agent:'Vathna',code:'REL_228FS_FOO_5X',plat:'QPRO5-MYR',creator:'michelle91',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Member unable to claim; conflict with mid-month promotion settings',status:'Resolved'},
+ {tab:'Mar',date:'2026-03-30',agent:'Sophath',code:'REL_199FS_GOO_100425',plat:'QPRO6',creator:'ryanlee',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C states deposit required but promotion settings do not match',status:''},
+ {tab:'Apr',date:'2026-04-15',agent:'Reaksa',code:'WELC_ACQ199FS_GOOSS',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Member unable to select Pragmatic provider to claim Free Spins',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-16',agent:'Reaksa',code:'FT_REL_108FS_GSS_IDR',plat:'',creator:'michelle',cause:'System Limitation',cat:'Sync / Technical Issue',desc:'Unable to sync; promotion turnover not updated',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-16',agent:'Reaksa',code:'WELC_ACQ199FS_GOOSS',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Claim Restriction Bug',desc:'Member unable to use Free Spins bonus after claiming',status:'Ongoing'},
+ {tab:'Apr',date:'2026-04-17',agent:'Phearum',code:'FT_FC20_20X',plat:'QPRO1',creator:'elyssa',cause:'Human Error',cat:'Wrong Promo Setting',desc:"System assigned 20 FS; member's inbox message showed 30 FC",status:'Resolved'},
+ {tab:'Apr',date:'2026-04-17',agent:'Vins',code:'MATCH_BONUS_50PCT',plat:'',creator:'jascinta',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Misinformation in T&C content',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-20',agent:'Vins',code:'FT_FC20_20X',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; promotion expired after only 7 days',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-20',agent:'Vins',code:'WELCOME-PP-SLOTS-188FS-OLYMP-V2',plat:'',creator:'esther',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Message template code not assigned to promotion code',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-23',agent:'Vins',code:'REL_88FS_GOO_BS_081225',plat:'',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Game name not set in promo code; member did not receive Free Spins',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-28',agent:'Vins',code:'REL_188FS_GOO_RET_190225',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Turnover shown as x5 in platform UI; T&C description states x20',status:'Resolved'},
+ {tab:'Apr',date:'2026-04-30',agent:'Vins',code:'Welc_96_PP_GOO4',plat:'',creator:'elaine',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Free spin rounds in promo code differ from promotion title',status:'Resolved'},
+ {tab:'Apr',date:'2026-05-04',agent:'Sokmean',code:'SPECIAL_BONUS_MD_50',plat:'QP2B',creator:'yuegene',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'T&C restricts to 918Kiss & Mega888; setting does not match',status:'Resolved'},
+ {tab:'May',date:'2026-05-01',agent:'Pichchanty',code:'EXCLUSIVE_KICKSTART_50FC',plat:'',creator:'amirul',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'ZH content version incorrectly displays MYR instead of SGD',status:'Resolved'},
+ {tab:'May',date:'2026-05-05',agent:'Pichchanty',code:'FT_REL_DOUBLEDATE_MAY_250FS_GOO_8X',plat:'',creator:'alysa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Mass inbox sent for Day 2 reward; no reward visible on My Reward page',status:'Resolved'},
+ {tab:'May',date:'2026-05-06',agent:'Sophath',code:'FT_VM_88FC_8X',plat:'',creator:'waiyip',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; bonus expired after 7 days',status:'Resolved'},
+ {tab:'May',date:'2026-05-07',agent:'Phearum',code:'FT-HD-20-DEPOSIT-BONUS',plat:'',creator:'jordan',cause:'Human Error',cat:'Game / Provider Not Added',desc:'PTI provider not in Target Game Provider list',status:'Resolved'},
+ {tab:'May',date:'2026-05-08',agent:'Rem Sarath',code:'FT_199FS_STREAK',plat:'',creator:'elyssa',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member met TO requirement and streak; system did not assign reward',status:'Resolved'},
+ {tab:'May',date:'2026-05-08',agent:'Rem Sarath',code:'FT_FC50_8X',plat:'',creator:'ryanlee',cause:'System Limitation',cat:'Reward Not Assigned',desc:'Member met TO requirement and streak; system did not assign reward',status:'Resolved'},
+ {tab:'May',date:'2026-05-10',agent:'Sophath',code:'REL_VIP_100PCT_100MX',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Message stated 30-day claim window; bonus expired after 7 days',status:'Ongoing'},
+ {tab:'May',date:'2026-05-21',agent:'Vins',code:'VIP_REL_100PCT_MIN1500_5X',plat:'',creator:'promo_testbot',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promo states 100% bonus with min dep 1500; max bonus & withdrawal only 500',status:'Resolved'},
+ {tab:'May',date:'2026-05-24',agent:'So Meth',code:'REL_225FS_FOO_270325_V2',plat:'',creator:'alysa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promotion message content differs from actual promotion setting',status:'Resolved'},
+ {tab:'May',date:'2026-05-29',agent:'So Meth',code:'REL_333FS_FOO_2_270325_V2',plat:'',creator:'elyssa',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'Promotion message content differs from actual promotion setting',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-02',agent:'Sophath',code:'RELOAD-SLOTS-10PCT',plat:'QPRO3',creator:'yuegene',cause:'Human Error',cat:'Member Group Missing',desc:'Promotion not linked to Member Group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-01',agent:'So Meth',code:'FT_ADHOC_FC50_5X',plat:'QP2C',creator:'michelle91',cause:'System Limitation',cat:'Member Group Missing',desc:'FastTrack started assigning to QP2C players; member not in promo group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-04',agent:'Orkphearum',code:'WELCOME/RELOAD (multiple)',plat:'QPRO2',creator:'',cause:'Human Error',cat:'Member Group Missing',desc:'General promos not available; member group not added to promotion settings',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-05',agent:'Ben Ng',code:'FT_DOUDLEDATE_JUNE_100FS_GOO',plat:'WS1-SGD',creator:'',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'SMS: 0.60/spin vs BO setting: 0.20/spin — spin value mismatch',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-09',agent:'Phanny',code:'FT_REL_PayDay_Promo_B',plat:'QPRO1-MYR',creator:'joelwan',cause:'Human Error',cat:'T&C / Message Mismatch',desc:'SMS stated bonus expires 30 days after claim; actual expiry was 7 days',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-13',agent:'So Meth',code:'FT_REL_TLEO_45PCT_228MX',plat:'',creator:'elyssa',cause:'System Limitation',cat:'T&C / Message Mismatch',desc:'Promotion message differs from promotion setting',status:'Investigating'},
+ {tab:'Jun',date:'2026-06-16',agent:'Orkphearum',code:'WELCOME-SLOTS-100PCT',plat:'QPRO1',creator:'System',cause:'System Limitation',cat:'Game / Provider Not Added',desc:'Relax Gaming provider not added to promotion (auto-created promo)',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-04',agent:'Orkphearum',code:'RELOAD-SLOTS-10PCT',plat:'QPRO2',creator:'yuegene',cause:'Human Error',cat:'Member Group Missing',desc:'Promotion not linked to Member Group',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-21',agent:'Orkphearum',code:'FT_RELBONUS_25PCT_MidMonth_SIL_070825',plat:'QPRO5',creator:'elyssa',cause:'Human Error',cat:'Game / Provider Not Added',desc:'Categories not added; turnover not updated after sync',status:'Resolved'},
+ {tab:'Jun',date:'2026-06-19',agent:'Reaksa',code:'FT_WC26_DEP_30PCT_2K_PLTDMD',plat:'WS1-MYR',creator:'testbot',cause:'Human Error',cat:'Wrong Promo Setting',desc:'Wrong eligibility reset day configured (should reset on Sundays only)',status:'Resolved'},
+];
+
+const ESC_CAT_COLOR={
+  'T&C / Message Mismatch':'#f97316',
+  'Reward Not Assigned':'#dc2626',
+  'Wrong Promo Setting':'#d97706',
+  'Game / Provider Not Added':'#7c3aed',
+  'Member Group Missing':'#0891b2',
+  'Claim Restriction Bug':'#059669',
+  'Duplicate Reward':'#e11d48',
+  'Sync / Technical Issue':'#64748b',
+  'Unclassified':'#9ca3af',
+};
+const ESC_CAT_ORDER=['T&C / Message Mismatch','Reward Not Assigned','Wrong Promo Setting','Game / Provider Not Added','Member Group Missing','Claim Restriction Bug','Duplicate Reward','Sync / Technical Issue','Unclassified'];
+
+function initEscalationCharts(){
+  const catCounts={};
+  ESC_ROWS.forEach(r=>{catCounts[r.cat]=(catCounts[r.cat]||0)+1;});
+  const catCanvas=document.getElementById('esc-cat-chart');
+  if(catCanvas){
+    new Chart(catCanvas,{
+      type:'bar',
+      data:{
+        labels:ESC_CAT_ORDER,
+        datasets:[{
+          data:ESC_CAT_ORDER.map(c=>catCounts[c]||0),
+          backgroundColor:ESC_CAT_ORDER.map(c=>ESC_CAT_COLOR[c]),
+          borderRadius:6,borderSkipped:false
+        }]
+      },
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>`${ctx.parsed.x} cases`}}
+        },
+        scales:{
+          x:{grid:{color:'#eceef1'},ticks:{font:{size:11}},beginAtZero:true},
+          y:{grid:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+  }
+  const monthCanvas=document.getElementById('esc-month-chart');
+  if(monthCanvas){
+    new Chart(monthCanvas,{
+      type:'bar',
+      data:{
+        labels:['Jan','Feb','Mar','Apr','May','Jun'],
+        datasets:[
+          {label:'Human Error',data:[1,14,7,7,8,7],backgroundColor:'#ea580c',borderRadius:4,stack:'s'},
+          {label:'System Limitation',data:[1,20,0,3,3,3],backgroundColor:'#2563eb',borderRadius:4,stack:'s'},
+          {label:'Unclassified',data:[0,3,3,0,0,0],backgroundColor:'#9ca3af',borderRadius:4,stack:'s'}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:10}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+          y:{stacked:true,grid:{color:'#eceef1'},ticks:{stepSize:5,font:{size:11}}}
+        }
+      }
+    });
+  }
+}
+
+function renderEscTable(){
+  const q=(document.getElementById('esc-q').value||'').toLowerCase().trim();
+  const fC=document.getElementById('esc-cause').value;
+  const fT=document.getElementById('esc-cat').value.replace(/&amp;/g,'&');
+  const fS=document.getElementById('esc-status').value;
+  const fM=document.getElementById('esc-tab').value;
+  const rows=ESC_ROWS.filter(r=>{
+    if(fC&&r.cause!==fC)return false;
+    if(fT&&r.cat!==fT)return false;
+    if(fS&&r.status!==fS)return false;
+    if(fM&&r.tab!==fM)return false;
+    if(q){const h=[r.code,r.agent,r.creator,r.desc,r.plat].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    return true;
+  });
+  document.getElementById('esc-cnt').textContent=`${rows.length} of ${ESC_ROWS.length}`;
+  function ecauseTag(c){
+    const m={'Human Error':'ep-he','System Limitation':'ep-sl','Unclassified':'ep-unk'};
+    return`<span class="ep ${m[c]||'ep-unk'}">${c}</span>`;
+  }
+  function estatusTag(s){
+    if(!s)return`<span class="ep ep-none">—</span>`;
+    const m={Resolved:'ep-res',Investigating:'ep-inv',Ongoing:'ep-ong'};
+    return`<span class="ep ${m[s]||'ep-none'}">${s}</span>`;
+  }
+  function ecatTag(cat){
+    const c=ESC_CAT_COLOR[cat]||'#9ca3af';
+    return`<span class="esc-cat-tag"><span class="esc-cat-dot" style="background:${c}"></span>${cat}</span>`;
+  }
+  document.getElementById('esc-tbody').innerHTML=rows.map(r=>`<tr>
+    <td style="white-space:nowrap;font-size:11.5px;">${r.date}</td>
+    <td style="font-size:12px;">${r.agent}</td>
+    <td><span class="esc-code" title="${r.code}">${r.code}</span></td>
+    <td style="font-size:11.5px;">${r.plat||'—'}</td>
+    <td style="font-size:12px;">${r.creator||'—'}</td>
+    <td>${ecauseTag(r.cause)}</td>
+    <td>${ecatTag(r.cat)}</td>
+    <td class="esc-desc">${r.desc}</td>
+    <td>${estatusTag(r.status)}</td>
+  </tr>`).join('');
+}
+/* ════════════ /ESCALATION MODULE ════════════ */
+</script>
+
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Scroll to top">
+  <i class="ti ti-arrow-up"></i>
+  <span>Scroll to top</span>
+</button>
+<script>
+  (function(){
+    const btn=document.getElementById('scroll-top');
+    window.addEventListener('scroll',function(){
+      btn.classList.toggle('visible',window.scrollY>400);
+    },{passive:true});
+  })();
+</script>
+</body>
 </html>
