@@ -14,8 +14,8 @@
 //   A  Banner ID          D  Status              H  Platform / Placement
 //   B  Campaign Title     E  Requestor            I  Start Date
 //   C  (hidden column)    F  Type of Promotion    J  End Date
-//                         G  Backoffice / Brand   K  Submission Date
-//                                                 L  Requested By
+//                         G  Backoffice / Brand   K  Banner Link
+//                                                 L  T&C Link
 //                                                 M  Ready Date
 //                                                 N  Remarks
 
@@ -29,21 +29,19 @@ const MAX_SCAN_ROWS  = 500; // Safety cap for reads
 
 // Fixed column letters (C is hidden in the UI but exists in the sheet)
 const COL = {
-  banner_id:       'A',
-  campaign_title:  'B',
-  status:          'D',
-  requestor:       'E',
-  type:            'F',
-  brand:           'G',
-  platform:        'H',
-  start_date:      'I',
-  end_date:        'J',
-  submission_date: 'K',
-  requested_by:    'L',
-  ready_date:      'M',
-  remarks:         'N',
-  banner_link:     'O',
-  tnc_link:        'P',
+  banner_id:      'A',
+  campaign_title: 'B',
+  status:         'D',
+  requestor:      'E',
+  type:           'F',
+  brand:          'G',
+  platform:       'H',
+  start_date:     'I',
+  end_date:       'J',
+  banner_link:    'K',
+  tnc_link:       'L',
+  ready_date:     'M',
+  remarks:        'N',
 };
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -55,7 +53,7 @@ export async function readAllEntries() {
   const { sheets } = await getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: BANNER_SCHEDULE_ID,
-    range: `${BANNER_TAB}!A${DATA_START_ROW}:P${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
+    range: `${BANNER_TAB}!A${DATA_START_ROW}:N${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
     valueRenderOption:    'UNFORMATTED_VALUE',
     dateTimeRenderOption: 'FORMATTED_STRING',
   });
@@ -71,13 +69,11 @@ export async function readAllEntries() {
       brand:           (row[6]  ?? '').toString().trim(),
       platform:        (row[7]  ?? '').toString().trim(),
       start_date:      (row[8]  ?? '').toString().trim(),
-      end_date:        (row[9]  ?? '').toString().trim(),
-      submission_date: (row[10] ?? '').toString().trim(),
-      requested_by:    (row[11] ?? '').toString().trim(),
-      ready_date:      (row[12] ?? '').toString().trim(),
-      remarks:         (row[13] ?? '').toString().trim(),
-      banner_link:     (row[14] ?? '').toString().trim(),
-      tnc_link:        (row[15] ?? '').toString().trim(),
+      end_date:       (row[9]  ?? '').toString().trim(),
+      banner_link:    (row[10] ?? '').toString().trim(),
+      tnc_link:       (row[11] ?? '').toString().trim(),
+      ready_date:     (row[12] ?? '').toString().trim(),
+      remarks:        (row[13] ?? '').toString().trim(),
     }))
     .filter(e => e.banner_id !== '');
 }
@@ -150,9 +146,9 @@ export async function findNextSlots(count = 2) {
 //     type?:          string,   // default "Vendor"
 //     platform?:      string,   // default "Homepage & Promotion"
 //     brands?:        string[], // default ["UG01", "UG02"]
-//     submission_date?: string,
-//     requested_by?:    string,
-//     remarks?:         string,
+//     banner_link?:   string,
+//     tnc_link?:      string,
+//     remarks?:       string,
 //   }
 //
 // Returns the slots that were written: [{ row, banner_id, brand, campaign_title }]
@@ -161,15 +157,13 @@ export async function addBannerEntries(entry, { dryRun = false } = {}) {
     campaign_title,
     start_date,
     end_date,
-    requestor       = 'Gab',
-    type            = 'Vendor',
-    platform        = 'Homepage & Promotion',
-    brands          = ['UG01', 'UG02'],
-    submission_date = '',
-    requested_by    = '',
-    remarks         = '',
-    banner_link     = '',
-    tnc_link        = '',
+    requestor   = 'Gab',
+    type        = 'Vendor',
+    platform    = 'Homepage & Promotion',
+    brands      = ['UG01', 'UG02'],
+    banner_link = '',
+    tnc_link    = '',
+    remarks     = '',
   } = entry;
 
   if (!campaign_title) throw new Error('campaign_title is required');
@@ -189,19 +183,18 @@ export async function addBannerEntries(entry, { dryRun = false } = {}) {
     const { row, banner_id } = slots[i];
 
     const cells = {
-      [COL.banner_id]:       banner_id,
-      [COL.campaign_title]:  campaign_title,
-      [COL.requestor]:       requestor,
-      [COL.type]:            type,
-      [COL.brand]:           brands[i],
-      [COL.platform]:        platform,
-      [COL.start_date]:      start_date,
-      [COL.end_date]:        end_date,
-      ...(submission_date && { [COL.submission_date]: submission_date }),
-      ...(requested_by    && { [COL.requested_by]:    requested_by    }),
-      ...(remarks         && { [COL.remarks]:         remarks         }),
-      ...(banner_link     && { [COL.banner_link]:     banner_link     }),
-      ...(tnc_link        && { [COL.tnc_link]:        tnc_link        }),
+      [COL.banner_id]:      banner_id,
+      [COL.campaign_title]: campaign_title,
+      [COL.status]:         'requesting',
+      [COL.requestor]:      requestor,
+      [COL.type]:           type,
+      [COL.brand]:          brands[i],
+      [COL.platform]:       platform,
+      [COL.start_date]:     start_date,
+      [COL.end_date]:       end_date,
+      ...(banner_link && { [COL.banner_link]: banner_link }),
+      ...(tnc_link    && { [COL.tnc_link]:    tnc_link    }),
+      ...(remarks     && { [COL.remarks]:     remarks     }),
     };
 
     for (const [col, value] of Object.entries(cells)) {
