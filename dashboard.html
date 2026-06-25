@@ -356,7 +356,6 @@
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
         <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
-        <button class="pg-tab" id="pg-camp" onclick="switchView('camp')"><i class="ti ti-building" aria-hidden="true"></i> Campaign Source</button>
       </div>
     </nav>
     <div class="app-main">
@@ -669,6 +668,50 @@
         </div>
       </details>
     </div>
+    <!-- ── CAMPAIGN SOURCE SECTION ── -->
+    <p class="section-label" style="margin-top:28px;">Campaign source</p>
+    <div class="row2" style="margin-bottom:28px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Escalations by department</div>
+            <div class="card-hint">Inferred from promo code prefix — click a bar to filter</div>
+          </div>
+        </div>
+        <div style="position:relative;height:200px;margin-top:6px;"><canvas id="esc-src-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-info">
+            <div class="card-title">Department share</div>
+            <div class="card-hint">Click a row to filter the table below</div>
+          </div>
+        </div>
+        <div id="esc-src-dept-list" style="margin-top:4px;"></div>
+      </div>
+    </div>
+    <div class="records" style="margin-bottom:28px;">
+      <details class="rec" id="rec-camp-src">
+        <summary><i class="ti ti-building" aria-hidden="true"></i> Campaign source detail <span class="cnt" id="esc-src-cnt-sum"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
+        <div class="rec-body">
+          <div class="rec-tools">
+            <input type="text" id="esc-src-q" class="esc-search-input" placeholder="Search code, platform…" oninput="renderEscSrcTable()">
+            <select id="esc-src-dept" onchange="renderEscSrcTable()"><option value="">All Departments</option></select>
+            <span class="esc-tbl-cnt" id="esc-src-cnt"></span>
+          </div>
+          <table style="table-layout:fixed;">
+            <thead><tr>
+              <th style="width:150px">Campaign Source</th>
+              <th style="width:120px">Brand / Platform</th>
+              <th style="width:160px">Campaign Name</th>
+              <th style="width:175px">Promo Code</th>
+              <th>Remark</th>
+            </tr></thead>
+            <tbody id="esc-src-tbody"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
     <!-- ── /ESCALATION TRACKER MODULE ── -->
     </div><!-- /view-esc -->
     <div id="view-hk" style="display:none;">
@@ -689,57 +732,6 @@
     </div>
 
     </div><!-- /view-hk -->
-
-    <div id="view-camp" style="display:none;">
-      <p class="section-label">Campaign source by department</p>
-      <div class="row2" style="margin-bottom:28px;">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-header-info">
-              <div class="card-title">Promos by department</div>
-              <div class="card-hint">Inferred from promo code prefix — click a bar to filter</div>
-            </div>
-          </div>
-          <div style="position:relative;height:230px;margin-top:6px;"><canvas id="camp-dept-chart"></canvas></div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-header-info">
-              <div class="card-title">Department share</div>
-              <div class="card-hint">Click a row to filter the table below</div>
-            </div>
-          </div>
-          <div id="camp-dept-list" style="margin-top:4px;"></div>
-        </div>
-      </div>
-      <div class="records" style="margin-bottom:28px;">
-        <details class="rec" id="rec-camp" open>
-          <summary><i class="ti ti-building" aria-hidden="true"></i> Campaign source detail <span class="cnt" id="camp-cnt-summary"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-          <div class="rec-body">
-            <div id="camp-remark-notice" style="display:none;margin-bottom:12px;padding:9px 13px;background:var(--warn-soft);border-radius:9px;font-size:12px;color:#92400e;line-height:1.5;">
-              <i class="ti ti-info-circle" style="font-size:13px;margin-right:5px;vertical-align:-2px;"></i>
-              <strong>Campaign Name</strong> and/or <strong>Remark</strong> columns not found in the Promo Code Log — they'll auto-populate once those column headers are added to the Weekly Report sheet.
-            </div>
-            <div class="rec-tools">
-              <input type="text" id="camp-q" class="esc-search-input" placeholder="Search code, brand, creator…" oninput="renderCampTable()">
-              <select id="camp-dept" onchange="renderCampTable()"><option value="">All Departments</option></select>
-              <select id="camp-brand" onchange="renderCampTable()"><option value="">All Brands</option></select>
-              <span class="esc-tbl-cnt" id="camp-cnt"></span>
-            </div>
-            <table style="table-layout:fixed;">
-              <thead><tr>
-                <th style="width:150px">Campaign Source</th>
-                <th style="width:90px">Brand</th>
-                <th style="width:155px">Campaign Name</th>
-                <th style="width:175px">Promo Code</th>
-                <th>Remark</th>
-              </tr></thead>
-              <tbody id="camp-tbody"></tbody>
-            </table>
-          </div>
-        </details>
-      </div>
-    </div><!-- /view-camp -->
 
   </div>
     </div><!-- /app-main -->
@@ -765,7 +757,7 @@ let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
-let _donutChart=null, _trendChart=null, _escInit=false, _campDeptChart=null;
+let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null;
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -936,7 +928,6 @@ function render(data,_skipStore){
   document.getElementById('content').style.display='block';
   document.getElementById('refresh').disabled=false;
   if(!_escInit && document.getElementById('view-esc').style.display!=='none'){initEscalationCharts();renderEscTable();_escInit=true;}
-  if(document.getElementById('view-camp').style.display!=='none'){initCampModule();}
 }
 
 function openRecordSection(id){
@@ -2070,7 +2061,7 @@ loadData();
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  ['ops','esc','hk','camp'].forEach(n=>{
+  ['ops','esc','hk'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -2081,13 +2072,11 @@ function switchView(v){
     initEscalationCharts(); renderEscTable(); _escInit=true;
   }
   if(v==='hk') renderHousekeepingTab();
-  if(v==='camp' && document.getElementById('content').style.display!=='none') initCampModule();
-  try{history.replaceState(null,'',{esc:'#escalations',hk:'#housekeeping',camp:'#campaign-source'}[v]||'#');}catch(e){}
+  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':'#');}catch(e){}
 }
 (function(){
   if(location.hash==='#escalations') switchView('esc');
   else if(location.hash==='#housekeeping') switchView('hk');
-  else if(location.hash==='#campaign-source') switchView('camp');
 })();
 
 /* ════════════ CAMPAIGN SOURCE MODULE ════════════ */
@@ -2111,28 +2100,27 @@ function inferDept(code){
   return 'Promotions';
 }
 
-function initCampModule(){
-  const rows=(rawData&&rawData.promos)||[];
+function campFriendlyName(code=''){
+  const prefixes=['FT_','TSM_','VM_','VIP_','GLD_','SIL_','PLT_','DMD_','NRM_','BR_','TEST_','WELC_','ACQ_','REL_','RET_','REFERRAL_','NODEP_','AFF_'];
+  let s=code;
+  const cu=code.toUpperCase();
+  for(const p of prefixes){if(cu.startsWith(p)){s=code.slice(p.length);break;}}
+  return s.replace(/_/g,' ').replace(/\s+/g,' ').trim()||code;
+}
+
+function initEscSrcChart(){
   const counts={};
-  rows.forEach(r=>{const d=inferDept(r.Code);counts[d]=(counts[d]||0)+1;});
+  ESC_ROWS.forEach(r=>{const d=inferDept(r.code);counts[d]=(counts[d]||0)+1;});
   const depts=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
 
-  /* populate dept filter */
-  const dsel=document.getElementById('camp-dept');
-  const existD=Array.from(dsel.options).map(o=>o.value);
-  depts.forEach(([d])=>{if(!existD.includes(d)){const o=document.createElement('option');o.value=o.textContent=d;dsel.appendChild(o);}});
+  const dsel=document.getElementById('esc-src-dept');
+  dsel.innerHTML='<option value="">All Departments</option>';
+  depts.forEach(([d])=>{const o=document.createElement('option');o.value=o.textContent=d;dsel.appendChild(o);});
 
-  /* populate brand filter */
-  const bsel=document.getElementById('camp-brand');
-  const brands=[...new Set(rows.map(r=>r.Brand).filter(Boolean))].sort();
-  const existB=Array.from(bsel.options).map(o=>o.value);
-  brands.forEach(b=>{if(!existB.includes(b)){const o=document.createElement('option');o.value=o.textContent=b;bsel.appendChild(o);}});
-
-  /* chart */
-  const canvas=document.getElementById('camp-dept-chart');
+  const canvas=document.getElementById('esc-src-chart');
   if(canvas&&depts.length){
-    if(_campDeptChart){_campDeptChart.destroy();}
-    _campDeptChart=new Chart(canvas,{
+    if(_escSrcChart){_escSrcChart.destroy();}
+    _escSrcChart=new Chart(canvas,{
       type:'bar',
       data:{
         labels:depts.map(([d])=>d),
@@ -2140,65 +2128,52 @@ function initCampModule(){
       },
       options:{
         indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.x} promos`}}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.x} escalations`}}},
         scales:{x:{grid:{color:'#eceef1'},ticks:{font:{size:11}},beginAtZero:true},y:{grid:{display:false},ticks:{font:{size:12}}}},
         onClick(_,els){
           if(!els.length)return;
           const d=depts[els[0].index][0];
-          const cur=document.getElementById('camp-dept').value;
-          document.getElementById('camp-dept').value=cur===d?'':d;
-          renderCampTable();
+          const s=document.getElementById('esc-src-dept');
+          s.value=s.value===d?'':d;
+          renderEscSrcTable();
         }
       }
     });
   }
 
-  /* dept share list */
-  const total=rows.length||1;
-  document.getElementById('camp-dept-list').innerHTML=depts.map(([d,c])=>`
-    <div class="mix-row" style="cursor:pointer;" onclick="(function(){var s=document.getElementById('camp-dept');s.value=s.value===${JSON.stringify(d)}?'':${JSON.stringify(d)};renderCampTable();})()">
+  const total=ESC_ROWS.length||1;
+  document.getElementById('esc-src-dept-list').innerHTML=depts.map(([d,c])=>`
+    <div class="mix-row" style="cursor:pointer;" onclick="(function(){var s=document.getElementById('esc-src-dept');s.value=s.value===${JSON.stringify(d)}?'':${JSON.stringify(d)};renderEscSrcTable();})()">
       <div class="mix-row-lbl"><span class="mix-dot" style="background:${DEPT_COLOR[d]||'#4c6ef5'}"></span><span class="mix-nm">${d}</span></div>
       <div class="mix-track"><div class="mix-fill" style="width:${Math.round(c/total*100)}%;background:${DEPT_COLOR[d]||'#4c6ef5'};border-radius:5px;height:100%;display:block;"></div></div>
       <div class="mix-ct">${c}<small> / ${Math.round(c/total*100)}%</small></div>
     </div>`).join('');
 
-  renderCampTable();
+  renderEscSrcTable();
 }
 
-function renderCampTable(){
-  const rows=(rawData&&rawData.promos)||[];
-  const q=(document.getElementById('camp-q').value||'').toLowerCase();
-  const fd=document.getElementById('camp-dept').value;
-  const fb=document.getElementById('camp-brand').value;
+function renderEscSrcTable(){
+  const q=(document.getElementById('esc-src-q').value||'').toLowerCase();
+  const fd=document.getElementById('esc-src-dept').value;
 
-  /* detect optional columns */
-  const sample=rows[0]||{};
-  const keys=Object.keys(sample);
-  const cnKey=keys.find(k=>k.toLowerCase().includes('campaign'))||null;
-  const rkKey=keys.find(k=>['remark','remarks','notes'].includes(k.toLowerCase()))||null;
-  const notice=document.getElementById('camp-remark-notice');
-  if(notice) notice.style.display=(cnKey&&rkKey)?'none':'';
+  let rows=ESC_ROWS.map(r=>({...r,_dept:inferDept(r.code)}));
+  if(fd) rows=rows.filter(r=>r._dept===fd);
+  if(q)  rows=rows.filter(r=>[r.code,r.plat,r.desc,r.creator].join(' ').toLowerCase().includes(q));
 
-  let filtered=rows.map(r=>({...r,_dept:inferDept(r.Code)}));
-  if(fd) filtered=filtered.filter(r=>r._dept===fd);
-  if(fb) filtered=filtered.filter(r=>r.Brand===fb);
-  if(q)  filtered=filtered.filter(r=>[r.Code,r.Brand,r['Created By'],cnKey?r[cnKey]:''].join(' ').toLowerCase().includes(q));
+  const cnt=document.getElementById('esc-src-cnt');
+  const cntS=document.getElementById('esc-src-cnt-sum');
+  if(cnt)  cnt.textContent=`${rows.length} of ${ESC_ROWS.length}`;
+  if(cntS) cntS.textContent=rows.length;
 
-  const cnt=document.getElementById('camp-cnt');
-  const cntS=document.getElementById('camp-cnt-summary');
-  if(cnt)  cnt.textContent=`${filtered.length} of ${rows.length}`;
-  if(cntS) cntS.textContent=filtered.length;
-
-  document.getElementById('camp-tbody').innerHTML=filtered.map(r=>{
-    const dept=r._dept, color=DEPT_COLOR[dept]||'#4c6ef5';
-    const campName=cnKey?(r[cnKey]||'—'):'—';
-    const remark=rkKey?(r[rkKey]||'—'):'—';
+  document.getElementById('esc-src-tbody').innerHTML=rows.map(r=>{
+    const color=DEPT_COLOR[r._dept]||'#4c6ef5';
+    const cname=campFriendlyName(r.code);
     return `<tr>
-      <td><span class="dept-badge"><span class="dept-dot" style="background:${color}"></span>${dept}</span></td>
-      <td>${r.Brand||'—'}</td>
-      <td style="color:var(--ink2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(campName+'').replace(/"/g,'&quot;')}">${campName}</td>
-      <td><span class="esc-code">${r.Code||'—'}</span></td>
-      <td style="color:var(--ink3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(remark+'').replace(/"/g,'&quot;')}">${remark}</td>
+      <td><span class="dept-badge"><span class="dept-dot" style="background:${color}"></span>${r._dept}</span></td>
+      <td style="font-size:12px;color:var(--ink2);">${r.plat||'—'}</td>
+      <td style="font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cname.replace(/"/g,'&quot;')}">${cname}</td>
+      <td><span class="esc-code">${r.code||'—'}</span></td>
+      <td style="font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(r.desc||'').replace(/"/g,'&quot;')}">${r.desc||'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -2351,6 +2326,7 @@ function initEscalationCharts(){
       }
     });
   }
+  initEscSrcChart();
 }
 
 function renderEscTable(){
