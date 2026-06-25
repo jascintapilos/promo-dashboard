@@ -147,9 +147,23 @@ if (refresh) {
         b.template_id ? wrap(qcMtTncHyperlink(site, b.template_id, platform)) : Promise.resolve(null),
         b.dialog_popup_id ? wrap(getPopupDetail(site, b.dialog_popup_id)) : Promise.resolve(null),
       ]);
+      const detail = r2?.ok ? r2.value : null;
+      const list_row = r1?.ok ? r1.value : null;
+      if (platform === 'qpro' && detail) {
+        // bonus_type: getPromotionDetail maps promo_type=2 → 'Cashback' via PROMO_TYPE_LABELS,
+        // but QPRO uses promo_type=2 for Deposit promos too. The listing endpoint returns the
+        // correct human-readable label (e.g. 'Deposit - Welcome'). Use that instead so Sentinel
+        // sees the authoritative value without false-positive FAIL on every Deposit promo.
+        if (list_row?.bonus_type) detail.bonus_type = list_row.bonus_type;
+        // auto_reward_activation: QPRO GET /api/bo/promotion/{id} never returns this field.
+        // The ?? null in getPromotionDetail produces an explicit null that Sentinel reads as
+        // "disabled". Delete the key so Sentinel correctly returns INCONCLUSIVE (Rule 3:
+        // missing evidence ≠ PASS, and also ≠ FAIL — it is unverifiable).
+        delete detail.auto_reward_activation;
+      }
       b.live_state = {
-        list_row: r1?.ok ? r1.value : null,
-        detail:   r2?.ok ? r2.value : null,
+        list_row,
+        detail,
         tnc:      r3?.ok ? r3.value : null,
         popup:    r4?.ok ? r4.value : null,
         refreshed_at: new Date().toISOString(),

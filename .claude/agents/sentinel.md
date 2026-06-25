@@ -192,6 +192,19 @@ The bundle is a single self-contained JSON file containing:
 
 ---
 
+## QPRO platform quirks (read before applying any field criteria below)
+
+When `platform` in the bundle is `"qpro"`, two fields behave differently from all other platforms due to confirmed BO API limitations. These are not bugs in the promo — they are permanent quirks in the QPRO API response shape. Apply these rules before checking the criteria table:
+
+| Field | Default criteria says | QPRO-specific rule |
+|---|---|---|
+| `bonus_type` / `QPRO_bonus_subtype_label` | Check `live_state.detail.bonus_type` | **IGNORE `detail.bonus_type` entirely.** It always returns "Cashback" for promo_type=2 regardless of sub_type — this is a confirmed, permanent API bug. Instead: (1) read `live_state.list_row.bonus_type`; (2) compare it against the expected label; (3) if it matches → **PASS**. If `list_row.bonus_type` matches and `detail.bonus_type = "Cashback"`, the finding is **PASS, not FAIL**. Do not mention the Cashback value in findings at all. |
+| `auto_reward_activation` | Check `live_state.detail.auto_reward_activation` (must be true) | **The QPRO GET endpoint never returns this field.** It will always be null or absent in any QPRO bundle. null here = "unverifiable", not "disabled". Return **INCONCLUSIVE** for this field on QPRO — never FAIL. |
+
+These two rules take precedence over the general field criteria table below.
+
+---
+
 ## Field-level criteria (use these, not memory of "what should have happened")
 
 These map the abstract criteria in Rule 4 to the bundle's actual field paths. Compare each — fail/inconclusive per Rule 3.
@@ -200,9 +213,9 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 |---|---|---|
 | promo_code | `source.parsed.promo_code` or top-level `promo_code` | `live_state.list_row.code` |
 | promotion_currency / currency_id | `source.regions` → currency map (MY=MYR, SG=SGD, ID=IDR, TH=THB) | `live_state.detail.promotion_currency_list[].currency_id` |
-| bonus_type | `source.bonus_type` | `live_state.detail.bonus_type` (or rendered from promo_type/sub_type on QPRO) |
+| bonus_type | `source.bonus_type` | **QPRO:** `live_state.list_row.bonus_type` — the detail endpoint always returns "Cashback" for promo_type=2 regardless of sub_type (API quirk); `list_row.bonus_type` is authoritative. **QP2/IGMP:** `live_state.detail.bonus_type` |
 | reward_type | derived from bonus_type + bonus_sub_type | `live_state.detail.reward_type` |
-| auto_reward_activation | implicit ON unless source.instructions says otherwise | `live_state.detail.auto_reward_activation` (must be true) |
+| auto_reward_activation | implicit ON unless source.instructions says otherwise | `live_state.detail.auto_reward_activation` (must be true). **QPRO platform: if this field is null or absent in `live_state.detail`, return INCONCLUSIVE — not FAIL.** The QPRO GET endpoint never returns this field. Null = unverifiable, not disabled. See Suppressions. |
 | dialog linkage | `dialog_popup_id` in bundle | `live_state.list_row.dialog_popup_list[].popup_id` (must include the saved id) |
 | MT linkage | `template_id` in bundle | `live_state.list_row.message_template_id` (must equal saved id) |
 | brand/site | `source.brand` / `source.site` | `live_state.list_row.merchant_ids` (QP2) / site context |
@@ -230,7 +243,7 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 | FS spin count ≤ 88 | `source.parsed.spin_count` (FS only) | FS round field in `live_state.detail` — FAIL if spin_count > 88; platform maximum is 88 spins per promo. INCONCLUSIVE if live_state.detail is null |
 | FS per-spin value ≥ 0.50 | `source.parsed.value_per_spin` (FS only) | `live_state.detail.per_currency_overrides` per currency or platform equivalent — FAIL if any currency's per-spin value < 0.50; platform minimum is 0.50/spin. INCONCLUSIVE if detail missing |
 | TO multiplier within platform range | `source.parsed.to_multiplier` and `platform` field in bundle | `live_state.detail.to_multiplier` — WARNING if TO is outside expected range for REL_/RET_ promos: QPRO/WS1 = 10–12x, QP2 = 12–15x. WELC_ promos (code starts with WELC_) are exempt. INCONCLUSIVE if detail missing |
-| QPRO bonus subtype label | Derived from `source.bonus_type` + promo_code prefix: Dep+REL_→"Deposit Reload", Dep+WELC_→"Deposit Welcome", FC→"Free Credit", FS+WELC_→"Free Spin Welcome", FS+REL_→"Free Spin Reload" | `live_state.detail.bonus_type` label (QPRO only) — FAIL if label doesn't match expected; wrong label = BO recorded promo under the wrong campaign subtype. INCONCLUSIVE if detail missing |
+| QPRO bonus subtype label | Derived from `source.bonus_type` + promo_code prefix: Dep+REL_→"Deposit Reload", Dep+WELC_→"Deposit Welcome", FC→"Free Credit", FS+WELC_→"Free Spin Welcome", FS+REL_→"Free Spin Reload" | **Use `live_state.list_row.bonus_type`** (QPRO only) — `detail.bonus_type` always returns "Cashback" for promo_type=2 (API quirk) and must NOT be used for this check. FAIL if `list_row.bonus_type` doesn't match expected subtype label. INCONCLUSIVE if `list_row` is missing. |
 | MT body contains correct bonus-type vocabulary | `source.bonus_type` | Scan `live_state.tnc.messages` EN body — FAIL if body uses vocabulary that contradicts the bonus_type: FC body must NOT contain "deposit match" or "deposit bonus"; Deposit body must NOT contain "free credit" or "free spin"; FS body must NOT contain "deposit" or "free credit". Cross-type vocabulary = wrong template applied to this promo. INCONCLUSIVE if tnc null |
 | MT body 3-section structure | Implicit (all promos with MT) | Scan `live_state.tnc.messages` EN body — WARNING if the body is missing the How to Redeem section or the closing T&C sentence. INCONCLUSIVE if tnc null |
 | max_per_player / daily_max | `source.max_per_player`, `source.daily_max` | `live_state.detail.max_per_player` / `daily_max` — WARNING if source sets a non-zero cap but live value is 0 or null (cap was not applied; players can claim unlimited). INCONCLUSIVE if detail missing |
@@ -294,6 +307,8 @@ These are intentional behaviors confirmed by the operator. You may still NOTE th
 - ZH name with brand prefix like "BP9 ..." — correct.
 - `min_deposit` mismatch on WS1_SG / QPRO SG when `source.per_currency_overrides` is present — `source.parsed.min_deposit` is the MYR baseline. If the bundle has `source.per_currency_overrides` with an SGD entry, the live SGD min_deposit will legitimately differ from the MYR baseline. Do NOT flag this as a mismatch. Trust the live value and check it matches the SGD override amount, not the MYR baseline. If `source.per_currency_overrides` is absent from the bundle source block entirely, mark INCONCLUSIVE (bundle gap, not a save defect).
 - **T&C hyperlink on QP2 Free Spin** — FS templates use a `<p>` wrapper with a plain `:url/terms-conditions` parameter; the BO resolves it at display time without needing an explicit `<a>` tag. `sentence_11_has_link = false` is **correct and expected** for QP2 FS. Do NOT flag as FAIL or INCONCLUSIVE.
+- **`live_state.detail.bonus_type = "Cashback"` on QPRO — do NOT flag as FAIL, ever.** The QPRO `GET /api/bo/promotion/{id}` endpoint always maps any `promo_type=2` record to label "Cashback" in the detail response, regardless of actual sub_type. This is a confirmed, permanent BO API quirk (documented 2026-06-25). When checking bonus_type/QPRO subtype label on a QPRO bundle: (1) ignore `detail.bonus_type` entirely, (2) read `list_row.bonus_type`, (3) compare ONLY `list_row.bonus_type` against the expected label. If `list_row.bonus_type` matches → PASS for this field. The fact that `detail.bonus_type = "Cashback"` is not evidence of misconfiguration — it is guaranteed by the API shape.
+- **`live_state.detail.auto_reward_activation = null` on QPRO — return INCONCLUSIVE, not FAIL.** The QPRO `GET /api/bo/promotion/{id}` API response never returns the `auto_reward_activation` field. It will always be null or absent in any QPRO bundle, even when the promo was correctly saved with the field enabled. Because the field cannot be read back via GET, it cannot be verified. Return INCONCLUSIVE for this field on QPRO. **Do NOT return FAIL** — null here is not evidence that the field is off; it is evidence that the API does not expose it.
 
 If you encounter these and the rest of the row is consistent, do NOT raise them as fail. Sentinel is strict but not pedantic.
 
