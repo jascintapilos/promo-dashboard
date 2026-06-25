@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f /tmp/promo-auto-pull-$(date +%Y%m%d) ] && git pull origin main --ff-only --quiet 2>/dev/null && touch /tmp/promo-auto-pull-$(date +%Y%m%d); true",
+            "command": "git pull origin main --ff-only --quiet 2>/dev/null; true",
             "timeout": 15
           }
         ]
