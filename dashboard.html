@@ -329,6 +329,64 @@
   /* ── RESPONSIVE ── */
   @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr);}.row2{grid-template-columns:1fr;}.esc-rec-grid{grid-template-columns:1fr;}}
   @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr);}.exec-mix{grid-template-columns:repeat(2,1fr);}.mini-grid{grid-template-columns:repeat(2,1fr);}}
+
+  /* ── GUARDRAILS TAB ── */
+  .gr-risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
+  .gr-risk-card{border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);}
+  .gr-risk-card.low{background:var(--good-soft);border-top:3px solid var(--good);}
+  .gr-risk-card.med{background:var(--warn-soft);border-top:3px solid var(--warn);}
+  .gr-risk-card.high{background:var(--risk-soft);border-top:3px solid var(--risk);}
+  .gr-risk-level{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+  .gr-risk-card.low .gr-risk-level{color:var(--good);}
+  .gr-risk-card.med .gr-risk-level{color:var(--warn);}
+  .gr-risk-card.high .gr-risk-level{color:var(--risk);}
+  .gr-risk-def{font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:10px;}
+  .gr-risk-approval{font-size:12px;padding:8px 12px;border-radius:8px;font-weight:500;display:flex;align-items:center;gap:6px;}
+  .gr-risk-card.low .gr-risk-approval{background:rgba(22,163,74,.12);color:var(--good);}
+  .gr-risk-card.med .gr-risk-approval{background:rgba(217,119,6,.14);color:var(--warn);}
+  .gr-risk-card.high .gr-risk-approval{background:rgba(220,38,38,.12);color:var(--risk);}
+  .gr-role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
+  .gr-role-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;}
+  .gr-role-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .gr-role-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:.5px solid var(--line2);font-size:13px;color:var(--ink);}
+  .gr-role-item:last-child{border-bottom:none;}
+  .gr-role-item i{font-size:14px;margin-top:1px;flex-shrink:0;}
+  .gr-action-list{display:flex;flex-direction:column;gap:8px;margin-bottom:28px;}
+  .gr-action-item{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:14px 18px;display:flex;align-items:flex-start;gap:12px;}
+  .gr-action-num{width:24px;height:24px;border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .gr-action-text{font-size:13px;color:var(--ink);line-height:1.45;}
+  .gr-seg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px;}
+  .gr-seg-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;}
+  .gr-seg-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .gr-seg-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .gr-seg-title{font-size:14px;font-weight:700;color:var(--ink);}
+  .gr-seg-subtitle{font-size:11.5px;color:var(--ink3);}
+  .gr-seg-row{display:flex;gap:8px;padding:6px 0;border-bottom:.5px solid var(--line2);font-size:12.5px;}
+  .gr-seg-row:last-child{border-bottom:none;}
+  .gr-seg-key{width:110px;flex-shrink:0;color:var(--ink3);font-weight:500;}
+  .gr-seg-val{color:var(--ink);line-height:1.4;}
+  .gr-checklist{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;}
+  .gr-check-item{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;display:flex;align-items:flex-start;gap:12px;}
+  .gr-check-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .gr-check-text{font-size:13px;color:var(--ink);line-height:1.4;}
+  .gr-outcome-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  .gr-outcome{border-radius:14px;padding:20px 18px;text-align:center;}
+  .gr-outcome.scale{background:var(--good-soft);}
+  .gr-outcome.cont{background:var(--accent-soft);}
+  .gr-outcome.adjust{background:var(--warn-soft);}
+  .gr-outcome.stop{background:var(--risk-soft);}
+  .gr-outcome-icon{font-size:26px;margin-bottom:8px;}
+  .gr-outcome-label{font-size:13px;font-weight:700;margin-bottom:6px;}
+  .gr-outcome.scale .gr-outcome-label{color:var(--good);}
+  .gr-outcome.cont .gr-outcome-label{color:var(--accent);}
+  .gr-outcome.adjust .gr-outcome-label{color:var(--warn);}
+  .gr-outcome.stop .gr-outcome-label{color:var(--risk);}
+  .gr-outcome-desc{font-size:11.5px;color:var(--ink2);line-height:1.4;}
+  .gr-matrix-tbl{width:100%;border-collapse:collapse;}
+  .gr-matrix-tbl th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:8px 10px;border-bottom:2px solid var(--line2);}
+  .gr-matrix-tbl td{padding:8px 10px;border-bottom:.5px solid var(--line2);font-size:12.5px;color:var(--ink);}
+  .gr-matrix-tbl tr:last-child td{border-bottom:none;}
+  @media(max-width:720px){.gr-risk-grid,.gr-seg-grid,.gr-outcome-grid,.gr-role-grid,.gr-checklist{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -356,6 +414,7 @@
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
         <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
+        <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
       </div>
     </nav>
     <div class="app-main">
@@ -732,6 +791,201 @@
     </div>
 
     </div><!-- /view-hk -->
+
+    <div id="view-gr" style="display:none;">
+
+      <!-- ── EXEC BANNER ── -->
+      <div style="background:linear-gradient(135deg,#0f766e 0%,#065f46 100%);color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);">
+        <div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none;"></div>
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:10px;display:flex;align-items:center;gap:6px;position:relative;"><i class="ti ti-shield-check"></i> Sales × Promo — New Operating Model · Effective 2026</div>
+        <div style="font-size:15px;line-height:1.65;max-width:780px;position:relative;"><strong>Wai Yip moves to structure, guardrails, and stakeholder decisions.</strong> Routine execution, coordination, promo setup, and AI follow-up routes through Jascinta. Team leads are accountable owners — not just executors. All promos are risk-rated and require the right approval before launch.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;position:relative;">
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;">Effective: Day One</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;">Accountability tracked from now</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;">Guardrail applies to all promos</span>
+        </div>
+      </div>
+
+      <!-- ── PART 1: ROLE ALIGNMENT ── -->
+      <p class="section-label">Part 1 — Role alignment</p>
+
+      <div class="gr-role-grid">
+        <div class="gr-role-card">
+          <div class="gr-role-title"><i class="ti ti-user-circle" style="color:var(--accent);"></i> Wai Yip owns</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:var(--accent);"></i> Promo mechanics &amp; risk review</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:var(--accent);"></i> Turnover recommendation</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:var(--accent);"></i> Promo guardrails</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:var(--accent);"></i> Stakeholder request flow</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:var(--accent);"></i> Team-lead accountability</div>
+        </div>
+        <div class="gr-role-card">
+          <div class="gr-role-title"><i class="ti ti-user-circle" style="color:#0891b2;"></i> Yuegene owns</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:#0891b2;"></i> Sales direction &amp; commercial push</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:#0891b2;"></i> Member priority</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:#0891b2;"></i> Campaign push timing</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:#0891b2;"></i> Sales target ownership</div>
+          <div class="gr-role-item"><i class="ti ti-check" style="color:#0891b2;"></i> Cross-team commercial decisions</div>
+        </div>
+      </div>
+
+      <p class="section-label">Day-one actions (starts now)</p>
+      <div class="gr-action-list">
+        <div class="gr-action-item"><div class="gr-action-num">1</div><div class="gr-action-text">Wai Yip steps back from being first point for routine promo execution.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">2</div><div class="gr-action-text"><strong>Route routine execution, coordination, training, promo setup, and AI follow-up through Jascinta.</strong> Wai Yip reviews high-risk items only.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">3</div><div class="gr-action-text">Define decision boundary for team leads: what they decide, what needs approval, what needs escalation.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">4</div><div class="gr-action-text">Start tracking team lead accountability — missed tasks, repeated mistakes, follow-up gaps.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">5</div><div class="gr-action-text"><strong>BA assistance cut-off enforced:</strong> requests must come with summary, objective, issue, proposed solution, and decision needed. No more vague requests.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">6</div><div class="gr-action-text">Wai Yip joins Sales / stakeholder discussions to understand end-to-end flow.</div></div>
+        <div class="gr-action-item"><div class="gr-action-num">7</div><div class="gr-action-text">Optimize stakeholder → AI pilot → execution flow with clear ownership at each step.</div></div>
+      </div>
+
+      <!-- ── PART 2: PROMO GUARDRAIL ── -->
+      <p class="section-label">Part 2 — Promo guardrail structure</p>
+
+      <div class="gr-risk-grid">
+        <div class="gr-risk-card low">
+          <div class="gr-risk-level"><i class="ti ti-circle-check"></i> Low Risk</div>
+          <div class="gr-risk-def">Standard offer, existing mechanics, controlled bonus cap, normal TO.</div>
+          <div class="gr-risk-approval"><i class="ti ti-users"></i> Promo team / Sales TL can proceed</div>
+        </div>
+        <div class="gr-risk-card med">
+          <div class="gr-risk-level"><i class="ti ti-alert-triangle"></i> Medium Risk</div>
+          <div class="gr-risk-def">Higher bonus %, new mechanic, selected segment, moderate budget.</div>
+          <div class="gr-risk-approval"><i class="ti ti-user-check"></i> Wai Yip + Yuegene review</div>
+        </div>
+        <div class="gr-risk-card high">
+          <div class="gr-risk-level"><i class="ti ti-shield-exclamation"></i> High / Aggressive</div>
+          <div class="gr-risk-def">High bonus %, low TO, high cap, public campaign, or unclear ROI.</div>
+          <div class="gr-risk-approval"><i class="ti ti-user-shield"></i> WY + YG approval; escalate Adam if budget/risk high</div>
+        </div>
+      </div>
+
+      <p class="section-label">Segment-based guardrails</p>
+      <div class="gr-seg-grid">
+        <div class="gr-seg-card">
+          <div class="gr-seg-head">
+            <div class="gr-seg-icon" style="background:#dbeafe;color:#2563eb;"><i class="ti ti-user-plus"></i></div>
+            <div><div class="gr-seg-title">A. New Members / Acquisition</div><div class="gr-seg-subtitle">More attractive — objective is acquisition</div></div>
+          </div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Risk</div><div class="gr-seg-val">Bonus hunters, low-quality traffic, one-time claimers</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Control</div><div class="gr-seg-val">Strong TO, source tracking, non-overlap, capped bonus</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Measure</div><div class="gr-seg-val">FTD, 2nd deposit, GGR after bonus, CPA quality, withdrawal pattern</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key" style="color:var(--warn);">Rule</div><div class="gr-seg-val" style="color:var(--warn);font-size:11.5px;">Aggressive only if traffic source + member quality + bonus cost can be tracked.</div></div>
+        </div>
+        <div class="gr-seg-card">
+          <div class="gr-seg-head">
+            <div class="gr-seg-icon" style="background:#dcfce7;color:#16a34a;"><i class="ti ti-users"></i></div>
+            <div><div class="gr-seg-title">B. Active Normal Members</div><div class="gr-seg-subtitle">Should be moderate</div></div>
+          </div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Risk</div><div class="gr-seg-val">Over-rewarding members who would deposit anyway</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Control</div><div class="gr-seg-val">Lower bonus %, reasonable cap, exclude frequent claimers</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Measure</div><div class="gr-seg-val">Incremental deposit, GGR uplift, bonus cost vs usual behavior</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key" style="color:var(--warn);">Rule</div><div class="gr-seg-val" style="color:var(--warn);font-size:11.5px;">Avoid aggressive promos unless there is clear incremental value.</div></div>
+        </div>
+        <div class="gr-seg-card">
+          <div class="gr-seg-head">
+            <div class="gr-seg-icon" style="background:#fef3c7;color:#d97706;"><i class="ti ti-user-off"></i></div>
+            <div><div class="gr-seg-title">C. Inactive / Reactivation</div><div class="gr-seg-subtitle">Can be stronger than active member promo</div></div>
+          </div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Risk</div><div class="gr-seg-val">Member returns only to claim bonus and withdraw</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Control</div><div class="gr-seg-val">Segment by inactivity period, lifetime deposit, previous value</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Measure</div><div class="gr-seg-val">Reactivation rate, repeat deposit, GGR after bonus, retention 7/14/30d</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key" style="color:var(--warn);">Rule</div><div class="gr-seg-val" style="color:var(--warn);font-size:11.5px;">Aggressive reactivation must be tested in small batches before scaling.</div></div>
+        </div>
+        <div class="gr-seg-card">
+          <div class="gr-seg-head">
+            <div class="gr-seg-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="ti ti-crown"></i></div>
+            <div><div class="gr-seg-title">D. VIP / High-Value Members</div><div class="gr-seg-subtitle">Customized and more flexible</div></div>
+          </div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Risk</div><div class="gr-seg-val">High bonus cost, low-margin play, expectation inflation</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Control</div><div class="gr-seg-val">Review deposit, loss, GGR, product preference, past reward history</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key">Measure</div><div class="gr-seg-val">Retention, next deposit, GGR recovery, relationship value</div></div>
+          <div class="gr-seg-row"><div class="gr-seg-key" style="color:var(--warn);">Rule</div><div class="gr-seg-val" style="color:var(--warn);font-size:11.5px;">VIP promos can be aggressive but require case-by-case review against member value.</div></div>
+        </div>
+      </div>
+
+      <!-- Approval matrix + Product guardrails -->
+      <div class="row2" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-info">
+              <div class="card-title">Approval matrix</div>
+              <div class="card-hint">Who needs to sign off before launch</div>
+            </div>
+          </div>
+          <table class="gr-matrix-tbl">
+            <thead><tr><th>Promo situation</th><th>Approval needed</th></tr></thead>
+            <tbody>
+              <tr><td>Standard existing promo</td><td><span class="badge b-done">Promo / Sales TL</span></td></tr>
+              <tr><td>New promo mechanic</td><td><span class="badge b-info">Wai Yip</span></td></tr>
+              <tr><td>High bonus % or high max bonus</td><td><span class="badge b-warn">WY + Yuegene</span></td></tr>
+              <tr><td>Public aggressive campaign</td><td><span class="badge b-warn">WY + YG; escalate if budget high</span></td></tr>
+              <tr><td>VIP custom high-value offer</td><td><span class="badge b-warn">Yuegene + WY</span></td></tr>
+              <tr><td>Low TO request</td><td><span class="badge b-info">Wai Yip review</span></td></tr>
+              <tr><td>Promo overlapping another campaign</td><td><span class="badge b-info">Wai Yip review</span></td></tr>
+              <tr><td>Large test budget</td><td><span class="badge b-warn">Yuegene / Adam</span></td></tr>
+              <tr><td>BA-driven segment promo</td><td><span class="badge b-info">BA data; Sales/Promo decides mechanics</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-info">
+              <div class="card-title">Product risk &amp; guardrails</div>
+              <div class="card-hint">Apply controls based on product category</div>
+            </div>
+          </div>
+          <table class="gr-matrix-tbl">
+            <thead><tr><th>Product</th><th>Risk</th><th>Key control</th></tr></thead>
+            <tbody>
+              <tr><td>Slots</td><td><span class="badge b-info">Medium</span></td><td>Spin value, game eligibility, TO</td></tr>
+              <tr><td>Fishing</td><td><span class="badge b-warn">Med-High</span></td><td>Avoid low TO and high caps</td></tr>
+              <tr><td>Live Casino</td><td><span class="badge" style="background:var(--risk-soft);color:var(--risk);">High</span></td><td>No aggressive bonus; exclude Blackjack where needed</td></tr>
+              <tr><td>Sports</td><td><span class="badge b-warn">Med-High</span></td><td>Control odds; exclude VS, early payout/cashout</td></tr>
+              <tr><td>Esports</td><td><span class="badge b-info">Medium</span></td><td>Odds + settlement controls</td></tr>
+              <tr><td>Poker</td><td><span class="badge" style="background:var(--risk-soft);color:var(--risk);">High</span></td><td>Prefer rakeback / leaderboard / tournament-style</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pre-launch checklist -->
+      <p class="section-label">Pre-launch checklist — all 6 required before any aggressive promo</p>
+      <div class="gr-checklist">
+        <div class="gr-check-item"><div class="gr-check-num">1</div><div class="gr-check-text">Target segment defined</div></div>
+        <div class="gr-check-item"><div class="gr-check-num">2</div><div class="gr-check-text">Budget cap set</div></div>
+        <div class="gr-check-item"><div class="gr-check-num">3</div><div class="gr-check-text">Test period agreed</div></div>
+        <div class="gr-check-item"><div class="gr-check-num">4</div><div class="gr-check-text">Expected outcome stated</div></div>
+        <div class="gr-check-item"><div class="gr-check-num">5</div><div class="gr-check-text">Success measurement listed</div></div>
+        <div class="gr-check-item"><div class="gr-check-num">6</div><div class="gr-check-text">Owner for review assigned</div></div>
+      </div>
+
+      <!-- Post-promo review outcomes -->
+      <p class="section-label">Post-promo review — what happens after the test period</p>
+      <div class="gr-outcome-grid">
+        <div class="gr-outcome scale">
+          <div class="gr-outcome-icon"><i class="ti ti-trending-up" style="color:var(--good);font-size:28px;"></i></div>
+          <div class="gr-outcome-label">Scale</div>
+          <div class="gr-outcome-desc">Promo is profitable / effective — increase budget or expand segment.</div>
+        </div>
+        <div class="gr-outcome cont">
+          <div class="gr-outcome-icon"><i class="ti ti-repeat" style="color:var(--accent);font-size:28px;"></i></div>
+          <div class="gr-outcome-label">Continue Testing</div>
+          <div class="gr-outcome-desc">Result is neutral but promising — test with adjustment.</div>
+        </div>
+        <div class="gr-outcome adjust">
+          <div class="gr-outcome-icon"><i class="ti ti-adjustments" style="color:var(--warn);font-size:28px;"></i></div>
+          <div class="gr-outcome-label">Adjust</div>
+          <div class="gr-outcome-desc">Potential exists but needs lower bonus, higher TO, or tighter eligibility.</div>
+        </div>
+        <div class="gr-outcome stop">
+          <div class="gr-outcome-icon"><i class="ti ti-ban" style="color:var(--risk);font-size:28px;"></i></div>
+          <div class="gr-outcome-label">Stop</div>
+          <div class="gr-outcome-desc">High cost, high abuse risk, or no meaningful GGR impact.</div>
+        </div>
+      </div>
+
+    </div><!-- /view-gr -->
 
   </div>
     </div><!-- /app-main -->
@@ -2061,7 +2315,7 @@ loadData();
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  ['ops','esc','hk'].forEach(n=>{
+  ['ops','esc','hk','gr'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -2072,11 +2326,12 @@ function switchView(v){
     initEscalationCharts(); renderEscTable(); _escInit=true;
   }
   if(v==='hk') renderHousekeepingTab();
-  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':'#');}catch(e){}
+  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':v==='gr'?'#guardrails':'#');}catch(e){}
 }
 (function(){
   if(location.hash==='#escalations') switchView('esc');
   else if(location.hash==='#housekeeping') switchView('hk');
+  else if(location.hash==='#guardrails') switchView('gr');
 })();
 
 /* ════════════ CAMPAIGN SOURCE MODULE ════════════ */
