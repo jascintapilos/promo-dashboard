@@ -302,11 +302,16 @@ function promoTypeInt(bonusType) {
 }
 
 function promoSubTypeInt(bonusSubType, bonusType) {
-  // (4,1)=FS-Welcome, (4,2)=FS-Reload — mirrors QPRO mapper logic.
+  // Verified from live IBC22 BO (2026-06-25):
+  //   Deposit+Welcome  → promo_type=2, promo_sub_type=2  (bonus_type "Deposit - Welcome")
+  //   Deposit+Reload   → promo_type=2, promo_sub_type=1  (bonus_type "Deposit - Reload")
+  //   FS+Welcome       → promo_type=4, promo_sub_type=1
+  //   FS+Reload        → promo_type=4, promo_sub_type=2
   const bt = (bonusType || '').toLowerCase();
   const s  = (bonusSubType || '').toLowerCase();
   const isWelcome = s.includes('welcome') || bt.includes('welcome');
-  if (bt.includes('free spin'))   return isWelcome ? 1 : 2;
+  if (bt.includes('free spin')) return isWelcome ? 1 : 2;
+  if (bt.includes('deposit'))   return isWelcome ? 2 : 1;
   return 1;
 }
 
