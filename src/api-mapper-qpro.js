@@ -484,6 +484,7 @@ function buildPromotionBody(resolved, gpIdsForBrand = null, catIdsForBrand = nul
     // Match Angular's form serialization observed in captures exactly.
     last_deposit: (isDep || isFs) ? true : 0,
     auto_approve: true,
+    auto_reward_activation: 1,
     visible_by_affiliate: 0,
     recurring: resolved.recurring === true ? '1' : '0',
     // Operator-supplied caps from sheet col T (parsed in src/ingest-xlsx.js).
@@ -724,6 +725,7 @@ function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsFo
     member_group_ids: [],
     last_deposit: b01(promo.last_deposit),
     auto_approve: b01(promo.auto_approve),
+    auto_reward_activation: 1,
     visible_by_affiliate: promo.visible_by_affiliate,
     recurring: Number(promo.recurring),
     max_per_player: promo.max_per_player,
