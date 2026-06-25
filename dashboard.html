@@ -387,6 +387,38 @@
   .gr-matrix-tbl td{padding:8px 10px;border-bottom:.5px solid var(--line2);font-size:12.5px;color:var(--ink);}
   .gr-matrix-tbl tr:last-child td{border-bottom:none;}
   @media(max-width:720px){.gr-risk-grid,.gr-seg-grid,.gr-outcome-grid,.gr-role-grid,.gr-checklist{grid-template-columns:1fr;}}
+
+  /* ── AUTOMATION TAB ── */
+  .b-risk{background:var(--risk-soft);color:var(--risk);}
+  .b-teal{background:var(--teal-soft);color:var(--teal);}
+  .at-roadmap{display:grid;grid-template-columns:repeat(5,1fr);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px;}
+  .at-stage{border-right:1px solid var(--line);padding:18px 14px;}
+  .at-stage:last-child{border-right:none;}
+  .at-stage-hd{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;}
+  .at-stage-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+  .at-item{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
+  .at-item:last-child{margin-bottom:0;}
+  .at-item-nm{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3;}
+  .at-item-cat{font-size:10px;color:var(--ink3);margin-top:2px;}
+  .at-prog{height:3px;background:var(--line2);border-radius:2px;margin-top:6px;overflow:hidden;}
+  .at-prog-fill{height:100%;border-radius:2px;}
+  .at-improve-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .at-improve-item:last-child{border-bottom:none;padding-bottom:0;}
+  .at-improve-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+  .at-hi{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:.5px solid var(--line);font-size:12.5px;color:var(--ink2);}
+  .at-hi:last-child{border-bottom:none;}
+  .at-hi strong{color:var(--ink);font-weight:500;}
+  .at-health-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+  .at-pbar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .at-pbar-lbl{font-size:12px;color:var(--ink2);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .at-pbar-trk{flex:1;height:8px;background:var(--line2);border-radius:4px;overflow:hidden;}
+  .at-pbar-fill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .at-pbar-val{font-size:12px;font-weight:500;width:32px;text-align:right;color:var(--ink);}
+  .at-row-prog{display:flex;align-items:center;gap:8px;}
+  .at-row-prog-trk{width:64px;height:6px;background:var(--line2);border-radius:3px;overflow:hidden;flex-shrink:0;}
+  .at-row-prog-fill{height:100%;border-radius:3px;}
+  .at-row-prog-pct{font-size:11.5px;color:var(--ink2);white-space:nowrap;}
+  @media(max-width:720px){.at-roadmap{grid-template-columns:1fr;}.at-stage{border-right:none;border-bottom:1px solid var(--line);}}
 </style>
 </head>
 <body>
@@ -415,6 +447,7 @@
         <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
         <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
         <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
+        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
       </div>
     </nav>
     <div class="app-main">
@@ -986,6 +1019,330 @@
       </div>
 
     </div><!-- /view-gr -->
+
+    <div id="view-at" style="display:none;">
+
+      <!-- ── EXEC BANNER ── -->
+      <div style="background:linear-gradient(135deg,#3730a3 0%,#1e1b4b 100%);color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);">
+        <div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-80px;right:120px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none;"></div>
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.65;margin-bottom:10px;display:flex;align-items:center;gap:6px;position:relative;">
+          <i class="ti ti-robot" style="font-size:13px;" aria-hidden="true"></i> Automation Portfolio &mdash; Jun 2026
+        </div>
+        <p style="font-size:15px;line-height:1.65;max-width:780px;position:relative;">
+          <strong>7 automations are live</strong> across the Promo Operations team, processing <strong>240+ tasks/month</strong> and saving an estimated <strong>70 hours/month</strong> in manual effort. The pipeline covers promo code creation, QC, banners, CRM, and real-time operational health monitoring across <strong>21+ brands</strong>.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;position:relative;">
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;">7 Live</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;">2 In Development</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;">2 Testing</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;">4 Planned</span>
+          <span style="font-size:12px;font-weight:500;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 12px;border-radius:20px;">70h saved/month</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px;position:relative;">
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:14px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;">15</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;">Total Automations</div>
+          </div>
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:14px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;">70h</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;">Saved per month</div>
+          </div>
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:14px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;">240+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;">Tasks automated/mo</div>
+          </div>
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:14px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:700;color:#fff;line-height:1;margin-bottom:4px;">21+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.72);font-weight:500;line-height:1.3;">Brands covered</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── KPI CARDS ── -->
+      <div class="kpis" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px;">
+        <div class="kpi">
+          <div class="kpi-icon" style="background:#ede9fe;color:#6d28d9;" aria-hidden="true"><i class="ti ti-circuit-cell"></i></div>
+          <div class="lab">Total Automations</div>
+          <div class="val">15</div>
+          <div class="note">Across all stages</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--good-soft);color:var(--good);" aria-hidden="true"><i class="ti ti-circle-check"></i></div>
+          <div class="lab">Live</div>
+          <div class="val" style="color:var(--good);">7</div>
+          <div class="note">Running in production</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--warn-soft);color:var(--warn);" aria-hidden="true"><i class="ti ti-code"></i></div>
+          <div class="lab">In Development</div>
+          <div class="val" style="color:var(--warn);">2</div>
+          <div class="note">Active build</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--accent-soft);color:var(--accent);" aria-hidden="true"><i class="ti ti-list-check"></i></div>
+          <div class="lab">Planned</div>
+          <div class="val">4</div>
+          <div class="note">On the roadmap</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--risk-soft);color:var(--risk);" aria-hidden="true"><i class="ti ti-alert-triangle"></i></div>
+          <div class="lab">Blocked</div>
+          <div class="val">1</div>
+          <div class="note">Dependency pending</div>
+        </div>
+      </div>
+      <div class="kpis" style="grid-template-columns:repeat(2,1fr);margin-bottom:28px;">
+        <div class="kpi" style="display:flex;flex-direction:row;align-items:center;gap:20px;padding:20px 24px;">
+          <div class="kpi-icon" style="background:#ede9fe;color:#6d28d9;" aria-hidden="true"><i class="ti ti-clock-bolt"></i></div>
+          <div>
+            <div class="lab">Estimated Hours Saved (Monthly)</div>
+            <div class="val" style="font-size:42px;">~70h</div>
+            <div class="note">Across all live automations vs full manual baseline</div>
+          </div>
+        </div>
+        <div class="kpi" style="display:flex;flex-direction:row;align-items:center;gap:20px;padding:20px 24px;">
+          <div class="kpi-icon" style="background:var(--warn-soft);color:var(--warn);" aria-hidden="true"><i class="ti ti-adjustments-horizontal"></i></div>
+          <div>
+            <div class="lab">Manual Tasks Remaining</div>
+            <div class="val" style="font-size:42px;">~35%</div>
+            <div class="note">Complex edge cases, approvals, and new categories</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PORTFOLIO TABLE ── -->
+      <p class="section-label">Automation Portfolio</p>
+      <div class="card" style="margin-bottom:28px;padding:22px 24px;">
+        <div class="rec-tools" style="margin-bottom:14px;">
+          <select id="at-f-status" onchange="filterAtPortfolio()">
+            <option value="">All statuses</option>
+            <option value="live">Live</option>
+            <option value="dev">In Development</option>
+            <option value="testing">Testing</option>
+            <option value="planned">Planned</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <select id="at-f-cat" onchange="filterAtPortfolio()">
+            <option value="">All categories</option>
+            <option value="Promo">Promo</option>
+            <option value="Banner">Banner</option>
+            <option value="CRM">CRM</option>
+            <option value="Reporting">Reporting</option>
+            <option value="Intelligence">Intelligence</option>
+            <option value="Content">Content</option>
+            <option value="Ops">Ops</option>
+          </select>
+          <select id="at-f-owner" onchange="filterAtPortfolio()">
+            <option value="">All owners</option>
+            <option value="Jascinta">Jascinta</option>
+            <option value="Wai Yip">Wai Yip</option>
+          </select>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:22%;">Automation</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:10%;">Category</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:10%;">Owner</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:13%;">Status</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:14%;">Progress</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:9%;">Updated</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:11%;">Time Saved</th>
+              <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:11%;">Impact</th>
+            </tr>
+          </thead>
+          <tbody id="at-portfolio-body"></tbody>
+        </table>
+      </div>
+
+      <!-- ── ROADMAP ── -->
+      <p class="section-label">Automation Roadmap</p>
+      <div class="at-roadmap">
+        <div class="at-stage">
+          <div class="at-stage-hd"><span class="at-stage-num" style="background:#e2e5ea;color:var(--ink3);">1</span>Planning</div>
+          <div class="at-item"><div class="at-item-nm">Game Addition</div><div class="at-item-cat">Ops</div><div class="at-prog"><div class="at-prog-fill" style="width:0%;background:#9aa1ad;"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Predictive Monitoring</div><div class="at-item-cat">Intelligence</div><div class="at-prog"><div class="at-prog-fill" style="width:0%;background:#9aa1ad;"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Auto Escalation</div><div class="at-item-cat">Ops</div><div class="at-prog"><div class="at-prog-fill" style="width:0%;background:#9aa1ad;"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Automated Reporting</div><div class="at-item-cat">Reporting</div><div class="at-prog"><div class="at-prog-fill" style="width:0%;background:#9aa1ad;"></div></div></div>
+        </div>
+        <div class="at-stage">
+          <div class="at-stage-hd"><span class="at-stage-num" style="background:var(--warn-soft);color:var(--warn);">2</span>Development</div>
+          <div class="at-item"><div class="at-item-nm">AI QC Agents</div><div class="at-item-cat">Intelligence</div><div class="at-prog"><div class="at-prog-fill" style="width:65%;background:var(--warn);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">WS1/WS2 Banner Upload</div><div class="at-item-cat">Banner</div><div class="at-prog"><div class="at-prog-fill" style="width:45%;background:var(--warn);"></div></div></div>
+        </div>
+        <div class="at-stage">
+          <div class="at-stage-hd"><span class="at-stage-num" style="background:var(--accent-soft);color:var(--accent);">3</span>Testing</div>
+          <div class="at-item"><div class="at-item-nm">WS1/WS2 Banner Health</div><div class="at-item-cat">Banner</div><div class="at-prog"><div class="at-prog-fill" style="width:80%;background:var(--accent);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Translation QC</div><div class="at-item-cat">Content</div><div class="at-prog"><div class="at-prog-fill" style="width:50%;background:var(--accent);"></div></div></div>
+        </div>
+        <div class="at-stage">
+          <div class="at-stage-hd"><span class="at-stage-num" style="background:var(--teal-soft);color:var(--teal);">4</span>Production</div>
+          <div class="at-item"><div class="at-item-nm">Promo Code Creation</div><div class="at-item-cat">Promo</div><div class="at-prog"><div class="at-prog-fill" style="width:90%;background:var(--teal);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Promo Code QC</div><div class="at-item-cat">Promo</div><div class="at-prog"><div class="at-prog-fill" style="width:85%;background:var(--teal);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Banner Upload</div><div class="at-item-cat">Banner</div><div class="at-prog"><div class="at-prog-fill" style="width:80%;background:var(--teal);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">CRM Data Pull</div><div class="at-item-cat">CRM</div><div class="at-prog"><div class="at-prog-fill" style="width:90%;background:var(--teal);"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Banner Health Check</div><div class="at-item-cat">Banner</div><div class="at-prog"><div class="at-prog-fill" style="width:85%;background:var(--teal);"></div></div></div>
+        </div>
+        <div class="at-stage">
+          <div class="at-stage-hd"><span class="at-stage-num" style="background:#ede9fe;color:#6d28d9;">5</span>Optimisation</div>
+          <div class="at-item"><div class="at-item-nm">YTD BO Data Pull</div><div class="at-item-cat">Reporting</div><div class="at-prog"><div class="at-prog-fill" style="width:95%;background:#6d28d9;"></div></div></div>
+          <div class="at-item"><div class="at-item-nm">Ops Dashboard</div><div class="at-item-cat">Reporting</div><div class="at-prog"><div class="at-prog-fill" style="width:90%;background:#6d28d9;"></div></div></div>
+        </div>
+      </div>
+
+      <!-- ── BUSINESS IMPACT ── -->
+      <p class="section-label">Business Impact</p>
+      <div class="row2" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Hours saved by automation</div><div class="card-hint">Monthly estimate vs full manual baseline</div></div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Promo Code Creation</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:100%;background:#6d28d9;"></div></div><div class="at-pbar-val">35h</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">AI QC Agents*</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:57%;background:#6d28d9;opacity:.5;"></div></div><div class="at-pbar-val">20h*</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Promo Code QC</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:34%;background:#6d28d9;"></div></div><div class="at-pbar-val">12h</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Translation QC*</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:23%;background:#6d28d9;opacity:.5;"></div></div><div class="at-pbar-val">8h*</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Banner Upload</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:29%;background:#6d28d9;"></div></div><div class="at-pbar-val">10h</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">CRM Data Pull</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:17%;background:#6d28d9;"></div></div><div class="at-pbar-val">6h</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Reporting &amp; Dashboard</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:26%;background:#6d28d9;"></div></div><div class="at-pbar-val">9h</div></div>
+          <div class="at-pbar-row"><div class="at-pbar-lbl">Banner Health Check</div><div class="at-pbar-trk"><div class="at-pbar-fill" style="width:11%;background:#6d28d9;"></div></div><div class="at-pbar-val">4h</div></div>
+          <div style="margin-top:10px;font-size:11px;color:var(--ink3);">* Projected (in development / testing)</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Operational impact metrics</div><div class="card-hint">Live automations only</div></div></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--good);">240+</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">Tasks automated per month</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--teal);">85%</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">QC automation coverage</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--accent);">21+</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">Brands covered</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--risk);">&lt;5%</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">Operational error rate</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:#6d28d9;">3&times;</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">Faster QC turnaround</div>
+            </div>
+            <div style="background:var(--bg);border-radius:12px;padding:16px 14px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--warn);">68%</div>
+              <div style="font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.4;">Automation adoption rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── UPCOMING IMPROVEMENTS ── -->
+      <p class="section-label">Upcoming Improvements</p>
+      <div class="row2" style="margin-bottom:28px;">
+        <div class="card">
+          <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:14px;background:var(--accent-soft);color:var(--accent);">Next</div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--teal-soft);color:var(--teal);" aria-hidden="true"><i class="ti ti-photo-up"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Banner automation improvements</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Extend full upload coverage to WS1/WS2 brands</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--accent-soft);color:var(--accent);" aria-hidden="true"><i class="ti ti-send"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">CRM automation enhancements</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Smarter segment matching and scheduling</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:#ede9fe;color:#6d28d9;" aria-hidden="true"><i class="ti ti-brain"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">QC Intelligence</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Deeper Sentinel validation and auto-fix suggestions</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--good-soft);color:var(--good);" aria-hidden="true"><i class="ti ti-layout-dashboard"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Dashboard automation</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Auto-generate weekly ops summary and alerts</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--warn-soft);color:var(--warn);" aria-hidden="true"><i class="ti ti-robot"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">AI Agent enhancements</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Expand coverage to new bonus types and edge cases</div></div></div>
+        </div>
+        <div class="card">
+          <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:14px;background:var(--bg);color:var(--ink3);border:1px solid var(--line2);">Future</div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--bg);color:var(--ink3);" aria-hidden="true"><i class="ti ti-chart-line"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Predictive monitoring</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Forecast banner expiry and promo end dates proactively</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--bg);color:var(--ink3);" aria-hidden="true"><i class="ti ti-alert-circle"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Auto escalation</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Route critical issues automatically to the right owner</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--bg);color:var(--ink3);" aria-hidden="true"><i class="ti ti-report"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Automated reporting</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Scheduled MIS reports delivered to management</div></div></div>
+          <div class="at-improve-item"><div class="at-improve-icon" style="background:var(--bg);color:var(--ink3);" aria-hidden="true"><i class="ti ti-arrows-shuffle"></i></div><div><div style="font-size:13px;font-weight:500;color:var(--ink);">Workflow optimisation</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">End-to-end promo lifecycle without manual handoffs</div></div></div>
+        </div>
+      </div>
+
+      <!-- ── RISKS & BLOCKERS ── -->
+      <p class="section-label">Risks &amp; Blockers</p>
+      <div class="card" style="margin-bottom:28px;padding:0;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--bg);">
+              <th style="text-align:left;padding:12px 18px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:20%;">Automation</th>
+              <th style="text-align:left;padding:12px 18px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:28%;">Current Blocker</th>
+              <th style="text-align:left;padding:12px 18px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:12%;">Impact</th>
+              <th style="text-align:left;padding:12px 18px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:28%;">Action Required</th>
+              <th style="text-align:left;padding:12px 18px;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--line2);width:12%;">Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);font-weight:500;">Game Addition</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">No BO API mapping available for new game submissions</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);"><span class="badge b-risk">High</span></td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">BO API discovery and documentation required</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Wai Yip</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);font-weight:500;">WS1/WS2 Banner Health</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">CMS credentials must be provisioned on the server</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);"><span class="badge b-warn">Medium</span></td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Configure cms-creds on prod server and run live test</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Jascinta</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);font-weight:500;">Translation QC</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Human validation required for EN accuracy sign-off</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);"><span class="badge b-warn">Medium</span></td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Define QC acceptance criteria and approval flow</td>
+              <td style="padding:12px 18px;font-size:12.5px;border-bottom:1px solid var(--line);color:var(--ink2);">Wai Yip</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 18px;font-size:12.5px;font-weight:500;">Predictive Monitoring</td>
+              <td style="padding:12px 18px;font-size:12.5px;color:var(--ink2);">No historical data model defined yet</td>
+              <td style="padding:12px 18px;font-size:12.5px;"><span class="badge b-info">Low</span></td>
+              <td style="padding:12px 18px;font-size:12.5px;color:var(--ink2);">Design data schema and baseline collection</td>
+              <td style="padding:12px 18px;font-size:12.5px;color:var(--ink2);">TBD</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── AUTOMATION HEALTH ── -->
+      <p class="section-label">Automation Health</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px;">
+        <div class="card" style="border-top:3px solid var(--good);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--good);flex-shrink:0;"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--good);">Stable</div>
+          </div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--good);"></div><div><strong>Promo Code Creation</strong> &mdash; running reliably across all 21+ brands</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--good);"></div><div><strong>Promo Code QC</strong> &mdash; 3-stage pipeline active, no incidents in 30d</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--good);"></div><div><strong>CRM Data Pull</strong> &mdash; Smartico + FastTrack nightly, no failures</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--good);"></div><div><strong>YTD BO Data Pull</strong> &mdash; nightly, all brands, stable</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--good);"></div><div><strong>Ops Dashboard</strong> &mdash; live, auto-refreshing, no issues</div></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--warn);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--warn);flex-shrink:0;"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--warn);">Needs Improvement</div>
+          </div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--warn);"></div><div><strong>Banner Upload</strong> &mdash; WS1/WS2 coverage gap; QPRO/QP2 stable</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--warn);"></div><div><strong>Banner Health Check</strong> &mdash; WS1/WS2 wired, awaiting live credential test</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--warn);"></div><div><strong>AI QC Agents</strong> &mdash; active and expanding; some edge cases in triage</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--warn);"></div><div><strong>Translation QC</strong> &mdash; partial coverage; EN validation step pending</div></div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--risk);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--risk);flex-shrink:0;"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--risk);">Blocked / At Risk</div>
+          </div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--risk);"></div><div><strong>Game Addition</strong> &mdash; blocked: no BO API mapping available</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--risk);"></div><div><strong>Predictive Monitoring</strong> &mdash; blocked: data model not yet defined</div></div>
+          <div class="at-hi"><div class="at-health-dot" style="background:var(--risk);"></div><div><strong>Auto Escalation</strong> &mdash; not started; depends on monitoring data</div></div>
+          <div style="margin-top:14px;padding:10px 12px;background:var(--risk-soft);border-radius:8px;font-size:12px;color:var(--risk);display:flex;gap:8px;align-items:flex-start;">
+            <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px;" aria-hidden="true"></i>
+            These items require management decision or external dependency resolution before work can proceed.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-at -->
 
   </div>
     </div><!-- /app-main -->
@@ -2315,7 +2672,7 @@ loadData();
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  ['ops','esc','hk','gr'].forEach(n=>{
+  ['ops','esc','hk','gr','at'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -2326,12 +2683,97 @@ function switchView(v){
     initEscalationCharts(); renderEscTable(); _escInit=true;
   }
   if(v==='hk') renderHousekeepingTab();
-  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':v==='gr'?'#guardrails':'#');}catch(e){}
+  if(v==='at') renderAutomationTab();
+  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='at'?'#automation':'#');}catch(e){}
 }
+
+// ── Automation Tab ───────────────────────────────────────────────────────────
+const AUTO_DATA = [
+  {name:'Promo Code Creation',cat:'Promo',owner:'Jascinta',status:'live',pct:90,timeSaved:'35h/mo',impact:'Very High',updated:'Jun 2026',
+   desc:'End-to-end API creation across all 21+ QPRO/QP2/WS1 brands with MT, dialog popup, and inbox wiring.'},
+  {name:'Promo Code QC',cat:'Intelligence',owner:'Jascinta',status:'live',pct:85,timeSaved:'12h/mo',impact:'High',updated:'Jun 2026',
+   desc:'3-stage pipeline: Triage Officer → Pre-QC → Sentinel. Parallel fan-out per brand.'},
+  {name:'Banner Upload',cat:'Banner',owner:'Jascinta',status:'live',pct:80,timeSaved:'10h/mo',impact:'High',updated:'May 2026',
+   desc:'Automated banner image upload and activation for QPRO+QP2 brands.'},
+  {name:'CRM Data Pull',cat:'CRM',owner:'Jascinta',status:'live',pct:90,timeSaved:'6h/mo',impact:'Medium',updated:'May 2026',
+   desc:'Nightly pull from Smartico + FastTrack into the CRM Assignment Log.'},
+  {name:'Banner Health Check',cat:'Banner',owner:'Jascinta',status:'live',pct:85,timeSaved:'4h/mo',impact:'Medium',updated:'Jun 2026',
+   desc:'Weekly scan for expired, expiring, inactive, and low-count banners across all brands.'},
+  {name:'YTD BO Data Pull',cat:'Reporting',owner:'Jascinta',status:'live',pct:95,timeSaved:'5h/mo',impact:'High',updated:'Jun 2026',
+   desc:'Nightly pull of 2249+ team-created promos into the Promo Code Log with YTD preset.'},
+  {name:'Ops Dashboard',cat:'Reporting',owner:'Jascinta',status:'live',pct:90,timeSaved:'4h/mo',impact:'High',updated:'Jun 2026',
+   desc:'Live GitHub Pages dashboard reading all 5 Weekly Report tabs via JSONP.'},
+  {name:'AI QC Agents',cat:'Intelligence',owner:'Jascinta',status:'dev',pct:65,timeSaved:'20h/mo*',impact:'Very High',updated:'Jun 2026',
+   desc:'Expanding Sentinel coverage for new bonus types, edge cases, and multi-brand validation.'},
+  {name:'WS1/WS2 Banner Upload',cat:'Banner',owner:'Jascinta',status:'dev',pct:45,timeSaved:'4h/mo*',impact:'Medium',updated:'Jun 2026',
+   desc:'Extending upload automation to WS1/WS2 Directus CMS brands.'},
+  {name:'WS1/WS2 Banner Health',cat:'Banner',owner:'Jascinta',status:'testing',pct:80,timeSaved:'1h/mo*',impact:'Low',updated:'Jun 2026',
+   desc:'WS1/WS2 Directus CMS probing wired; awaiting live credential test on server.'},
+  {name:'Translation QC',cat:'Content',owner:'Jascinta',status:'testing',pct:50,timeSaved:'8h/mo*',impact:'High',updated:'Jun 2026',
+   desc:'Automated EN/ZH/ID promo content consistency checks. EN sign-off flow pending.'},
+  {name:'Game Addition',cat:'Ops',owner:'Wai Yip',status:'blocked',pct:0,timeSaved:'TBD',impact:'Medium',updated:'Jun 2026',
+   desc:'Blocked — no BO API mapping for new game submissions identified yet.'},
+  {name:'Predictive Monitoring',cat:'Intelligence',owner:'Wai Yip',status:'planned',pct:0,timeSaved:'TBD',impact:'High',updated:'Jun 2026',
+   desc:'Proactive forecasting of banner expiry and promo end dates.'},
+  {name:'Auto Escalation',cat:'Ops',owner:'Wai Yip',status:'planned',pct:0,timeSaved:'TBD',impact:'High',updated:'Jun 2026',
+   desc:'Automatic routing of critical operational issues to the right team member.'},
+  {name:'Automated Reporting',cat:'Reporting',owner:'Wai Yip',status:'planned',pct:0,timeSaved:'TBD',impact:'Medium',updated:'Jun 2026',
+   desc:'Scheduled MIS reports auto-generated and delivered to management.'},
+];
+
+const STATUS_META = {
+  live:    {label:'Live',        cls:'b-good'},
+  dev:     {label:'In Dev',      cls:'b-warn'},
+  testing: {label:'Testing',     cls:'b-teal'},
+  planned: {label:'Planned',     cls:'b-info'},
+  blocked: {label:'Blocked',     cls:'b-risk'},
+};
+const IMPACT_META = {
+  'Very High':{color:'#6d28d9'},'High':{color:'var(--good)'},'Medium':{color:'var(--accent)'},'Low':{color:'var(--ink3)'},
+};
+
+let _atInit = false;
+function renderAutomationTab(){
+  if(_atInit) return;
+  _atInit = true;
+  filterAtPortfolio();
+}
+
+function filterAtPortfolio(){
+  const fStatus = document.getElementById('at-f-status').value;
+  const fCat    = document.getElementById('at-f-cat').value;
+  const fOwner  = document.getElementById('at-f-owner').value;
+  const rows = AUTO_DATA.filter(d =>
+    (!fStatus || d.status === fStatus) &&
+    (!fCat    || d.cat === fCat) &&
+    (!fOwner  || d.owner === fOwner)
+  );
+  const tbody = document.getElementById('at-portfolio-body');
+  if(!tbody) return;
+  tbody.innerHTML = rows.map(d => {
+    const sm = STATUS_META[d.status] || {label:d.status,cls:'b-info'};
+    const im = IMPACT_META[d.impact] || {color:'var(--ink3)'};
+    const pctBar = d.pct > 0
+      ? `<div class="at-row-prog"><div class="at-row-prog-trk"><div class="at-row-prog-fill" style="width:${d.pct}%;background:#6d28d9;"></div></div><span class="at-row-prog-pct">${d.pct}%</span></div>`
+      : `<span style="color:var(--ink3);font-size:12px;">—</span>`;
+    return `<tr title="${d.desc}">
+      <td style="padding:10px 10px;font-size:13px;font-weight:500;border-bottom:1px solid var(--line);">${d.name}</td>
+      <td style="padding:10px 10px;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--line);">${d.cat}</td>
+      <td style="padding:10px 10px;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--line);">${d.owner}</td>
+      <td style="padding:10px 10px;border-bottom:1px solid var(--line);"><span class="badge ${sm.cls}">${sm.label}</span></td>
+      <td style="padding:10px 10px;border-bottom:1px solid var(--line);">${pctBar}</td>
+      <td style="padding:10px 10px;font-size:12px;color:var(--ink3);border-bottom:1px solid var(--line);">${d.updated}</td>
+      <td style="padding:10px 10px;font-size:12px;font-weight:500;color:var(--ink);border-bottom:1px solid var(--line);">${d.timeSaved}</td>
+      <td style="padding:10px 10px;font-size:12px;font-weight:600;color:${im.color};border-bottom:1px solid var(--line);">${d.impact}</td>
+    </tr>`;
+  }).join('');
+}
+
 (function(){
   if(location.hash==='#escalations') switchView('esc');
   else if(location.hash==='#housekeeping') switchView('hk');
   else if(location.hash==='#guardrails') switchView('gr');
+  else if(location.hash==='#automation') switchView('at');
 })();
 
 /* ════════════ CAMPAIGN SOURCE MODULE ════════════ */
