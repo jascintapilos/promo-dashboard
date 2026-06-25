@@ -54,21 +54,39 @@ export async function qcMtTncHyperlink(site, templateId, platform) {
     }
     const tncLi = tncLiMatch[0];
 
-    const hrefHasUrlPlaceholder = /href=":url\/terms-conditions"/.test(tncLi);
-    const termWrapped = new RegExp(`<a[^>]*>${term}</a>`, 'i').test(tncLi);
-
     const key = `MT_TnC_${localeCode}`;
+    const isQp2 = !isQpro && String(platform || '').toLowerCase() === 'qp2';
 
-    // Both QPRO and QP2: term must be wrapped in <a href=":url/terms-conditions">
-    if (termWrapped && hrefHasUrlPlaceholder) {
-      checks[key] = true;
-      messages.push(`  ${localeCode}: ✓ hyperlinked "${term}" with :url placeholder`);
+    if (isQp2) {
+      // QP2: :url/terms-conditions must appear as plain text in the <li>.
+      // The BO substitutes :url at display time as text — NOT inside href attributes.
+      // Wrapping in <a href=":url/..."> produces a broken link (verified 2026-06-25).
+      const hasPlainUrl = /:url\/terms-conditions/.test(tncLi);
+      const hasTerm = tncLi.includes(term);
+      if (hasPlainUrl && hasTerm) {
+        checks[key] = true;
+        messages.push(`  ${localeCode}: ✓ "${term}" with :url placeholder (plain text, QP2 style)`);
+      } else {
+        checks[key] = false;
+        const reasons = [];
+        if (!hasTerm) reasons.push(`"${term}" not found in T&C li`);
+        if (!hasPlainUrl) reasons.push(':url/terms-conditions plain text missing');
+        messages.push(`  ${localeCode}: ✗ ${reasons.join('; ')}`);
+      }
     } else {
-      checks[key] = false;
-      const reasons = [];
-      if (!termWrapped) reasons.push(`"${term}" not wrapped in <a>`);
-      if (!hrefHasUrlPlaceholder) reasons.push('href=":url/terms-conditions" missing');
-      messages.push(`  ${localeCode}: ✗ ${reasons.join('; ')}`);
+      const hrefHasUrlPlaceholder = /href=":url\/terms-conditions"/.test(tncLi);
+      const termWrapped = new RegExp(`<a[^>]*>${term}</a>`, 'i').test(tncLi);
+      // QPRO: term must be wrapped in <a href=":url/terms-conditions">
+      if (termWrapped && hrefHasUrlPlaceholder) {
+        checks[key] = true;
+        messages.push(`  ${localeCode}: ✓ hyperlinked "${term}" with :url placeholder`);
+      } else {
+        checks[key] = false;
+        const reasons = [];
+        if (!termWrapped) reasons.push(`"${term}" not wrapped in <a>`);
+        if (!hrefHasUrlPlaceholder) reasons.push('href=":url/terms-conditions" missing');
+        messages.push(`  ${localeCode}: ✗ ${reasons.join('; ')}`);
+      }
     }
   }
 

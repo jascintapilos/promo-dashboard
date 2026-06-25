@@ -593,8 +593,9 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   if (pf === 'qp2') {
     template = template.split(':brandname').join(':merchantname');
     subject  = subject.split(':brandname').join(':merchantname');
-    // QP2 also needs sentence-11 T&C hyperlinked (BO substitutes :url per-merchant).
-    template = hyperlinkTnc(template, docKey, pf);
+    // QP2: leave :url/terms-conditions as plain text (verified 2026-06-25 from live IBC22
+    // MTs — the BO substitutes :url as text, NOT inside href attributes, so wrapping in
+    // <a href=":url/..."> creates a broken link. No hyperlinkTnc() call here.
   } else if (pf === 'igmp') {
     const merchantName = BRAND_TO_SITE[brand]?.merchantName || brand || 'MB8';
     template = template.split(':brandname').join(merchantName);
