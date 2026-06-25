@@ -155,6 +155,84 @@ export function parseScheduleTable(markdown) {
   return out;
 }
 
+// ── Hyperlink extraction (ClickUp + Drive) ────────────────────────────────
+// Uses Sheets API includeGridData to read embedded hyperlinks that values.get()
+// strips out. Col C (campaign) carries the ClickUp task URL; col D (draft folder
+// label) carries the Google Drive folder URL — but only on the first row of each
+// campaign group (sibling B-IDs inherit the same task/folder from their parent).
+//
+// Returns Map<bId, { clickup_url, clickup_task_id, drive_folder_url }>
+// Missing links are null — don't throw.
+
+export async function readBannerLinks(sheetsClient, bIds, tab) {
+  const bIdSet = new Set(bIds.map((b) => b.toUpperCase()));
+  const SHEET_ID = '1vpyjhqiKzcn2XHovcN2tEa4UkzUMqTmFsUZ59m-n8_E';
+
+  const res = await sheetsClient.sheets.spreadsheets.get({
+    spreadsheetId: SHEET_ID,
+    ranges: [`'${tab}'!A1:P500`],
+    includeGridData: true,
+  });
+
+  const rows = res.data.sheets?.[0]?.data?.[0]?.rowData || [];
+  const links = new Map();
+
+  // Track the last seen ClickUp URL — sibling rows inherit it
+  let lastClickupUrl = null;
+
+  for (const row of rows) {
+    const cells = row.values || [];
+    const bId = (cells[1]?.formattedValue || '').trim().toUpperCase();
+    if (!bId || !/^B\d+$/.test(bId)) { lastClickupUrl = null; continue; }
+
+    // Extract link from textFormatRuns (inline hyperlink) or top-level hyperlink
+    const getLink = (cell) => {
+      if (!cell) return null;
+      if (cell.hyperlink) return cell.hyperlink;
+      const runs = cell.textFormatRuns || [];
+      for (const r of runs) { if (r.format?.link?.uri) return r.format.link.uri; }
+      return null;
+    };
+
+    const colC = cells[2]; // campaign column
+    const colD = cells[3]; // draft folder label column
+
+    const clickupUrl    = getLink(colC) || null;
+    const driveFolderUrl = getLink(colD) || null;
+
+    // Siblings inherit the ClickUp URL from the first row in their group
+    if (clickupUrl) lastClickupUrl = clickupUrl;
+    const resolvedClickup = clickupUrl || lastClickupUrl || null;
+
+    if (!bIdSet.has(bId)) continue;
+
+    // Extract bare task ID from https://app.clickup.com/t/<id>
+    const taskId = resolvedClickup?.match(/\/t\/([a-z0-9]+)$/i)?.[1] || null;
+
+    links.set(bId, {
+      clickup_url:      resolvedClickup,
+      clickup_task_id:  taskId,
+      drive_folder_url: driveFolderUrl,
+    });
+  }
+
+  return links;
+}
+
+// ── Dynamic tab detection ─────────────────────────────────────────────────
+// Returns the current month tab name (e.g. "Jun 2026"), falling back to
+// the most recently created tab if the current month isn't found.
+
+export async function resolveScheduleTab(sheetsClient) {
+  const SHEET_ID = '1vpyjhqiKzcn2XHovcN2tEa4UkzUMqTmFsUZ59m-n8_E';
+  const meta = await sheetsClient.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const tabs = meta.data.sheets.map((s) => s.properties.title);
+  const now = new Date();
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const current = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  return tabs.find((t) => t === current) || tabs[0];
+}
+
 // ── B-ID lookup with bucketed result ──────────────────────────────────────
 // Returns three buckets:
 //   found       — record + configured site, ready to upload

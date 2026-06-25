@@ -43,6 +43,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cmsClient } from '../src/cms-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
+import { resolveScheduleTab } from '../src/banner-schedule.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -63,6 +64,7 @@ const CMS_HOST = {
 };
 
 // Locales per region. MY supports EN+ZH confirmed by vendor delivery.
+// Locale codes match Directus languages_code values (from /items/languages probe).
 const REGION_LOCALES = {
   MY: ['en', 'zh'],
   TH: ['en', 'th'],
@@ -71,6 +73,13 @@ const REGION_LOCALES = {
   SG: ['en'],
   AU: ['en'],
   PH: ['en'],
+};
+
+// Some Directus locale codes differ from image filename suffix conventions used
+// by the design team. This map translates Directus code → filename suffix.
+// e.g. Khmer: Directus uses 'km' but design team filenames use 'kh'.
+const LOCALE_FILENAME_SUFFIX = {
+  km: 'kh',
 };
 
 // Region → URL path prefix used in /promotion/info/{prefix}-{slug}
@@ -144,25 +153,16 @@ function toDirectusDate(d, endOfDay = false) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${endOfDay ? '23:59:59' : '00:00:00'}`;
 }
 
-function toISO(d) { return d.toISOString().slice(0, 10); }
-
-// ── Dynamic tab name ──────────────────────────────────────────────────────────
-
-async function resolveTab(sheetsClient) {
-  const meta = await sheetsClient.sheets.spreadsheets.get({ spreadsheetId: BANNER_SCHEDULE_SHEET_ID });
-  const tabs = meta.data.sheets.map((s) => s.properties.title);
-  // Prefer current month; fall back to most recent
-  const now = new Date();
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const current = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
-  return tabs.find((t) => t === current) || tabs[0];
+function toISO(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 // ── Banner Schedule reader ────────────────────────────────────────────────────
 
 async function readScheduleRows(bIds) {
   const sheetsClient = await getSheetsClient();
-  const tab = await resolveTab(sheetsClient);
+  const tab = await resolveScheduleTab(sheetsClient);
   console.log(`[schedule] Reading tab "${tab}"...`);
 
   const res = await sheetsClient.sheets.spreadsheets.values.get({
@@ -250,7 +250,9 @@ function discoverImages(siteId, regions, bannerDir, imageDirOverride, tag) {
     result[region] = {};
 
     for (const locale of locales) {
-      const suffix = `${regionLow}-${locale}`;
+      // Use filename suffix override if design team uses a different code than Directus
+      const filenameSuffix = LOCALE_FILENAME_SUFFIX[locale] || locale;
+      const suffix = `${regionLow}-${filenameSuffix}`;
       const matches = files.filter((f) => {
         const base = f.toLowerCase().replace(/\.(jpe?g|png)$/, '');
         return base.endsWith(`-${suffix}`) || base.includes(`-${suffix}-`) || base.includes(`_${suffix}_`);
