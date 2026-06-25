@@ -42,6 +42,8 @@ const COL = {
   requested_by:    'L',
   ready_date:      'M',
   remarks:         'N',
+  banner_link:     'O',
+  tnc_link:        'P',
 };
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ export async function readAllEntries() {
   const { sheets } = await getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: BANNER_SCHEDULE_ID,
-    range: `${BANNER_TAB}!A${DATA_START_ROW}:N${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
+    range: `${BANNER_TAB}!A${DATA_START_ROW}:P${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
     valueRenderOption:    'UNFORMATTED_VALUE',
     dateTimeRenderOption: 'FORMATTED_STRING',
   });
@@ -74,6 +76,8 @@ export async function readAllEntries() {
       requested_by:    (row[11] ?? '').toString().trim(),
       ready_date:      (row[12] ?? '').toString().trim(),
       remarks:         (row[13] ?? '').toString().trim(),
+      banner_link:     (row[14] ?? '').toString().trim(),
+      tnc_link:        (row[15] ?? '').toString().trim(),
     }))
     .filter(e => e.banner_id !== '');
 }
@@ -164,6 +168,8 @@ export async function addBannerEntries(entry, { dryRun = false } = {}) {
     submission_date = '',
     requested_by    = '',
     remarks         = '',
+    banner_link     = '',
+    tnc_link        = '',
   } = entry;
 
   if (!campaign_title) throw new Error('campaign_title is required');
@@ -194,6 +200,8 @@ export async function addBannerEntries(entry, { dryRun = false } = {}) {
       ...(submission_date && { [COL.submission_date]: submission_date }),
       ...(requested_by    && { [COL.requested_by]:    requested_by    }),
       ...(remarks         && { [COL.remarks]:         remarks         }),
+      ...(banner_link     && { [COL.banner_link]:     banner_link     }),
+      ...(tnc_link        && { [COL.tnc_link]:        tnc_link        }),
     };
 
     for (const [col, value] of Object.entries(cells)) {

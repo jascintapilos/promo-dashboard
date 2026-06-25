@@ -71,6 +71,9 @@ function parseAnnouncement(text) {
   const nameMatch   = text.match(/Event\s*name\s*[:\-]\s*(.+)/i);
   const periodMatch = text.match(/Event\s*Period\s*[:\-]\s*(.+)/i);
   const provMatch   = text.match(/Provider\s*[:\-]\s*(.+)/i);
+  const bannerMatch = text.match(/Banner\s*(?:link|url|image)\s*[:\-]\s*(\S+)/i);
+  const tncMatch    = text.match(/T(?:&|and|nc|&c)\s*(?:C\s*)?(?:link|url)?\s*[:\-]\s*(\S+)/i)
+                   ?? text.match(/Terms?\s*(?:&|and)?\s*Conditions?\s*(?:link|url)?\s*[:\-]\s*(\S+)/i);
 
   if (!nameMatch || !periodMatch) return null;
 
@@ -78,10 +81,12 @@ function parseAnnouncement(text) {
   if (!dates) return null;
 
   return {
-    provider:   (provMatch?.[1] ?? '').trim(),
-    event_name: nameMatch[1].trim(),
-    start_date: dates.start,
-    end_date:   dates.end,
+    provider:    (provMatch?.[1]   ?? '').trim(),
+    event_name:  nameMatch[1].trim(),
+    start_date:  dates.start,
+    end_date:    dates.end,
+    banner_link: (bannerMatch?.[1] ?? '').trim(),
+    tnc_link:    (tncMatch?.[1]    ?? '').trim(),
   };
 }
 
@@ -198,6 +203,8 @@ try {
     console.log(`  Event:    ${event.event_name}`);
     console.log(`  Provider: ${event.provider}`);
     console.log(`  Dates:    ${event.start_date} → ${event.end_date}`);
+    if (event.banner_link) console.log(`  Banner:   ${event.banner_link}`);
+    if (event.tnc_link)    console.log(`  T&C:      ${event.tnc_link}`);
 
     const exists = await campaignExists(event.event_name);
     if (exists) {
@@ -210,6 +217,8 @@ try {
       campaign_title: event.event_name,
       start_date:     event.start_date,
       end_date:       event.end_date,
+      banner_link:    event.banner_link,
+      tnc_link:       event.tnc_link,
     }, { dryRun: !COMMIT });
 
     if (COMMIT) {

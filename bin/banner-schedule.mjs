@@ -95,10 +95,12 @@ async function cmdAdd() {
   const title    = flags.title;
   const start    = flags.start;
   const end      = flags.end;
-  const requestor = flags.requestor;
-  const type      = flags.type;
-  const platform  = flags.platform;
-  const brandsRaw = flags.brands;
+  const requestor  = flags.requestor;
+  const type       = flags.type;
+  const platform   = flags.platform;
+  const brandsRaw  = flags.brands;
+  const bannerLink = flags['banner-link'];
+  const tncLink    = flags['tnc-link'];
 
   if (!title) { err('--title is required');  process.exit(1); }
   if (!start) { err('--start is required');  process.exit(1); }
@@ -110,9 +112,11 @@ async function cmdAdd() {
     campaign_title: title,
     start_date:     start,
     end_date:       end,
-    ...(requestor && { requestor }),
-    ...(type      && { type      }),
-    ...(platform  && { platform  }),
+    ...(requestor  && { requestor              }),
+    ...(type       && { type                   }),
+    ...(platform   && { platform               }),
+    ...(bannerLink && { banner_link: bannerLink }),
+    ...(tncLink    && { tnc_link:    tncLink    }),
     brands,
   };
 
