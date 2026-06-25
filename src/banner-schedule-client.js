@@ -185,7 +185,7 @@ export async function addBannerEntries(entry, { dryRun = false } = {}) {
     const cells = {
       [COL.banner_id]:      banner_id,
       [COL.campaign_title]: campaign_title,
-      [COL.status]:         'requesting',
+      [COL.status]:         'Requesting',
       [COL.requestor]:      requestor,
       [COL.type]:           type,
       [COL.brand]:          brands[i],
