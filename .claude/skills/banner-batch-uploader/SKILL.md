@@ -1,6 +1,6 @@
 ---
 name: banner-batch-uploader
-description: Run a batch of banner uploads from the Banner Schedule spreadsheet by Banner Task Number range. Use when the user says "upload B01-B03", "upload B07", "upload B##,B##,B##" or any banner ID range pulled from the Banner Schedule. Reads the schedule, resolves each B-ID's brand → BO site, opens the corresponding BO via Claude-in-Chrome, navigates to the right UICarousel record, and fills a new Images-section drawer in **draft mode (Enabled = off)** so the user QCs and publishes. Covers WS1 (MB8) fully with confirmed carousel IDs; WS2 (RWS77) supported via first-use discovery; QPRO/QP2 brands hand off to the existing qpro-homepage-banner-upload / qp2-homepage-banner-upload skills.
+description: Run a batch of banner uploads from the Banner Schedule spreadsheet by Banner Task Number range. Use when the user says "upload B01-B03", "upload B07", "upload B##,B##,B##" or any banner ID range pulled from the Banner Schedule. Reads the schedule, resolves each B-ID's brand → BO site. WS1/WS2 (BIA/Directus) uses the API-direct script bin/upload-ws1-banners-api.mjs (promo_testbot credentials, no Chrome needed). QPRO/QP2 brands hand off to the existing qpro-homepage-banner-upload / qp2-homepage-banner-upload skills.
 ---
 
 # Banner Batch Uploader
@@ -46,9 +46,52 @@ Per batch (once):
 Per B-ID (as needed):
 3. **The unzipped banner image(s)** — agent prompts the user to drop the zip when reaching that B-ID. Filename convention varies by project; agent inspects what's in the zip and asks if the mapping is ambiguous.
 
-## BIA platform (WS1 / WS2) — the new bit
+## BIA platform (WS1 / WS2) — API-direct
 
-Everything below applies to BIA brands. For QPRO/QP2, jump to [Routing](#routing).
+For BIA brands (WS1/WS2) use **`bin/upload-ws1-banners-api.mjs`** — fully automated via Directus REST API using `promo_testbot` credentials from `cms-creds.local.json`. No Chrome/browser required. Permissions verified 2026-06-25: POST /files + POST /items/UICarousel_images + POST /items/UICarousel_images_translations all succeed.
+
+### Quick commands
+
+```bash
+# Dry-run (default) — shows plan, resolves images, no writes
+node bin/upload-ws1-banners-api.mjs --range=B50
+
+# Commit — uploads images + creates Directus records
+node bin/upload-ws1-banners-api.mjs --range=B50 --commit
+
+# Custom CTA, test tag
+node bin/upload-ws1-banners-api.mjs --range=B50 --commit --cta="Claim Now" --tag=TEST
+
+# Override image folder (bypass Banner/ detection)
+node bin/upload-ws1-banners-api.mjs --range=B50 --commit --image-dir="C:\path\to\images"
+```
+
+### Image staging (before --commit)
+
+Images must be in `Banner/{mb8|rws77}-{campaign}/` or a subfolder.
+Filename pattern: `mb8-{desc}-{region}-{locale}.jpg` e.g. `mb8-campaign-my-en.jpg`, `mb8-campaign-my-zh.jpg`.
+For desktop/mobile split: suffix with `-up-` (desktop 1920×) and `-mup-` (mobile 960×).
+If only one file per locale, it's used for both desktop (`image` field) and mobile (`files` field).
+
+### What the script does on --commit
+
+1. Reads Banner Schedule tab (current month, auto-detected)
+2. Discovers images in `Banner/{brand}-*/` by region-locale suffix
+3. For each region:
+   - `POST /files` → uploads desktop image → UUID
+   - `POST /files` → uploads mobile image → UUID (or same if no separate mobile)
+   - `POST /items/UICarousel_images` → creates slide row (dates, carousel FK)
+   - `POST /items/UICarousel_images_translations` per locale → links image UUIDs + linkUrl + CTA
+4. Writes QC bundle to `captures/banner-qc-bundles/{b_id}__{site}__{region}.json`
+
+### After commit
+
+- Verify in Directus CMS that records appear in the carousel's Images section
+- Check start/end dates and link URL are correct
+- **Activate the carousel item** when ready for production (toggle Enabled ON in Directus admin)
+- Run `/banner-deep-qc B##` for post-upload QC
+
+For QPRO/QP2, jump to [Routing](#routing).
 
 ### Field map — UICarousel record (top level)
 
@@ -112,34 +155,19 @@ Examples seen:
 
 If the brief gives a slug, use that verbatim. Don't invent slugs from the campaign title without confirmation.
 
-### Workflow — BIA per B-ID
+### Workflow — BIA per B-ID (API-direct)
 
 ```
-1. Resolve b_id → record (brand, region, dates, draft_folder_label, campaign)
-2. Resolve brand → site_id via BANNER_BRAND_TO_SITE (src/banner-schedule.js)
-3. Resolve (site_id, region) → carousel_id (table above; discover if missing)
-4. Resolve draft folder URL: mcp__d9e74fd6-…-google-drive__search_files
-     query: title contains '<draft_folder_label>'
-   Surface the brief doc; extract slug, CTA, dates if different from schedule.
-5. Ask user: drop the zip of compressed banners for <b_id>.
-   Unpack; identify per-locale per-size files by filename pattern.
-6. Switch to BO Access browser:
-     mcp__Claude_in_Chrome__list_connected_browsers
-     mcp__Claude_in_Chrome__select_browser <deviceId for "BO Access">
-   Create or reuse MCP tab via tabs_context_mcp.
-7. Navigate: <site.baseUrl>/admin/content/UICarousel/<carousel_id>
-8. Click button with exact text "Create New" inside the Images section:
-     const btns = [...document.querySelectorAll('button')].filter(b => (b.textContent||'').trim() === 'Create New');
-     btns.find(b => b.getBoundingClientRect().width > 0)?.click()
-9. Wait for drawer "Creating Item in UI Carousel Images" to open.
-10. Fill drawer fields per locale (see field map above). For each:
-    - Start Date / End Date: setNativeValue on the datetime input
-    - Translations: switch tab to the right locale, then type Link URL + CTA, file_upload Image + Files (same file)
-    - Open New Tab: leave off
-    - Enabled: leave OFF
-11. Do NOT click Submit. Tell the user: "Drawer filled for <b_id>. Review and Submit on the carousel record."
-12. After user confirms Submit, advance to next b_id.
-13. After whole batch: tell user to update Banner Schedule column E to `Ready for QC` for each completed b_id.
+1. Confirm images are staged in Banner/{mb8|rws77}-{campaign}/ with region-locale filename suffixes.
+2. Dry-run to verify plan:
+     node bin/upload-ws1-banners-api.mjs --range=<B-ID>
+   Check: all images ✔, regions/carousel IDs correct, dates match schedule, linkUrl slug is right.
+3. If images are missing: tell user to stage them first (correct naming convention, correct folder).
+4. Commit when images are ready:
+     node bin/upload-ws1-banners-api.mjs --range=<B-ID> --commit
+5. QC bundles are written to captures/banner-qc-bundles/{b_id}__{site}__{region}.json
+6. Tell user to verify in Directus admin → activate when ready.
+7. Run /banner-deep-qc <B-ID> for post-upload QC.
 ```
 
 ## Tech notes (snippets that work)
@@ -218,28 +246,23 @@ After each B-ID's drawer is filled and the user has clicked Submit on the parent
 
 | Action | Who |
 |---|---|
-| Read Banner Schedule | Agent (Drive MCP) |
-| Parse range + route brands | Agent (in chat) |
-| Resolve draft folder URL | Agent (Drive search by label) |
-| Read brief doc for slug/CTA | Agent |
-| Receive asset zip | User drops in chat |
-| Unzip + map files to locales | Agent (in chat) |
-| Open BO via Claude-in-Chrome | Agent |
-| Navigate to UICarousel record | Agent |
-| Click Create New under Images | Agent |
-| Fill drawer fields (text, dates, links, CTA) | Agent |
-| Upload images via `file_upload` MCP | Agent |
-| Leave Enabled = OFF | Agent (default) |
-| Click Submit on parent carousel | **User** — never the agent |
-| Update Banner Schedule col E | **User** — manual edit |
+| Read Banner Schedule | Script (Sheets API) |
+| Parse range + route brands | Script |
+| Stage images in Banner/{brand}-{campaign}/ | **User** |
+| Dry-run to verify plan | Agent (runs script) |
+| Commit upload via Directus API | Agent (runs script with --commit) |
+| Verify records in Directus admin | **User** |
+| Activate carousel item (Enabled ON) | **User** — after QC |
+| Update Banner Schedule col E to "Ready for QC" | **User** — manual edit |
+| Post-upload QC | Agent (/banner-deep-qc) |
 
 ## Hard rules
 
-- **Never click Submit on the parent carousel.** User QCs first.
-- **Always leave Enabled OFF** on new banner items. The Enabled toggle is the gate between "drafted" and "live"; only the user flips it after QC.
-- **Never write the password.** For BO logins, the user is expected to be logged in already in the BO Access browser. If they're logged out, prompt them; don't auto-fill the password.
-- **Don't probe Directus APIs.** Jascinta's role permissions are tight and aggressive API probing can invalidate the cookie session. DOM-drive only.
-- **One B-ID at a time per tab.** Don't open multiple drawers in parallel.
+- **WS1/WS2: always use `upload-ws1-banners-api.mjs`.** Never drive Directus via Chrome MCP for WS1/WS2 — the API-direct script is faster, deterministic, and leaves an audit trail (QC bundles).
+- **Stage images first, then commit.** Always run dry-run (`--range=B##`) first to confirm all images are found before running `--commit`.
+- **Never write the CMS password in chat.** Credentials live in `cms-creds.local.json` only.
+- **QPRO/QP2: hand off to the per-platform skills.** Don't use this script for QPRO or QP2 banners.
+- **One B-ID range at a time.** Don't commit multiple unrelated campaigns in one command — keeps QC bundles clean.
 
 ## Gotchas
 
