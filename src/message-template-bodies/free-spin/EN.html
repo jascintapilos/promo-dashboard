@@ -1,16 +1,17 @@
 <!--
-  Free Spin — English body (QPRO platform).
+  Free Spin — English body (QPRO + QP2 platform).
   Authored from "EN - Inbox T&C (QPRO/QPLY)" (Drive 1iqUhvE…), Section 3.
 
   Placeholders:
     {{currency_symbol}}            currency code
     {{min_deposit}}                request's min deposit (may be 0 = no-deposit FS)
     {{transfer_amount}}            amount user transfers in (often = min_deposit)
-    {{spin_count}}                 number of free spins (e.g., 188)
+    {{spin_count}}                 number of free spins (e.g., 48)
+    {{value_per_spin}}             bet denomination per spin (e.g., 0.40)
     {{game_provider}}              upper-case provider (e.g., PRAGMATIC PLAY)
-    {{game_name}}                  game title (e.g., Fortune of Olympus)
+    {{game_name}}                  game title (e.g., Gates Of Olympus)
     {{promotion_name_en}}          marketing name of the promo
-    {{turnover}}                   turnover multiplier
+    {{turnover}}                   turnover multiplier (numeral)
     {{turnover_words}}             same in words
     {{validity_days}}              claim window in days
     {{validity_days_words}}        same in words
@@ -20,7 +21,7 @@
   :brandname is left LITERAL.
 -->
 
-<p>As a reward for joining us, you are entitled to claim <strong>{{spin_count}} Free Spins</strong> with just <strong>{{currency_symbol}} {{transfer_amount}}</strong>!</p>
+<p>Spin to win! Claim your <strong>{{spin_count}} Free Spins</strong> on <strong>{{game_name}}</strong> with just <strong>{{currency_symbol}} {{transfer_amount}}</strong> and chase those big wins!</p>
 
 <p><strong>How to Apply:</strong></p>
 <ol>
@@ -37,6 +38,23 @@
   <li>After the wallet transfer is successful, go to <strong>Home &gt; Slots &gt; [{{game_provider}}]</strong> and launch the game <strong>{{game_name}}</strong>.</li>
   <li>Spin and enjoy!</li>
 </ol>
+
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%">
+  <thead>
+    <tr>
+      <td><strong>Free Spins</strong></td>
+      <td><strong>Bet Value</strong></td>
+      <td><strong>Turnover</strong></td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{spin_count}}</td>
+      <td>{{currency_symbol}} {{value_per_spin}}</td>
+      <td>{{turnover}}x</td>
+    </tr>
+  </tbody>
+</table>
 
 <p><strong>Terms &amp; Conditions</strong></p>
 

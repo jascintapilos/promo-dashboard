@@ -330,7 +330,7 @@ export async function getPromotionDetail(site, promotionId) {
   const perCurrency = {};
   for (const cc of currencies) {
     perCurrency[cc.currency] = {
-      min_deposit: nz(cc.min_transfer),
+      min_deposit: nz(cc.min_transfer) ?? nz(cc.min_deposit),
       max_bonus: nz(cc.max_bonus),
       max_transfer_out: nz(cc.max_transfer_out),
       // QP2 stores the FC amount in `bonus_amount` (bonus_type=1 Fixed Amount);

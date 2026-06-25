@@ -226,10 +226,10 @@ const SUBJECT_TEMPLATES = {
     ID: 'Penawaran Eksklusif VIP - {{free_credit_amount}} Kredit Gratis',
   },
   'free-spin': {
-    EN: 'Claim Your {{spin_count}} Free Spins!',
-    ZH: '领取您的 {{spin_count}} 次免费旋转！',
-    TH: 'รับ {{spin_count}} ฟรีสปิน!',
-    ID: 'Klaim {{spin_count}} Putaran Gratis Anda!',
+    EN: 'Claim Your {{spin_count}} Free Spins on {{game_name}}',
+    ZH: '领取{{spin_count}}次免费旋转 – {{game_name}}',
+    TH: '{{spin_count}} ฟรีสปิน บน {{game_name}}',
+    ID: '{{spin_count}} Putaran Gratis di {{game_name}}',
   },
 };
 
@@ -467,6 +467,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   const gameProvider = String(rawProvider).replace(/^\s*[A-Za-z0-9]+\s*-\s*/, '').toUpperCase();
   const gameName = r2.game || '(game name to be confirmed)';
   const transferAmount = Number(r2.transfer_amount || minDeposit || 0);
+  // value_per_spin: what the player sees as the bet denomination per spin.
+  // Source stores this as parsed.value_per_spin (canonical) or amount_per_line (QP2 BO field).
+  const valuePerSpin = Number(r2.value_per_spin || r2.amount_per_line || 0);
+  const valuePerSpinDisplay = valuePerSpin > 0 ? valuePerSpin.toFixed(2) : '0.00';
 
   // T&C hyperlink per locale + platform. URL bases come from
   // data/brand-directory.json (brand.website). Convention captured 2026-05-20:
@@ -508,6 +512,7 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
     game_provider: gameProvider,
     game_name: gameName,
     transfer_amount: transferAmount,
+    value_per_spin: valuePerSpinDisplay,
     max_transfer_out: maxTransferOut,
     free_credit_amount: freeCreditAmount,
     excluded_categories: excludedCategories,
@@ -547,7 +552,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   // VIP-targeted FC uses a locale-aware separate template (per-locale VIP
   // word placement differs — EN/ZH prepend, ID appends).
   let subject;
-  if (campaignCopy?.mt?.subject) {
+  // FS MTs always use the standard subject template (with game name) —
+  // campaign-copy subjects omit the game and produce confusing "N Claim Your..."
+  // strings when enrich prepends the spin count. Bypass for free-spin slug.
+  if (campaignCopy?.mt?.subject && slug !== 'free-spin') {
     // Copy-bank subjects are pre-formatted strings (no {{}} placeholders).
     subject = campaignCopy.mt.subject;
   } else {
@@ -573,7 +581,9 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   // rewarded..."), REPLACE it rather than prepending (which would render two
   // intro lines). Bodies that open with a section header (e.g. deposit's
   // "<p><strong>Promo Details:</strong></p>") get the intro prepended.
-  if (campaignCopy?.mt?.intro) {
+  // FS templates have a structured table (Bet Value / Turnover) that must not
+  // be displaced. Skip campaign-copy intro injection for free-spin slug.
+  if (campaignCopy?.mt?.intro && slug !== 'free-spin') {
     const introP = `<p>${campaignCopy.mt.intro}</p>`;
     const firstP = template.match(/^\s*<p>([\s\S]*?)<\/p>\s*/);
     if (firstP && !/^\s*<strong>/.test(firstP[1])) {
