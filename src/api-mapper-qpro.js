@@ -395,11 +395,12 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
 // ── Main builder ─────────────────────────────────────────────────────────
 
 // QPRO BO's promotion `name` field is the operator's internal-reference
-// label, sourced from column M (`name_details_raw`). Tier-indicator lines
+// label, sourced from column M (`name_details_raw`). Operators write this in
+// QPRO format (e.g. "50% Welcome, max bonus 500, min dep 1000, 15x TO, All Games")
+// — NOT in WS1/WS2 parenthetical format (MIN/CAP/TO). Tier-indicator lines
 // like "Silver and below" / "Gold and above" / "Diamond only" are operator
 // metadata, not part of the name — strip them. Multi-line content is
-// collapsed to a single line with " | " separators per operator preference
-// 2026-05-17 (cleaner BO list scanning).
+// collapsed to a single line with " | " separators.
 function qproInternalName(resolved) {
   const raw = String(resolved.name_details_raw || '').trim();
   if (!raw) return resolved.promotion_name_en || resolved.promo_code;
