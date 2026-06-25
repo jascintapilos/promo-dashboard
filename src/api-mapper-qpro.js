@@ -394,22 +394,22 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
 
 // ── Main builder ─────────────────────────────────────────────────────────
 
-// QPRO BO's promotion `name` field is the operator's internal-reference
-// label, sourced from column M (`name_details_raw`). Tier-indicator lines
-// like "Silver and below" / "Gold and above" / "Diamond only" are operator
-// metadata, not part of the name — strip them. Multi-line content is
-// collapsed to a single line with " | " separators per operator preference
-// 2026-05-17 (cleaner BO list scanning).
+// QPRO BO's promotion `name` field is the consumer-facing display name.
+// Uses promotion_name_en when available (e.g. "50% Welcome Bonus") — QPRO/QP2
+// should NOT carry raw mechanics details (min/cap/TO) in the internal name.
+// Falls back to name_details_raw (stripped of tier lines) only when no
+// promotion_name_en is set on the record.
 function qproInternalName(resolved) {
+  if (resolved.promotion_name_en) return resolved.promotion_name_en;
   const raw = String(resolved.name_details_raw || '').trim();
-  if (!raw) return resolved.promotion_name_en || resolved.promo_code;
+  if (!raw) return resolved.promo_code;
   const cleaned = raw
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .filter((line) => !/^(normal|bronze|silver|gold|platinum|diamond)\s+(and\s+)?(above|below|only)\b/i.test(line))
     .join(' | ');
-  return cleaned || resolved.promotion_name_en || resolved.promo_code;
+  return cleaned || resolved.promo_code;
 }
 
 function buildPromotionBody(resolved, gpIdsForBrand = null, catIdsForBrand = null, fsProviderIdForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrand = null, blacklistTemplateId = null) {
