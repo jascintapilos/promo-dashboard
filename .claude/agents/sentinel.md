@@ -235,11 +235,50 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 | MT body 3-section structure | Implicit (all promos with MT) | Scan `live_state.tnc.messages` EN body — WARNING if the body is missing the How to Redeem section or the closing T&C sentence. INCONCLUSIVE if tnc null |
 | max_per_player / daily_max | `source.max_per_player`, `source.daily_max` | `live_state.detail.max_per_player` / `daily_max` — WARNING if source sets a non-zero cap but live value is 0 or null (cap was not applied; players can claim unlimited). INCONCLUSIVE if detail missing |
 | QP2 freespin_check | implicit ON for FS promos (QP2 only) | `live_state.detail.freespin_check` — FAIL if bonus_type is Free Spin and `freespin_check` ≠ true on QP2; this toggle gates whether the promo validates against actual FS usage. INCONCLUSIVE if field absent from detail |
-| QP2 allow_deposit | must be false on all QP2 merchants | `live_state.list_row.allow_deposit` (QP2 only) — FAIL if `allow_deposit` is true; all 4 QP2 merchants must have this OFF. A true value means deposits are incorrectly tied to this promo |
+| QP2 allow_deposit | must be false on all QP2 merchants | `live_state.detail.allow_deposit` (QP2 only) — FAIL if `allow_deposit` is true; all 4 QP2 merchants must have this OFF. A true value means deposits are incorrectly tied to this promo |
 | Min deposit within platform limits | `source.parsed.min_deposit` and `source.per_currency_overrides` | `live_state.detail.per_currency_overrides` per currency — FAIL if any currency's live min_deposit is below the platform floor: MYR < 30, SGD < 50, IDR < 25,000, THB < 50, USD < 5. Check each currency row present in the live state. INCONCLUSIVE if per_currency_overrides absent |
 | QP2 multi-merchant dialog linkage | `dialog_popup_id` in bundle, `platform = qp2` | `live_state.list_row.dialog_popup_list` — WARNING if the list contains only one popup entry for a brand that is not QP2A (QP2B/C/D are multi-merchant extensions and should each have their own site-specific popup linked, not just the QP2A popup). INCONCLUSIVE if dialog_popup_list missing from bundle |
+| blacklist_id | required on all QPRO and QP2 promos | `live_state.detail.blacklist_id` (QPRO/QP2 only) — FAIL if null or 0; a non-zero value proves a blacklist template was applied at creation time. INCONCLUSIVE only if `live_state.detail` is null entirely. Skip on IGMP (blacklist is not a concept on WS1/WS2). |
 
 When a row's "Live BO field" is missing from the bundle → INCONCLUSIVE for that field.
+
+---
+
+## IGMP / WS1 / WS2 platform overrides
+
+When `platform` in the bundle is `"igmp"`, the standard field paths in the criteria table above do not apply. Use these paths instead. All T&C / MT body checks (sentence_11_has_link, HTML entities, vocabulary, 3-section structure, numeric values, ZH consistency, category sub-exclusion) run identically — `live_state.tnc` is populated for IGMP bundles.
+
+| Standard check | IGMP path | Decision |
+|---|---|---|
+| promo_code | `live_state.list_row.PromotionCode` vs `source.promo_code` | FAIL if mismatch |
+| bonus_type | `live_state.list_row.PromotionType` — values: "Bonus", "FreeCredit", "FreeSpin" | FAIL if wrong type |
+| bonus_rate_pct (Deposit) | `live_state.detail.PromotionRewards[0].BonusPercentage` vs `source.parsed.bonus_rate_pct` | FAIL if ≠ |
+| to_multiplier | `live_state.detail.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` | FAIL if ≠; WARNING if outside 10–12x range |
+| min_deposit (Deposit) | `live_state.detail.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` | FAIL if ≠ or below platform floor |
+| max_bonus (Deposit) | `live_state.detail.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` | FAIL if ≠ |
+| free_credit_amount (FC) | `live_state.detail.PromotionRewards[0].FixedBonusAmount` vs `source.parsed.free_credit_amount` | FAIL if ≠ |
+| spin_count (FS) | `live_state.detail.PromotionRewards[0].Quantity` vs `source.parsed.spin_count` | FAIL if ≠ or > 88 |
+| value_per_spin (FS) | Not captured in IGMP bundle (catalog-level denomination) | INCONCLUSIVE — flag but do not FAIL |
+| start_date | `live_state.detail.PromotionStartDate` | FAIL if missing |
+| end_date | `live_state.detail.PromotionEndDate` | FAIL if missing |
+| promo activation | `live_state.list_row.IsActive` must be `true` | FAIL if false |
+| TO range | `PromotionRewards[0].RolloverMultiplier` — apply 10–12x range rule | WARNING if outside |
+| min deposit platform floors | `PromotionRewards[0].MinimumActionAmount` — apply MYR≥30/SGD≥50/IDR≥25000/THB≥50/USD≥5 per `source.currencies[0]` or site (MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→USD) | FAIL if below floor |
+
+**IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
+- `auto_reward_activation` — not a concept on IGMP
+- `dialog linkage` / `dialog_popup_id` — IGMP has no dialog popups
+- `MT linkage` / `template_id` — T&C is embedded in PromotionRewardContents (checked via tnc block)
+- `promotion_currency_list` / `currency_id` — single currency per IGMP site
+- `per_currency_overrides` — single currency per IGMP site
+- `freespin_check` — not a concept on IGMP
+- `allow_deposit` — not a concept on IGMP
+- `deposit_status` — not a concept on IGMP
+- `tier_constraint` — not a concept on IGMP
+- `blacklist_id` — not applicable on IGMP
+- `QPRO bonus subtype label` — not applicable on IGMP
+- `QP2 multi-merchant dialog` — not applicable on IGMP
+- `member_group_ids` — not applicable on IGMP
 
 ---
 
@@ -251,7 +290,6 @@ These are intentional behaviors confirmed by the operator. You may still NOTE th
 - `max_total_*` fields null on QP2 promotion_currency — means Unlimited by design.
 - WS1/WS2 codes auto-prepending `FT_` — intentional.
 - ZH name with brand prefix like "BP9 ..." — correct.
-- `blacklist_id` INCONCLUSIVE on QPRO and QP2 — neither platform's list/detail endpoints return `blacklist_id`; this field is unverifiable from bundle data. Mark INCONCLUSIVE, not FAIL. The blacklist template is set at create time; absence from the live endpoint is a known API limitation, not a save defect.
 - `min_deposit` mismatch on WS1_SG / QPRO SG when `source.per_currency_overrides` is present — `source.parsed.min_deposit` is the MYR baseline. If the bundle has `source.per_currency_overrides` with an SGD entry, the live SGD min_deposit will legitimately differ from the MYR baseline. Do NOT flag this as a mismatch. Trust the live value and check it matches the SGD override amount, not the MYR baseline. If `source.per_currency_overrides` is absent from the bundle source block entirely, mark INCONCLUSIVE (bundle gap, not a save defect).
 - **T&C hyperlink on QP2 Free Spin** — FS templates use a `<p>` wrapper with a plain `:url/terms-conditions` parameter; the BO resolves it at display time without needing an explicit `<a>` tag. `sentence_11_has_link = false` is **correct and expected** for QP2 FS. Do NOT flag as FAIL or INCONCLUSIVE.
 

@@ -147,6 +147,33 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 
 ---
 
+## IGMP / WS1 / WS2 platform overrides
+
+When the bundle's `platform` field is `"igmp"`, the plan bundle's `plan.promotion` is the raw IGMP POST body (PascalCase fields). Apply these overrides to the field-level completeness map above:
+
+| Standard check | IGMP path in plan bundle | Decision |
+|---|---|---|
+| Reward settings populated | `plan.promotion.PromotionRewards[0]` — check presence and non-null of: Deposit→`BonusPercentage`+`RolloverMultiplier`+`CapBonusAmount`+`MinimumActionAmount`; FC→`FixedBonusAmount`+`RolloverMultiplier`; FS→`RolloverMultiplier` | FAIL if any required field missing/zero |
+| Bonus rate value matches source | `plan.promotion.PromotionRewards[0].BonusPercentage` (Deposit) | FAIL if ≠ `source.parsed.bonus_rate_pct` |
+| Free credit amount value matches source | `plan.promotion.PromotionRewards[0].FixedBonusAmount` (FC) | FAIL if ≠ `source.parsed.free_credit_amount` |
+| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x range for REL_/RET_ |
+| Min deposit matches source | `plan.promotion.PromotionRewards[0].MinimumActionAmount` (Deposit) | FAIL if ≠ `source.parsed.min_deposit` or below MYR≥30/SGD≥50/IDR≥25000/THB≥50/USD≥5 floor |
+| Max bonus matches source | `plan.promotion.PromotionRewards[0].CapBonusAmount` (Deposit) | FAIL if ≠ `source.parsed.max_bonus` |
+| Validity period configured | `plan.promotion.PromotionStartDate` + `PromotionEndDate` | FAIL if either missing |
+| Per-locale names / locales | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` — check EN locale exists; ZH if `source.locales` includes ZH; ID if locales includes ID | FAIL if a required locale is missing |
+| MT body numeric values match source | `plan.messageTemplate.details["1"].message` (EN body) — same check as QPRO/QP2 | Same rule — IGMP plan bundle populates this from PromotionRewardContents |
+
+**IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
+- Currency assignment check — IGMP is single-currency per site; no `promotion_currency_list`
+- Brand/merchant_ids — IGMP is site-level; no merchant_ids field
+- Dialog linkage — always null on IGMP; do NOT flag `plan.dialogPopup` being null as an issue
+- deposit_status — not a concept on IGMP
+- QP2 tier_constraint — not applicable on IGMP
+- freespin_check / allow_deposit — not concepts on IGMP
+- QPRO promo_type / sub_type pair — not applicable on IGMP
+
+---
+
 ## Suppressions (do NOT flag as FAIL or WARNING)
 
 - `member_group_ids: []` on QPRO — intentional.
@@ -156,6 +183,10 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 - ZH name with brand prefix like "BP9 ..." — correct.
 - Empty `instructions` block — fine.
 - `tier_constraint` only applies to QP2 — never flag missing on QPRO.
+- `plan.dialogPopup` null on IGMP — intentional; WS1/WS2 has no dialog popups.
+- Missing `promotion_currency_list` on IGMP — intentional; single currency per site.
+- Missing `merchant_ids` on IGMP — intentional; site-level scoping.
+- `deposit_status`, `freespin_check`, `allow_deposit` absent on IGMP — N/A on WS1/WS2.
 
 ---
 
