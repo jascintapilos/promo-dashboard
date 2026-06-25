@@ -17,7 +17,7 @@
   <li>在进行任何提款前，需完成 {{turnover}} 倍流水要求。</li>
   <li>优惠需在 {{validity_days}} 天内领取，并将在领取后 {{rewards_validity_days}} 天内过期。</li>
   <li>优惠码有时间限制，一旦过期将无法延长。</li>
-  <li>除了 {{excluded_categories}} 外，所有游戏类别均适用于此优惠活动。</li>
+  <li>{{#if_all_categories}}除了 {{excluded_categories}} 外，所有游戏类别均适用于此优惠活动。{{else}}{{deposit_cat_clause}}{{/if}}</li>
   <li>会员在进行任何交易（如存款或提款）前，建议点击首页的 刷新按钮 以获取最新的优惠状态。</li>
   <li>适用 :brandname 一般条款与条件。 :url/terms-conditions</li>
 </ol>

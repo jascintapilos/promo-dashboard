@@ -157,7 +157,8 @@ function buildDepositCatClause(cats, docKey) {
     const exclText = subItems.length === 1 ? subItems[0]
       : subItems.length === 2 ? `${subItems[0]} and ${subItems[1]}`
       : `${subItems.slice(0, -1).join(', ')}, and ${subItems[subItems.length - 1]}`;
-    return `${catText} categories are eligible for this promotion except ${exclText}.`;
+    const verb = cats.length === 1 ? 'category is' : 'categories are';
+    return `${catText} ${verb} eligible for this promotion except ${exclText}.`;
   }
 
   // No sub-exclusions — simple eligible list

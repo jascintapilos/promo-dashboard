@@ -47,7 +47,7 @@
   <li>A turnover requirement of {{turnover_words}} ({{turnover}}) time{{#if_turnover_plural}}s{{/if}} applies before any withdrawals can be made.</li>
   <li>The promotion must be claimed within {{validity_days_words}} ({{validity_days}}) day{{#if_validity_days_plural}}s{{/if}}, and the bonus will expire {{rewards_validity_days_words}} ({{rewards_validity_days}}) day{{#if_rewards_validity_days_plural}}s{{/if}} after the claim.</li>
   <li>Promotion codes are time-limited and cannot be extended once expired.</li>
-  <li>All game categories are eligible for this promotion except {{excluded_categories}}.</li>
+  <li>{{#if_all_categories}}All game categories are eligible for this promotion except {{excluded_categories}}.{{else}}{{deposit_cat_clause}}{{/if}}</li>
   <li>Members are advised to use the Refresh button on the Home page to get the latest promotion status before performing any transactions e.g. deposit or withdrawal.</li>
   <li>General :brandname Terms and Conditions apply. :url/terms-conditions</li>
 </ol>

@@ -19,7 +19,7 @@
   <li>Persyaratan Turnover sebanyak {{turnover}} kali berlaku sebelum penarikan dapat dilakukan.</li>
   <li>Promosi harus diklaim dalam {{validity_days}} hari, dan bonus akan kedaluwarsa {{rewards_validity_days}} hari setelah klaim.</li>
   <li>Kode promosi memiliki batas waktu dan tidak dapat diperpanjang setelah kedaluwarsa.</li>
-  <li>Semua kategori permainan memenuhi syarat untuk promosi ini kecuali {{excluded_categories}}.</li>
+  <li>{{#if_all_categories}}Semua kategori permainan memenuhi syarat untuk promosi ini kecuali {{excluded_categories}}.{{else}}Kategori permainan yang memenuhi syarat untuk promosi ini adalah {{eligible_categories}} kecuali {{excluded_categories}}.{{/if}}</li>
   <li>Anggota disarankan untuk menggunakan tombol Refresh di halaman Beranda untuk mendapatkan status promosi terbaru sebelum melakukan transaksi apa pun seperti deposit atau penarikan.</li>
   <li>Syarat dan Ketentuan umum :brandname berlaku. :url/terms-conditions</li>
 </ol>
