@@ -93,9 +93,16 @@ skill: update pre-qc to check FS spin count against 88-spin rule
 - `logs/`, `tmp/`, `tmp-plans/`, `tmp-runs/` — runtime artifacts (gitignored)
 - `node_modules/` — dependencies (gitignored)
 
-### Quick reference
+### Auto-sync hooks (already configured)
+The project `.claude/settings.json` has two hooks pre-wired — **do not tell the user to run these manually**:
+- **Auto-pull**: fires on every message → silently runs `git pull origin main --ff-only` so the user always has the latest code
+- **Auto-push**: fires when the session ends → auto-commits and pushes any changed files
+
+Users never need to run `git pull` or `git push` manually. The hooks handle it.
+
+### Quick reference (for reference only — hooks handle pull/push automatically)
 ```bash
-# Start of session — pull latest
+# Manual pull if needed outside a Claude session
 git pull origin main
 
 # After making changes
