@@ -149,19 +149,22 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 
 ## IGMP / WS1 / WS2 platform overrides
 
-When the bundle's `platform` field is `"igmp"`, the plan bundle's `plan.promotion` is the raw IGMP POST body (PascalCase fields). Apply these overrides to the field-level completeness map above:
+When the bundle's `platform` field is `"igmp"`, the plan bundle's `plan.promotion` is the raw IGMP POST body (PascalCase fields). Apply these overrides to the field-level completeness map above.
 
-| Standard check | IGMP path in plan bundle | Decision |
+**IGMP FS structural difference:** For Free Spin promos, `plan.promotion` is a shell body with no `PromotionRewards`. The reward (spin count, TO, game) lives in `plan.followups[0].body.PromotionReward` and `plan.followups[0].body.FreeSpin`. For Deposit and Free Credit, `plan.promotion.PromotionRewards[0]` holds everything.
+
+| Standard check | IGMP path — Deposit / FC | IGMP path — Free Spin (FS) |
 |---|---|---|
-| Reward settings populated | `plan.promotion.PromotionRewards[0]` — check presence and non-null of: Deposit→`BonusPercentage`+`RolloverMultiplier`+`CapBonusAmount`+`MinimumActionAmount`; FC→`FixedBonusAmount`+`RolloverMultiplier`; FS→`RolloverMultiplier` | FAIL if any required field missing/zero |
-| Bonus rate value matches source | `plan.promotion.PromotionRewards[0].BonusPercentage` (Deposit) | FAIL if ≠ `source.parsed.bonus_rate_pct` |
-| Free credit amount value matches source | `plan.promotion.PromotionRewards[0].FixedBonusAmount` (FC) | FAIL if ≠ `source.parsed.free_credit_amount` |
-| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x range for REL_/RET_ |
-| Min deposit matches source | `plan.promotion.PromotionRewards[0].MinimumActionAmount` (Deposit) | FAIL if ≠ `source.parsed.min_deposit` or below MYR≥30/SGD≥50/IDR≥25000/THB≥50/USD≥5 floor |
-| Max bonus matches source | `plan.promotion.PromotionRewards[0].CapBonusAmount` (Deposit) | FAIL if ≠ `source.parsed.max_bonus` |
-| Validity period configured | `plan.promotion.PromotionStartDate` + `PromotionEndDate` | FAIL if either missing |
-| Per-locale names / locales | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` — check EN locale exists; ZH if `source.locales` includes ZH; ID if locales includes ID | FAIL if a required locale is missing |
-| MT body numeric values match source | `plan.messageTemplate.details["1"].message` (EN body) — same check as QPRO/QP2 | Same rule — IGMP plan bundle populates this from PromotionRewardContents |
+| Reward settings populated | Deposit: `plan.promotion.PromotionRewards[0]` — `BonusPercentage` + `RolloverMultiplier` + `CapBonusAmount` + `MinimumActionAmount`; FC: `FixedBonusAmount` + `RolloverMultiplier` — FAIL if any required field missing/zero | `plan.followups[0].body.FreeSpin.FreeSpinRounds` + `plan.followups[0].body.PromotionReward.RolloverMultiplier` — FAIL if missing/zero |
+| Bonus rate / FC amount / spin count matches source | Deposit: `BonusPercentage` vs `source.parsed.bonus_rate_pct`; FC: `FixedBonusAmount` vs `source.parsed.free_credit_amount` — FAIL if either differs | `plan.followups[0].body.FreeSpin.FreeSpinRounds` vs `source.parsed.spin_count` — FAIL if differs |
+| Per-spin value matches source | N/A | `plan.followups[0].body.FreeSpin.AmountPerBet` vs `source.parsed.value_per_spin` — FAIL if differs |
+| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` — FAIL if differs; WARNING if outside 10–12x for REL_/RET_ | `plan.followups[0].body.PromotionReward.RolloverMultiplier` vs `source.parsed.to_multiplier` — same rules |
+| Min deposit matches source | `plan.promotion.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` — FAIL if differs or below platform floor (MYR<30/SGD<50/IDR<25000/THB<50/USD<5) | `plan.followups[0].body.PromotionReward.MinimumActionAmount` — FAIL if below floor |
+| Max bonus matches source | `plan.promotion.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` — FAIL if differs | N/A (FS has no max bonus cap) |
+| FC ExpiryMinutes (FC only) | `plan.promotion.ExpiryMinutes` should equal `source.rewards_validity_days * 1440`; default 10080 (7 days) when source not set — WARNING if they differ | N/A |
+| Validity period | `plan.promotion.PromotionStartDate` + `PromotionEndDate` — FAIL if either missing | Same — on shell body (`plan.promotion`) |
+| Per-locale T&C content | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` — EN required; ZH if `source.locales` includes ZH or `source.regions` includes MY/SG; ID if includes ID — FAIL if required locale missing | `plan.followups[0].body.PromotionReward.PromotionRewardContents[]` — same locale rules |
+| MT body numeric values | `plan.messageTemplate.details["1"].message` (EN body) — IGMP plan bundle pre-populates this from PromotionRewardContents; same check as QPRO/QP2 | Same |
 
 **IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
 - Currency assignment check — IGMP is single-currency per site; no `promotion_currency_list`
@@ -171,6 +174,7 @@ When the bundle's `platform` field is `"igmp"`, the plan bundle's `plan.promotio
 - QP2 tier_constraint — not applicable on IGMP
 - freespin_check / allow_deposit — not concepts on IGMP
 - QPRO promo_type / sub_type pair — not applicable on IGMP
+- max_per_player / daily_max — IGMP uses `RedeemableQuantity` on the reward (per-player claim count); 0 = unlimited is the operator default; do NOT apply the QPRO/QP2 WARNING for this being uncapped
 
 ---
 

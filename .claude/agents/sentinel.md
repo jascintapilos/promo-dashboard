@@ -251,19 +251,21 @@ When `platform` in the bundle is `"igmp"`, the standard field paths in the crite
 | Standard check | IGMP path | Decision |
 |---|---|---|
 | promo_code | `live_state.list_row.PromotionCode` vs `source.promo_code` | FAIL if mismatch |
-| bonus_type | `live_state.list_row.PromotionType` — values: "Bonus", "FreeCredit", "FreeSpin" | FAIL if wrong type |
-| bonus_rate_pct (Deposit) | `live_state.detail.PromotionRewards[0].BonusPercentage` vs `source.parsed.bonus_rate_pct` | FAIL if ≠ |
-| to_multiplier | `live_state.detail.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` | FAIL if ≠; WARNING if outside 10–12x range |
-| min_deposit (Deposit) | `live_state.detail.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` | FAIL if ≠ or below platform floor |
-| max_bonus (Deposit) | `live_state.detail.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` | FAIL if ≠ |
-| free_credit_amount (FC) | `live_state.detail.PromotionRewards[0].FixedBonusAmount` vs `source.parsed.free_credit_amount` | FAIL if ≠ |
-| spin_count (FS) | `live_state.detail.PromotionRewards[0].Quantity` vs `source.parsed.spin_count` | FAIL if ≠ or > 88 |
-| value_per_spin (FS) | Not captured in IGMP bundle (catalog-level denomination) | INCONCLUSIVE — flag but do not FAIL |
-| start_date | `live_state.detail.PromotionStartDate` | FAIL if missing |
-| end_date | `live_state.detail.PromotionEndDate` | FAIL if missing |
+| bonus_type | `live_state.list_row.PromotionType` — expected: Deposit→"Bonus", FC→"FreeCredit", FS→"FreeSpin" | FAIL if wrong type |
+| bonus_rate_pct (Deposit) | `live_state.detail.PromotionRewards[0].BonusPercentage` vs `source.parsed.bonus_rate_pct` | FAIL if differs |
+| to_multiplier (Deposit/FC) | `live_state.detail.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` | FAIL if differs; WARNING if outside 10–12x range for REL_/RET_ |
+| to_multiplier (FS) | `live_state.detail.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` — FS detail comes from GetFreeSpinPromotionInfo | FAIL if differs; WARNING if outside 10–12x range |
+| min_deposit (Deposit/FS) | `live_state.detail.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` | FAIL if differs or below platform floor |
+| max_bonus (Deposit) | `live_state.detail.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` | FAIL if differs |
+| free_credit_amount (FC) | `live_state.detail.PromotionRewards[0].FixedBonusAmount` vs `source.parsed.free_credit_amount` | FAIL if differs |
+| spin_count (FS) | `live_state.detail.PromotionRewards[0].Quantity` vs `source.parsed.spin_count` — note: GetFreeSpinPromotionInfo returns Quantity on the reward row | FAIL if differs or > 88; INCONCLUSIVE if field absent |
+| value_per_spin (FS) | GetFreeSpinPromotionInfo does not reliably surface AmountPerBet | INCONCLUSIVE — do not FAIL |
+| FC ExpiryMinutes | GetFreeCreditInfo does not return ExpiryMinutes (confirmed API behavior) | INCONCLUSIVE — skip this check; do NOT flag missing as FAIL |
+| start_date | `live_state.detail.PromotionStartDate` — campaign start date | FAIL if missing |
+| end_date | `live_state.detail.PromotionEndDate` — campaign end date | FAIL if missing |
 | promo activation | `live_state.list_row.IsActive` must be `true` | FAIL if false |
-| TO range | `PromotionRewards[0].RolloverMultiplier` — apply 10–12x range rule | WARNING if outside |
-| min deposit platform floors | `PromotionRewards[0].MinimumActionAmount` — apply MYR≥30/SGD≥50/IDR≥25000/THB≥50/USD≥5 per `source.currencies[0]` or site (MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→USD) | FAIL if below floor |
+| min deposit platform floors | `live_state.detail.PromotionRewards[0].MinimumActionAmount` — derive currency from `source.currencies[0]` or site suffix (MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→USD) — apply floors: MYR<30, SGD<50, IDR<25000, THB<50, USD<5 | FAIL if below floor |
+| max_per_player / daily_max | Not a direct concept on IGMP; `RedeemableQuantity=0` is the operator default (unlimited per-player claims) | SKIP — do not apply QPRO/QP2 WARNING for this being uncapped |
 
 **IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
 - `auto_reward_activation` — not a concept on IGMP

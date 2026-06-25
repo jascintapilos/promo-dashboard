@@ -439,9 +439,13 @@ await (async () => {
             mechCheck('CapBonus', rew.CapBonusAmount, sentReward?.CapBonusAmount);
             mechCheck('WithdrawalCap', rew.WithdrawalCap, sentReward?.WithdrawalCap);
           } else if (bonusType === 'free spin') {
-            // FS reward structure differs — check what's available
-            if (rew.Quantity != null) mechCheck('SpinQty', rew.Quantity, rew.Quantity);
-            if (rew.RolloverMultiplier != null) mechCheck('Turnover', rew.RolloverMultiplier, rew.RolloverMultiplier);
+            // GetFreeSpinPromotionInfo returns Quantity (redeemable claim count per
+            // player, not spin count) and RolloverMultiplier on PromotionRewards[0].
+            // Compare against source values; FreeSpinRounds is in the followup body.
+            const expectedTO = sentReward?.RolloverMultiplier ?? rec.parsed?.to_multiplier ?? null;
+            const expectedQty = rec.parsed?.redeemable_quantity ?? rec.redeemable_quantity ?? null;
+            if (rew.RolloverMultiplier != null && expectedTO != null) mechCheck('Turnover', rew.RolloverMultiplier, expectedTO);
+            if (rew.Quantity != null && expectedQty != null) mechCheck('RedeemableQty', rew.Quantity, expectedQty);
           }
         }
         // Date checks (apply to all types). BO returns DD/MM/YYYY,
