@@ -17,6 +17,7 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
 5. **WAIT for user direction.** Do NOT auto-commit. User says "commit it" or "fix X first".
 6. **`node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc`** — live save (only after user confirms)
 7. **`/deep-qc <handle>`** — Sentinel (PASS / WARNING / FAIL / INCONCLUSIVE). Present the verdict.
+8. **`node bin/sheets-writeback.mjs <handle> --field=status --value="QC Completed" --commit`** — write QC Completed back to sheet. Run this after every deep-qc, regardless of WARNING or INCONCLUSIVE, as long as there is no FAIL.
 
 **Skip conditions:**
 - User says "skip qc" or "no qc" in their message → run only the canary commands, no skill invocations
