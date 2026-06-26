@@ -212,6 +212,8 @@ Match the campaign value case-insensitively:
 | Contains `VIP` **and** `AdHoc` | `VIP_` **and** `ADHOC_` |
 | Contains `VIP` **and** `Churn` | `VIP_` **and** `CHURN_` **and** `RET_` |
 | Contains `VIP` **and** `Retention` | `VIP_` **and** `REL_` |
+| Contains `TSM` **and** `Churn` | `TSM_` **and** `CHURN_` |
+| Contains `TSM` **and** `Ret` | `TSM_` **and** `RET_` |
 
 This is NOTE because a wrong prefix is a naming-convention mismatch — the pipeline can still run. Pre-QC and Sentinel will also flag it if the plan is built with the wrong code.
 

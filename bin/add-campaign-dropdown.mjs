@@ -43,6 +43,8 @@ const DROPDOWN_OPTIONS = [
   'VIP AdHoc (AD HOC CAMPAIGNS)',
   'VIP Churn (CHURN PLAYERS)',
   'VIP Retention (ACTIVE PLAYERS)',
+  'TSM Churn (CHURN PLAYERS)',
+  'TSM Retention (ACTIVE PLAYERS)',
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────

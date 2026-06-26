@@ -77,6 +77,20 @@ export const CAMPAIGN_PREFIX_RULES = [
     either:   [],
     example:  'VIP_REL_DEP_30PCT',
   },
+  {
+    label:    'TSM Churn (CHURN PLAYERS)',
+    pattern:  /^TSM.*Churn/i,
+    required: ['TSM_', 'CHURN_'],
+    either:   [],
+    example:  'TSM_CHURN_DEP_50PCT',
+  },
+  {
+    label:    'TSM Retention (ACTIVE PLAYERS)',
+    pattern:  /^TSM.*Ret/i,
+    required: ['TSM_', 'RET_'],
+    either:   [],
+    example:  'TSM_RET_DEP_30PCT',
+  },
 ];
 
 /**
