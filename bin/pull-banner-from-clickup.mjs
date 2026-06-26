@@ -10,11 +10,18 @@
 //
 // Filename conventions supported:
 //   QPRO/QP2:  qpro4-ye55-mup-pp-daily-wins-960x400-my-en.jpg   (up/mup split)
-//   WS1/WS2:   mb8-dream-vacation-raffle-1280x320-my-en.jpg      (single image, staged as-is)
+//   WS1/WS2 via ClickUp attachment: mb8-campaign-1280x320-my-en.jpg  (region-locale suffix)
+//   WS1/WS2 via Nextcloud share:    mb8-campaign-1280x320px-en.jpg   (locale-only suffix)
+//
+// WS1/WS2 Nextcloud flow (preferred for MB8/RWS77):
+//   - Checks ClickUp task Activity (comments) for Nextcloud share links labelled "Banners:"
+//   - PROPFIND to list files, then downloads each via WebDAV Basic auth
+//   - Staged into Banner/{brand}-{campaign-slug}/ (e.g. Banner/mb8-dream-vacation-raffle/)
+//   - upload-ws1-banners-api.mjs discovers the folder automatically (starts with brand prefix)
 //
 // Single-image brands (QPRO/QP2): when a brand only has one file (up or mup),
 // the same image is staged as BOTH desktop and mobile.
-// WS1/WS2 files are always single-image — staged into {brand}-min/ as-is.
+// WS1/WS2 files are always single-image — staged into {brand}-{campaign-slug}/ as-is.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
@@ -126,7 +133,112 @@ function campaignNameFromTask(taskName) {
   return taskName.replace(/^\s*\[[^\]]+\]\s*/, '').trim();
 }
 
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 function fmtSize(w, h) { return w && h ? `${w}x${h}` : '?x?'; }
+
+// ── Nextcloud helpers ─────────────────────────────────────────────────────────
+// WS1/WS2 campaigns upload banner images to a Nextcloud share rather than
+// attaching them directly to the ClickUp task. The share links are posted as
+// comments in the ClickUp Activity section, labelled "Banners:", "Winners List:",
+// and "Socmed:". We extract them here and download via WebDAV.
+
+function parseNextcloudLinks(comments) {
+  const result = { banners: null, winners: null, socmed: null };
+  const NC_RE = /nextcloud\.sgrts\.com\/s\/([a-zA-Z0-9]+)/;
+  for (const comment of (comments || [])) {
+    let lastLabel = null;
+    for (const block of (comment.comment || [])) {
+      const text = (block.text || '').toLowerCase();
+      if (/banner/.test(text))             lastLabel = 'banners';
+      if (/winner/.test(text))             lastLabel = 'winners';
+      if (/socmed|social\s*media/.test(text)) lastLabel = 'socmed';
+      // URL can live in text content, link_mention.url, or block.url
+      const url = block.link_mention?.url || block.url || block.href || block.text || '';
+      const m = NC_RE.exec(url);
+      if (m && lastLabel && !result[lastLabel]) result[lastLabel] = m[1];
+    }
+  }
+  return result;
+}
+
+async function nextcloudListImages(shareToken) {
+  const auth = Buffer.from(`${shareToken}:`).toString('base64');
+  const res = await fetch('https://nextcloud.sgrts.com/public.php/webdav/', {
+    method: 'PROPFIND',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/xml', Depth: '1' },
+    body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:displayname/><d:getcontentlength/></d:prop></d:propfind>`,
+  });
+  if (!res.ok) throw new Error(`Nextcloud PROPFIND ${res.status} for share ${shareToken}`);
+  const xml = await res.text();
+  const files = [];
+  // Match only entries whose displayname ends with an image extension
+  for (const m of xml.matchAll(/<d:displayname>([^<]+\.(jpe?g|png))<\/d:displayname>[\s\S]*?<d:getcontentlength>(\d+)<\/d:getcontentlength>/gi)) {
+    files.push({ name: m[1], size: +m[3] });
+  }
+  return files;
+}
+
+async function nextcloudDownload(shareToken, filename) {
+  const auth = Buffer.from(`${shareToken}:`).toString('base64');
+  const res = await fetch(`https://nextcloud.sgrts.com/public.php/webdav/${encodeURIComponent(filename)}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`Download ${res.status} — ${filename}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function stageNextcloudBanners({ shareToken, campaignBase, tagArg, bannerDir, dryRun }) {
+  console.log(`\n[Nextcloud] Listing Banners share (${shareToken})...`);
+  const ncFiles = await nextcloudListImages(shareToken);
+  if (!ncFiles.length) {
+    console.log('[Nextcloud] No image files found in share.');
+    return { ok: 0, failed: 0, destFolder: null, ncFiles: [] };
+  }
+
+  // Extract brand code from first filename (e.g. "mb8-dream-vacation-raffle-1280x320px-en.jpg" → "mb8")
+  const brandCode = ncFiles[0].name.match(/^(mb8|rws77|ws1|ws2)/i)?.[1]?.toLowerCase() || 'mb8';
+  const campaignSlug = tagArg
+    ? `${slugify(tagArg)}-${slugify(campaignBase)}`
+    : slugify(campaignBase);
+  const destFolder = join(bannerDir, `${brandCode}-${campaignSlug}`);
+
+  console.log(`\n── Nextcloud Banners (${ncFiles.length} files) ─────────────────────────────────`);
+  console.log(`Destination: Banner/${brandCode}-${campaignSlug}/\n`);
+  const header = `${'Filename'.padEnd(55)} ${'Size'}`;
+  console.log(header);
+  console.log('─'.repeat(65));
+  for (const f of ncFiles) {
+    const kb = `${Math.round(f.size / 1024)}KB`;
+    console.log(`  ${f.name.padEnd(53)} ${kb}`);
+  }
+  console.log('─'.repeat(65));
+
+  if (dryRun) {
+    console.log(`\n[dry-run] ${ncFiles.length} file(s) would be staged. Remove --dry-run to download.\n`);
+    return { ok: 0, failed: 0, destFolder, ncFiles };
+  }
+
+  if (!existsSync(destFolder)) mkdirSync(destFolder, { recursive: true });
+
+  let ok = 0, failed = 0;
+  console.log(`\nDownloading ${ncFiles.length} file(s)...`);
+  for (const f of ncFiles) {
+    process.stdout.write(`  ${f.name} (${Math.round(f.size / 1024)}KB) ... `);
+    try {
+      const buf = await nextcloudDownload(shareToken, f.name);
+      writeFileSync(join(destFolder, f.name), buf);
+      console.log('OK');
+      ok++;
+    } catch (err) {
+      console.log(`FAILED — ${err.message}`);
+      failed++;
+    }
+  }
+  return { ok, failed, destFolder, ncFiles };
+}
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 console.log(`\nFetching task ${taskId} from ClickUp...`);
@@ -137,7 +249,24 @@ const campaign = tag ? `${tag}_${campaignBase}` : campaignBase;
 console.log(`Task     : ${task.name}`);
 console.log(`Campaign : ${campaign}${tag ? `  [tagged: ${tag}]` : ''}`);
 console.log(`Status   : ${task.status?.status}`);
-console.log(`Total attachments: ${task.attachments.length}\n`);
+console.log(`Total attachments: ${task.attachments.length}`);
+
+// Fetch ClickUp comments to find Nextcloud share links (non-fatal)
+let ncLinks = { banners: null, winners: null, socmed: null };
+try {
+  const commentsData = await getJson(`https://api.clickup.com/api/v2/task/${taskId}/comment`);
+  ncLinks = parseNextcloudLinks(commentsData.comments || []);
+} catch (e) {
+  // fall through — Nextcloud path disabled, use attachment flow
+}
+if (ncLinks.banners || ncLinks.winners || ncLinks.socmed) {
+  const parts = [];
+  if (ncLinks.banners) parts.push(`Banners`);
+  if (ncLinks.winners) parts.push(`Winners`);
+  if (ncLinks.socmed)  parts.push(`Socmed`);
+  console.log(`Nextcloud shares in comments: ${parts.join(', ')}`);
+}
+console.log('');
 
 // Split banner images vs other files
 const bannerFiles = task.attachments.filter(a => parseFilename(a.title));
@@ -149,10 +278,39 @@ if (skippedFiles.length) {
   console.log('');
 }
 
+// ── Nextcloud path: WS1/WS2 campaigns with no direct ClickUp attachments ──────
+// When no banner attachments match known naming conventions but a Nextcloud
+// Banners share was found in the ClickUp comments, download from Nextcloud.
+if (!bannerFiles.length && ncLinks.banners) {
+  const result = await stageNextcloudBanners({
+    shareToken:   ncLinks.banners,
+    campaignBase, tagArg: tag,
+    bannerDir,    dryRun,
+  });
+
+  if (!dryRun) {
+    const campaignSlug = tag ? `${slugify(tag)}-${slugify(campaignBase)}` : slugify(campaignBase);
+    const brandCode = result.ncFiles[0]?.name.match(/^(mb8|rws77)/i)?.[1]?.toLowerCase() || 'mb8';
+    const folder = `Banner/${brandCode}-${campaignSlug}`;
+    console.log(`\n── Result ───────────────────────────────────────────────────────────`);
+    console.log(`Source files        : ${result.ncFiles.length}`);
+    console.log(`Files staged        : ${result.ok}`);
+    if (result.failed) console.log(`Failed              : ${result.failed}`);
+    console.log(`Staged to           : ${folder}`);
+    if (ncLinks.winners) console.log(`\nWinners List share  : nextcloud.sgrts.com/s/${ncLinks.winners}`);
+    if (ncLinks.socmed)  console.log(`Socmed share        : nextcloud.sgrts.com/s/${ncLinks.socmed}`);
+    console.log('\nNext step:');
+    if (bid) console.log(`  node bin/upload-ws1-banners-api.mjs --range=${bid} --commit`);
+    else     console.log('  node bin/upload-ws1-banners-api.mjs --range=<B-IDs> --commit');
+  }
+  process.exit(0);
+}
+
 if (!bannerFiles.length) {
   console.log('No banner images found matching known naming conventions:');
   console.log('  QPRO/QP2: qpro4-ye55-mup-pp-campaign-960x400-my-en.jpg');
-  console.log('  WS1/WS2:  mb8-campaign-name-1280x320-my-en.jpg  |  rws77-campaign-1000x503-my-en.jpg');
+  console.log('  WS1/WS2 (attachment): mb8-campaign-name-1280x320-my-en.jpg');
+  console.log('  WS1/WS2 (Nextcloud): no share link found in ClickUp comments either.');
   process.exit(0);
 }
 

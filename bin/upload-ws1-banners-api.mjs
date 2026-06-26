@@ -253,17 +253,34 @@ function discoverImages(siteId, regions, bannerDir, imageDirOverride, tag) {
       // Use filename suffix override if design team uses a different code than Directus
       const filenameSuffix = LOCALE_FILENAME_SUFFIX[locale] || locale;
       const suffix = `${regionLow}-${filenameSuffix}`;
-      const matches = files.filter((f) => {
+      let matches = files.filter((f) => {
         const base = f.toLowerCase().replace(/\.(jpe?g|png)$/, '');
         return base.endsWith(`-${suffix}`) || base.includes(`-${suffix}-`) || base.includes(`_${suffix}_`);
       });
+
+      // Fallback: locale-only suffix (Nextcloud files use -en/-zh/-id/-kh/-th
+      // without a region prefix — one file covers all regions for that locale).
+      if (!matches.length) {
+        matches = files.filter((f) => {
+          const base = f.toLowerCase().replace(/\.(jpe?g|png)$/, '');
+          return base.endsWith(`-${filenameSuffix}`);
+        });
+        if (matches.length) {
+          console.log(`    [${region}/${locale}] locale-only fallback — ${matches.length} file(s) found`);
+        }
+      }
 
       const desktopFile = matches.find((f) => /-up[^a-z]/i.test(f) || /1280|1920/i.test(f))
                        || matches.find((f) => !/mup/i.test(f))
                        || matches[0]
                        || null;
+      // For mobile: prefer explicit -mup-/960/640 markers, then any file that is
+      // NOT the 1280/1920 desktop (e.g. 1000x503 or 1000x565 from Nextcloud).
       const mobileFile  = matches.find((f) => /mup/i.test(f) || /960|640/i.test(f))
-                       || desktopFile; // fall back to desktop
+                       || (matches.length > 1
+                           ? matches.find((f) => !/1280|1920/i.test(f))
+                           : null)
+                       || desktopFile;
 
       result[region][locale] = {
         desktop: desktopFile ? path.join(folder, desktopFile) : null,
@@ -286,7 +303,7 @@ function campaignToSlug(label) {
 function buildPlan(rows, args) {
   const bannerDir = args.bannerDir
     ? path.resolve(args.bannerDir)
-    : path.resolve(__dirname, '../../Banner');
+    : path.resolve(__dirname, '../Banner');
 
   const plan = [];
   for (const row of rows) {
