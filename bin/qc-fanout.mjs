@@ -113,7 +113,21 @@ if (refresh) {
         const [r1, r2] = await Promise.all([
           wrap(igmpPost(b.site, '/PM/GetPromotionInfoByCode', { PromotionCode: b.promo_code }).then(r => r?.data ?? null)),
           b.promotion_id && IGMP_DETAIL_EP
-            ? wrap(igmpPost(b.site, IGMP_DETAIL_EP, { PromotionId: b.promotion_id }).then(r => r?.data?.Promotion || r?.data || null))
+            ? wrap(igmpPost(b.site, IGMP_DETAIL_EP, { PromotionId: b.promotion_id }).then(r => {
+                const outer = r?.data;
+                const inner = outer?.Promotion || outer || null;
+                if (!inner) return null;
+                // Patch outer-wrapper fields (RedeemableDay, RedeemableCount) into the
+                // saved detail for Dep/FC bundles where inner = outer.Promotion.
+                if (outer && outer !== inner) {
+                  const patch = {};
+                  for (const k of ['RedeemableDay', 'RedeemableCount']) {
+                    if (outer[k] !== undefined) patch[k] = outer[k];
+                  }
+                  return Object.keys(patch).length ? { ...inner, ...patch } : inner;
+                }
+                return inner;
+              }))
             : Promise.resolve(null),
         ]);
         const rewardId = b.reward_id ?? (r2?.ok ? r2.value?.PromotionRewards?.[0]?.RewardId : null);

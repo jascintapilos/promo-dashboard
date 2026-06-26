@@ -410,11 +410,24 @@ await (async () => {
   if (promoId && DETAIL_ENDPOINT) {
     try {
       const detRes = await igmpPost(siteId, DETAIL_ENDPOINT, { PromotionId: promoId });
-      const det = detRes?.data?.Promotion || detRes?.data;
+      const outerData = detRes?.data;
+      const det = outerData?.Promotion || outerData;
       if (!det) {
         console.warn(`⚠ QC L2 skipped — detail response empty`);
       } else {
-        savedDetail = det;
+        // For Dep/FC, det = outerData.Promotion (inner sub-object). RedeemableDay and
+        // RedeemableCount live on the outer wrapper and would be lost in the bundle.
+        // Patch them in so Sentinel can verify them. For FS, det = outerData directly
+        // (GetFreeSpinPromotionInfo has no Promotion key), so no patch is needed.
+        if (outerData && outerData !== det) {
+          const patch = {};
+          for (const k of ['RedeemableDay', 'RedeemableCount']) {
+            if (outerData[k] !== undefined) patch[k] = outerData[k];
+          }
+          savedDetail = Object.keys(patch).length ? { ...det, ...patch } : det;
+        } else {
+          savedDetail = det;
+        }
         const rew = det.PromotionRewards?.[0];
         rewardId = rew?.RewardId ?? null;
         const sentReward = plan.body.PromotionRewards?.[0];

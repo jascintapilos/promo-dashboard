@@ -273,14 +273,18 @@ When `platform` in the bundle is `"igmp"`, the standard field paths in the crite
 | min_deposit (Deposit/FS) | `live_state.detail.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` | FAIL if differs or below platform floor |
 | max_bonus (Deposit) | `live_state.detail.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` | FAIL if differs |
 | free_credit_amount (FC) | `live_state.detail.PromotionRewards[0].FixedBonusAmount` vs `source.parsed.free_credit_amount` | FAIL if differs |
-| spin_count (FS) | `live_state.detail.PromotionRewards[0].Quantity` vs `source.parsed.spin_count` — note: GetFreeSpinPromotionInfo returns Quantity on the reward row | FAIL if differs or > 88; INCONCLUSIVE if field absent |
-| value_per_spin (FS) | GetFreeSpinPromotionInfo does not reliably surface AmountPerBet | INCONCLUSIVE — do not FAIL |
-| FC ExpiryMinutes | GetFreeCreditInfo does not return ExpiryMinutes (confirmed API behavior) | INCONCLUSIVE — skip this check; do NOT flag missing as FAIL |
-| start_date | `live_state.detail.PromotionStartDate` — campaign start date | FAIL if missing |
-| end_date | `live_state.detail.PromotionEndDate` — campaign end date | FAIL if missing |
+| spin_count (FS) | `GetFreeSpinPromotionInfo` does NOT return `FreeSpinRounds` (actual spins per claim). `PromotionRewards[0].Quantity` = `RedeemableQuantity` — how many times a player can redeem the promo, NOT the spin count | INCONCLUSIVE — do NOT compare `Quantity` against `source.parsed.spin_count`; they measure different things. Never FAIL on this field |
+| value_per_spin (FS) | `GetFreeSpinPromotionInfo` does not surface `AmountPerBet` | INCONCLUSIVE — do not FAIL |
+| FC ExpiryMinutes | `GetFreeCreditInfo` does not return `ExpiryMinutes` (confirmed API behavior) | INCONCLUSIVE — skip this check; do NOT flag missing as FAIL |
+| RedeemableDay | `live_state.detail.RedeemableDay` — for Dep/FC the canary patches this from the outer API wrapper into the bundle; for FS it is present directly on detail | FAIL if value is `"0"` alone — silently restricts the promo to Sunday only (confirmed production incident); expected `"0,1,2,3,4,5,6"` for all-week promos; INCONCLUSIVE if field is absent from the bundle entirely |
+| RedemptionType (FS) | `live_state.detail.PromotionRewards[0].RedemptionType` — 0 = Deposit (player must deposit to trigger claim), 1 = Claim (no deposit needed) | FAIL if `source.parsed.min_deposit > 0` but value ≠ 0; FAIL if `source.parsed.min_deposit = 0` but value ≠ 1; INCONCLUSIVE if field absent |
+| RewardType (Dep) | `live_state.detail.PromotionRewards[0].RewardType` — 0 = Percentage, 1 = Fixed | FAIL if `source.parsed.bonus_rate_pct > 0` but RewardType ≠ 0; FAIL if `source.parsed.fixed_bonus_amount > 0` but RewardType ≠ 1; INCONCLUSIVE if absent |
+| WithdrawalCap (Dep/FC) | `live_state.detail.PromotionRewards[0].WithdrawalCap` | WARNING if 0 and `source.parsed.max_withdraw > 0` (cap requested but not saved — players can withdraw unlimited bonus winnings); INCONCLUSIVE if field absent from bundle |
+| start_date | `live_state.detail.PromotionStartDate` | FAIL if missing |
+| end_date | `live_state.detail.PromotionEndDate` | FAIL if missing |
 | promo activation | `live_state.list_row.IsActive` must be `true` | FAIL if false |
 | min deposit platform floors | `live_state.detail.PromotionRewards[0].MinimumActionAmount` — derive currency from `source.currencies[0]` or site suffix (MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→USD) — apply floors: MYR<30, SGD<50, IDR<25000, THB<50, USD<5 | FAIL if below floor |
-| max_per_player / daily_max | Not a direct concept on IGMP; `RedeemableQuantity=0` is the operator default (unlimited per-player claims) | SKIP — do not apply QPRO/QP2 WARNING for this being uncapped |
+| max_per_player / daily_max | Not a direct concept on IGMP; `RedeemableQuantity=0` is the operator default (unlimited per-player claims) | SKIP — do not apply QPRO/QP2 WARNING for this being uncapped; if `source.max_per_player > 0`, emit WARNING that the cap cannot be verified on IGMP |
 
 **IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
 - `auto_reward_activation` — not a concept on IGMP
