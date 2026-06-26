@@ -96,8 +96,22 @@ if (cookieExp > 0 && cookieExp < nowSec + 300) {
   console.error(sessionExpiredMsg(INSTANCE));
   process.exit(1);
 }
+if (cookieExp === 0) {
+  // Session cookie — no expiry field to check. Validate with a lightweight ping.
+  try {
+    const pingRes = await fetch(`${BASE}/crm-api/Admin/User?_start=0&_end=1`, {
+      headers: { authtoken: portaltoken, Accept: 'application/json' },
+    });
+    if (pingRes.status === 401) {
+      console.error(sessionExpiredMsg(INSTANCE));
+      process.exit(1);
+    }
+  } catch (e) {
+    console.warn(`  Token pre-flight ping failed (${e.message}); continuing — will fail on first API call if expired.`);
+  }
+}
 console.log(`\nFastTrack CRM pull — ${session.label} (${INSTANCE})`);
-console.log(`Session valid until: ${new Date(cookieExp * 1000).toISOString()}`);
+console.log(`Session valid until: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie (no expiry)'}`);
 console.log(`Mode: ${WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
@@ -185,11 +199,48 @@ const excluded = ytdAll.length - ytdActivities.length;
 if (excluded) console.log(`  Excluded ${excluded} recurring activities (TriggerTypeId ≠ 2)`);
 console.log(`  ${ytdActivities.length} one-off activities`);
 
-// Deduplicate by SegmentId — only show each segment once (use most recent activity)
+// ── Changelog lookup — resolve creator BEFORE dedup ──────────────────────────
+// Creator must be known before dedup so team activities are never suppressed
+// by a newer non-team blast on the same segment. Changelog is resolved for all
+// one-off activities (not just dedup winners) — marginal extra API calls.
+console.log('Fetching changelogs for creator attribution…');
+const creatorByActId = {};
+const CL_BATCH = 20;
+let clFailCount = 0;
+for (let i = 0; i < ytdActivities.length; i += CL_BATCH) {
+  const batch = ytdActivities.slice(i, i + CL_BATCH);
+  await Promise.all(batch.map(async a => {
+    try {
+      const clResp = await apiGet(`/crm-api/Changelog/Entity/activity/${a.ActivityId}`);
+      const entries = clResp?.Data || [];
+      const createEntry = [...entries].reverse().find(e => e.operationType === 'create');
+      const fallbackEntry = entries[entries.length - 1];
+      const creatorEntry = createEntry || fallbackEntry;
+      if (creatorEntry?.userId) {
+        creatorByActId[a.ActivityId] = userMap[creatorEntry.userId] || DELETED_USER_NAMES[creatorEntry.userId] || `uid:${creatorEntry.userId}`;
+      }
+    } catch { clFailCount++; }
+  }));
+  if (i + CL_BATCH < ytdActivities.length) {
+    process.stdout.write(`\r  ${Math.min(i + CL_BATCH, ytdActivities.length)}/${ytdActivities.length} changelogs…`);
+  }
+}
+console.log(`\r  ${Object.keys(creatorByActId).length} changelogs resolved         `);
+if (clFailCount > 0) console.warn(`  ⚠️  ${clFailCount} changelog fetch(es) failed — those rows fall back to SignedBy for creator name.`);
+
+// Team-filter BEFORE dedup — prevents a non-team blast on the same segment from
+// winning the newest-first dedup and erasing a team member's activity.
+const teamActivities = ytdActivities.filter(a => {
+  const creator = creatorByActId[a.ActivityId] || userMap[a.SignedBy];
+  return creator && TBP_TEAM.has(creator);
+});
+console.log(`  ${teamActivities.length} team-created activities`);
+
+// Deduplicate by SegmentId across team activities only (newest team activity wins)
 const seenSegmentIds = new Set();
 const dedupedActivities = [];
 const sortDate = a => (a.SignedDate || a.ExecutionDateTime || '');
-for (const a of ytdActivities.sort((a, b) => sortDate(b).localeCompare(sortDate(a)))) {
+for (const a of teamActivities.sort((a, b) => sortDate(b).localeCompare(sortDate(a)))) {
   const key = a.SegmentId || `act_${a.ActivityId}`;
   if (!seenSegmentIds.has(key)) {
     seenSegmentIds.add(key);
@@ -197,32 +248,6 @@ for (const a of ytdActivities.sort((a, b) => sortDate(b).localeCompare(sortDate(
   }
 }
 console.log(`  ${dedupedActivities.length} unique segments after dedup`);
-
-// ── Changelog lookup — find creator via GET /crm-api/Changelog/Entity/activity/{id} ──
-
-console.log('Fetching changelogs for creator attribution…');
-const creatorByActId = {};
-const CL_BATCH = 20;
-for (let i = 0; i < dedupedActivities.length; i += CL_BATCH) {
-  const batch = dedupedActivities.slice(i, i + CL_BATCH);
-  await Promise.all(batch.map(async a => {
-    try {
-      const clResp = await apiGet(`/crm-api/Changelog/Entity/activity/${a.ActivityId}`);
-      const entries = clResp?.Data || [];
-      // Array is newest-first; find the 'create' entry (or earliest entry) for creator
-      const createEntry = [...entries].reverse().find(e => e.operationType === 'create');
-      const fallbackEntry = entries[entries.length - 1]; // oldest = earliest change
-      const creatorEntry = createEntry || fallbackEntry;
-      if (creatorEntry?.userId) {
-        creatorByActId[a.ActivityId] = userMap[creatorEntry.userId] || DELETED_USER_NAMES[creatorEntry.userId] || `uid:${creatorEntry.userId}`;
-      }
-    } catch { /* fall through to SignedBy fallback */ }
-  }));
-  if (i + CL_BATCH < dedupedActivities.length) {
-    process.stdout.write(`\r  ${Math.min(i + CL_BATCH, dedupedActivities.length)}/${dedupedActivities.length} changelogs…`);
-  }
-}
-console.log(`\r  ${Object.keys(creatorByActId).length} changelogs resolved         `);
 
 // ── Brand / Region extraction ─────────────────────────────────────────────────
 
@@ -367,6 +392,23 @@ const { sheets } = await getSheetsClient();
 if (teamRows.length === 0) {
   console.log('\nNo team rows to write. Sheet unchanged.');
   process.exit(0);
+}
+
+// ── Guard: verify tab has a header + at least one data row before appending ────
+// If Smartico crashed after clearing the tab (leaving it empty), appending FT
+// here would produce a headerless sheet with no Smartico data.
+try {
+  const headerCheck = await sheets.spreadsheets.values.get({
+    spreadsheetId: OPS_ID, range: `'${TAB}'!A1:A2`,
+  });
+  const vals = headerCheck.data.values || [];
+  if (!vals[0] || vals[0][0] !== 'Date' || vals.length < 2) {
+    console.error(`\n⛔ ABORT: '${TAB}' tab is empty or missing data rows.`);
+    console.error(`   Smartico pull may have failed. Re-run pull-smartico-campaigns.mjs --write first.`);
+    process.exit(4);
+  }
+} catch (e) {
+  console.warn(`  (Could not verify tab header: ${e.message}; proceeding with append.)`);
 }
 
 // Use append — auto-extends sheet rows, no need to pre-calculate start row

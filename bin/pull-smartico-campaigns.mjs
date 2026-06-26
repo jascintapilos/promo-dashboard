@@ -32,7 +32,8 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const { flags } = parseArgs(process.argv.slice(2));
-const WRITE = flags.write === true;
+const WRITE      = flags.write === true;
+const NO_PRESERVE = flags['no-preserve'] === true;
 const OPS_ID = getOpsSheetId();
 const YEAR = new Date().getFullYear();
 
@@ -97,10 +98,12 @@ const allCampaigns = await client.listSPAAll(
 );
 console.log(`Scheduled campaigns (YTD, all creators): ${allCampaigns.length}`);
 
-// Build segment_id set for dedup — each campaign has a segment_id pointing to
-// the j_segment record it uses as its audience. Segments in this set are already
-// represented by a campaign and should not be double-counted.
-const coveredSegmentIds = new Set(allCampaigns.map(a => a.segment_id).filter(Boolean));
+// Build segment_id set for dedup — scoped to TEAM campaigns only.
+// Using all campaigns (incl. non-team) would suppress a team orphan segment
+// if a non-team user happened to reference the same segment in their campaign.
+const coveredSegmentIds = new Set(
+  allCampaigns.filter(a => TEAM[a.username]).map(a => a.segment_id).filter(Boolean)
+);
 
 // ── Step 2: Segments (list + scan beyond 1000-record cap) ────────────────────
 console.log('\nFetching segment list (API cap: 1000 records)...');
@@ -206,8 +209,6 @@ if (WRITE) {
   }
 
   const FORCE = process.argv.includes('--force');
-  // --no-preserve: skip FT preservation when FT pull will run immediately after
-  const NO_PRESERVE = process.argv.includes('--no-preserve');
 
   // ── Read existing tab: safety check + preserve non-Smartico rows (FT etc.) ──
   // Smartico clears the whole tab before writing. Without preservation, any
