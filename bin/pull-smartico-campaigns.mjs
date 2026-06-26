@@ -1,10 +1,9 @@
 /**
- * Pull YTD Smartico segments AND activities created by the promo team into
+ * Pull YTD Smartico scheduled campaigns created by the promo team into
  * the Weekly Report 'CRM Assignment Log' tab.
  *
- * Sources:
- *   j_segment            — Segments (created via Segment menu)
- *   j_audience_scheduled — Activities (created directly in the Activity tool)
+ * Source: j_audience_scheduled — Scheduled Campaigns (each has its segment attached).
+ * Segments are not pulled separately — they are redundant once we have the campaign.
  *
  * Columns: Date | Brand | Region | CRM Tool | Segment Name | Created By
  *
@@ -24,8 +23,6 @@ import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 import { parseArgs } from './_args.js';
 import { listSites } from '../src/sites.js';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import path from 'node:path';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const WRITE = flags.write === true;
@@ -83,88 +80,38 @@ function extractRegion(segName, conditionsText) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const client = smarticoClient();
-console.log(`\nSmartico pull (segments + activities) — YTD ${YEAR}  (token: ${client.capturedAt})`);
+console.log(`\nSmartico pull (scheduled campaigns only) — YTD ${YEAR}  (token: ${client.capturedAt})`);
 console.log(`Mode: ${WRITE ? 'WRITE' : 'DRY RUN'}\n`);
 
-// ── Segments: fetch base list + scan beyond 1000-record cap ──────────────────
-console.log('Fetching segment list (API cap: 1000 records)...');
-const all = await client.list('j_segment', { _start: 0, _end: 10000, _sort: 'id', _order: 'ASC' });
-const listArr = Array.isArray(all) ? all : [];
-const listMaxId = listArr.length ? Math.max(...listArr.map(s => s.id || 0)) : 35865;
-console.log(`List returned: ${listArr.length} segments  (max ID: ${listMaxId})`);
-
-// Smartico's list endpoint returns the OLDEST 1000 segments by ID ASC. Any
-// segments created after the 1000th one are invisible through list. We fetch
-// them individually via GET /{id} starting from listMaxId+1.
-const MISS_THRESHOLD = parseInt(process.env.SMARTICO_SCAN_WINDOW || '1500');
-const scanStart = listMaxId + 1;
-console.log(`Scanning IDs ${scanStart}+ for new segments (${MISS_THRESHOLD}-miss stop)...`);
-const { segments: extraArr, maxScannedId } = await client.scanBeyondList(scanStart, {
-  consecutiveMissThreshold: MISS_THRESHOLD,
-  onProgress: (id, n) => process.stdout.write(`\r  scanned to ${id}, found ${n} new...`),
-});
-if (extraArr.length) process.stdout.write('\n');
-console.log(`Incremental scan: ${extraArr.length} new segments found beyond list (max ID seen: ${maxScannedId})`);
-
-if (WRITE) {
-  writeFileSync(path.resolve('smartico-scan-state.local.json'), JSON.stringify({
-    lastScanCompletedAt: new Date().toISOString(),
-    listMaxId,
-    maxScannedId,
-    extrasFound: extraArr.length,
-    note: 'advisory only; scan always starts from listMaxId+1',
-  }));
-}
-
-const segmentArr = [...listArr, ...extraArr];
-const ytdSegments = segmentArr.filter(s =>
-  s.create_date &&
-  s.create_date.slice(0, 10) >= `${YEAR}-01-01` &&
-  TEAM[s.username]
-);
-console.log(`YTD team segments: ${ytdSegments.length}`);
-
-// ── Activities: j_audience_scheduled (Scheduled Campaigns) ───────────────────
-// NOTE: The react-admin list endpoint (_start/_end/_sort/_order) is broken for
-// j_audience_scheduled — it ignores all params and always returns the same 1000
-// oldest records. We use the SPA API format (listSPAAll) which actually works.
+// ── Scheduled Campaigns: j_audience_scheduled (SPA API format) ───────────────
+// The react-admin list endpoint (_start/_end/_sort/_order) is broken for
+// j_audience_scheduled — ignores all params and returns the same 1000 oldest
+// records. The SPA API format (listSPAAll) works correctly.
 // audience_exec_type_id=3 selects Scheduled campaigns only.
-console.log('\nFetching scheduled campaigns (j_audience_scheduled, SPA API)...');
-let ytdActivities = [];
-try {
-  const actArr = await client.listSPAAll(
-    'j_audience_scheduled',
-    { audience_exec_type_id: 3 },
-    YEAR,
-  );
-  console.log(`Scheduled campaigns (YTD): ${actArr.length} total`);
+console.log('Fetching scheduled campaigns (j_audience_scheduled, SPA API)...');
+const actArr = await client.listSPAAll(
+  'j_audience_scheduled',
+  { audience_exec_type_id: 3 },
+  YEAR,
+);
+console.log(`Scheduled campaigns (YTD, all creators): ${actArr.length}`);
 
-  ytdActivities = actArr
-    .filter(a => TEAM[a.username])
-    .map(a => ({
-      create_date:         a.create_date || '',
-      username:            a.username    || '',
-      segment_name:        a.audience_name || String(a.id || ''),
-      conditions_readable: a.conditions_readable || a.segment_conditions_readable || '',
-      _type: 'Activity',
-    }));
-  console.log(`YTD team activities: ${ytdActivities.length}`);
-} catch (e) {
-  if (/errCode|expired/i.test(e.message)) throw e;
-  console.warn(`  Activity pull skipped: ${e.message}`);
-}
+const ytd = actArr
+  .filter(a => TEAM[a.username])
+  .map(a => ({
+    create_date:         a.create_date || '',
+    username:            a.username    || '',
+    segment_name:        a.audience_name || String(a.id || ''),
+    conditions_readable: a.conditions_readable || a.segment_conditions_readable || '',
+  }));
 
-// ── Combine + sort ────────────────────────────────────────────────────────────
-const ytdSegmentsTagged = ytdSegments.map(s => ({ ...s, _type: 'Segment' }));
-const ytd = [...ytdSegmentsTagged, ...ytdActivities];
 ytd.sort((a, b) => (a.create_date || '').localeCompare(b.create_date || ''));
-
-console.log(`\nTotal YTD rows: ${ytd.length} (${ytdSegments.length} segments + ${ytdActivities.length} activities)`);
+console.log(`\nTotal YTD rows: ${ytd.length} (team-only)`);
 
 // Summary by team member
 const byMember = {};
-for (const s of ytd) {
-  const name = TEAM[s.username];
+for (const r of ytd) {
+  const name = TEAM[r.username];
   byMember[name] = (byMember[name] || 0) + 1;
 }
 console.log('By team member (YTD):');
@@ -174,13 +121,13 @@ for (const [name, n] of Object.entries(byMember).sort((a, b) => b[1] - a[1])) {
 console.log();
 
 const HEADER = ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'];
-const dataRows = ytd.map(s => [
-  (s.create_date || '').slice(0, 10),
-  extractBrand(s.segment_name || ''),
-  extractRegion(s.segment_name || '', s.conditions_readable || ''),
+const dataRows = ytd.map(r => [
+  (r.create_date || '').slice(0, 10),
+  extractBrand(r.segment_name || ''),
+  extractRegion(r.segment_name || '', r.conditions_readable || ''),
   'Smartico',
-  s.segment_name || '',
-  TEAM[s.username] || s.username,
+  r.segment_name || '',
+  TEAM[r.username] || r.username,
 ]);
 
 const rows = [HEADER, ...dataRows];
