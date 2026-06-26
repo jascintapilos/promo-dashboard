@@ -89,6 +89,7 @@ Verify presence and basic shape only:
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
+* Campaign objective prefix (if `campaign` is set on the request): promo_code must contain the required tokens for that campaign type. Strip leading `FT_` from promo_code before checking. Emit NOTE if tokens are missing. Skip entirely if `campaign` is blank or null.
 
 You do NOT check:
 
@@ -191,6 +192,28 @@ Verdict derivation:
 Downstream handoff:
 - `READY` or `NOTE` → "Proceed to canary dry-run"
 - `RETURN` → "Return to operator (fix source, re-ingest)"
+
+---
+
+## Campaign objective → required promo_code tokens
+
+When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code is missing required tokens. Strip leading `FT_` from promo_code before checking. Skip if campaign is blank or null.
+
+Match the campaign value case-insensitively:
+
+| Campaign value matches | Required tokens in promo_code |
+|---|---|
+| Starts with `ACQ` | `ACQ_` **and** `WELC_` |
+| Contains `Retention` **and** `AdHoc` | `ADHOC_` **and** `RET_` |
+| Contains `CRM` **and** `Retention` (no `AdHoc`) | `CRM_` **and** `REL_` |
+| Contains `CRM` **and** `Churn` | `CRM_` **and** `CHURN_` **and** `RET_` |
+| Contains `CRM` **and** `Monthly` | `CRM_` **and** at least one of `REL_` / `RET_` |
+| Contains `VIP` **and** `Groom` | `VIP_` **and** `GROOM_` **and** `REL_` |
+| Contains `VIP` **and** `AdHoc` | `VIP_` **and** `ADHOC_` |
+| Contains `VIP` **and** `Churn` | `VIP_` **and** `CHURN_` **and** `RET_` |
+| Contains `VIP` **and** `Retention` | `VIP_` **and** `REL_` |
+
+This is NOTE because a wrong prefix is a naming-convention mismatch — the pipeline can still run. Pre-QC and Sentinel will also flag it if the plan is built with the wrong code.
 
 ---
 

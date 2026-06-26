@@ -196,6 +196,7 @@ if (!commit) {
         daily_max: resolved.daily_max,
         max_withdraw: resolved.max_withdraw,
         instructions: resolved.instructions || null,
+        campaign: resolved.campaign || null,
         remark: resolved.remark || null,
         requestor: resolved.requestor || null,
         per_currency_overrides: resolved.per_currency_overrides ?? {},
@@ -436,6 +437,7 @@ try {
         daily_max: resolved.daily_max,
         max_withdraw: resolved.max_withdraw,
         instructions: resolved.instructions || null,
+        campaign: resolved.campaign || null,
         remark: resolved.remark || null,
       },
       qc_endpoints: {
