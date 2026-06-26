@@ -374,7 +374,8 @@ function buildAddFreeSpin(rec, { siteId } = {}) {
     PromotionId: '$PromotionId',
     PromotionReward: {
       RewardName: baseName,  // T&C heading stays clean
-      RedemptionType: String(rec.fs_redemption_type ?? 1), // 1=claim (only non-deposit option)
+      // RedemptionType: 0=Deposit, 1=Claim. Derive from min_deposit unless overridden.
+      RedemptionType: String(rec.fs_redemption_type ?? (Number(rec.min_deposit ?? 0) > 0 ? 0 : 1)),
       RewardType: '3',                                     // 3=Free Spin — only option in BO dropdown
       MinimumActionAmount: Number(rec.min_deposit ?? 0),
       BonusPercentage: 0,                                   // hardcoded: no bonus in free spin
