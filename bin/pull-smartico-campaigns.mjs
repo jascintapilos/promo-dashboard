@@ -161,7 +161,7 @@ const orphanRows = orphanSegments.map(s => ({
 }));
 
 const ytd = [...teamCampaigns, ...orphanRows];
-ytd.sort((a, b) => (a.create_date || '').localeCompare(b.create_date || ''));
+ytd.sort((a, b) => (b.create_date || '').localeCompare(a.create_date || ''));
 
 console.log(`\nTotal YTD rows: ${ytd.length} (${teamCampaigns.length} campaigns + ${orphanRows.length} orphan segments)`);
 
@@ -206,10 +206,13 @@ if (WRITE) {
   }
 
   const FORCE = process.argv.includes('--force');
+  // --no-preserve: skip FT preservation when FT pull will run immediately after
+  const NO_PRESERVE = process.argv.includes('--no-preserve');
 
   // ── Read existing tab: safety check + preserve non-Smartico rows (FT etc.) ──
   // Smartico clears the whole tab before writing. Without preservation, any
   // FastTrack rows already appended this session would be wiped.
+  // Pass --no-preserve when FT pull follows immediately (avoids double-append).
   let preservedRows = [];
   if (dataRows.length === 0 && !FORCE) {
     console.error(`\n⛔ ABORT: 0 team records found. Refusing to wipe '${TAB}'.`);
@@ -227,9 +230,13 @@ if (WRITE) {
       console.error(`   Pass --force to override.`);
       process.exit(3);
     }
-    preservedRows = allData.filter(r => r[3] !== 'Smartico');
-    if (preservedRows.length) {
-      console.log(`Preserving ${preservedRows.length} non-Smartico rows for re-insertion (FastTrack etc.).`);
+    if (!NO_PRESERVE) {
+      preservedRows = allData.filter(r => r[3] !== 'Smartico');
+      if (preservedRows.length) {
+        console.log(`Preserving ${preservedRows.length} non-Smartico rows for re-insertion (FastTrack etc.).`);
+      }
+    } else {
+      console.log('--no-preserve: non-Smartico rows will not be carried over (FT pull follows).');
     }
   } catch (e) {
     console.error(`   (Could not read existing tab: ${e.message}; proceeding without preservation.)`);

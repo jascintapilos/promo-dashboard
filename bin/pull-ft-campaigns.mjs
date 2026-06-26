@@ -335,7 +335,7 @@ const dataRows = dedupedActivities.map(a => {
   return [date, brand, region, crmTool, segName, creatorName];
 });
 
-dataRows.sort((a, b) => a[0].localeCompare(b[0])); // sort by date asc
+dataRows.sort((a, b) => b[0].localeCompare(a[0])); // sort by date desc (newest first)
 
 // Filter to TBP team only — non-team accounts (Seahub Mimi, BPO staff, etc.) are excluded.
 const teamRows = dataRows.filter(r => TBP_TEAM.has(r[5]));

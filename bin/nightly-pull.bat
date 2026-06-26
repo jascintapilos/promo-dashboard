@@ -29,7 +29,7 @@ node bin\capture-smartico-session.mjs >> %LOG% 2>&1
 if %ERRORLEVEL% neq 0 echo   WARNING: Smartico session capture failed - pull will attempt with existing token >> %LOG%
 
 echo [6b/11] Pulling Smartico CRM segments + activities into CRM Assignment Log... >> %LOG%
-node bin\pull-smartico-campaigns.mjs --write >> %LOG% 2>&1
+node bin\pull-smartico-campaigns.mjs --write --no-preserve >> %LOG% 2>&1
 if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs smartico "Smartico CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs smartico "Smartico CRM" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo SMARTICO PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
 
 echo [7/11] Refreshing FastTrack sessions silently (headless - no login needed)... >> %LOG%
