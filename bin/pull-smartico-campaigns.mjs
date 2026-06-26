@@ -205,30 +205,37 @@ if (WRITE) {
     console.log(`Created tab '${TAB}'.`);
   }
 
-  // ── SAFETY CHECK: refuse to wipe the CRM tab on a suspiciously low pull ──
   const FORCE = process.argv.includes('--force');
-  if (!FORCE) {
-    if (dataRows.length === 0) {
-      console.error(`\n⛔ ABORT: 0 team records found. Refusing to wipe '${TAB}'.`);
-      console.error(`   Re-run capture-smartico-session.mjs then retry. Pass --force to override.`);
+
+  // ── Read existing tab: safety check + preserve non-Smartico rows (FT etc.) ──
+  // Smartico clears the whole tab before writing. Without preservation, any
+  // FastTrack rows already appended this session would be wiped.
+  let preservedRows = [];
+  if (dataRows.length === 0 && !FORCE) {
+    console.error(`\n⛔ ABORT: 0 team records found. Refusing to wipe '${TAB}'.`);
+    console.error(`   Re-run capture-smartico-session.mjs then retry. Pass --force to override.`);
+    process.exit(3);
+  }
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId: OPS_ID, range: `'${TAB}'!A:F`,
+    });
+    const allData = (existing.data.values || []).slice(1).filter(r => r && r.length);
+    const existingSmartCount = allData.filter(r => r[3] === 'Smartico').length;
+    if (!FORCE && existingSmartCount > 100 && dataRows.length < existingSmartCount * 0.5) {
+      console.error(`\n⛔ ABORT: new pull (${dataRows.length} rows) is < 50% of existing Smartico rows (${existingSmartCount}).`);
+      console.error(`   Pass --force to override.`);
       process.exit(3);
     }
-    try {
-      const existing = await sheets.spreadsheets.values.get({
-        spreadsheetId: OPS_ID, range: `'${TAB}'!A:F`,
-      });
-      const existingRows = (existing.data.values || []).slice(1).filter(r => r && r[3] === 'Smartico');
-      const existingCount = existingRows.length;
-      if (existingCount > 100 && dataRows.length < existingCount * 0.5) {
-        console.error(`\n⛔ ABORT: new pull (${dataRows.length} rows) is < 50% of existing Smartico rows (${existingCount}).`);
-        console.error(`   Pass --force to override.`);
-        process.exit(3);
-      }
-    } catch (e) {
-      console.error(`   (Could not read existing tab size: ${e.message}; proceeding anyway.)`);
+    preservedRows = allData.filter(r => r[3] !== 'Smartico');
+    if (preservedRows.length) {
+      console.log(`Preserving ${preservedRows.length} non-Smartico rows for re-insertion (FastTrack etc.).`);
     }
+  } catch (e) {
+    console.error(`   (Could not read existing tab: ${e.message}; proceeding without preservation.)`);
   }
 
+  // ── Clear, write Smartico rows, then restore preserved rows ──────────────────
   await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${TAB}'!A:Z` });
   await sheets.spreadsheets.values.update({
     spreadsheetId: OPS_ID,
@@ -236,7 +243,17 @@ if (WRITE) {
     valueInputOption: 'RAW',
     requestBody: { values: rows },
   });
-  console.log(`\n✅ Wrote ${dataRows.length} rows to '${TAB}'.`);
+  if (preservedRows.length) {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: OPS_ID,
+      range: `'${TAB}'!A1`,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: preservedRows },
+    });
+    console.log(`Re-appended ${preservedRows.length} preserved non-Smartico rows.`);
+  }
+  console.log(`\n✅ Wrote ${dataRows.length} Smartico rows to '${TAB}'${preservedRows.length ? ` + restored ${preservedRows.length} non-Smartico rows` : ''}.`);
 } else {
   console.log('Sample rows (first 5):');
   for (const r of dataRows.slice(0, 5)) {
