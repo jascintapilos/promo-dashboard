@@ -107,7 +107,9 @@ No BO access needed — you check the **plan**, not persisted state. (Sentinel h
 
 ---
 
-## Field-level completeness map
+## Field-level completeness map — QPRO / QP2 only
+
+**This table applies only when `platform` is `"qpro"` or `"qp2"`. For IGMP/WS1/WS2, skip this table and use the IGMP check table below.**
 
 Each row below maps a responsibility to the bundle's field path. FAIL if the field is missing/empty/zero where presence is required. WARNING if the value is present but unusual (out of normal range, possible operator mistake).
 
@@ -149,39 +151,74 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 
 ---
 
-## IGMP / WS1 / WS2 platform overrides
+## IGMP / WS1 / WS2 check table
 
-When the bundle's `platform` field is `"igmp"`, the plan bundle's `plan.promotion` is the raw IGMP POST body (PascalCase fields). Apply these overrides to the field-level completeness map above.
+When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only the checks below.
 
-**IGMP FS structural difference:** For Free Spin promos, `plan.promotion` is a shell body with no `PromotionRewards`. The reward (spin count, TO, game) lives in `plan.followups[0].body.PromotionReward` and `plan.followups[0].body.FreeSpin`. For Deposit and Free Credit, `plan.promotion.PromotionRewards[0]` holds everything.
+**IGMP FS structural note:** For Free Spin promos, `plan.promotion` is a shell body with no `PromotionRewards`. All reward and game data lives in `plan.followups[0].body`. For Deposit and Free Credit, `plan.promotion.PromotionRewards[0]` holds everything.
 
-| Standard check | IGMP path — Deposit / FC | IGMP path — Free Spin (FS) |
+**Do NOT flag any of the following on IGMP — they are not applicable on WS1/WS2:**
+- `promotion_currency_list` missing — single currency per site; no list
+- `merchant_ids` / brand assignment — site-level scoping
+- `plan.dialogPopup` null — WS1/WS2 has no dialog popups
+- `deposit_status` — not a concept on IGMP
+- `tier_constraint` — QPRO/QP2 only
+- `freespin_check`, `allow_deposit` — not applicable
+- `promo_type` / `promo_sub_type` pair — QPRO only
+- `max_per_player` / `daily_max` WARNING — `RedeemableQuantity=0` is the normal unlimited default on IGMP
+
+### Universal — all bonus types (Dep / FC / FS)
+
+| Check | Where to look | Verdict |
 |---|---|---|
-| No unresolved fields | `plan._unimplemented` — FAIL immediately if array is non-empty (e.g. `["fs_provider_id + fs_game_id (resolver TBD)"]`); means commit would 422 | Same — `plan._unimplemented` non-empty means GameId/ProductId were not resolved |
-| FS game resolved (FS only) | N/A | `plan.followups[0].body.FreeSpin.ProductId` and `plan.followups[0].body.FreeSpin.GameId` — FAIL if either is null; a null here means the FS game lookup failed and the BO call will be rejected |
-| RewardType correct (Dep/FC only) | Deposit: `plan.promotion.PromotionRewards[0].RewardType` — FAIL if `source.parsed.bonus_rate_pct > 0` but RewardType ≠ `"0"` (percentage); FAIL if `source.parsed.fixed_bonus_amount > 0` but RewardType ≠ `"1"` (fixed). FC: RewardType is wire-normalised by mapper (Manual Input → 1) — WARNING if FC `FixedBonusAmount = 0` AND `BonusPercentage = 0` (no credit at all) | N/A — FS RewardType is always `"3"` |
-| RedeemableDay not Sunday-only | `plan.promotion.RedeemableDay` — FAIL if value is `"0"` alone (means Sunday-only; historical mapper bug was sending int 0 which equals Sunday); expected all-days value is `"0,1,2,3,4,5,6"` for standard promos | `plan.followups[0].body.FreeSpin.RedeemableDay` — same check |
-| Reward settings populated | Deposit: `plan.promotion.PromotionRewards[0]` — `BonusPercentage` + `RolloverMultiplier` + `CapBonusAmount` + `MinimumActionAmount`; FC: `FixedBonusAmount` + `RolloverMultiplier` — FAIL if any required field missing/zero | `plan.followups[0].body.FreeSpin.FreeSpinRounds` + `plan.followups[0].body.PromotionReward.RolloverMultiplier` — FAIL if missing/zero |
-| Bonus rate / FC amount / spin count matches source | Deposit: `BonusPercentage` vs `source.parsed.bonus_rate_pct`; FC: `FixedBonusAmount` vs `source.parsed.free_credit_amount` — FAIL if either differs | `plan.followups[0].body.FreeSpin.FreeSpinRounds` vs `source.parsed.spin_count` — FAIL if differs |
-| Per-spin value matches source | N/A | `plan.followups[0].body.FreeSpin.AmountPerBet` vs `source.parsed.value_per_spin` — FAIL if differs |
-| FS RedemptionType correct | N/A | `plan.followups[0].body.PromotionReward.RedemptionType` — FAIL if `source.parsed.min_deposit > 0` but value ≠ `"0"` (Deposit); FAIL if `source.parsed.min_deposit = 0` but value ≠ `"1"` (Claim) |
-| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` vs `source.parsed.to_multiplier` — FAIL if differs; WARNING if outside 10–12x for REL_/RET_ | `plan.followups[0].body.PromotionReward.RolloverMultiplier` vs `source.parsed.to_multiplier` — same rules |
-| Min deposit matches source | `plan.promotion.PromotionRewards[0].MinimumActionAmount` vs `source.parsed.min_deposit` — FAIL if differs or below platform floor (MYR<30/SGD<50/IDR<25000/THB<50/USD<5) | `plan.followups[0].body.PromotionReward.MinimumActionAmount` — FAIL if below floor |
-| Max bonus matches source | `plan.promotion.PromotionRewards[0].CapBonusAmount` vs `source.parsed.max_bonus` — FAIL if differs | N/A (FS has no max bonus cap) |
-| FC ExpiryMinutes (FC only) | `plan.promotion.ExpiryMinutes` should equal `source.rewards_validity_days * 1440`; default 10080 (7 days) when source not set — WARNING if they differ | N/A |
-| Validity period | `plan.promotion.PromotionStartDate` + `PromotionEndDate` — FAIL if either missing | Same — on shell body (`plan.promotion`) |
-| Per-locale T&C content | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` — EN required; ZH if `source.locales` includes ZH or `source.regions` includes MY/SG; ID if includes ID — FAIL if required locale missing | `plan.followups[0].body.PromotionReward.PromotionRewardContents[]` — same locale rules |
-| MT body numeric values | `plan.messageTemplate.details["1"].message` (EN body) — IGMP plan bundle pre-populates this from PromotionRewardContents; same check as QPRO/QP2 | Same |
+| No unresolved fields | `plan._unimplemented` | FAIL if array is non-empty — commit would 422 |
+| Promotion code follows naming standards | `plan.promotion.PromotionCode` | FAIL if code prefix doesn't match `bonus_type` (REL_/WELC_/FC_/FS_); FAIL if tier label appears in `source.promotion_name_en` |
+| Bonus type selected | `bonus_type` | FAIL if null or unknown |
+| Validity period present | `plan.promotion.PromotionStartDate` + `plan.promotion.PromotionEndDate` | FAIL if either missing |
+| MT body numeric values match source | `plan.messageTemplate.details["1"].message` (EN body) | FAIL if a numeric value in body contradicts `source.parsed`; WARNING if a source value is absent from the body entirely |
+| ZH body numeric consistency with EN | `plan.messageTemplate.details` ZH locale body | FAIL if any numeric value in ZH body differs from EN body |
+| No HTML entity artifacts | All text fields: MT body (all locales), `PromotionRewardContents[].Content` | FAIL if raw HTML entities appear: `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;`, `&lsquo;` |
 
-**IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
-- Currency assignment check — IGMP is single-currency per site; no `promotion_currency_list`
-- Brand/merchant_ids — IGMP is site-level; no merchant_ids field
-- Dialog linkage — always null on IGMP; do NOT flag `plan.dialogPopup` being null as an issue
-- deposit_status — not a concept on IGMP
-- QP2 tier_constraint — not applicable on IGMP
-- freespin_check / allow_deposit — not concepts on IGMP
-- QPRO promo_type / sub_type pair — not applicable on IGMP
-- max_per_player / daily_max — IGMP uses `RedeemableQuantity` on the reward (per-player claim count); 0 = unlimited is the operator default; do NOT apply the QPRO/QP2 WARNING for this being uncapped
+### Deposit bonus
+
+| Check | Where to look | Verdict |
+|---|---|---|
+| RewardType correct | `plan.promotion.PromotionRewards[0].RewardType` | FAIL if `source.parsed.bonus_rate_pct > 0` but RewardType ≠ `"0"` (percentage); FAIL if `source.parsed.fixed_bonus_amount > 0` but RewardType ≠ `"1"` (fixed) |
+| Reward settings populated | `plan.promotion.PromotionRewards[0]`: `BonusPercentage`, `RolloverMultiplier`, `CapBonusAmount`, `MinimumActionAmount` | FAIL if any required field missing or zero |
+| Bonus rate matches source | `plan.promotion.PromotionRewards[0].BonusPercentage` | FAIL if ≠ `source.parsed.bonus_rate_pct` |
+| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x for REL_/RET_ |
+| Min deposit matches source | `plan.promotion.PromotionRewards[0].MinimumActionAmount` | FAIL if ≠ `source.parsed.min_deposit`; FAIL if below floor (MYR<30 / SGD<50 / IDR<25000 / THB<50) |
+| Max bonus matches source | `plan.promotion.PromotionRewards[0].CapBonusAmount` | FAIL if ≠ `source.parsed.max_bonus` |
+| RedeemableDay not Sunday-only | `plan.promotion.RedeemableDay` | FAIL if value is `"0"` alone; expected `"0,1,2,3,4,5,6"` |
+| Per-locale T&C content | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` locale keys | FAIL if EN missing; FAIL if ZH missing and region includes MY/SG; FAIL if ID missing and region includes ID |
+
+### Free Credit
+
+| Check | Where to look | Verdict |
+|---|---|---|
+| Reward settings populated | `plan.promotion.PromotionRewards[0]`: `FixedBonusAmount`, `RolloverMultiplier` | FAIL if either missing; WARNING if both `FixedBonusAmount = 0` AND `BonusPercentage = 0` (member gets nothing) |
+| FC amount matches source | `plan.promotion.PromotionRewards[0].FixedBonusAmount` | FAIL if ≠ `source.parsed.free_credit_amount` |
+| TO multiplier matches source | `plan.promotion.PromotionRewards[0].RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x for REL_/RET_ |
+| ExpiryMinutes (claim window) | `plan.promotion.ExpiryMinutes` | WARNING if ≠ `source.rewards_validity_days * 1440`; default 10080 (7 days) when source not set |
+| RedeemableDay not Sunday-only | `plan.promotion.RedeemableDay` | FAIL if value is `"0"` alone; expected `"0,1,2,3,4,5,6"` |
+| Per-locale T&C content | `plan.promotion.PromotionRewards[0].PromotionRewardContents[]` locale keys | FAIL if EN missing; FAIL if ZH missing and region includes MY/SG; FAIL if ID missing and region includes ID |
+
+### Free Spin
+
+| Check | Where to look | Verdict |
+|---|---|---|
+| No unresolved fields | `plan._unimplemented` | FAIL if non-empty — GameId/ProductId not resolved, commit will 422 |
+| FS game resolved | `plan.followups[0].body.FreeSpin.ProductId` + `plan.followups[0].body.FreeSpin.GameId` | FAIL if either is null — game lookup failed, BO will reject |
+| Reward settings populated | `plan.followups[0].body.FreeSpin.FreeSpinRounds` + `plan.followups[0].body.PromotionReward.RolloverMultiplier` | FAIL if either missing or zero |
+| Spin count matches source | `plan.followups[0].body.FreeSpin.FreeSpinRounds` | FAIL if ≠ `source.parsed.spin_count` |
+| Spin count ≤ 88 | `source.parsed.spin_count` | FAIL if > 88 — platform maximum |
+| Per-spin value matches source | `plan.followups[0].body.FreeSpin.AmountPerBet` | FAIL if ≠ `source.parsed.value_per_spin` |
+| Per-spin value ≥ 0.50 | `source.parsed.value_per_spin` | FAIL if < 0.50 — platform minimum |
+| RedemptionType correct | `plan.followups[0].body.PromotionReward.RedemptionType` | FAIL if `source.parsed.min_deposit > 0` but value ≠ `"0"` (Deposit); FAIL if `source.parsed.min_deposit = 0` but value ≠ `"1"` (Claim) |
+| TO multiplier matches source | `plan.followups[0].body.PromotionReward.RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x for REL_/RET_ |
+| Min deposit matches source | `plan.followups[0].body.PromotionReward.MinimumActionAmount` | FAIL if ≠ `source.parsed.min_deposit`; FAIL if below floor (MYR<30 / SGD<50 / IDR<25000 / THB<50) |
+| RedeemableDay not Sunday-only | `plan.followups[0].body.FreeSpin.RedeemableDay` | FAIL if value is `"0"` alone; expected `"0,1,2,3,4,5,6"` |
+| Per-locale T&C content | `plan.followups[0].body.PromotionReward.PromotionRewardContents[]` locale keys | FAIL if EN missing; FAIL if ZH missing and region includes MY/SG; FAIL if ID missing and region includes ID |
 
 ---
 
