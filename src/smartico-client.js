@@ -129,6 +129,46 @@ export function smarticoClient() {
       return { segments: found, maxScannedId: maxFoundId + consecutiveMissThreshold };
     },
 
+    // List using the Smartico BO SPA (web app) API format.
+    // The react-admin style list endpoint (_start/_end/_sort/_order) is broken for
+    // j_audience_scheduled — it ignores all params and always returns the same 1000
+    // oldest records. The SPA uses JSON-encoded filter/range/sort params instead.
+    // This format actually works.
+    async listSPA(resource, filter = {}, rangeStart = 0, rangeEnd = 999) {
+      const params = new URLSearchParams({
+        filter: JSON.stringify(filter),
+        range:  JSON.stringify([rangeStart, rangeEnd]),
+        sort:   JSON.stringify(['create_date', 'DESC']),
+        lbl:    LABEL_ID,
+      });
+      const res = await fetch(`${BASE_URL}/api/${resource}?${params}`, { headers });
+      if (res.status === 401) throw new Error('Smartico token expired — re-run capture-smartico-session.mjs');
+      if (!res.ok) throw new Error(`Smartico GET SPA ${resource} → HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.errCode)
+        throw new Error(`Smartico token expired (errCode ${data.errCode})`);
+      return Array.isArray(data) ? data : [];
+    },
+
+    // Paginate through all records using SPA format, stopping when records
+    // go before yearStart (inclusive). Returns all records for the given year.
+    async listSPAAll(resource, filter = {}, yearStart = new Date().getFullYear()) {
+      const allRecords = [];
+      const PAGE = 1000;
+      let start = 0;
+      const cutoff = `${yearStart}-01-01`;
+      while (true) {
+        const batch = await this.listSPA(resource, filter, start, start + PAGE - 1);
+        if (!batch.length) break;
+        allRecords.push(...batch.filter(r => (r.create_date || '') >= cutoff));
+        const oldest = batch.reduce((m, r) => ((r.create_date || '9') < m ? (r.create_date || '9') : m), '9');
+        if (oldest < cutoff || batch.length < PAGE) break;
+        start += PAGE;
+        if (start > 50_000) break;
+      }
+      return allRecords;
+    },
+
     // Private-API RPC
     async rpc(method, params = {}) {
       return request('POST', `/api/private-api?method=${method}`, { method, params });

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 cd /d "C:\Users\vdiuser\Downloads\promo-automation\promo-automation"
 set LOG=logs\nightly-pull-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2%.txt
 if not exist logs mkdir logs
@@ -24,9 +24,13 @@ echo [5/11] Pulling team utilisation into Weekly Report... >> %LOG%
 node bin\pull-utilisation.mjs --write >> %LOG% 2>&1
 if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs utilisation "Utilisation" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs utilisation "Utilisation" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo UTILISATION PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
 
-echo [6/11] Pulling Smartico CRM segments into CRM Assignment Log... >> %LOG%
+echo [6/11] Refreshing Smartico session (headless auto-login)... >> %LOG%
+node bin\capture-smartico-session.mjs >> %LOG% 2>&1
+if %ERRORLEVEL% neq 0 echo   WARNING: Smartico session capture failed - pull will attempt with existing token >> %LOG%
+
+echo [6b/11] Pulling Smartico CRM segments + activities into CRM Assignment Log... >> %LOG%
 node bin\pull-smartico-campaigns.mjs --write >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs smartico "Smartico CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs smartico "Smartico CRM" FAILED "exit %ERRORLEVEL% - capture new session" >> %LOG% 2>&1 & echo SMARTICO PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs smartico "Smartico CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs smartico "Smartico CRM" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo SMARTICO PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
 
 echo [7/11] Refreshing FastTrack sessions silently (headless - no login needed)... >> %LOG%
 node bin\refresh-ft-sessions.mjs >> %LOG% 2>&1

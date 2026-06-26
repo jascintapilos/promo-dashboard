@@ -1,8 +1,11 @@
 /**
- * Pull YTD Smartico segments created by the promo team into the Weekly Report
- * 'CRM Assignment Log' tab.
+ * Pull YTD Smartico segments AND activities created by the promo team into
+ * the Weekly Report 'CRM Assignment Log' tab.
  *
- * Source: j_segment (team creates segments, not j_audience_scheduled campaigns)
+ * Sources:
+ *   j_segment            — Segments (created via Segment menu)
+ *   j_audience_scheduled — Activities (created directly in the Activity tool)
+ *
  * Columns: Date | Brand | Region | CRM Tool | Segment Name | Created By
  *
  * Team usernames in Smartico:
@@ -80,28 +83,19 @@ function extractRegion(segName, conditionsText) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const client = smarticoClient();
-console.log(`\nSmartico segment pull — YTD ${YEAR}  (token: ${client.capturedAt})`);
+console.log(`\nSmartico pull (segments + activities) — YTD ${YEAR}  (token: ${client.capturedAt})`);
 console.log(`Mode: ${WRITE ? 'WRITE' : 'DRY RUN'}\n`);
 
-// ── Fetch base 1000 from list endpoint ───────────────────────────────────────
+// ── Segments: fetch base list + scan beyond 1000-record cap ──────────────────
 console.log('Fetching segment list (API cap: 1000 records)...');
 const all = await client.list('j_segment', { _start: 0, _end: 10000, _sort: 'id', _order: 'ASC' });
 const listArr = Array.isArray(all) ? all : [];
 const listMaxId = listArr.length ? Math.max(...listArr.map(s => s.id || 0)) : 35865;
 console.log(`List returned: ${listArr.length} segments  (max ID: ${listMaxId})`);
 
-// ── Full scan beyond the 1000-record list cap ────────────────────────────────
 // Smartico's list endpoint returns the OLDEST 1000 segments by ID ASC. Any
 // segments created after the 1000th one are invisible through list. We fetch
 // them individually via GET /{id} starting from listMaxId+1.
-//
-// IMPORTANT: We always scan from listMaxId+1, NOT from a saved lastScannedId.
-// Reason: each run starts fresh — there's no "carry over" of previously-scanned
-// segments. If we skipped IDs we already scanned, those segments would be
-// missing from the rewritten tab. The state-file optimisation is unsafe here
-// because pull-smartico CLEARS the tab before writing.
-//
-// With parallel concurrency (default 10), scanning ~5000 IDs takes <30s.
 const MISS_THRESHOLD = parseInt(process.env.SMARTICO_SCAN_WINDOW || '1500');
 const scanStart = listMaxId + 1;
 console.log(`Scanning IDs ${scanStart}+ for new segments (${MISS_THRESHOLD}-miss stop)...`);
@@ -112,7 +106,6 @@ const { segments: extraArr, maxScannedId } = await client.scanBeyondList(scanSta
 if (extraArr.length) process.stdout.write('\n');
 console.log(`Incremental scan: ${extraArr.length} new segments found beyond list (max ID seen: ${maxScannedId})`);
 
-// Save state for monitoring/debug only — NOT used to skip future scans.
 if (WRITE) {
   writeFileSync(path.resolve('smartico-scan-state.local.json'), JSON.stringify({
     lastScanCompletedAt: new Date().toISOString(),
@@ -123,17 +116,50 @@ if (WRITE) {
   }));
 }
 
-const allArr = [...listArr, ...extraArr];
-
-// Filter: team members only + current year
-const ytd = allArr.filter(s =>
+const segmentArr = [...listArr, ...extraArr];
+const ytdSegments = segmentArr.filter(s =>
   s.create_date &&
   s.create_date.slice(0, 10) >= `${YEAR}-01-01` &&
   TEAM[s.username]
 );
-console.log(`YTD team segments: ${ytd.length}\n`);
+console.log(`YTD team segments: ${ytdSegments.length}`);
 
+// ── Activities: j_audience_scheduled (Scheduled Campaigns) ───────────────────
+// NOTE: The react-admin list endpoint (_start/_end/_sort/_order) is broken for
+// j_audience_scheduled — it ignores all params and always returns the same 1000
+// oldest records. We use the SPA API format (listSPAAll) which actually works.
+// audience_exec_type_id=3 selects Scheduled campaigns only.
+console.log('\nFetching scheduled campaigns (j_audience_scheduled, SPA API)...');
+let ytdActivities = [];
+try {
+  const actArr = await client.listSPAAll(
+    'j_audience_scheduled',
+    { audience_exec_type_id: 3 },
+    YEAR,
+  );
+  console.log(`Scheduled campaigns (YTD): ${actArr.length} total`);
+
+  ytdActivities = actArr
+    .filter(a => TEAM[a.username])
+    .map(a => ({
+      create_date:         a.create_date || '',
+      username:            a.username    || '',
+      segment_name:        a.audience_name || String(a.id || ''),
+      conditions_readable: a.conditions_readable || a.segment_conditions_readable || '',
+      _type: 'Activity',
+    }));
+  console.log(`YTD team activities: ${ytdActivities.length}`);
+} catch (e) {
+  if (/errCode|expired/i.test(e.message)) throw e;
+  console.warn(`  Activity pull skipped: ${e.message}`);
+}
+
+// ── Combine + sort ────────────────────────────────────────────────────────────
+const ytdSegmentsTagged = ytdSegments.map(s => ({ ...s, _type: 'Segment' }));
+const ytd = [...ytdSegmentsTagged, ...ytdActivities];
 ytd.sort((a, b) => (a.create_date || '').localeCompare(b.create_date || ''));
+
+console.log(`\nTotal YTD rows: ${ytd.length} (${ytdSegments.length} segments + ${ytdActivities.length} activities)`);
 
 // Summary by team member
 const byMember = {};
@@ -183,7 +209,7 @@ if (WRITE) {
   const FORCE = process.argv.includes('--force');
   if (!FORCE) {
     if (dataRows.length === 0) {
-      console.error(`\n⛔ ABORT: 0 team segments found. Refusing to wipe '${TAB}'.`);
+      console.error(`\n⛔ ABORT: 0 team records found (segments + activities). Refusing to wipe '${TAB}'.`);
       console.error(`   Possible causes: Smartico session expired, team username changed, or API issue.`);
       console.error(`   Re-run capture-smartico-session.mjs, then this script. Pass --force to override.`);
       process.exit(3);
