@@ -81,8 +81,9 @@ export async function readAllEntries() {
 // Returns true if any row already has this campaign title (case-insensitive).
 export async function campaignExists(title) {
   const entries = await readAllEntries();
-  const needle  = title.toLowerCase().trim();
-  return entries.some(e => e.campaign_title.toLowerCase().trim() === needle);
+  const normalize = s => s.toLowerCase().trim().replace(/—|–/g, '-');
+  const needle = normalize(title);
+  return entries.some(e => normalize(e.campaign_title) === needle);
 }
 
 // ── Slot allocation ──────────────────────────────────────────────────────────
