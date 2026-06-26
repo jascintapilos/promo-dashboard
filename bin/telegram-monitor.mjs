@@ -129,7 +129,7 @@ async function readGroup(page, groupName) {
   // Clear search and type group name
   await page.click('.input-search input, [placeholder*="Search"], .search-input input');
   await page.waitForTimeout(400);
-  await page.keyboard.selectAll();
+  await page.keyboard.press('Control+a');
   await page.keyboard.type(groupName.slice(0, 12), { delay: 60 }); // first 12 chars enough
   await page.waitForTimeout(1500);
 
