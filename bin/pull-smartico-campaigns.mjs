@@ -1,9 +1,14 @@
 /**
- * Pull YTD Smartico scheduled campaigns created by the promo team into
- * the Weekly Report 'CRM Assignment Log' tab.
+ * Pull YTD Smartico scheduled campaigns + orphan segments into the Weekly
+ * Report 'CRM Assignment Log' tab.
  *
- * Source: j_audience_scheduled — Scheduled Campaigns (each has its segment attached).
- * Segments are not pulled separately — they are redundant once we have the campaign.
+ * Logic:
+ *   1. Pull all j_audience_scheduled (Scheduled Campaigns, SPA API format).
+ *   2. Pull all j_segment (list + scan beyond 1000-record cap).
+ *   3. Deduplicate: a segment whose name matches a campaign's audience_name is
+ *      already represented → skip it. Only include segments with NO matching
+ *      campaign ("orphan" segments — created for analysis/reuse, never blasted).
+ *   4. Write: campaigns + orphan segments, sorted by create_date.
  *
  * Columns: Date | Brand | Region | CRM Tool | Segment Name | Created By
  *
@@ -23,6 +28,8 @@ import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 import { parseArgs } from './_args.js';
 import { listSites } from '../src/sites.js';
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const WRITE = flags.write === true;
@@ -68,10 +75,8 @@ function extractRegion(segName, conditionsText) {
   for (const [re, code] of REGION_MAP) {
     if (re.test(segName || '')) return code;
   }
-  // QPRO# → brand-supported regions (e.g. QPRO4 → MY, QPRO2 → MY/SG)
   const qm = (segName || '').match(/(?<![a-zA-Z])QPRO(\d+)(?![a-zA-Z])/i);
   if (qm && QPRO_REGIONS[parseInt(qm[1])]) return QPRO_REGIONS[parseInt(qm[1])];
-  // currency in conditions
   const m = (conditionsText || '').match(/\b(MYR|SGD|IDR|THB|KHR)\b/i);
   if (m) return CURRENCY_REGION[m[1].toUpperCase()] || '';
   return '';
@@ -80,33 +85,85 @@ function extractRegion(segName, conditionsText) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const client = smarticoClient();
-console.log(`\nSmartico pull (scheduled campaigns only) — YTD ${YEAR}  (token: ${client.capturedAt})`);
+console.log(`\nSmartico pull (campaigns + orphan segments) — YTD ${YEAR}  (token: ${client.capturedAt})`);
 console.log(`Mode: ${WRITE ? 'WRITE' : 'DRY RUN'}\n`);
 
-// ── Scheduled Campaigns: j_audience_scheduled (SPA API format) ───────────────
-// The react-admin list endpoint (_start/_end/_sort/_order) is broken for
-// j_audience_scheduled — ignores all params and returns the same 1000 oldest
-// records. The SPA API format (listSPAAll) works correctly.
-// audience_exec_type_id=3 selects Scheduled campaigns only.
+// ── Step 1: Scheduled Campaigns (SPA API — react-admin format is broken here) ─
 console.log('Fetching scheduled campaigns (j_audience_scheduled, SPA API)...');
-const actArr = await client.listSPAAll(
+const allCampaigns = await client.listSPAAll(
   'j_audience_scheduled',
   { audience_exec_type_id: 3 },
   YEAR,
 );
-console.log(`Scheduled campaigns (YTD, all creators): ${actArr.length}`);
+console.log(`Scheduled campaigns (YTD, all creators): ${allCampaigns.length}`);
 
-const ytd = actArr
+// Build segment_id set for dedup — each campaign has a segment_id pointing to
+// the j_segment record it uses as its audience. Segments in this set are already
+// represented by a campaign and should not be double-counted.
+const coveredSegmentIds = new Set(allCampaigns.map(a => a.segment_id).filter(Boolean));
+
+// ── Step 2: Segments (list + scan beyond 1000-record cap) ────────────────────
+console.log('\nFetching segment list (API cap: 1000 records)...');
+const rawList = await client.list('j_segment', { _start: 0, _end: 10000, _sort: 'id', _order: 'ASC' });
+const segList = Array.isArray(rawList) ? rawList : [];
+const listMaxId = segList.length ? Math.max(...segList.map(s => s.id || 0)) : 35865;
+console.log(`List returned: ${segList.length} segments  (max ID: ${listMaxId})`);
+
+const MISS_THRESHOLD = parseInt(process.env.SMARTICO_SCAN_WINDOW || '1500');
+console.log(`Scanning IDs ${listMaxId + 1}+ for newer segments (${MISS_THRESHOLD}-miss stop)...`);
+const { segments: extraArr, maxScannedId } = await client.scanBeyondList(listMaxId + 1, {
+  consecutiveMissThreshold: MISS_THRESHOLD,
+  onProgress: (id, n) => process.stdout.write(`\r  scanned to ${id}, found ${n} new...`),
+});
+if (extraArr.length) process.stdout.write('\n');
+console.log(`Incremental scan: ${extraArr.length} new segments (max ID seen: ${maxScannedId})`);
+
+if (WRITE) {
+  writeFileSync(path.resolve('smartico-scan-state.local.json'), JSON.stringify({
+    lastScanCompletedAt: new Date().toISOString(),
+    listMaxId,
+    maxScannedId,
+    extrasFound: extraArr.length,
+    note: 'advisory only; scan always starts from listMaxId+1',
+  }));
+}
+
+const allSegments = [...segList, ...extraArr];
+const ytdSegments = allSegments.filter(s =>
+  s.create_date &&
+  s.create_date.slice(0, 10) >= `${YEAR}-01-01` &&
+  TEAM[s.username]
+);
+console.log(`YTD team segments: ${ytdSegments.length}`);
+
+// ── Step 3: Deduplicate — keep only segments not used by any campaign ─────────
+const orphanSegments = ytdSegments.filter(s => !coveredSegmentIds.has(s.id));
+const coveredCount   = ytdSegments.length - orphanSegments.length;
+console.log(`  ${coveredCount} covered by a campaign (skipped) | ${orphanSegments.length} orphans (included)`);
+
+// ── Step 4: Combine and sort ──────────────────────────────────────────────────
+const teamCampaigns = allCampaigns
   .filter(a => TEAM[a.username])
   .map(a => ({
     create_date:         a.create_date || '',
     username:            a.username    || '',
     segment_name:        a.audience_name || String(a.id || ''),
     conditions_readable: a.conditions_readable || a.segment_conditions_readable || '',
+    _source: 'campaign',
   }));
 
+const orphanRows = orphanSegments.map(s => ({
+  create_date:         s.create_date || '',
+  username:            s.username    || '',
+  segment_name:        s.name        || String(s.id || ''),
+  conditions_readable: s.conditions_readable || '',
+  _source: 'segment',
+}));
+
+const ytd = [...teamCampaigns, ...orphanRows];
 ytd.sort((a, b) => (a.create_date || '').localeCompare(b.create_date || ''));
-console.log(`\nTotal YTD rows: ${ytd.length} (team-only)`);
+
+console.log(`\nTotal YTD rows: ${ytd.length} (${teamCampaigns.length} campaigns + ${orphanRows.length} orphan segments)`);
 
 // Summary by team member
 const byMember = {};
@@ -149,19 +206,13 @@ if (WRITE) {
   }
 
   // ── SAFETY CHECK: refuse to wipe the CRM tab on a suspiciously low pull ──
-  // pull-smartico clears the entire tab before writing, then FT pulls append.
-  // If this pull returns 0 / too-few rows (silent token failure, team filter
-  // mismatch, partial API response), we'd wipe Smartico AND today's FT data
-  // since FT appends run AFTER. Abort early in that case.
   const FORCE = process.argv.includes('--force');
   if (!FORCE) {
     if (dataRows.length === 0) {
-      console.error(`\n⛔ ABORT: 0 team records found (segments + activities). Refusing to wipe '${TAB}'.`);
-      console.error(`   Possible causes: Smartico session expired, team username changed, or API issue.`);
-      console.error(`   Re-run capture-smartico-session.mjs, then this script. Pass --force to override.`);
+      console.error(`\n⛔ ABORT: 0 team records found. Refusing to wipe '${TAB}'.`);
+      console.error(`   Re-run capture-smartico-session.mjs then retry. Pass --force to override.`);
       process.exit(3);
     }
-    // Check against existing Smartico-only row count (col D = CRM Tool)
     try {
       const existing = await sheets.spreadsheets.values.get({
         spreadsheetId: OPS_ID, range: `'${TAB}'!A:F`,
@@ -169,9 +220,8 @@ if (WRITE) {
       const existingRows = (existing.data.values || []).slice(1).filter(r => r && r[3] === 'Smartico');
       const existingCount = existingRows.length;
       if (existingCount > 100 && dataRows.length < existingCount * 0.5) {
-        console.error(`\n⛔ ABORT: new Smartico pull (${dataRows.length} rows) is < 50% of existing Smartico data (${existingCount}).`);
-        console.error(`   Refusing to wipe '${TAB}' with suspiciously small dataset.`);
-        console.error(`   If this is correct (e.g. team usernames changed), re-run with --force.`);
+        console.error(`\n⛔ ABORT: new pull (${dataRows.length} rows) is < 50% of existing Smartico rows (${existingCount}).`);
+        console.error(`   Pass --force to override.`);
         process.exit(3);
       }
     } catch (e) {
