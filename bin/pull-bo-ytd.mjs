@@ -262,11 +262,14 @@ if (SKIP_IGMP || !igmpAnySuccess) {
       if (!IGMP_BRANDS.includes((r[cb] || '').trim())) continue;
       collected.push({
         date: r[cd] || '', code: r[cc] || '', brand: (r[cb] || '').trim(), region: r[cr] || '',
-        createdBy: r[ce] || '', type: r[ct] || '', status: r[cs] || '', _createdAt: '',
+        createdBy: r[ce] || '', type: r[ct] || '', status: 'Carried', _createdAt: '',
       });
       carried++;
     }
-    if (carried) console.log(`  (carried forward ${carried} existing WS1/WS2 rows — IGMP ${SKIP_IGMP ? 'skipped' : 'unavailable'})`);
+    if (carried) {
+      const today = new Date().toISOString().slice(0, 10);
+      console.warn(`  ⚠️  Carried forward ${carried} existing WS1/WS2 rows — IGMP ${SKIP_IGMP ? 'skipped' : 'unavailable'} (${today}). Status set to "Carried".`);
+    }
   } catch { /* sheet may be empty/new — nothing to carry */ }
 }
 

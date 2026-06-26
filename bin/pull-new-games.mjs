@@ -101,6 +101,11 @@ for (const r of games.slice(0, 5)) {
 if (games.length > 5) console.log(`  … +${games.length - 5} more`);
 
 if (WRITE) {
+  if (!games.length) {
+    console.error(`\n⛔ ABORT: 0 games found from source sheet. Refusing to wipe '${TARGET_TAB}'.`);
+    console.error(`   Check that source tab '${SOURCE_TAB}' in spreadsheet ${SOURCE_ID} has data.`);
+    process.exit(3);
+  }
   // Clear tab and rewrite (header + data)
   await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${TARGET_TAB}'!A:Z` });
   await sheets.spreadsheets.values.update({

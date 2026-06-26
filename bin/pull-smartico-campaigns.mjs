@@ -158,7 +158,7 @@ const teamCampaigns = allCampaigns
 const orphanRows = orphanSegments.map(s => ({
   create_date:         s.create_date || '',
   username:            s.username    || '',
-  segment_name:        s.name        || String(s.id || ''),
+  segment_name:        s.segment_name || s.name || String(s.id || ''),
   conditions_readable: s.conditions_readable || '',
   _source: 'segment',
 }));

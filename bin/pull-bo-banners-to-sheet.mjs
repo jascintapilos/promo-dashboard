@@ -149,10 +149,11 @@ async function readBannerLogKeys() {
     const hdr = rows[0] || [];
     const cTitle = hdr.findIndex((c) => /banner.?title/i.test(String(c)));
     const cBrand = hdr.findIndex((c) => /brand/i.test(String(c)));
+    const cStart = hdr.findIndex((c) => /^start/i.test(String(c)));
     const keys = new Set();
     for (const r of rows.slice(1)) {
-      const title = (r[cTitle] || '').trim(), brand = (r[cBrand] || '').trim();
-      if (title) keys.add(`${title}|||${brand}`);
+      const title = (r[cTitle] || '').trim(), brand = (r[cBrand] || '').trim(), start = (r[cStart] || '').trim();
+      if (title) keys.add(`${title}|||${brand}|||${start}`);
     }
     return keys;
   } catch { return new Set(); }
@@ -163,7 +164,7 @@ const known = await readBannerLogKeys();
 const fresh = [], dupes = [], junkSkipped = [];
 for (const row of collected) {
   if (JUNK_RX.test(row.title)) { junkSkipped.push(row); continue; }
-  (known.has(`${row.title}|||${row.brand}`) ? dupes : fresh).push(row);
+  (known.has(`${row.title}|||${row.brand}|||${row.start}`) ? dupes : fresh).push(row);
 }
 
 // ── Report ────────────────────────────────────────────────────────────────

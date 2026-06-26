@@ -2,6 +2,11 @@
  * Sort all Weekly Report tabs by Date descending so the latest data
  * always appears at the top. Run after all nightly pulls complete.
  *
+ * Tabs using DD/MM/YYYY dates are sorted client-side (JS parse + write-back)
+ * because the Sheets sortRange API uses lexicographic order which puts
+ * "31/01/2026" after "02/02/2026" — definitively wrong.
+ * Tabs using ISO dates (YYYY-MM-DD) use the fast API sort path.
+ *
  * Usage:
  *   node bin/sort-sheet-tabs.mjs
  */
@@ -11,14 +16,25 @@ import { getOpsSheetId } from '../src/ops-sheet.js';
 const { sheets } = await getSheetsClient();
 const ID = getOpsSheetId();
 
-// Tabs to sort and which column (0-based) holds the date
+// dateFormat: 'dmy' = DD/MM/YYYY → client-side sort (correct)
+//             'iso' = YYYY-MM-DD → API sort (lex-order = correct)
 const TABS = [
-  { name: 'Promo Code Log',        dateCol: 0 },  // Date  DD/MM/YYYY
-  { name: 'Banner Log',            dateCol: 0 },  // Start DD/MM/YYYY
-  { name: 'CRM Assignment Log',    dateCol: 0 },  // Date  YYYY-MM-DD
-  { name: 'Manual Entry (CRM)',    dateCol: 0 },  // Date  manual
-  { name: 'New Games',             dateCol: 0 },  // Date  DD/MM/YYYY
+  { name: 'Promo Code Log',        dateCol: 0, dateFormat: 'dmy' },
+  { name: 'Banner Log',            dateCol: 0, dateFormat: 'dmy' },
+  { name: 'CRM Assignment Log',    dateCol: 0, dateFormat: 'iso' },
+  { name: 'Manual Entry (CRM)',    dateCol: 0, dateFormat: 'dmy' },
+  { name: 'Manual Entry (Promo)',  dateCol: 0, dateFormat: 'dmy' },
+  { name: 'Manual Entry (Banner)', dateCol: 0, dateFormat: 'dmy' },
+  { name: 'New Games',             dateCol: 0, dateFormat: 'dmy' },
 ];
+
+// Parse DD/MM/YYYY → Date. Falls back to ISO parse for manually typed dates.
+function parseDMY(s) {
+  const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
 
 // Resolve tab name → numeric sheetId (required by sortRange API)
 const meta = await sheets.spreadsheets.get({
@@ -32,30 +48,57 @@ for (const s of meta.data.sheets || []) {
 
 console.log('\nSorting tabs by date descending…');
 
-for (const { name, dateCol } of TABS) {
+for (const { name, dateCol, dateFormat } of TABS) {
   const sheetId = sheetIdMap[name];
-  if (sheetId == null) { console.log(`  ${name.padEnd(25)} — tab not found, skipped`); continue; }
+  if (sheetId == null) { console.log(`  ${name.padEnd(30)} — tab not found, skipped`); continue; }
 
   try {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: ID,
-      requestBody: {
-        requests: [{
-          sortRange: {
-            range: {
-              sheetId,
-              startRowIndex: 1,   // skip header row
-              startColumnIndex: 0,
-              endColumnIndex: 26,  // A–Z
+    if (dateFormat === 'iso') {
+      // Fast path: Sheets API sort (lexicographic = correct for YYYY-MM-DD)
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: ID,
+        requestBody: {
+          requests: [{
+            sortRange: {
+              range: {
+                sheetId,
+                startRowIndex: 1,
+                startColumnIndex: 0,
+                endColumnIndex: 26,
+              },
+              sortSpecs: [{ dimensionIndex: dateCol, sortOrder: 'DESCENDING' }],
             },
-            sortSpecs: [{ dimensionIndex: dateCol, sortOrder: 'DESCENDING' }],
-          },
-        }],
-      },
-    });
-    console.log(`  ${name.padEnd(25)} ✓`);
+          }],
+        },
+      });
+    } else {
+      // Client-side sort: read → parse DD/MM/YYYY → sort → write back
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: ID,
+        range: `'${name}'!A:Z`,
+      });
+      const rows = res.data.values || [];
+      if (rows.length < 2) { console.log(`  ${name.padEnd(30)} ✓ (empty)`); continue; }
+      const header = rows[0];
+      const data = rows.slice(1).filter(r => r && r.length);
+      if (!data.length) { console.log(`  ${name.padEnd(30)} ✓ (no data rows)`); continue; }
+      data.sort((a, b) => {
+        const da = parseDMY(a[dateCol]), db = parseDMY(b[dateCol]);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return db - da;
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: ID,
+        range: `'${name}'!A1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [header, ...data] },
+      });
+    }
+    console.log(`  ${name.padEnd(30)} ✓`);
   } catch (e) {
-    console.log(`  ${name.padEnd(25)} ERROR: ${e.message.slice(0, 60)}`);
+    console.log(`  ${name.padEnd(30)} ERROR: ${e.message.slice(0, 60)}`);
   }
 }
 

@@ -52,6 +52,19 @@ const leaveOverrides = {
   Elyssa:   ['2026-01-29', '2026-02-16', '2026-04-13', '2026-05-25', '2026-05-29'],
 };
 
+// Warn if leaveOverrides hasn't been reviewed in > 14 days — silently drifting overrides
+// inflate the effective-hours denominator for absent members.
+{
+  const allDates = Object.values(leaveOverrides).flat();
+  if (allDates.length) {
+    const latest = allDates.reduce((a, b) => (a > b ? a : b));
+    const daysSince = Math.floor((Date.now() - new Date(latest).getTime()) / 864e5);
+    if (daysSince > 14) {
+      console.warn(`⚠️  leaveOverrides last updated ${latest} (${daysSince} days ago). Review for unrecorded absences before pull.`);
+    }
+  }
+}
+
 // Hardcoded public holidays — weekdays only (Sat/Sun falls excluded; replacements included).
 // MY: confirmed via HR memo + Slack (Mudita, Wai Yip announcements).
 // ID: confirmed via official SKB + tracker zero-activity cross-check (Jun 2026).
