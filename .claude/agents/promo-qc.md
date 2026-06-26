@@ -130,6 +130,7 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | Per-currency amounts correct | `plan.promotion.promotion_currency_list[]` rows | FAIL if any currency row has a different `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` than source.parsed or source.per_currency_overrides for that currency |
 | Dialog linkage present | `plan.dialogPopup` (if expected per `source.instructions.popup_dialog`) | popup_dialog requested but `plan.dialogPopup` is null |
 | Provider assignment present | FS: `plan.promotion.game_provider_codes` includes FS provider; Dep/FC: `plan.promotion.game_provider_ids` set per Layer-1 rules | empty when bonus_type requires provider scoping |
+| Blacklist template assigned | `plan.promotion.blacklist_id` (QPRO and QP2 only — skip on IGMP) | FAIL if null or 0 — every QPRO/QP2 promo must have a blacklist template; a save without one will require a manual BO edit after Sentinel flags it post-save |
 | Promotion linkage present | per-locale names cover all `source.locales` | a locale in source has no corresponding `plan.names` row |
 | Category sub-exclusion in MT | When `source.instructions.categories_only` is set AND `bonus_type = "Deposit"` → check `plan.messageTemplate.details["1"].message` (EN) and ZH key for the correct phrase per category: **LC/LIVE CASINO** → EN `"Blackjack"` / ZH `"二十一点"`; **SLOTS/SLOT** → EN `"Table games"` + `"Arcade games"` / ZH `"桌面游戏"` + `"街机"`; **SPORTS** → EN `"Virtual Sports"` + `"Number Games"` / ZH `"虚拟体育"` + `"数字游戏"` | FAIL if category is set but its required exclusion phrase is absent from the MT body |
 | MT body numeric values match source | `plan.messageTemplate.details` — scan EN body text for numeric mentions of `source.parsed.bonus_rate_pct` (as %), `source.parsed.max_bonus`, `source.parsed.min_deposit`, `source.parsed.to_multiplier` (as Nx) | FAIL if a value appears in the body but does not match source.parsed (e.g. body says "30%" but source is 50%); WARNING if a source value is absent from the body entirely |
@@ -140,7 +141,7 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | FS per-spin value ≥ 0.50 | `source.parsed.value_per_spin` (FS only) | FAIL if value_per_spin < 0.50 — platform minimum is SGD/MYR 0.50 per spin |
 | FS MT subject format | `plan.messageTemplate.details["1"].subject` (FS on QPRO/QP2) | FAIL if EN subject starts with a digit (e.g. "48 Claim Your…") or contains "Before They're Gone" or "即将过期" — this indicates campaign-copy bleed-through; correct pattern is "Claim Your N Free Spins on [game]" |
 | FS MT body has Bet Value table | `plan.messageTemplate.details["1"].message` (FS on QPRO/QP2) | FAIL if EN body does not contain the text "Bet Value" — the standard FS template always includes a table (Free Spins \| Bet Value \| Turnover); absence means the campaign-copy intro replaced the structured body |
-| TO multiplier within platform range | `source.parsed.to_multiplier` and `platform` | WARNING if TO is outside expected range for REL_/RET_ promos: QPRO/WS1 = 10–12x, QP2 = 12–15x. WELC_ promos are exempt from this range check. FS promos follow the same range rule |
+| TO multiplier within platform range | `source.parsed.to_multiplier` and `platform` | WARNING if TO is outside expected range for REL_/RET_ promos: QPRO/WS1 = 10–12x, QP2 = 12–15x. WELC_ promos are exempt from this range check. FS promos follow the same range rule — applies to all bonus_types on QP2 including FS (12–15x on QP2, 10–12x on QPRO/WS1) |
 | QPRO promo_type / sub_type pair correct | `plan.promotion.promo_type` + `plan.promotion.promo_sub_type` (QPRO only) | FAIL if integer pair doesn't match expected: Dep+REL_→(2,1), Dep+WELC_→(2,2), FC→(3,1), FS+WELC_→(4,1), FS+REL_→(4,2). Derive expected pair from `bonus_type` and code prefix (REL_/WELC_). Wrong pair = BO records promo under the wrong campaign subtype |
 | MT body contains correct bonus-type vocabulary | `plan.messageTemplate.details["1"].message` (EN body, all bonus types) | FAIL if the EN body uses vocabulary that contradicts `bonus_type`: a FC body must NOT say "deposit match" or "deposit bonus"; a Deposit body must NOT say "free credit" or "free spin"; an FS body must NOT say "deposit" or "free credit". Cross-type vocabulary means the wrong template was applied |
 | MT body has 3-section structure | `plan.messageTemplate.details["1"].message` (EN body) | WARNING if the EN body appears to be missing the How to Redeem section or the closing T&C sentence. A complete MT body should have: (1) intro paragraph with reward details, (2) How to Redeem steps, (3) T&C closing sentence |
@@ -149,6 +150,8 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | QP2 tier_constraint matches code prefix | `plan.tierConstraint` and `promo_code` (QP2 only) | FAIL if promo_code has a tier prefix (BR_/SIL_/GLD_/PLT_/DMD_/NRM_) but `plan.tierConstraint` is null or empty; FAIL if tier in code doesn't match the tier level in `tierConstraint`; tier constraints only apply to QP2 — skip on QPRO/WS1 |
 | Min deposit within platform limits | `source.parsed.min_deposit` and `source.per_currency_overrides` per currency | FAIL if any currency's effective min_deposit is below the platform floor: MYR < 30, SGD < 50, IDR < 25000, THB < 50, USD < 5. Check baseline for all regions in `source.regions`; check per-currency override amounts in `source.per_currency_overrides` for each currency present |
 | Campaign objective prefix | `source.campaign` vs `plan.promotion.code` (strip leading `FT_` before checking) | FAIL if campaign is set and code is missing required tokens. Mapping: ACQ→`ACQ_`+`WELC_`; Ret+AdHoc→`ADHOC_`+`RET_`; CRM+Ret→`CRM_`+`REL_`; CRM+Churn→`CRM_`+`CHURN_`+`RET_`; CRM+Monthly→`CRM_`+(one of `REL_`/`RET_`); VIP+Groom→`VIP_`+`GROOM_`+`REL_`; VIP+AdHoc→`VIP_`+`ADHOC_`; VIP+Churn→`VIP_`+`CHURN_`+`RET_`; VIP+Ret→`VIP_`+`REL_`; TSM+Churn→`TSM_`+`CHURN_`; TSM+Ret→`TSM_`+`RET_`. Skip if campaign is blank or null. |
+
+> **Campaign prefix severity escalation:** FAIL here because the plan is already built with the wrong code — committing would save the wrong prefix to BO. Triage Officer emits NOTE (fixable before dry-run); Sentinel emits FAIL (code is already live in BO). Do not soften to WARNING.
 
 ---
 
@@ -180,6 +183,8 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 | ZH body numeric consistency with EN | `plan.messageTemplate.details` ZH locale body | FAIL if any numeric value in ZH body differs from EN body |
 | No HTML entity artifacts | All text fields: MT body (all locales), `PromotionRewardContents[].Content` | FAIL if raw HTML entities appear: `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;`, `&lsquo;` |
 | Campaign objective prefix | `source.campaign` vs `plan.promotion.PromotionCode` (strip leading `FT_` first) | FAIL if campaign is set and code is missing required tokens. Mapping: ACQ→`ACQ_`+`WELC_`; Ret+AdHoc→`ADHOC_`+`RET_`; CRM+Ret→`CRM_`+`REL_`; CRM+Churn→`CRM_`+`CHURN_`+`RET_`; CRM+Monthly→`CRM_`+(one of `REL_`/`RET_`); VIP+Groom→`VIP_`+`GROOM_`+`REL_`; VIP+AdHoc→`VIP_`+`ADHOC_`; VIP+Churn→`VIP_`+`CHURN_`+`RET_`; VIP+Ret→`VIP_`+`REL_`; TSM+Churn→`TSM_`+`CHURN_`; TSM+Ret→`TSM_`+`RET_`. Skip if campaign is blank or null. |
+
+> **Campaign prefix severity escalation:** FAIL here because the plan is built with the wrong code — activating would save the wrong prefix to WS1/WS2 BO. Triage Officer emits NOTE (fixable before dry-run); Sentinel emits FAIL (code is already live). Do not soften to WARNING.
 
 ### Deposit bonus
 
@@ -237,6 +242,8 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 - Missing `promotion_currency_list` on IGMP — intentional; single currency per site.
 - Missing `merchant_ids` on IGMP — intentional; site-level scoping.
 - `deposit_status`, `freespin_check`, `allow_deposit` absent on IGMP — N/A on WS1/WS2.
+- `blacklist_id` check skipped on IGMP — WS1/WS2 does not use the blacklist template system.
+- WARNING for `validity`/`reward_validity` appearing swapped is expected — reflects a known code bug where validity=expiry-after-claim and reward_validity=claim-window are set inversely; do NOT escalate to FAIL.
 
 ---
 

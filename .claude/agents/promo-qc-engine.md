@@ -82,7 +82,7 @@ Verify presence and basic shape only:
 * Required `parsed.*` fields are present per `bonus_type`:
   * Deposit → `min_deposit`, `bonus_rate_pct`, `to_multiplier`, `max_bonus`
   * Free Credit → `free_credit_amount`, `to_multiplier`
-  * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`, FS provider
+  * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`; FS provider present or resolvable by the namer (absence is NOTE, not RETURN — the canary's game-code resolver can infer it; emit NOTE so it is visible downstream)
 * FS hard platform limits (RETURN immediately — save will fail):
   * `parsed.spin_count` ≤ 88
   * `parsed.value_per_spin` ≥ 0.50
@@ -215,7 +215,7 @@ Match the campaign value case-insensitively:
 | Contains `TSM` **and** `Churn` | `TSM_` **and** `CHURN_` |
 | Contains `TSM` **and** `Ret` | `TSM_` **and** `RET_` |
 
-This is NOTE because a wrong prefix is a naming-convention mismatch — the pipeline can still run. Pre-QC and Sentinel will also flag it if the plan is built with the wrong code.
+**Severity escalation across gates:** NOTE here (source row — operator can still fix the code before dry-run and no canary run is wasted); FAIL at Pre-QC (plan is built with the wrong code — committing would lock it into BO); FAIL at Sentinel (code is already saved in BO — wrong prefix is now live). Do not flatten this escalation — each gate's severity reflects the cost of a fix at that stage.
 
 ---
 

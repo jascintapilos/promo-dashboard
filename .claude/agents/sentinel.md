@@ -285,6 +285,9 @@ When `platform` in the bundle is `"igmp"`, the standard field paths in the crite
 | promo activation | `live_state.list_row.IsActive` must be `true` | FAIL if false |
 | min deposit platform floors | `live_state.detail.PromotionRewards[0].MinimumActionAmount` — derive currency from `source.currencies[0]` or site suffix (MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→USD) — apply floors: MYR<30, SGD<50, IDR<25000, THB<50, USD<5 | FAIL if below floor |
 | max_per_player / daily_max | Not a direct concept on IGMP; `RedeemableQuantity=0` is the operator default (unlimited per-player claims) | SKIP — do not apply QPRO/QP2 WARNING for this being uncapped; if `source.max_per_player > 0`, emit WARNING that the cap cannot be verified on IGMP |
+| campaign objective prefix | `live_state.list_row.PromotionCode` (strip leading `FT_` first) vs `source.campaign` | FAIL if campaign is set and saved PromotionCode is missing required tokens. Mapping: ACQ→`ACQ_`+`WELC_`; Ret+AdHoc→`ADHOC_`+`RET_`; CRM+Ret→`CRM_`+`REL_`; CRM+Churn→`CRM_`+`CHURN_`+`RET_`; CRM+Monthly→`CRM_`+(one of `REL_`/`RET_`); VIP+Groom→`VIP_`+`GROOM_`+`REL_`; VIP+AdHoc→`VIP_`+`ADHOC_`; VIP+Churn→`VIP_`+`CHURN_`+`RET_`; VIP+Ret→`VIP_`+`REL_`; TSM+Churn→`TSM_`+`CHURN_`; TSM+Ret→`TSM_`+`RET_`. INCONCLUSIVE if `live_state.list_row` is absent. Skip if `source.campaign` is blank or null. |
+
+> **Campaign prefix severity escalation:** Triage Officer emits NOTE (fixable before dry-run); Pre-QC emits FAIL (plan built with wrong code); FAIL here because the wrong prefix is already saved to BO — a BO edit is required to correct it. Do not soften or suppress this verdict.
 
 **IGMP fields to SKIP entirely (not applicable on WS1/WS2):**
 - `auto_reward_activation` — not a concept on IGMP
