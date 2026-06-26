@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-// Probe all WS1/WS2 FreeSpin promos created by the bot and flag any whose
-// RedemptionType is Claim (1) but MinimumActionAmount > 0 (should be Deposit/0).
+// Probe ALL WS1/WS2 FreeSpin promos and report their RedemptionType.
+// Flags any with RedemptionType=Claim (1) but MinimumActionAmount > 0 (should be Deposit/0).
+// Shows full list so operator-created codes are also visible.
 //
-// Root cause: api-mapper-igmp.js defaulted RedemptionType to 1 (Claim) for all
-// FS promos regardless of min_deposit. Fixed 2026-06-26 — but all promos created
-// before the fix may be wrong and need to be replaced with new codes.
-//
-// Usage: node bin/probe-igmp-fs-redemption-type.mjs
+// Usage: node bin/probe-igmp-fs-redemption-type.mjs [--all]
+//   default: skip TEST_ codes
+//   --all:   include TEST_ codes
 
 import { igmpPost, listIgmpSites } from '../src/igmp-client.js';
 
-const BOT_USERS = ['promo_testbot'];
+const SHOW_ALL = process.argv.includes('--all');
 
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
@@ -34,8 +33,11 @@ async function probeSite(siteId) {
     if (r.data.length < 200) break;
   }
 
-  // Filter: FreeSpin type only (CreatedBy is null for all promos in this BO)
-  const fsPromos = all.filter((p) => p.PromotionType === 'FreeSpin');
+  // All FreeSpin promos, optionally skip TEST_ codes
+  const fsPromos = all.filter((p) =>
+    p.PromotionType === 'FreeSpin' &&
+    (SHOW_ALL || !/^TEST[_\s]/i.test(p.PromotionCode))
+  );
 
   if (!fsPromos.length) return [];
 
@@ -47,53 +49,46 @@ async function probeSite(siteId) {
     }
   });
 
-  const wrong = [];
+  const rows = [];
   fsPromos.forEach((p, i) => {
     const d = details[i];
     if (!d || d._error) {
-      wrong.push({ site: siteId, code: p.PromotionCode, name: p.PromotionName, status: p.IsActive ? 'Active' : 'Inactive', verdict: 'FETCH_ERROR', redemptionType: '?', minDeposit: '?' });
+      rows.push({ site: siteId, code: p.PromotionCode, status: p.IsActive ? 'Active' : 'Inactive', redemptionType: 'ERR', minDeposit: '-', verdict: 'FETCH_ERROR' });
       return;
     }
     // GetFreeSpinPromotionInfo returns d.data directly (not d.data.Promotion)
-    const promo = d?.data;
-    const rew = promo?.PromotionRewards?.[0];
+    const rew = d?.data?.PromotionRewards?.[0];
     if (!rew) {
-      wrong.push({ site: siteId, code: p.PromotionCode, name: p.PromotionName, status: p.IsActive ? 'Active' : 'Inactive', verdict: 'NO_REWARD', redemptionType: '?', minDeposit: '?' });
+      rows.push({ site: siteId, code: p.PromotionCode, status: p.IsActive ? 'Active' : 'Inactive', redemptionType: 'NO_REWARD', minDeposit: '-', verdict: 'NO_REWARD' });
       return;
     }
 
     // RedemptionType: 0=Deposit, 1=Claim (numeric on this endpoint)
-    const redemptionType = Number(rew.RedemptionType ?? -1);
+    const rt = Number(rew.RedemptionType ?? -1);
     const minDeposit = Number(rew.MinimumActionAmount ?? 0);
-    const redemptionLabel = redemptionType === 0 ? 'Deposit' : redemptionType === 1 ? 'Claim' : String(redemptionType);
+    const redemptionLabel = rt === 0 ? 'Deposit' : rt === 1 ? 'Claim' : `Unknown(${rt})`;
 
     // Wrong = Claim type but has a deposit requirement
-    if (redemptionType !== 0 && minDeposit > 0) {
-      wrong.push({
-        site: siteId,
-        code: p.PromotionCode,
-        name: p.PromotionName,
-        status: p.IsActive ? 'Active' : 'Inactive',
-        verdict: 'WRONG — should be Deposit',
-        redemptionType: redemptionLabel,
-        minDeposit,
-      });
-    }
+    const verdict = (rt !== 0 && minDeposit > 0) ? '✗ WRONG' : '✓ OK';
+
+    rows.push({ site: siteId, code: p.PromotionCode, status: p.IsActive ? 'Active' : 'Inactive', redemptionType: redemptionLabel, minDeposit: minDeposit || '-', verdict });
   });
 
-  return wrong;
+  return rows;
 }
 
 const sites = listIgmpSites();
-console.log(`Probing ${sites.length} IGMP sites for FS RedemptionType issues...\n`);
+console.log(`Probing ${sites.length} IGMP sites for FreeSpin RedemptionType...`);
+if (!SHOW_ALL) console.log('(TEST_ codes skipped — use --all to include them)\n');
+else console.log('(--all: including TEST_ codes)\n');
 
-const allWrong = [];
+const allRows = [];
 for (const siteId of sites) {
   process.stdout.write(`  ${siteId.padEnd(14)} `);
   try {
-    const wrong = await probeSite(siteId);
-    console.log(`${wrong.length} wrong`);
-    allWrong.push(...wrong);
+    const rows = await probeSite(siteId);
+    console.log(`${rows.length} FS promos`);
+    allRows.push(...rows);
   } catch (e) {
     console.log(`SKIP/FAIL  ${String(e.message || e).slice(0, 80)}`);
   }
@@ -101,16 +96,37 @@ for (const siteId of sites) {
 
 console.log('\n');
 
-if (!allWrong.length) {
-  console.log('✓ No FS promos found with wrong RedemptionType.');
-} else {
-  console.log(`✗ ${allWrong.length} FS promo(s) with wrong RedemptionType (Claim instead of Deposit):\n`);
-  console.log('Site            Status    RedemptionType  MinDep   Code');
-  console.log('─'.repeat(90));
-  for (const r of allWrong) {
+if (!allRows.length) {
+  console.log('No FreeSpin promos found.');
+  process.exit(0);
+}
+
+// Group by site for display
+const bySite = {};
+for (const r of allRows) {
+  (bySite[r.site] = bySite[r.site] || []).push(r);
+}
+
+for (const [site, rows] of Object.entries(bySite)) {
+  console.log(`━━ ${site} (${rows.length}) ━━`);
+  console.log('Verdict  Status    RedemptionType  MinDep   Code');
+  console.log('─'.repeat(80));
+  for (const r of rows) {
     console.log(
-      `${r.site.padEnd(16)}${r.status.padEnd(10)}${r.redemptionType.padEnd(16)}${String(r.minDeposit).padEnd(9)}${r.code}`
+      `${r.verdict.padEnd(9)}${r.status.padEnd(10)}${r.redemptionType.padEnd(16)}${String(r.minDeposit).padEnd(9)}${r.code}`
     );
   }
-  console.log('\nAction required: deactivate each listed code on BO and replace with a new code.');
+  console.log('');
+}
+
+// Summary of wrong ones
+const wrong = allRows.filter((r) => r.verdict === '✗ WRONG');
+if (!wrong.length) {
+  console.log('✓ No wrong RedemptionType found.');
+} else {
+  console.log(`\n✗ ACTION REQUIRED — ${wrong.length} FS promo(s) have Claim instead of Deposit:\n`);
+  for (const r of wrong) {
+    console.log(`  [${r.status}] ${r.site}  ${r.code}  (minDep=${r.minDeposit})`);
+  }
+  console.log('\nDeactivate each on BO and replace with a new code (new codes will auto-set Deposit).');
 }
