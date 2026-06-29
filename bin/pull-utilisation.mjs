@@ -36,7 +36,7 @@ const TRACKERS = [
   { name: 'Jascinta', id: '1z5IUbq4XwvihtyHH2jXU9lngh9FLvmvy-fAYbAcig00', region: 'MY' },
   { name: 'Wen',      id: '19EgP1nS3FRsOkTWjX6-LvcP0in3ZNWg17M7mQhd4YLU', region: 'MY' },
   { name: 'Alysa',    id: '1zbNGLJE4i0uGybLCTAalo5Ze0gLRe-iZmLUIEnySh8g', region: 'MY' },
-  { name: 'Elyssa',   id: '1ml0O0kTaHfk9JdWuc9zGbhr1KKEEIeRQFWM-dPzBkos', region: 'MY' },
+  { name: 'Elyssa',   id: '1ml0O0kTaHfk9JdWuc9zGbhr1KKEEIeRQFWM-dPzBkos', region: 'MY', matLeaveFrom: '2026-06-22' },
   { name: 'Gaby',     id: '1s9Pw3nretdNlsRoMRnBC5SLUa_wpxIQoQuGjsNGxKFU', region: 'ID' },
   { name: 'Bangun',   id: '1EPtu6NUWj-rKBGdHQy8CafzpNbFP1Zca5z6n5G2EoQk', region: 'ID' },
   { name: 'Michelle', id: '1tBdE9qJO77_VckO-FU2DYIF-jaHnMig6H8KWgOyImjw', region: 'MY', resigned: true },
@@ -175,7 +175,8 @@ function weekMon(d) {
 // Build a Map of weekMon (YYYY-MM-DD) → expected work hours for a person.
 // Starts at their first logged date, ends at today (or endDate if resigned).
 // Subtracts region PHs and personal leave/AL/override days.
-function weeklyExpectedMap(region, allLeaveDays, startDate, endDate) {
+// matLeaveFrom (YYYY-MM-DD): weeks starting on/after this date get 0 expected hours.
+function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFrom) {
   const result = new Map();
   const phSet = PH_WEEKDAYS[region] || new Set();
   const start = new Date(startDate); start.setHours(0, 0, 0, 0);
@@ -186,14 +187,19 @@ function weeklyExpectedMap(region, allLeaveDays, startDate, endDate) {
   cur.setDate(cur.getDate() - (dow0 === 0 ? 6 : dow0 - 1));
   while (cur <= end) {
     const wk = dateKey(cur);
-    let exp = 0;
-    for (let i = 0; i < 5; i++) {
-      const day = new Date(cur); day.setDate(cur.getDate() + i);
-      if (day < start || day > end) continue;
-      const dk = dateKey(day);
-      if (!phSet.has(dk) && !allLeaveDays.has(dk)) exp += 8;
+    // Weeks on/after maternity leave start have 0 expected hours
+    if (matLeaveFrom && wk >= matLeaveFrom) {
+      result.set(wk, 0);
+    } else {
+      let exp = 0;
+      for (let i = 0; i < 5; i++) {
+        const day = new Date(cur); day.setDate(cur.getDate() + i);
+        if (day < start || day > end) continue;
+        const dk = dateKey(day);
+        if (!phSet.has(dk) && !allLeaveDays.has(dk)) exp += 8;
+      }
+      result.set(wk, exp);
     }
-    result.set(wk, exp);
     cur.setDate(cur.getDate() + 7);
   }
   return result;
@@ -355,10 +361,18 @@ async function getUtilisation(tracker) {
     for (const d of overrides) {
       if (d >= startKey && (!endKey || d <= endKey)) allLeaveDays.add(d);
     }
-    const effectiveHours = Math.max(0, personWeekdayHours - phDays * 8 - allLeaveDays.size * 8);
-    const pct = effectiveHours > 0 ? (totalHours / effectiveHours) * 100 : 0;
-    const weeklyExp = weeklyExpectedMap(tracker.region, allLeaveDays, startDate, endDate);
-    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), notes: '' };
+    // Maternity leave: subtract weekdays from ML start to today from the denominator.
+    // pct is set to null (excluded from team average) while ML is active.
+    const matLeaveFrom = tracker.matLeaveFrom || null;
+    const onMatLeave = matLeaveFrom && dateKey(new Date()) >= matLeaveFrom;
+    const mlDays = matLeaveFrom ? weekdayHoursSince(
+      new Date(matLeaveFrom),
+      endDate || new Date(),
+    ) / 8 : 0;
+    const effectiveHours = Math.max(0, personWeekdayHours - phDays * 8 - allLeaveDays.size * 8 - mlDays * 8);
+    const pct = onMatLeave ? null : (effectiveHours > 0 ? (totalHours / effectiveHours) * 100 : 0);
+    const weeklyExp = weeklyExpectedMap(tracker.region, allLeaveDays, startDate, endDate, matLeaveFrom);
+    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), notes: onMatLeave ? 'Maternity leave' : '' };
   } catch (e) {
     const errSnip = e.message.slice(0, 60);
     process.stdout.write(`\n    ↳ tracker error (${errSnip}) — trying Weekly Report fallback… `);
