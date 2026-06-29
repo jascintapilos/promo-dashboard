@@ -17,7 +17,9 @@
  *   node bin/refresh-ft-sessions.mjs                    ← refresh all 3
  *   node bin/refresh-ft-sessions.mjs --instance=ws1
  */
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+chromium.use(StealthPlugin());
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
@@ -77,6 +79,19 @@ for (const instance of instances) {
     // Navigate — valid session lands on app dashboard; expired session redirects through SSO.
     // With a live Google/WorkOS session the SSO chain completes silently; we just wait for it.
     await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    // Fail fast if Cloudflare IP block — no retry will help.
+    const cfTitle = await page.title().catch(() => '');
+    const cfText  = await page.evaluate(() => document.body.innerText.slice(0, 200)).catch(() => '');
+    if (/attention required|cloudflare/i.test(cfTitle) || /you have been blocked|unable to access/i.test(cfText)) {
+      const host2 = new URL(LOGIN_URL).hostname;
+      throw new Error(
+        `CF-IP-BLOCK: ${host2} — This machine's IP is blocked by Cloudflare.\n` +
+        `  Fix: log into FT CRM from your browser, then:\n` +
+        `    F12 → Application → Cookies → copy "portaltoken" → run:\n` +
+        `    node bin/save-ft-token.mjs --instance=${instance} --token=<value>`
+      );
+    }
 
     // Wait up to 25s for the redirect chain to settle on the main app
     const host     = new URL(LOGIN_URL).hostname;

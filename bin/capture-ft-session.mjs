@@ -19,7 +19,9 @@
  *   node bin/capture-ft-session.mjs --instance ws1
  *   node bin/capture-ft-session.mjs --instance ws1 --manual
  */
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+chromium.use(StealthPlugin());
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import readline from 'node:readline';
 import path from 'node:path';
@@ -157,11 +159,33 @@ console.log('\nDone.');
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+// Check whether the current page is a Cloudflare IP block page
+async function isCloudflareBlocked(page) {
+  try {
+    const title = await page.title();
+    if (/attention required|cloudflare/i.test(title)) return true;
+    const text = await page.evaluate(() => document.body.innerText.slice(0, 200));
+    return /you have been blocked|unable to access/i.test(text);
+  } catch (_) {
+    return false;
+  }
+}
+
 async function autoLogin(page, ctx, loginUrl) {
   const host = new URL(loginUrl).hostname;
 
   console.log('Navigating to FT login page…');
   await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  // Fail fast if Cloudflare is blocking this IP — no amount of retries will help.
+  if (await isCloudflareBlocked(page)) {
+    throw new Error(
+      `Cloudflare IP block — this machine's IP is blocked from accessing ${host}.\n` +
+      `  To fix: log into FT CRM from your browser (office network or VPN), then:\n` +
+      `    F12 → Application → Cookies → copy "portaltoken" → run:\n` +
+      `    node bin/save-ft-token.mjs --instance=${INSTANCE} --token=<paste-value>`
+    );
+  }
 
   // If we land directly on the dashboard, check whether the API token still works.
   // The browser UI can stay alive on session cookies while the portaltoken is
@@ -199,10 +223,38 @@ async function autoLogin(page, ctx, loginUrl) {
   // Now we must be on signin.ft-crm.com or the FT login page with a Login button.
   // If a Login button is visible on the FT app page, click it first.
   // Use waitForSelector (up to 8s) so React has time to render before we give up.
-  const loginBtn = await page.waitForSelector(
+  let loginBtn = await page.waitForSelector(
     'button:has-text("Login"), a:has-text("Login"), button:has-text("Sign in")',
     { timeout: 8000 }
   ).catch(() => null);
+
+  // If no Login button AND not yet redirected to signin, the React app is stuck in
+  // auth limbo (stale profile cookies confuse the SSO check). Start completely fresh.
+  if (!loginBtn && !page.url().includes('signin.ft-crm')) {
+    console.log('App stuck — clearing all auth state and re-navigating…');
+    await ctx.clearCookies();
+    await page.evaluate(() => {
+      try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+    });
+    // Use goto + networkidle so the SPA's auth-check API calls complete before we probe.
+    await page.goto(loginUrl, { waitUntil: 'networkidle', timeout: 45000 }).catch(() =>
+      page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+    );
+    // After a clean load the SPA either shows a Login button or silently redirects
+    // to signin.ft-crm.com — waitForAuthState catches both.
+    const authState2 = await waitForAuthState(page, ctx, loginUrl, 25000);
+    console.log(`  → auth state (fresh): ${authState2}`);
+    if (authState2 === 'logged-in') return extractSession(page, ctx, loginUrl);
+    // Re-probe for Login button with extra time
+    loginBtn = await page.waitForSelector(
+      'button:has-text("Login"), a:has-text("Login"), button:has-text("Sign in")',
+      { timeout: 20000 }
+    ).catch(() => null);
+    // If redirected to signin domain without a Login button, fall straight through
+    // to email input (the signin page hosts the input directly).
+    if (!loginBtn) console.log(`  No Login button found after fresh load — URL: ${page.url()}`);
+  }
+
   if (loginBtn) {
     // Expired WorkOS session cookies cause the redirect chain to loop back to the FT
     // login page instead of landing on the email form. Clear them first so WorkOS
@@ -221,9 +273,14 @@ async function autoLogin(page, ctx, loginUrl) {
 
     console.log('Clicking Login button…');
     await loginBtn.click();
-    // Wait for the redirect chain (FT → WorkOS → authapi → signin.ft-crm.com) to settle
-    // instead of a fixed sleep — the chain can take 6–12s with a fresh cookie slate.
-    await page.waitForURL('**/signin.ft-crm.com/**', { timeout: 15000 }).catch(() => {});
+    // Wait for redirect — use both URL change and email input as signals (glob without
+    // leading ** was too strict for bare domain URLs like https://signin.ft-crm.com/).
+    await Promise.race([
+      page.waitForURL('**signin.ft-crm**', { timeout: 25000 }),
+      page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 25000 }),
+    ]).catch(() => {});
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1000);
   }
 
   // Fill email field (now on signin.ft-crm.com or similar WorkOS page)

@@ -40,8 +40,8 @@ if %ERRORLEVEL% equ 0 (
     set FT_OK=1
     node bin\record-pull-status.mjs ft-refresh "FT Session Refresh" OK >> %LOG% 2>&1
 ) else (
-    node bin\record-pull-status.mjs ft-refresh "FT Session Refresh" FAILED "WorkOS session expired - run bin\capture-ft-sessions-all.bat" >> %LOG% 2>&1
-    echo FT SESSION REFRESH FAILED - WorkOS session expired. Run bin\capture-ft-sessions-all.bat to re-capture all sessions. >> %LOG%
+    node bin\record-pull-status.mjs ft-refresh "FT Session Refresh" FAILED "IP blocked or session expired - check log, run save-ft-token.mjs" >> %LOG% 2>&1
+    echo FT SESSION REFRESH FAILED. If CF-IP-BLOCK in log: open FT CRM in browser, F12-^>Cookies-^>copy portaltoken, run: node bin\save-ft-token.mjs --instance=ws1 --token=VALUE >> %LOG%
 )
 
 if "%FT_OK%"=="0" goto skip_ft_pulls
