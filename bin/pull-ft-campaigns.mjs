@@ -6,6 +6,10 @@
  * Source: ActivityManager/Activities/GetActivities (signed in current year)
  *         → linked segment name via ByCategory/1 lookup
  *
+ * Uses a Google Apps Script relay (same project as dashboard-data.gs) to
+ * bypass the Cloudflare IP block on this machine. All FT API calls are made
+ * from Google's servers; this script only processes and writes to the sheet.
+ *
  * Instances:
  *   ws1    → https://mb8.ft-crm.com       (WS1/WS2 — brand MB8)
  *   qpro1  → https://alpha-iota-qp1.ft-crm.com  (QPRO1)
@@ -27,15 +31,18 @@ import { parseArgs } from './_args.js';
 const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
 const WRITE = flags.write === true;
-const APPEND = flags.append === true; // if true, append; if false + WRITE, overwrites (Smartico already wrote header)
+const APPEND = flags.append === true;
 const YEAR = new Date().getFullYear();
 
 const TAB = 'CRM Assignment Log';
 const OPS_ID = getOpsSheetId();
 
+// GAS relay — same web app as dashboard-data.gs, doPost() handler added 2026-06-29.
+// POST body: { instance, token } → returns { users, segments, activities, changelogs, segFilters }
+const GAS_RELAY_URL = 'https://script.google.com/macros/s/AKfycbxXYSn6VSTL2Y5pZPRUDuisI8EIw0XiKjSr_3DoUKgZEcEcxkpQHzfJUyD1UVF4VBWBNw/exec';
+
 // TBP team — sourced from Directory sheet 'Team Contact Details'.
 // FT display names may differ from Smartico/Directory nicknames.
-// Update here if team changes; always re-verify against Directory before editing.
 const TBP_TEAM = new Set([
   'Alysa',    // Foong Men Hua — FT ids 125 (old), 141
   'Elyssa',   // Elyssa Mae Cataag — FT ids 95 (old), 142
@@ -66,18 +73,11 @@ if (!INSTANCES[INSTANCE]) {
 
 const SESSION_FILE = path.resolve(`ft-session-${INSTANCE}.local.json`);
 if (!existsSync(SESSION_FILE)) {
-  console.error(`No session file for "${INSTANCE}". Run: node bin/capture-ft-session.mjs --instance=${INSTANCE}`);
+  console.error(`No session file for "${INSTANCE}". Run: node bin/save-ft-token.mjs --instance=${INSTANCE} --token=<portaltoken>`);
   process.exit(1);
 }
 
 const session = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
-// Use origin only (strip /v2 path — QP2 loginUrl has /v2/ but API is at root)
-const BASE = new URL(session.loginUrl).origin;
-
-// Check portaltoken not expired
-const portalCookie = session.cookies.find(c => c.name === 'portaltoken');
-const portaltoken = portalCookie?.value || '';
-const cookieExp = portalCookie?.expires || 0;
 const URLS = { ws1: 'https://mb8.ft-crm.com/', qpro1: 'https://alpha-iota-qp1.ft-crm.com/', qp2: 'https://alpha-iota-qp2.ft-crm.com/v2/' };
 function sessionExpiredMsg(inst) {
   return [
@@ -87,156 +87,126 @@ function sessionExpiredMsg(inst) {
     `  3. Run: node bin/save-ft-token.mjs --instance=${inst} --token=<paste-value-here>`,
   ].join('\n');
 }
+
+const portalCookie = session.cookies?.find(c => c.name === 'portaltoken');
+const portaltoken = portalCookie?.value || session.token || '';
 if (!portaltoken) {
   console.error(sessionExpiredMsg(INSTANCE));
   process.exit(1);
 }
+
+const cookieExp = portalCookie?.expires || 0;
 const nowSec = Math.floor(Date.now() / 1000);
 if (cookieExp > 0 && cookieExp < nowSec + 300) {
   console.error(sessionExpiredMsg(INSTANCE));
   process.exit(1);
 }
-if (cookieExp === 0) {
-  // Session cookie — no expiry field to check. Validate with a lightweight ping.
-  try {
-    const pingRes = await fetch(`${BASE}/crm-api/Admin/User?_start=0&_end=1`, {
-      headers: { authtoken: portaltoken, Accept: 'application/json' },
-    });
-    if (pingRes.status === 401) {
-      console.error(sessionExpiredMsg(INSTANCE));
-      process.exit(1);
-    }
-  } catch (e) {
-    console.warn(`  Token pre-flight ping failed (${e.message}); continuing — will fail on first API call if expired.`);
-  }
-}
+
 console.log(`\nFastTrack CRM pull — ${session.label} (${INSTANCE})`);
-console.log(`Session valid until: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie (no expiry)'}`);
+console.log(`Token expires: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie'}`);
 console.log(`Mode: ${WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
 
-// ── HTTP helpers ──────────────────────────────────────────────────────────────
+// ── GAS relay fetch ────────────────────────────────────────────────────────────
 
-const AUTH_HEADERS = {
-  authtoken: portaltoken,
-  Accept: 'application/json',
-  'Content-Type': 'application/json',
-};
-
-async function apiFetch(urlPath, opts = {}) {
-  const res = await fetch(`${BASE}${urlPath}`, {
-    headers: AUTH_HEADERS,
-    ...opts,
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${urlPath}`);
-  const text = await res.text();
-  if (!text) return null;
-  return JSON.parse(text);
-}
-
-async function apiGet(urlPath) {
-  return apiFetch(urlPath, { method: 'GET' });
-}
-
-async function apiPost(urlPath, body) {
-  return apiFetch(urlPath, {
+async function gasRelayFetch(instance, token) {
+  console.log('Calling GAS relay (fetching all FT data via Google servers)…');
+  const res = await fetch(GAS_RELAY_URL, {
     method: 'POST',
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instance, token }),
   });
+  if (!res.ok) throw new Error(`GAS relay HTTP ${res.status}`);
+  const text = await res.text();
+  if (text.trim().startsWith('<') || text.trim().startsWith('callback(')) {
+    throw new Error(
+      `GAS relay not yet deployed with doPost() support.\n` +
+      `  Fix: open script.google.com/home/projects/15mYzwwZdX3XIlJVJcs1ts7nbhmb_nLM3b8Ib8OZTGeWw9gB_VgCe3TNw/edit\n` +
+      `  Paste updated bin/dashboard-data.gs → Deploy → Manage deployments → New version → Deploy`
+    );
+  }
+  const data = JSON.parse(text);
+  if (data.error) {
+    if (data.error.startsWith('CF_BLOCKED')) {
+      throw new Error(
+        `Cloudflare blocked FT CRM even from GAS — portaltoken may be invalid or expired.\n` +
+        sessionExpiredMsg(instance)
+      );
+    }
+    throw new Error(`GAS relay error: ${data.error}`);
+  }
+  console.log(`  ${(data.users || []).length} users, ${(data.segments || []).length} segments, ${(data.activities || []).length} activities`);
+  console.log(`  ${Object.keys(data.changelogs || {}).length} changelogs, ${Object.keys(data.segFilters || {}).length} segment filters`);
+  return data;
 }
 
-// ── Fetch data ────────────────────────────────────────────────────────────────
+// ── Fetch all data via GAS relay ──────────────────────────────────────────────
+
+const raw = await gasRelayFetch(INSTANCE, portaltoken);
+
+// ── Build lookup maps ─────────────────────────────────────────────────────────
 
 // Deleted/renamed accounts that no longer appear in AdminUsers.
-// User 71 signed 48/50 WS1 2026 activities — update this once identified.
 const DELETED_USER_NAMES = {
-  71: 'FT Team', // deleted AlphaIota BPO account, identity unknown — update when confirmed
+  71: 'FT Team', // deleted AlphaIota BPO account, identity unknown
 };
 
-console.log('Fetching admin users…');
-const usersResp = await apiGet('/crm-api/Authentication/AdminUsers');
 const userMap = { ...DELETED_USER_NAMES };
-(usersResp?.Data || []).forEach(u => {
+(raw.users || []).forEach(u => {
   userMap[u.UserId] = (u.Name || u.Username || '').replace(/\s+/g, ' ').trim();
 });
-console.log(`  ${Object.keys(userMap).length} users loaded`);
+console.log(`\n${Object.keys(userMap).length} users loaded`);
 
-console.log('Fetching segments (ByCategory/1)…');
-const segsResp = await apiGet('/crm-api/ActivityManager/Segments/ByCategory/1');
 const segMap = {};
-(segsResp?.Data || []).forEach(s => { segMap[s.SegmentId] = s.SegmentName; });
-console.log(`  ${Object.keys(segMap).length} segments loaded`);
-
-console.log('Fetching activities…');
-const actResp = await apiPost('/crm-api/ActivityManager/Activities/GetActivities', {
-  archived: false,
-  activityTypeId: 1,
-});
-const allActivities = actResp?.Data || [];
-console.log(`  ${allActivities.length} total activities`);
+(raw.segments || []).forEach(s => { segMap[s.SegmentId] = s.SegmentName; });
+console.log(`${Object.keys(segMap).length} segments loaded`);
 
 // ── YTD filter + one-off-only ─────────────────────────────────────────────────
-// TriggerTypeId=1: event/recurring trigger (fires on deposit events, monthly schedules, etc.)
-// TriggerTypeId=2: manual one-off (trigId=0, specific execDt, no campaign period)
-// Keep only TriggerTypeId=2 — these are the team's manually-scheduled one-off blasts.
+// TriggerTypeId=2: manual one-off blasts (the team's segment sends).
+// WS1 doesn't use QA sign-off — use ExecutionDateTime as fallback.
 
-// WS1 doesn't use QA sign-off — activities have no SignedDate after Feb 2026.
-// Use ExecutionDateTime as fallback so WS1 YTD data is complete.
+const allActivities = raw.activities || [];
+console.log(`${allActivities.length} total activities`);
+
 const ytdAll = allActivities.filter(a => {
   const date = a.SignedDate || a.ExecutionDateTime || '';
   return date.slice(0, 4) === String(YEAR);
 });
 
-// Log distribution for verification
 const trigDist = {};
 ytdAll.forEach(a => { trigDist[a.TriggerTypeId] = (trigDist[a.TriggerTypeId] || 0) + 1; });
-const distStr = Object.entries(trigDist)
-  .map(([id, n]) => `type${id}×${n}`)
-  .join(', ');
-console.log(`  ${ytdAll.length} in ${YEAR} — TriggerType breakdown: ${distStr || '(none)'}`);
+const distStr = Object.entries(trigDist).map(([id, n]) => `type${id}×${n}`).join(', ');
+console.log(`${ytdAll.length} in ${YEAR} — TriggerType breakdown: ${distStr || '(none)'}`);
 
 const ytdActivities = ytdAll.filter(a => a.TriggerTypeId === 2);
 const excluded = ytdAll.length - ytdActivities.length;
-if (excluded) console.log(`  Excluded ${excluded} recurring activities (TriggerTypeId ≠ 2)`);
-console.log(`  ${ytdActivities.length} one-off activities`);
+if (excluded) console.log(`Excluded ${excluded} recurring activities (TriggerTypeId ≠ 2)`);
+console.log(`${ytdActivities.length} one-off activities`);
 
-// ── Changelog lookup — resolve creator BEFORE dedup ──────────────────────────
-// Creator must be known before dedup so team activities are never suppressed
-// by a newer non-team blast on the same segment. Changelog is resolved for all
-// one-off activities (not just dedup winners) — marginal extra API calls.
-console.log('Fetching changelogs for creator attribution…');
+// ── Creator attribution from changelogs ───────────────────────────────────────
+
 const creatorByActId = {};
-const CL_BATCH = 20;
 let clFailCount = 0;
-for (let i = 0; i < ytdActivities.length; i += CL_BATCH) {
-  const batch = ytdActivities.slice(i, i + CL_BATCH);
-  await Promise.all(batch.map(async a => {
-    try {
-      const clResp = await apiGet(`/crm-api/Changelog/Entity/activity/${a.ActivityId}`);
-      const entries = clResp?.Data || [];
-      const createEntry = [...entries].reverse().find(e => e.operationType === 'create');
-      const fallbackEntry = entries[entries.length - 1];
-      const creatorEntry = createEntry || fallbackEntry;
-      if (creatorEntry?.userId) {
-        creatorByActId[a.ActivityId] = userMap[creatorEntry.userId] || DELETED_USER_NAMES[creatorEntry.userId] || `uid:${creatorEntry.userId}`;
-      }
-    } catch { clFailCount++; }
-  }));
-  if (i + CL_BATCH < ytdActivities.length) {
-    process.stdout.write(`\r  ${Math.min(i + CL_BATCH, ytdActivities.length)}/${ytdActivities.length} changelogs…`);
+for (const a of ytdActivities) {
+  const entries = raw.changelogs?.[String(a.ActivityId)];
+  if (!entries) { clFailCount++; continue; }
+  const createEntry = [...entries].reverse().find(e => e.operationType === 'create');
+  const fallbackEntry = entries[entries.length - 1];
+  const creatorEntry = createEntry || fallbackEntry;
+  if (creatorEntry?.userId) {
+    creatorByActId[a.ActivityId] = userMap[creatorEntry.userId] || DELETED_USER_NAMES[creatorEntry.userId] || `uid:${creatorEntry.userId}`;
   }
 }
-console.log(`\r  ${Object.keys(creatorByActId).length} changelogs resolved         `);
-if (clFailCount > 0) console.warn(`  ⚠️  ${clFailCount} changelog fetch(es) failed — those rows fall back to SignedBy for creator name.`);
+console.log(`${Object.keys(creatorByActId).length} changelogs resolved`);
+if (clFailCount > 0) console.warn(`  ⚠️  ${clFailCount} changelog(s) missing — those rows fall back to SignedBy for creator name.`);
 
-// Team-filter BEFORE dedup — prevents a non-team blast on the same segment from
-// winning the newest-first dedup and erasing a team member's activity.
+// ── Team filter + dedup ───────────────────────────────────────────────────────
+
 const teamActivities = ytdActivities.filter(a => {
   const creator = creatorByActId[a.ActivityId] || userMap[a.SignedBy];
   return creator && TBP_TEAM.has(creator);
 });
-console.log(`  ${teamActivities.length} team-created activities`);
+console.log(`${teamActivities.length} team-created activities`);
 
-// Deduplicate by SegmentId across team activities only (newest team activity wins)
 const seenSegmentIds = new Set();
 const dedupedActivities = [];
 const sortDate = a => (a.SignedDate || a.ExecutionDateTime || '');
@@ -247,7 +217,7 @@ for (const a of teamActivities.sort((a, b) => sortDate(b).localeCompare(sortDate
     dedupedActivities.push(a);
   }
 }
-console.log(`  ${dedupedActivities.length} unique segments after dedup`);
+console.log(`${dedupedActivities.length} unique segments after dedup`);
 
 // ── Brand / Region extraction ─────────────────────────────────────────────────
 
@@ -255,21 +225,14 @@ const CURRENCY_TO_REGION = { MYR: 'MY', SGD: 'SG', IDR: 'ID', THB: 'TH', KHR: 'K
 
 function extractRegion(text) {
   const t = (text || '').toUpperCase();
-  // Currency codes — always unambiguous
-  if (t.includes('MYR') || t.includes('RM')) {
-    // Confirm RM is Ringgit (RM followed by digit, not part of a word like "TERM")
-    if (t.includes('MYR') || /\bRM\d/.test(t)) return 'MY';
-  }
+  if (t.includes('MYR') || /\bRM\d/.test(t)) return 'MY';
   if (t.includes('SGD')) return 'SG';
   if (t.includes('IDR')) return 'ID';
-  // Word-boundary region codes (e.g. "WS1 MYS FC", "QPRO1 SG 1000GET700")
   if (/\bMYS?\b/.test(t)) return 'MY';
   if (/\bSGP?\b/.test(t)) return 'SG';
   if (/\bIDN?\b/.test(t)) return 'ID';
   if (/\bTH\b/.test(t)) return 'TH';
   if (/\bKH\b/.test(t)) return 'KH';
-  // Embedded in compact brand codes: QPMY0601, QP2AMY, QPRO1MY, BP9MY, WS1MY, MBMY0601, MBSG0601
-  // Match brand prefix (QP/WS/BP/MB + optional chars) immediately followed by region code
   const embedded = t.match(/(?:QP|WS|BP|MB)[0-9A-Z]*(MY|SG|ID|TH|KH)/);
   if (embedded) return embedded[1];
   return '';
@@ -278,12 +241,9 @@ function extractRegion(text) {
 function extractBrand(actName, segName, instance) {
   const combined = `${actName || ''} ${segName || ''}`;
   if (instance === 'ws1') {
-    // WS2 segments are explicitly labelled with a "WS2" prefix
     if (/^WS2\b/i.test((segName || '').trim())) return 'WS2';
     return 'WS1';
   }
-
-  // QPRO1 / QP2 — extract from name
   const m = combined.match(/QPRO\s*(\d+)/i);
   if (m) return `QPRO${m[1]}`;
   const m2 = combined.match(/QP2([A-D])?/i);
@@ -291,9 +251,7 @@ function extractBrand(actName, segName, instance) {
   return INSTANCES[instance]?.brand || instance.toUpperCase();
 }
 
-// ── Segment currency fallback (GetSelective) ──────────────────────────────────
-// For segments whose name doesn't encode a region, fetch the filter JSON from
-// GetSelective and read the user_details-currency rule value.
+// ── Segment currency fallback (from pre-fetched GAS segFilters) ───────────────
 
 function parseCurrenciesFromFilter(filterJson) {
   const currencies = [];
@@ -310,40 +268,16 @@ function parseCurrenciesFromFilter(filterJson) {
   return currencies;
 }
 
-// IDs of segments that still need a region from the filter
-const noRegionSegIds = [...new Set(
-  dedupedActivities
-    .filter(a => {
-      const seg = segMap[a.SegmentId] || a.ActivityName || '';
-      return !(extractRegion(seg) || extractRegion(a.ActivityName || ''));
-    })
-    .map(a => a.SegmentId)
-    .filter(Boolean)
-)];
-
-const segCurrencyMap = {}; // segmentId → region string
-if (noRegionSegIds.length > 0) {
-  console.log(`Fetching segment filters for ${noRegionSegIds.length} no-region segments…`);
-  const GS_BATCH = 50;
-  for (let i = 0; i < noRegionSegIds.length; i += GS_BATCH) {
-    const batch = noRegionSegIds.slice(i, i + GS_BATCH);
-    try {
-      const resp = await apiPost('/crm-api/ActivityManager/Segments/GetSelective', batch);
-      for (const s of resp?.Data || []) {
-        if (!s.SegmentFilter) continue;
-        const currencies = parseCurrenciesFromFilter(s.SegmentFilter);
-        if (currencies.length === 1) {
-          segCurrencyMap[s.SegmentId] = CURRENCY_TO_REGION[currencies[0]] || '';
-        } else if (currencies.length > 1) {
-          // Multi-currency segment — join all found regions
-          const regions = [...new Set(currencies.map(c => CURRENCY_TO_REGION[c]).filter(Boolean))];
-          segCurrencyMap[s.SegmentId] = regions.join('/');
-        }
-      }
-    } catch { /* non-fatal; region stays blank */ }
+const segCurrencyMap = {};
+for (const [segId, filterJson] of Object.entries(raw.segFilters || {})) {
+  if (!filterJson) continue;
+  const currencies = parseCurrenciesFromFilter(filterJson);
+  if (currencies.length === 1) {
+    segCurrencyMap[segId] = CURRENCY_TO_REGION[currencies[0]] || '';
+  } else if (currencies.length > 1) {
+    const regions = [...new Set(currencies.map(c => CURRENCY_TO_REGION[c]).filter(Boolean))];
+    segCurrencyMap[segId] = regions.join('/');
   }
-  const resolved = Object.keys(segCurrencyMap).length;
-  console.log(`  Resolved ${resolved}/${noRegionSegIds.length} via segment filter`);
 }
 
 // ── Build rows ────────────────────────────────────────────────────────────────
@@ -352,7 +286,6 @@ const crmTool = INSTANCES[INSTANCE].label;
 
 const dataRows = dedupedActivities.map(a => {
   const segName = segMap[a.SegmentId] || a.ActivityName || '';
-  // Prefer changelog creator; fall back to SignedBy; fall back to 'FT Team'
   const creatorName = creatorByActId[a.ActivityId] || userMap[a.SignedBy] || 'FT Team';
   const date = (a.SignedDate || a.ExecutionDateTime || '').slice(0, 10);
   const brand = extractBrand(a.ActivityName, segName, INSTANCE);
@@ -360,9 +293,8 @@ const dataRows = dedupedActivities.map(a => {
   return [date, brand, region, crmTool, segName, creatorName];
 });
 
-dataRows.sort((a, b) => b[0].localeCompare(a[0])); // sort by date desc (newest first)
+dataRows.sort((a, b) => b[0].localeCompare(a[0]));
 
-// Filter to TBP team only — non-team accounts (Seahub Mimi, BPO staff, etc.) are excluded.
 const teamRows = dataRows.filter(r => TBP_TEAM.has(r[5]));
 
 // ── Summary ───────────────────────────────────────────────────────────────────
@@ -394,9 +326,8 @@ if (teamRows.length === 0) {
   process.exit(0);
 }
 
-// ── Guard: verify tab has a header + at least one data row before appending ────
-// If Smartico crashed after clearing the tab (leaving it empty), appending FT
-// here would produce a headerless sheet with no Smartico data.
+// Guard: verify tab has a header + at least one data row before appending.
+// If Smartico crashed after clearing the tab, abort rather than leave a headerless sheet.
 try {
   const headerCheck = await sheets.spreadsheets.values.get({
     spreadsheetId: OPS_ID, range: `'${TAB}'!A1:A2`,
@@ -411,7 +342,6 @@ try {
   console.warn(`  (Could not verify tab header: ${e.message}; proceeding with append.)`);
 }
 
-// Use append — auto-extends sheet rows, no need to pre-calculate start row
 const appendResp = await sheets.spreadsheets.values.append({
   spreadsheetId: OPS_ID,
   range: `'${TAB}'!A1`,

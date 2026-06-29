@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 /**
- * Save a manually-copied FT portaltoken to the session file.
+ * Save a manually-copied FT portaltoken (+ optional cf_clearance) to the session file.
  *
  * When to use:
  *   Session has expired and auto-capture isn't working. Log in via Chrome,
- *   press F12 → Application → Cookies → copy the "portaltoken" value, then run:
+ *   press F12 → Application → Cookies → copy the "portaltoken" AND "cf_clearance" values, then run:
  *
- *   node bin/save-ft-token.mjs --instance=ws1   --token=<value>
- *   node bin/save-ft-token.mjs --instance=qpro1 --token=<value>
- *   node bin/save-ft-token.mjs --instance=qp2   --token=<value>
+ *   node bin/save-ft-token.mjs --instance=ws1   --token=<portaltoken> --cf-clearance=<cf_clearance>
+ *   node bin/save-ft-token.mjs --instance=qpro1 --token=<portaltoken> --cf-clearance=<cf_clearance>
+ *   node bin/save-ft-token.mjs --instance=qp2   --token=<portaltoken> --cf-clearance=<cf_clearance>
+ *
+ * cf_clearance is required when Cloudflare blocks direct Node.js API calls from this IP.
  */
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
-const INSTANCE = flags.instance;
-const TOKEN    = flags.token;
+const INSTANCE     = flags.instance;
+const TOKEN        = flags.token;
+const CF_CLEARANCE = flags['cf-clearance'] || null;
 
 const INSTANCES = {
   ws1:   { url: 'https://mb8.ft-crm.com/',               domain: 'mb8.ft-crm.com',               label: 'WS1/WS2' },
@@ -47,9 +50,11 @@ const store = {
   tokenKey:   'cookie:portaltoken',
   token:      TOKEN,
   cookies: [{ name: 'portaltoken', value: TOKEN, domain, path: '/' }],
+  ...(CF_CLEARANCE ? { cfClearance: CF_CLEARANCE } : {}),
   capturedAt: new Date().toISOString(),
 };
 
 writeFileSync(SESSION_FILE, JSON.stringify(store, null, 2));
 console.log(`✅  Saved portaltoken for ${label} → ${SESSION_FILE}`);
 console.log(`    Token: ${TOKEN.slice(0, 4)}****`);
+if (CF_CLEARANCE) console.log(`    cf_clearance: ${CF_CLEARANCE.slice(0, 8)}****`);
