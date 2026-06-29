@@ -33,21 +33,38 @@ echo [6b/13] Pulling Smartico CRM segments + activities into CRM Assignment Log.
 node bin\pull-smartico-campaigns.mjs --write --no-preserve >> %LOG% 2>&1
 if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs smartico "Smartico CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs smartico "Smartico CRM" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo SMARTICO PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
 
-echo [7/13] Refreshing FastTrack sessions silently (headless - no login needed)... >> %LOG%
+echo [7/13] Refreshing FastTrack sessions silently (headless auto-login)... >> %LOG%
+set FT_OK=0
 node bin\refresh-ft-sessions.mjs >> %LOG% 2>&1
-if %ERRORLEVEL% neq 0 echo FT SESSION REFRESH FAILED - check log; re-run capture-ft-sessions-all.bat if needed >> %LOG%
+if %ERRORLEVEL% equ 0 (
+    set FT_OK=1
+    node bin\record-pull-status.mjs ft-refresh "FT Session Refresh" OK >> %LOG% 2>&1
+) else (
+    node bin\record-pull-status.mjs ft-refresh "FT Session Refresh" FAILED "WorkOS session expired - run bin\capture-ft-sessions-all.bat" >> %LOG% 2>&1
+    echo FT SESSION REFRESH FAILED - WorkOS session expired. Run bin\capture-ft-sessions-all.bat to re-capture all sessions. >> %LOG%
+)
+
+if "%FT_OK%"=="0" goto skip_ft_pulls
 
 echo [8/13] Pulling FastTrack WS1 CRM segments... >> %LOG%
 node bin\pull-ft-campaigns.mjs --instance=ws1 --write --append >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT WS1 PULL FAILED - session may have expired, re-run capture-ft-session.mjs --instance=ws1 >> %LOG%)
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT WS1 PULL FAILED >> %LOG%)
 
 echo [9/13] Pulling FastTrack QPRO1 CRM segments... >> %LOG%
 node bin\pull-ft-campaigns.mjs --instance=qpro1 --write --append >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT QPRO1 PULL FAILED - session may have expired, re-run capture-ft-session.mjs --instance=qpro1 >> %LOG%)
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT QPRO1 PULL FAILED >> %LOG%)
 
 echo [10/13] Pulling FastTrack QP2 CRM segments... >> %LOG%
 node bin\pull-ft-campaigns.mjs --instance=qp2 --write --append >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT QP2 PULL FAILED - session may have expired, re-run capture-ft-session.mjs --instance=qp2 >> %LOG%)
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" FAILED "exit %ERRORLEVEL% - re-capture session" >> %LOG% 2>&1 & echo FT QP2 PULL FAILED >> %LOG%)
+
+goto after_ft_pulls
+:skip_ft_pulls
+echo [8-10/13] SKIPPED - FT session refresh failed at step 7 >> %LOG%
+node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" SKIPPED "FT session refresh failed" >> %LOG% 2>&1
+node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" SKIPPED "FT session refresh failed" >> %LOG% 2>&1
+node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" SKIPPED "FT session refresh failed" >> %LOG% 2>&1
+:after_ft_pulls
 
 echo [11/13] Pulling adhoc tasks from Slack into Adhoc Tasks tab... >> %LOG%
 node bin\pull-adhoc-tasks.mjs --commit >> %LOG% 2>&1
