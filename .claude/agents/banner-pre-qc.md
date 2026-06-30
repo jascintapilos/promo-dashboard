@@ -31,6 +31,10 @@ Do not spend time validating BO state or front-end rendering.
 Reserve post-save validation for the Banner Deep-QC Agent.
 
 > *Note for this pipeline:* "Deep-QC" in this context corresponds to **banner-deep-qc** (`.claude/agents/banner-deep-qc.md`), which runs post-save via `/banner-deep-qc`. Hand off post-save depth to that agent; you are the fast completeness gate before commit.
+>
+> **You run on raw/uncompressed images — this is intentional.** Compression (Step 3.5) happens AFTER you give the green light:
+> `node bin/compress-banners.mjs Banner/{brand}-{campaign} Banner/{brand}-{campaign}-min`
+> The upload script auto-selects the `-min` folder. Do not tell the user to compress before running you.
 
 ---
 

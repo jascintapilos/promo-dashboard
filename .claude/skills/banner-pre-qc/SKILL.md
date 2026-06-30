@@ -10,9 +10,15 @@ Checks the banner staging plan **and** the linked canary promo QC plan together.
 **Position in QC chain:**
 
 ```
-pull-banner-from-clickup → upload-promo.js --dry-run → [/banner-pre-qc] → upload-promo.js --commit → [/banner-deep-qc]
-                                                         ↑ THIS skill
+pull-banner-from-clickup → upload --dry-run → [/banner-pre-qc] → compress-banners → upload --commit → [/banner-deep-qc]
+                                               ↑ THIS skill        ↑ Step 3.5
 ```
+
+> **After this skill gives PASS/WARNING** → run compress before committing:
+> ```
+> node bin/compress-banners.mjs Banner/{brand}-{campaign} Banner/{brand}-{campaign}-min
+> ```
+> The upload script auto-selects the `-min` folder (prefers it over the raw folder). If you skip compression, the raw folder is uploaded instead.
 
 ## Trigger
 

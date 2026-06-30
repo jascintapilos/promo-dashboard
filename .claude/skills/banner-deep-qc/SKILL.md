@@ -10,8 +10,8 @@ Full verification of saved BO state + live front-end appearance. Scoped to B-IDs
 **Position in QC chain:**
 
 ```
-upload-promo.js --commit → [/banner-deep-qc]
-                            ↑ THIS skill (post-save)
+pull → dry-run → /banner-pre-qc → compress-banners → upload --commit → [/banner-deep-qc]
+                                                                         ↑ THIS skill (post-save)
 ```
 
 ## Trigger

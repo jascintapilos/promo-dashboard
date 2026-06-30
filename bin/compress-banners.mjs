@@ -1,8 +1,16 @@
 #!/usr/bin/env node
-// One-shot compression helper.
-// Usage: node bin/compress-banners.mjs <src-folder> <dest-folder>
-// Compresses all JPG/PNG in src-folder → dest-folder at high-quality JPEG / max PNG.
-// Falls back to sharp if available, otherwise exits with guidance.
+// Banner compression — Step 3.5 in the WS1/MB8 banner upload pipeline.
+// Run AFTER /banner-pre-qc gives PASS/WARNING, BEFORE upload-ws1-banners-api.mjs --commit.
+//
+// Usage:
+//   node bin/compress-banners.mjs Banner/mb8-{campaign} Banner/mb8-{campaign}-min
+//
+// IMPORTANT: dest-folder MUST end in "-min".
+// upload-ws1-banners-api.mjs auto-prefers any subfolder ending in "-min" over the raw folder.
+// If you use a different suffix, the upload script silently falls back to the raw uncompressed folder.
+//
+// Tool: Sharp (local, unlimited). For cloud-quality compression on high-profile campaigns,
+// use src/tinify.js directly — but note the 500/month free-tier cap.
 
 import sharp from 'sharp';
 import { readdirSync, mkdirSync, existsSync } from 'node:fs';
