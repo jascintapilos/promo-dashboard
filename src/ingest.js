@@ -329,13 +329,20 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
     }
   }
 
-  // Value per spin — currency-prefixed number followed by "per spin" / "perspin".
+  // Amount per line — operator stated it directly; use as-is (no ÷20).
+  const amtPerLine =
+       text.match(/[Aa]mount\s+per\s+line\s*[:=]\s*(\d+(?:\.\d+)?)/i)
+    || text.match(/[Aa]PL\s*[:=]\s*(\d+(?:\.\d+)?)/i);
+  if (amtPerLine) parsed.amount_per_line = Number(amtPerLine[1]);
+
+  // Value per spin — what the player sees; mapper divides by 20 to get amount_per_line.
   const valPerSpin =
        text.match(/\$?\s*(\d+(?:\.\d+)?)\s+per\s*spin/i)
     || text.match(/(?:RM|S\$|AUD?|Rp|[A-Z]{2,3}\$?)\s*(\d+(?:\.\d+)?)\s*per\s*spin/i)
     || text.match(/Value\s+per\s+spin\s*[:=]\s*(\d+(?:\.\d+)?)/i)
+    || text.match(/[Ss]pin\s+value\s*[:=]\s*(\d+(?:\.\d+)?)/i)
     || text.match(/\$(\d+(?:\.\d+)?)\s*perspin/i);
-  if (valPerSpin) parsed.value_per_spin = Number(valPerSpin[1]);
+  if (valPerSpin && !parsed.amount_per_line) parsed.value_per_spin = Number(valPerSpin[1]);
 
   // Free Credit: amount. Accepted forms:
   //   "Free Credit 100" / "Free Credit MYR 100"    (amount after label)
@@ -489,7 +496,7 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   if (!parsed.duplicate_of && !gaps.some((g) => g.startsWith('duplicate_of'))) {
     if (bt.includes('free spin')) {
       if (parsed.spin_count == null)     gaps.push('spin_count missing');
-      if (parsed.value_per_spin == null) gaps.push('value_per_spin missing');
+      if (parsed.value_per_spin == null && parsed.amount_per_line == null) gaps.push('value_per_spin or amount_per_line missing');
       if (parsed.to_multiplier == null)  gaps.push('to_multiplier missing');
       if (parsed.game == null)           gaps.push('game name missing');
     } else if (bt.includes('free credit')) {

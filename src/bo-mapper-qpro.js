@@ -342,12 +342,15 @@ export function buildActions(resolved, { brand } = {}) {
       // qpro-fs-currency-add-probe.js) requires `max_transfer_out` as
       // a *required* field — Submit stays disabled until it's filled.
       // Earlier runs missed this because the FC row had it but FS didn't.
-      const valuePerSpinRaw = override.value_per_spin ?? r2.value_per_spin ?? 0;
-      const spinCount       = override.spin_count    ?? r2.spin_count    ?? 0;
+      const apl             = override.amount_per_line ?? r2.amount_per_line ?? null;
+      const valuePerSpinRaw = override.value_per_spin  ?? r2.value_per_spin  ?? 0;
+      const spinCount       = override.spin_count      ?? r2.spin_count      ?? 0;
       row.min_transfer     = override.min_deposit       ?? r2.min_deposit       ?? 0;
       row.rounds           = spinCount;
       row.total_rounds     = spinCount;
-      row.amount_per_line  = +(valuePerSpinRaw / 20).toFixed(4);
+      // If sheet stated amount_per_line directly, use it as-is.
+      // If sheet stated value_per_spin, divide by 20 (house convention).
+      row.amount_per_line  = apl != null ? +Number(apl).toFixed(4) : +(valuePerSpinRaw / 20).toFixed(4);
       row.lines            = 10;
       row.coins            = 1;
       row.bonus_amount     = 0;
