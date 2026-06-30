@@ -70,7 +70,7 @@ You are NOT:
 
 **WARNING** — Images and dates OK, but position=99 (always expected — staging default), canary plan not found locally, or canary dates misaligned by ≤3 days.
 
-**FAIL** — Any required image missing, end date in the past, plan bundle not found, OR canary plan has a reward value mismatch, missing required field, or HTML entity artifact.
+**FAIL** — Any required image missing, end date in the past, plan bundle not found, canary plan has a reward value mismatch, missing required field, or HTML entity artifact, OR any image shows wrong brand identity or wrong locale language.
 
 ---
 
@@ -108,6 +108,47 @@ Each row maps a responsibility to the banner plan bundle's fields. FAIL if the c
 | End date in future | `end_datetime` > today | Expired |
 | Duration reasonable | end − start between 3 days and 18 months | Outside range |
 | Position inference | Label containing "pragmatic"/"PP"/"playtech"/"microgaming"/"fastspin"/"evolution" → expect 3–4; in-house → 1–2; other → 5 | Position 99 = WARNING (staging default — always expected; remind user to set post-upload) |
+
+### A2. Image content visual check (read each staged image)
+
+For every staged image file (desktop + mobile, all locales), use the **Read tool to open and visually inspect** the image. Claude can view images directly — use this capability.
+
+Run two checks per image:
+
+**Check 1 — Brand identity**
+
+The banner must show the correct brand for the BO it is being uploaded to. The expected brand name is in `staged_images[].site_label` or the plan bundle's `site.brand_name`.
+
+| Verdict | Condition |
+|---|---|
+| PASS | The brand name or logo visible in the image clearly matches the expected brand (e.g. "MB8" text or MB8 logo on an mb8 banner) |
+| WARNING | No brand identifier is visible — could be a generic background/template without branding; cannot confirm |
+| FAIL | A DIFFERENT brand name or logo is clearly visible (e.g. another operator's name on an mb8 banner — wrong creative) |
+
+**Check 2 — Locale language match**
+
+Each locale image must contain text in the language that locale represents.
+
+| Locale suffix | Expected language in image |
+|---|---|
+| `-en` | English text |
+| `-zh` | Chinese/Traditional Chinese characters (繁體中文) |
+| `-id` | Bahasa Indonesia text |
+| `-th` | Thai script |
+| `-km` or `-kh` | Khmer script |
+
+| Verdict | Condition |
+|---|---|
+| PASS | Visible text language matches the locale (e.g. Chinese characters on `-zh` image) |
+| WARNING | Image appears to have no visible text (purely graphical/background) — cannot verify locale |
+| FAIL | Visible text is clearly in a DIFFERENT language than the locale suffix (e.g. English-only text on a `-zh` image — missing translation) |
+
+If there is only one image serving multiple regions (locale-only suffix like `-en.jpg`), that single image must still show text in the correct language for that locale. Flag WARNING if the same EN image is also being used for ZH slots (missing ZH creative).
+
+**Aggregate image_content verdict:**
+- PASS — all images checked, all brand + locale checks pass
+- WARNING — at least one image is ambiguous (no text / no branding) but no wrong brand or wrong language seen
+- FAIL — any image shows wrong brand OR wrong language for its locale slot
 
 ### B. Canary promo plan accuracy
 
@@ -163,6 +204,19 @@ Return ONLY this JSON object. No prose before or after.
       "status": "PASS" | "WARNING" | "FAIL",
       "checks": {
         "images": "PASS" | "WARNING" | "FAIL",
+        "image_content": {
+          "brand_identity": "PASS" | "WARNING" | "FAIL" | "INCONCLUSIVE",
+          "locale_language": "PASS" | "WARNING" | "FAIL" | "INCONCLUSIVE",
+          "overall": "PASS" | "WARNING" | "FAIL" | "INCONCLUSIVE",
+          "per_file": [
+            {
+              "file": "Banner/mb8-dream-vacation-raffle/mb8-dream-vacation-raffle-1280x320px-en.jpg",
+              "brand_verdict": "PASS",
+              "locale_verdict": "PASS",
+              "notes": "MB8 logo visible top-left; English text confirmed"
+            }
+          ]
+        },
         "dates": "PASS" | "WARNING" | "FAIL",
         "position": "WARNING",
         "canary_plan": {

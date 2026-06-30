@@ -48,6 +48,38 @@ Read `captures/banner-qc-plans/{b_id}__{site_id}.json` for each brand.
 | Both present per locale | At least 1 locale has both desktop + mobile |
 | Brand code in filename matches site | Filename starts with `site.loginMerchantCode.lower()` |
 
+**A2. Image content visual check (open and look at each image):**
+
+For every staged image file, use the **Read tool to open the image** — Claude can see images directly. Check two things:
+
+*Brand identity* — does the banner show the correct brand for the BO it's being uploaded to?
+
+| Verdict | Condition |
+|---|---|
+| PASS | Brand name or logo in the image clearly matches the target brand |
+| WARNING | No brand identifier visible — purely graphical; cannot confirm |
+| FAIL | A different brand name or logo is visibly shown — wrong creative |
+
+*Locale language* — does the image text match the locale it's filed under?
+
+| Locale | Expected language in image |
+|---|---|
+| `-en` | English |
+| `-zh` | Chinese / Traditional Chinese (繁體中文) |
+| `-id` | Bahasa Indonesia |
+| `-th` | Thai script |
+| `-km` / `-kh` | Khmer script |
+
+| Verdict | Condition |
+|---|---|
+| PASS | Visible text matches the locale |
+| WARNING | No visible text — graphic-only banner; cannot verify |
+| FAIL | Text is clearly in a different language than the locale suffix |
+
+Flag FAIL if a single `-en` image is being reused for a `-zh` slot — Chinese members would see an English-only banner.
+
+Report per-file findings in `checks.image_content.per_file[]`.
+
 **B. Date checks:**
 
 | Check | Pass condition |
@@ -85,11 +117,11 @@ For each bundle's `promo_code`:
 ```
 BANNER PRE-QC — B16
 
-| B-ID | Brand    | Images       | Dates  | Position | Canary Plan     | Status  |
-|------|----------|--------------|--------|----------|-----------------|---------|
-| B16  | QPRO16   | ✓ my-en ×2   | ✓      | ⚠ pos 99 | ✓ P073 PASS     | WARNING |
-| B15  | QPRO15   | ✓ my-en ×2   | ✓      | ⚠ pos 99 | ⚠ not found     | WARNING |
-| B13  | QPRO1    | ✗ no desktop | ✓      | ⚠ pos 99 | ✓ P073 PASS     | FAIL    |
+| B-ID | Brand  | Files        | Brand ID     | Locale lang    | Dates | Position | Canary Plan | Status  |
+|------|--------|--------------|--------------|----------------|-------|----------|-------------|---------|
+| B16  | QPRO16 | ✓ my-en ×2   | ✓ QPRO16 OK  | ✓ EN confirmed | ✓     | ⚠ pos 99 | ✓ P073 PASS | WARNING |
+| B15  | QPRO15 | ✓ my-en ×2   | ✓ QPRO15 OK  | ✗ zh has EN text| ✓    | ⚠ pos 99 | ⚠ not found | FAIL    |
+| B13  | QPRO1  | ✗ no desktop | INCONCLUSIVE | INCONCLUSIVE   | ✓     | ⚠ pos 99 | ✓ P073 PASS | FAIL    |
 ```
 
 For each WARNING/FAIL, expand with specific finding + recommended action.
