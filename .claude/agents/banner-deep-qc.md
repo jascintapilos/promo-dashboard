@@ -200,6 +200,45 @@ When a field is missing from the bundle → INCONCLUSIVE for that field.
 
 ---
 
+## WS1/WS2 Directus platform overrides
+
+When `site_id` in the bundle is `"ws1"` or `"ws2"`, the standard field criteria above do not apply — the bundle shape is from Directus CMS (`upload-ws1-banners-api.mjs`), not the QPRO/QP2 BO API. Use only the checks in this table. Skip the QPRO/QP2 field table entirely for these bundles.
+
+**WS1/WS2 Directus bundle shape** (from `captures/banner-qc-bundles/{b_id}__ws1__{region}.json`):
+
+```json
+{
+  "b_id": "B50", "site_id": "ws1", "region": "MY",
+  "carousel_id": 226,
+  "image_row_id": 941,
+  "translation_ids": { "en": 1001, "zh": 1002 },
+  "locale_uuids": { "en": { "desktop": "<uuid>", "mobile": "<uuid>" }, "zh": { ... } },
+  "link_url": "/promotion/info/my-dream-vacation-raffle",
+  "cta": "Learn More",
+  "start_date": "2026-07-01 00:00:00",
+  "end_date": "2026-07-31 23:59:59"
+}
+```
+
+| Critical field | Where in bundle | Pass condition |
+|---|---|---|
+| Slide row created | `image_row_id` | Not null — the UICarousel_images record exists |
+| All locales have translations | `translation_ids` keys vs expected locales for region | Each expected locale (e.g. MY → en+zh) has a non-null ID |
+| Desktop image uploaded | `locale_uuids.{locale}.desktop` per locale | UUID not null for every locale in translation_ids |
+| Mobile image uploaded | `locale_uuids.{locale}.mobile` per locale | UUID not null; may equal desktop UUID if design is single-image |
+| Link URL correct | `link_url` | Matches `/promotion/info/{region-slug}` pattern; not empty |
+| Start/end dates valid | `start_date`, `end_date` | Both present; end_date > today |
+| Carousel ID matches region | `carousel_id` | Not null; matches known IDs: WS1 MY=226, TH=28, ID=132, KH=80, SG=54, AU=227, PH=158; WS2 MY=1 |
+| CTA not empty | `cta` | Non-empty string (typically "Learn More") |
+
+**Checks NOT applicable to WS1/WS2 Directus bundles** — mark INCONCLUSIVE (not FAIL) if expected but absent:
+- `banner_id`, `position` — Directus carousel has no concept of position 99 or BO banner ID
+- `content_id`, `content_details` — 3.3 Promo Content is a QPRO/QP2 concept; Directus banners have no linked promo content record
+- T&C hyperlink / brand placeholder — N/A; Directus carousel slides have no inline T&C body
+- Front-end checks — apply normally (carousel is visible on the website); use `cms_host` to derive the site URL if `website` is absent from the bundle
+
+---
+
 ## Suppressions (do NOT raise these as failures)
 
 * `status=0` (draft) pre-activation — expected. Report as WARNING "not yet activated", not FAIL.

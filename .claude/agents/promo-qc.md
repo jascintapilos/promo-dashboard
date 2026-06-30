@@ -179,6 +179,7 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 | Promotion code follows naming standards | `plan.promotion.PromotionCode` | FAIL if code prefix doesn't match `bonus_type` (REL_/WELC_/FC_/FS_); FAIL if tier label appears in `source.promotion_name_en` |
 | Bonus type selected | `bonus_type` | FAIL if null or unknown |
 | Validity period present | `plan.promotion.PromotionStartDate` + `plan.promotion.PromotionEndDate` | FAIL if either missing |
+| WS1 promo name uniqueness reminder | `plan.promotion.PromotionName` | WARNING always — WS1/WS2 Manual Reward Assignment team picks promos **by name**, not code. A duplicate name causes the wrong reward to be granted. The pre-QC agent cannot probe BO directly, so always emit this WARNING: "Verify no active promo on this WS1 BO already uses this name before committing." The main thread must do the authoritative BO probe |
 | MT body numeric values match source | `plan.messageTemplate.details["1"].message` (EN body) | FAIL if a numeric value in body contradicts `source.parsed`; WARNING if a source value is absent from the body entirely |
 | ZH body numeric consistency with EN | `plan.messageTemplate.details` ZH locale body | FAIL if any numeric value in ZH body differs from EN body |
 | No HTML entity artifacts | All text fields: MT body (all locales), `PromotionRewardContents[].Content` | FAIL if raw HTML entities appear: `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;`, `&lsquo;` |

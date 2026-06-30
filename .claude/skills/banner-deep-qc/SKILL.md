@@ -53,11 +53,13 @@ Read `captures/banner-qc-bundles/{b_id}__{site_id}.json`.
 
 **B. Promo content (3.3):**
 
-Use `content_id` from the bundle. Fetch via BO API: `GET /api/bo/promotioncontent/{content_id}`.
+Read `content_details` from the bundle (pre-fetched at upload time). **Do NOT call BO API directly** — the agent is bundle-only (agent rule 3). If `content_details` is absent from the bundle, these checks are INCONCLUSIVE.
+
+> **WS1/WS2 Directus banners**: 3.3 content is not applicable — skip this section entirely for bundles with `site_id = ws1` or `ws2`.
 
 | Check | Pass condition |
 |---|---|
-| Content exists | HTTP 200, record found |
+| Content exists | `content_id` in bundle not null |
 | EN locale populated | `content_details` has EN entry with non-empty `content` body |
 | ZH locale populated (if MY brand) | ZH entry present and non-empty |
 | T&C hyperlink present | Sentence 11 of body text contains `<a href=` pointing to brand's T&C domain |

@@ -118,4 +118,5 @@ For FAIL/WARNING/INCONCLUSIVE brands, expand each finding with:
 
 - Does NOT modify the BO, source sheet, or bundle. Read-only verification.
 - Does NOT auto-rollback or re-save. User decides what to fix manually based on Sentinel's findings.
-- Does NOT cover WS1/IGMP brands yet — bundles only written by QPRO/QP2 runners.
+
+**WS1/IGMP coverage is live.** `qc-fanout.mjs` ingests IGMP bundles written by `canary-api-igmp.js`, and `sentinel.md` has a complete IGMP platform overrides table. Run `/deep-qc` for WS1 saves the same way as QPRO/QP2.

@@ -123,4 +123,5 @@ When auto-fired (per `feedback_auto_pre_qc_on_request.md`):
 
 - Does NOT modify the BO, source sheet, plan bundle, or canary run logs. Read-only.
 - Does NOT auto-fix issues. User confirms before changes.
-- Does NOT cover WS1/IGMP brands yet — plan bundles only written by QPRO/QP2 runners.
+
+**WS1/IGMP coverage is live.** `canary-api-igmp.js` writes `captures/qc-plans/<handle>__WS1_*.json` and `pre-qc-fanout.mjs` picks them up. The IGMP check table in `promo-qc.md` is fully populated. Run `/pre-qc` for WS1 saves the same way as QPRO/QP2.

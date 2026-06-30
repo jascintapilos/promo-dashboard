@@ -393,7 +393,29 @@ function printPlan(plan) {
 async function uploadFile(client, filePath, title) {
   const buf = readFileSync(filePath);
   const ext = path.extname(filePath).slice(1).toLowerCase();
-  const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+  const name = path.basename(filePath);
+
+  // Guard 1 — minimum size. Anything under 10 KB is a placeholder, a failed
+  // download, or an empty file. Real carousel banners are 200 KB+.
+  if (buf.length < 10_000) {
+    throw new Error(
+      `Image too small (${buf.length} bytes) — looks like a placeholder or corrupt download: ${name}\n` +
+      `  Expected ≥ 10 KB. Check the staged file and re-pull from Nextcloud.`
+    );
+  }
+
+  // Guard 2 — magic bytes. Confirm the file actually IS what the extension claims.
+  // JPEG: FF D8 FF  |  PNG: 89 50 4E 47
+  const isJpeg = buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+  const isPng  = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+  if (ext === 'png' && !isPng) {
+    throw new Error(`Magic bytes don't match PNG — file may be corrupted or mislabelled: ${name}`);
+  }
+  if ((ext === 'jpg' || ext === 'jpeg') && !isJpeg) {
+    throw new Error(`Magic bytes don't match JPEG — file may be corrupted or mislabelled: ${name}`);
+  }
+
+  const mime = isPng ? 'image/png' : 'image/jpeg';
   const fd = new FormData();
   fd.append('title', title);
   fd.append('file', new Blob([buf], { type: mime }), path.basename(filePath));
