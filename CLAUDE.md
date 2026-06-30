@@ -14,6 +14,12 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
 2. **`/qc-engine <handle>`** — Triage Officer (READY / NOTE / RETURN). If RETURN, STOP and surface what to fix.
 3. **`node bin/canary-multi-brand.js <handle> --parallel`** — dry-run (writes plan bundles)
 4. **`/pre-qc <handle>`** — Pre-QC Agent (PASS / WARNING / FAIL). Present the table.
+4.5. **Display pre-commit mechanics summary table** — Read `captures/requests/<handle>.json` and render a one-glance table BEFORE asking the user to commit. This is mandatory — do not skip. Fields depend on bonus type:
+   - **Deposit/Reload:** Code | Name EN | Name ZH/ID | Bonus % | Min Deposit | Max Bonus | TO | Reward Validity
+   - **Free Credit:** Code | Name EN | Name ZH/ID | FC Amount | Max Transfer Out | TO | Reward Validity
+   - **Free Spin:** Code | Name EN | Name ZH/ID | Spins | Spin Value | Game | Min Deposit | TO | Reward Validity
+   - If `per_currency_overrides` has different values across currencies, show one row per currency — never collapse differing values into one row.
+   - Name column pulls from `promotion_name_zh_id` (serves both ZH and ID locales).
 5. **WAIT for user direction.** Do NOT auto-commit. User says "commit it" or "fix X first".
 6. **`node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc`** — live save (only after user confirms)
 7. **`/deep-qc <handle>`** — Sentinel (PASS / WARNING / FAIL / INCONCLUSIVE). Present the verdict.
