@@ -157,17 +157,44 @@ If the brief gives a slug, use that verbatim. Don't invent slugs from the campai
 
 ### Workflow — BIA per B-ID (API-direct)
 
+**Run every step in order. Do not skip or reorder.**
+
 ```
-1. Confirm images are staged in Banner/{mb8|rws77}-{campaign}/ with region-locale filename suffixes.
-2. Dry-run to verify plan:
-     node bin/upload-ws1-banners-api.mjs --range=<B-ID>
-   Check: all images ✔, regions/carousel IDs correct, dates match schedule, linkUrl slug is right.
-3. If images are missing: tell user to stage them first (correct naming convention, correct folder).
-4. Commit when images are ready:
-     node bin/upload-ws1-banners-api.mjs --range=<B-ID> --commit
-5. QC bundles are written to captures/banner-qc-bundles/{b_id}__{site}__{region}.json
-6. Tell user to verify in Directus admin → activate when ready.
-7. Run /banner-deep-qc <B-ID> for post-upload QC.
+Step 1 — Confirm images are staged
+  Images must be in Banner/{mb8|rws77}-{campaign}/ (flat folder, no subfolders).
+  Filename pattern: {brand}-{desc}-{size}px-{locale}.jpg  e.g. mb8-dream-vacation-1280x320px-en.jpg
+  If missing: run pull-banner-from-clickup first, or tell user to stage them manually.
+
+Step 2 — Dry-run (no writes)
+  node bin/upload-ws1-banners-api.mjs --range=<B-ID>
+  Check output: all images ✔, regions/carousel IDs correct, dates match schedule, linkUrl slug right.
+  Note the folder name printed on the "[images] folder:" line — you'll need it for Step 3.5.
+
+Step 3 — /banner-pre-qc <B-ID>
+  Spawn /banner-pre-qc. It visually inspects each staged image (brand identity + locale language)
+  and validates dates, position, and the linked canary promo plan.
+  → PASS or WARNING: proceed to Step 3.5.
+  → FAIL: stop. Fix the flagged issue (wrong creative, missing locale, bad dates) before continuing.
+
+Step 3.5 — Compress images (AUTOMATED — run this yourself, do not ask the user)
+  Determine the raw staging folder from Step 2's "[images] folder:" output, e.g. mb8-dream-vacation-raffle.
+  Then run:
+    node bin/compress-banners.mjs "Banner/<raw-folder>" "Banner/<raw-folder>-min"
+  Example:
+    node bin/compress-banners.mjs "Banner/mb8-dream-vacation-raffle" "Banner/mb8-dream-vacation-raffle-min"
+  The upload script auto-selects the -min folder in Step 4 — no flag needed.
+  Wait for the compression summary (file sizes + %) before continuing.
+  If compress-banners.mjs exits with "No JPG/PNG files found": the raw folder has a subfolder —
+  descend one level and adjust the src path accordingly.
+
+Step 4 — Commit upload
+  node bin/upload-ws1-banners-api.mjs --range=<B-ID> --commit
+  The script picks up Banner/<raw-folder>-min/ automatically (prefers -min over raw folder).
+  QC bundles written to captures/banner-qc-bundles/{b_id}__{site}__{region}.json
+
+Step 5 — Post-upload verification
+  Run /banner-deep-qc <B-ID> — verifies what actually landed in Directus.
+  Tell user to activate the carousel item in Directus admin (toggle Enabled ON) when ready for production.
 ```
 
 ## Tech notes (snippets that work)
@@ -248,8 +275,10 @@ After each B-ID's drawer is filled and the user has clicked Submit on the parent
 |---|---|
 | Read Banner Schedule | Script (Sheets API) |
 | Parse range + route brands | Script |
-| Stage images in Banner/{brand}-{campaign}/ | **User** |
+| Stage images in Banner/{brand}-{campaign}/ | **User** (or pull-banner-from-clickup) |
 | Dry-run to verify plan | Agent (runs script) |
+| Pre-QC visual + plan check | Agent (/banner-pre-qc) |
+| Compress images to -min folder | **Agent** (runs compress-banners.mjs automatically after PASS) |
 | Commit upload via Directus API | Agent (runs script with --commit) |
 | Verify records in Directus admin | **User** |
 | Activate carousel item (Enabled ON) | **User** — after QC |
