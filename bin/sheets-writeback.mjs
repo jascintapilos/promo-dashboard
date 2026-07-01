@@ -42,6 +42,7 @@ const field = flags.field;
 const value = flags.value;
 const explicitCol = flags.col;  // optional A1 letter override (skips field lookup)
 const explicitRow = flags.row ? Number(flags.row) : null;
+const explicitTab = flags.tab || null;  // override current-month tab resolution
 
 if (!fromFixture && !field && !explicitCol) {
   console.error('Pass either --from-fixture, or --field=<f> [--value=<v>], or --col=<letter> --value=<v>');
@@ -76,7 +77,7 @@ console.log('━━━━━━━━━━━━━━━━━━━━━━�
 let client, tabName, header, colMap;
 try {
   client = await getSheetsClient();
-  tabName = await resolveCurrentMonthTab(client);
+  tabName = explicitTab || await resolveCurrentMonthTab(client);
   header = await readHeader(client, tabName);
   colMap = detectColumnMapFromHeader(header);
 } catch (e) {
