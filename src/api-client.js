@@ -361,7 +361,7 @@ export async function getPromotionDetail(site, promotionId) {
     rewards_validity_days: main.reward_validity,
     recurring: main.recurring === 1,
     auto_reward_activation: main.auto_reward_activation ?? null,
-    blacklist_id: main.blacklist_id ?? null,
+    blacklist_id: main.blacklist_template_id ?? main.blacklist_id ?? null,
     freespin_check: main.freespin_check ?? null,
     allow_deposit: main.allow_deposit ?? null,
     promotion_name_en: nameEn,
