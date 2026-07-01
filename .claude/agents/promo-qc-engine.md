@@ -84,8 +84,8 @@ Verify presence and basic shape only:
   * Free Credit → `free_credit_amount`, `to_multiplier`
   * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`; FS provider present or resolvable by the namer (absence is NOTE, not RETURN — the canary's game-code resolver can infer it; emit NOTE so it is visible downstream)
 * FS hard platform limits (RETURN immediately — save will fail):
-  * `parsed.spin_count` ≤ 88
-  * `parsed.value_per_spin` ≥ 0.50
+  * `parsed.spin_count` ≤ 88 — **exception:** emit NOTE (not RETURN) when `promo_code` starts with `REFEREE_` or `REFERRER_` (WS1 referral program — operator-confirmed override)
+  * `parsed.value_per_spin` ≥ 0.50 — **exception:** emit NOTE (not RETURN) when `promo_code` starts with `REFEREE_` or `REFERRER_` (WS1 referral program — operator-confirmed override)
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
@@ -160,6 +160,7 @@ These are intentional and well-understood:
 * `tier_constraint` absent on QPRO requests — only applies to QP2.
 * `instructions` block empty or absent — most requests don't have special instructions.
 * Empty `code_prefixes` — fine.
+* `spin_count > 88` or `value_per_spin < 0.50` when `promo_code` starts with `REFEREE_` or `REFERRER_` — WS1 referral program, operator-confirmed override. Downgrade both from RETURN to NOTE so they are visible downstream.
 
 ---
 

@@ -137,8 +137,8 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | ZH body numeric consistency with EN | `plan.messageTemplate.details` — ZH locale body | FAIL if a numeric value (rate, amount, TO) in ZH body differs from the same value in EN body |
 | Dialog title matches promo name | `plan.dialogPopup.dialog_popup_locales[].title` per locale | FAIL if EN dialog title ≠ `source.promotion_name_en`; FAIL if ZH dialog title ≠ `source.promotion_name_zh_id` |
 | No HTML entity artifacts in text | All text fields: MT body (all locales), dialog title + content (all locales), `plan.names[].name` | FAIL if raw HTML entities appear in display text: `&amp;`, `&mdash;`, `&rsquo;`, `&nbsp;`, `&#39;`, `&ldquo;`, `&rdquo;`, `&lsquo;` — these mean the content was stored encoded and will display as literal characters to the player |
-| FS spin count ≤ 88 | `source.parsed.spin_count` (FS only) | FAIL if spin_count > 88 — platform maximum is 88 spins per promo |
-| FS per-spin value ≥ 0.50 | `source.parsed.value_per_spin` (FS only) | FAIL if value_per_spin < 0.50 — platform minimum is SGD/MYR 0.50 per spin |
+| FS spin count ≤ 88 | `source.parsed.spin_count` (FS only) | FAIL if spin_count > 88 — platform maximum is 88 spins per promo. **Exception:** downgrade to WARNING if `promo_code` (strip leading `FT_`) starts with `REFEREE_` or `REFERRER_` — WS1 referral program, operator-confirmed override |
+| FS per-spin value ≥ 0.50 | `source.parsed.value_per_spin` (FS only) | FAIL if value_per_spin < 0.50 — platform minimum is SGD/MYR 0.50 per spin. **Exception:** downgrade to WARNING if `promo_code` (strip leading `FT_`) starts with `REFEREE_` or `REFERRER_` — WS1 referral program, operator-confirmed override |
 | FS MT subject format | `plan.messageTemplate.details["1"].subject` (FS on QPRO/QP2) | FAIL if EN subject starts with a digit (e.g. "48 Claim Your…") or contains "Before They're Gone" or "即将过期" — this indicates campaign-copy bleed-through; correct pattern is "Claim Your N Free Spins on [game]" |
 | FS MT body has Bet Value table | `plan.messageTemplate.details["1"].message` (FS on QPRO/QP2) | FAIL if EN body does not contain the text "Bet Value" — the standard FS template always includes a table (Free Spins \| Bet Value \| Turnover); absence means the campaign-copy intro replaced the structured body |
 | TO multiplier within platform range | `source.parsed.to_multiplier` and `platform` | WARNING if TO is outside expected range for REL_/RET_ promos: QPRO/WS1 = 10–12x, QP2 = 12–15x. WELC_ promos are exempt from this range check. FS promos follow the same range rule — applies to all bonus_types on QP2 including FS (12–15x on QP2, 10–12x on QPRO/WS1) |
@@ -219,9 +219,9 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 | FS game resolved | `plan.followups[0].body.FreeSpin.ProductId` + `plan.followups[0].body.FreeSpin.GameId` | FAIL if either is null — game lookup failed, BO will reject |
 | Reward settings populated | `plan.followups[0].body.FreeSpin.FreeSpinRounds` + `plan.followups[0].body.PromotionReward.RolloverMultiplier` | FAIL if either missing or zero |
 | Spin count matches source | `plan.followups[0].body.FreeSpin.FreeSpinRounds` | FAIL if ≠ `source.parsed.spin_count` |
-| Spin count ≤ 88 | `source.parsed.spin_count` | FAIL if > 88 — platform maximum |
+| Spin count ≤ 88 | `source.parsed.spin_count` | FAIL if > 88 — platform maximum. **Exception:** downgrade to WARNING if `plan.promotion.PromotionCode` starts with `FT_REFEREE_` or `FT_REFERRER_` — WS1 referral program, operator-confirmed override |
 | Per-spin value matches source | `plan.followups[0].body.FreeSpin.AmountPerBet` | FAIL if ≠ `source.parsed.value_per_spin` |
-| Per-spin value ≥ 0.50 | `source.parsed.value_per_spin` | FAIL if < 0.50 — platform minimum |
+| Per-spin value ≥ 0.50 | `source.parsed.value_per_spin` | FAIL if < 0.50 — platform minimum. **Exception:** downgrade to WARNING if `plan.promotion.PromotionCode` starts with `FT_REFEREE_` or `FT_REFERRER_` — WS1 referral program, operator-confirmed override |
 | RedemptionType correct | `plan.followups[0].body.PromotionReward.RedemptionType` | FAIL if `source.parsed.min_deposit > 0` but value ≠ `"0"` (Deposit); FAIL if `source.parsed.min_deposit = 0` but value ≠ `"1"` (Claim) |
 | TO multiplier matches source | `plan.followups[0].body.PromotionReward.RolloverMultiplier` | FAIL if ≠ `source.parsed.to_multiplier`; WARNING if outside 10–12x for REL_/RET_ |
 | Min deposit matches source | `plan.followups[0].body.PromotionReward.MinimumActionAmount` | FAIL if ≠ `source.parsed.min_deposit`; FAIL if below floor (MYR<30 / SGD<50 / IDR<25000 / THB<50) |
@@ -244,6 +244,7 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 - Missing `merchant_ids` on IGMP — intentional; site-level scoping.
 - `deposit_status`, `freespin_check`, `allow_deposit` absent on IGMP — N/A on WS1/WS2.
 - `blacklist_id` check skipped on IGMP — WS1/WS2 does not use the blacklist template system.
+- Missing `FS_` prefix in `promo_code` when code starts with `REFEREE_` or `REFERRER_` (strip `FT_` first) — WS1 referral program uses its own naming convention; standard `FS_` prefix is not required.
 - WARNING for `validity`/`reward_validity` appearing swapped is expected — reflects a known code bug where validity=expiry-after-claim and reward_validity=claim-window are set inversely; do NOT escalate to FAIL.
 
 ---

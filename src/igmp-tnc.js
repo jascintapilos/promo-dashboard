@@ -542,10 +542,18 @@ function fsHowToApplyEn(rec) {
   const provider = gameProviderName(rec);
   const game = rec.parsed?.game || rec.fs_game || '';
   const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
+  const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
+  const isClaim = minD === 0;
+  const step1 = isClaim
+    ? `1. Head over to your Inbox or the Promotions page to accept and activate your free spins.`
+    : `1. To apply for this promotion, simply head over to the Deposit page and complete a deposit transaction with the bonus option [${rounds} Free Spins - ${game}] selected.`;
+  const step2 = isClaim
+    ? `2. Go to ${bold('Home')} > ${bold('Slots')} > ${bold(`[${provider}]`)} and launch the game ${game}.`
+    : `2. After the deposit is successfully approved, go to ${bold('Home')} > ${bold('Slots')} > ${bold(`[${provider}]`)} and launch the game ${game}.`;
   return (
     p(bold('How to Apply:')) +
-    p(`1. To apply for this promotion, simply head over to the Deposit page and complete a deposit transaction with the bonus option [${rounds} Free Spins - ${game}] selected.`) +
-    p(`2. After the deposit is successfully approved, go to ${bold('Home')} > ${bold('Slots')} > ${bold(`[${provider}]`)} and launch the game ${game}.`) +
+    p(step1) +
+    p(step2) +
     p('3. Spin and enjoy!')
   );
 }
@@ -554,10 +562,18 @@ function fsHowToApplyZh(rec) {
   const provider = gameProviderName(rec);
   const game = rec.parsed?.game || rec.fs_game || '';
   const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
+  const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
+  const isClaim = minD === 0;
+  const step1 = isClaim
+    ? `1. 前往您的收件箱或优惠页面，接受并激活您的免费旋转。`
+    : `1. 前往存款页面，选择红利选项 [${rounds} 免费旋转 - ${game}]，完成一笔存款交易即可申请此优惠。`;
+  const step2 = isClaim
+    ? `2. 前往 ${bold('首页')} > ${bold('老虎机')} > ${bold(`[${provider}]`)} 并启动游戏 ${game}。`
+    : `2. 存款成功批准后，前往 ${bold('首页')} > ${bold('老虎机')} > ${bold(`[${provider}]`)} 并启动游戏 ${game}。`;
   return (
     p(bold('如何申请：')) +
-    p(`1. 前往存款页面，选择红利选项 [${rounds} 免费旋转 - ${game}]，完成一笔存款交易即可申请此优惠。`) +
-    p(`2. 存款成功批准后，前往 ${bold('首页')} > ${bold('老虎机')} > ${bold(`[${provider}]`)} 并启动游戏 ${game}。`) +
+    p(step1) +
+    p(step2) +
     p('3. 开始旋转，尽情享受！')
   );
 }

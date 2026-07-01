@@ -23,7 +23,7 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
 4. **`/pre-qc <handle>`** — Pre-QC Agent (PASS / WARNING / FAIL). Present the table.
 5. **WAIT for user direction.** Do NOT auto-commit. User says "commit it" or "fix X first".
 6. **`node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc`** — live save (only after user confirms)
-6.5. **WS1/WS2 Welcome Bonus only — manual Rewards tab step:** If the saved promo is a Welcome Bonus on a WS1 or WS2 brand, remind the operator: _"Go to BO → 3.3 Promotion Suite → Welcome Bonus → Rewards tab → add this promo code."_ Do not proceed to deep-qc until operator confirms this is done.
+6.5. **WS1/WS2 Welcome Bonus — Rewards tab (automated):** The canary auto-assigns Welcome Bonus promos to the WELCOME BONUS Promotion Suite (Id=1) immediately after activation. Check canary output for `✓ Added to WELCOME BONUS suite`. If a `→ Manual` fallback line appears instead, go to BO → Promotion Suite → WELCOME BONUS → Rewards tab → add the PromotionId shown.
 7. **`/deep-qc <handle>`** — Sentinel (PASS / WARNING / FAIL / INCONCLUSIVE). Present the verdict.
 8. **`node bin/sheets-writeback.mjs <handle> --field=status --value="QC Completed" --commit`** — write QC Completed back to sheet. Run this after every deep-qc, regardless of WARNING or INCONCLUSIVE, as long as there is no FAIL.
 
