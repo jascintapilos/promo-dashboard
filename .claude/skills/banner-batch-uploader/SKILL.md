@@ -46,6 +46,38 @@ Per batch (once):
 Per B-ID (as needed):
 3. **The unzipped banner image(s)** — agent prompts the user to drop the zip when reaching that B-ID. Filename convention varies by project; agent inspects what's in the zip and asks if the mapping is ambiguous.
 
+## QPRO / QP2 platform — API-direct
+
+For QPRO1–19 and QP2A–D use **`bin/upload-promo.js`** — same pipeline as WS1/WS2 but posting to the QPRO/QP2 BO API (`/api/bo/banner`). Credentials from `bo-sites.local.json`.
+
+### Quick commands
+
+```bash
+# Dry-run — shows plan, no BO writes
+node bin/upload-promo.js --range=B16
+
+# Commit — uploads images + creates 14.2 banner + links 3.3 content
+node bin/upload-promo.js --range=B16 --commit
+
+# Skip 3.3 content creation (banner only, promo already exists)
+node bin/upload-promo.js --range=B16 --commit --skip-content
+```
+
+### Workflow — QPRO/QP2 per B-ID
+
+Same 5-step flow as BIA:
+
+```
+Step 1 — Confirm images staged in Banner/{brand}-{campaign}/
+Step 2 — Dry-run:  node bin/upload-promo.js --range=<B-ID>
+Step 3 — /banner-pre-qc <B-ID>  (visual + plan check)
+Step 3.5 — Compress: node bin/compress-banners.mjs Banner/{folder} Banner/{folder}-min
+Step 4 — Commit:   node bin/upload-promo.js --range=<B-ID> --commit
+Step 5 — /banner-deep-qc <B-ID>
+```
+
+---
+
 ## BIA platform (WS1 / WS2) — API-direct
 
 For BIA brands (WS1/WS2) use **`bin/upload-ws1-banners-api.mjs`** — fully automated via Directus REST API using `promo_testbot` credentials from `cms-creds.local.json`. No Chrome/browser required. Permissions verified 2026-06-25: POST /files + POST /items/UICarousel_images + POST /items/UICarousel_images_translations all succeed.
@@ -254,14 +286,16 @@ This dismisses the topmost drawer.
 
 ## Routing
 
-| Brand on schedule (col I) | Action |
-|---|---|
-| `QPRO1`…`QPRO19` | Hand off to `qpro-homepage-banner-upload` skill — pass brand, locales, draft folder. |
-| `QP2A` / `QP2B` / `QP2C` / `QP2D` | Hand off to `qp2-homepage-banner-upload` skill. |
-| `WS1 (MB8)` | Use BIA flow above against site `ws1`. |
-| `WS1 (Classic MB8)` | **Skip** — out of scope until kiosk BO is probed. Surface as unsupported. |
-| `WS2 (RWS77)` | Use BIA flow above against site `ws2`. Discover carousel ID on first use. |
-| `SBO28` / `WARUNG18` / `UG02` / `MENANG7` / `QPLY` | **Skip** — BOs known in directory but not yet configured in `bo-sites.json`. Surface as unsupported, point to the relevant BO URL from the [directory sheet](https://docs.google.com/spreadsheets/d/1AKFsxkNuFILj7Ge7jlq5aYlcEDTAvVsN4zWGftxmY68/). |
+| Brand on schedule (col I) | Script | Notes |
+|---|---|---|
+| `QPRO1`…`QPRO19` | `node bin/upload-promo.js --range=<B-ID>` | API-direct via `/api/bo/banner`. No Chrome needed. |
+| `QP2A` / `QP2B` / `QP2C` / `QP2D` | `node bin/upload-promo.js --range=<B-ID>` | Same script — recognises QP2 site IDs (ibc22, king333, ace66, spade66). |
+| `WS1 (MB8)` | `node bin/upload-ws1-banners-api.mjs --range=<B-ID>` | Directus API via `cms-creds.local.json`. |
+| `WS2 (RWS77)` | `node bin/upload-ws1-banners-api.mjs --range=<B-ID>` | Same Directus script against `ws2`. |
+| `WS1 (Classic MB8)` | **Skip** | Out of scope until kiosk BO is probed. |
+| `SBO28` / `WARUNG18` / `UG02` / `MENANG7` / `QPLY` | **Skip** | Not yet configured in `bo-sites.json`. Surface as unsupported. |
+
+**Do NOT use the Anthropic `qpro-homepage-banner-upload` or `qp2-homepage-banner-upload` skills** — those drive the BO via Chrome and are not wired to this project's pipeline. `upload-promo.js` is the correct API-direct path for all QPRO and QP2 banner uploads.
 
 ## Status writeback
 
