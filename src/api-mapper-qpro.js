@@ -371,13 +371,18 @@ function buildCurrencyBlockFC(resolved, currencyLabel) {
 function buildCurrencyBlockFS(resolved, currencyLabel) {
   const o = resolved.per_currency_overrides?.[currencyLabel] || {};
   const r = resolved.parsed || {};
-  const spinCount      = o.spin_count    ?? r.spin_count    ?? 0;
-  const valuePerSpin   = o.value_per_spin ?? r.value_per_spin ?? 0;
-  const lines          = o.lines         ?? r.lines         ?? 10;
+  const spinCount     = o.spin_count      ?? r.spin_count      ?? 0;
+  const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
+  const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
+  const lines         = o.lines           ?? r.lines           ?? 10;
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     coins:           1,
-    amount_per_line: Number(Number(valuePerSpin).toFixed(4)),
+    // If sheet stated amount_per_line directly, use it.
+    // Else: divide value_per_spin by 20, floor to 2dp (0.50→0.025→0.02).
+    amount_per_line: aplRaw != null
+      ? +Number(aplRaw).toFixed(4)
+      : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds:          spinCount,
     lines:           lines,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,

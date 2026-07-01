@@ -381,12 +381,16 @@ export function buildActions(resolved, { brand } = {}) {
       row.max_withdraw_type = override.max_withdraw_type ?? 'Fixed Amount';
       row.min_deposit     = override.min_deposit    ?? r.min_deposit    ?? 0;
       row.rounds          = override.spin_count     ?? r.spin_count     ?? 0;
-      // House convention (operator rule 2026-05-13): amount_per_line =
-      // value_per_spin / 20 (constant divisor, independent of `lines`).
+      // House convention: amount_per_line = floor(value_per_spin / 20, 2dp).
+      // BO rejects sub-cent amounts (0.50→0.025 rejected; floor→0.02 accepted).
+      // /20 + floor also preserves the known 0.20→0.01 mapping.
       // QPRO mapper already does this; QP2 was sending raw value_per_spin
       // (caught 2026-05-14 — TEST_QP2A_FS saved with 0.2 instead of 0.01).
       const valPerSpin = Number(override.value_per_spin ?? r.value_per_spin ?? 0);
-      row.amount_per_line = +(valPerSpin / 20).toFixed(4);
+      const aplRawQp2  = override.amount_per_line ?? r.amount_per_line ?? null;
+      row.amount_per_line = aplRawQp2 != null
+        ? +Number(aplRawQp2).toFixed(4)
+        : Math.floor(valPerSpin / 20 * 100) / 100;
       row.lines           = 0;
       row.coins           = 0;
       row.bonus_rate      = 0;

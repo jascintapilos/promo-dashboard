@@ -30,6 +30,8 @@
 //   source = 'override' | 'derived' | 'incomplete' | 'unsupported'
 //   missing = []      (set only when source = 'incomplete')
 
+import { findCampaignRule } from './campaign-prefix-rules.js';
+
 const CATEGORY_SUFFIX = {
   'Slots':       '_SLT',
   'Live Casino': '_LC',
@@ -159,6 +161,23 @@ export function deriveNames(record) {
   } else {
     const campaignSuffix = inferCampaignSuffix(record);
     if (campaignSuffix) code += campaignSuffix;
+  }
+  // Auto-apply campaign objective tokens from campaign-prefix-rules.js.
+  // Reads the campaign column (e.g. "CRM - Retention") and prepends any
+  // required tokens (CRM_, ADHOC_, CHURN_, RET_, etc.) not already present.
+  // VIP_ is skipped here — it's handled by the tier block below so it lands
+  // outermost among the identity prefixes.
+  const campaignRule = findCampaignRule(record.campaign);
+  if (campaignRule) {
+    const upperCode = code.toUpperCase();
+    const tokensToAdd = campaignRule.required.filter((t) => {
+      const tok = (t.endsWith('_') ? t : `${t}_`).toUpperCase();
+      return tok !== 'VIP_' && !upperCode.includes(tok);
+    });
+    for (const t of [...tokensToAdd].reverse()) {
+      const tok = t.endsWith('_') ? t : `${t}_`;
+      code = `${tok}${code}`;
+    }
   }
   // Tier prefix (operator rule 2026-05-16): membership-tier markers go at
   // the FRONT of the code, not the back. Code stays out of the promo names.

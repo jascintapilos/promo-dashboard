@@ -334,7 +334,8 @@ export function buildActions(resolved, { brand } = {}) {
     } else if (isFs) {
       // House convention (operator rule 2026-05-13):
       //   • lines = 10, coins = 1 (form constants, NOT changed by request)
-      //   • amount_per_line = value_per_spin / 20 (fixed divisor)
+      //   • amount_per_line = floor(value_per_spin / 20, 2dp)
+      //     BO rejects sub-cent amounts: 0.50/20=0.025 → floor → 0.02.
       // Emit BOTH `rounds` and `total_rounds` as the popup's spin-count
       // formcontrolname differs across variants. Same for bonus_amount.
       //
@@ -349,8 +350,11 @@ export function buildActions(resolved, { brand } = {}) {
       row.rounds           = spinCount;
       row.total_rounds     = spinCount;
       // If sheet stated amount_per_line directly, use it as-is.
-      // If sheet stated value_per_spin, divide by 20 (house convention).
-      row.amount_per_line  = apl != null ? +Number(apl).toFixed(4) : +(valuePerSpinRaw / 20).toFixed(4);
+      // If sheet stated value_per_spin: divide by 20 then floor to 2dp
+      // so 0.50 → 0.025 → 0.02 (BO rejects 0.025).
+      row.amount_per_line  = apl != null
+        ? +Number(apl).toFixed(4)
+        : Math.floor(valuePerSpinRaw / 20 * 100) / 100;
       row.lines            = 10;
       row.coins            = 1;
       row.bonus_amount     = 0;

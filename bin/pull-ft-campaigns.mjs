@@ -32,14 +32,15 @@ const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
 const WRITE = flags.write === true;
 const APPEND = flags.append === true;
+const FROM_BROWSER = flags['from-browser-pull'] === true;
 const YEAR = new Date().getFullYear();
 
 const TAB = 'CRM Assignment Log';
 const OPS_ID = getOpsSheetId();
 
-// GAS relay — same web app as dashboard-data.gs, doPost() handler added 2026-06-29.
-// POST body: { instance, token } → returns { users, segments, activities, changelogs, segFilters }
-const GAS_RELAY_URL = 'https://script.google.com/macros/s/AKfycbxXYSn6VSTL2Y5pZPRUDuisI8EIw0XiKjSr_3DoUKgZEcEcxkpQHzfJUyD1UVF4VBWBNw/exec';
+// GAS relay — web app deployment (Execute as: Me, Access: Anyone, even anonymous).
+// Proxies FT CRM API calls from Google's servers, bypassing the Cloudflare IP block.
+const GAS_RELAY_URL = 'https://script.google.com/macros/s/AKfycbzRvLCwWLmw7VFSGpHr-lopzprsws3T__CyDoJYYoqfQLDoGTdWVucDCD04orBNj5txpw/exec';
 
 // TBP team — sourced from Directory sheet 'Team Contact Details'.
 // FT display names may differ from Smartico/Directory nicknames.
@@ -106,7 +107,7 @@ console.log(`\nFastTrack CRM pull — ${session.label} (${INSTANCE})`);
 console.log(`Token expires: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie'}`);
 console.log(`Mode: ${WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
 
-// ── GAS relay fetch ────────────────────────────────────────────────────────────
+// ── GAS relay via web app ─────────────────────────────────────────────────────
 
 async function gasRelayFetch(instance, token) {
   console.log('Calling GAS relay (fetching all FT data via Google servers)…');
@@ -115,16 +116,8 @@ async function gasRelayFetch(instance, token) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instance, token }),
   });
-  if (!res.ok) throw new Error(`GAS relay HTTP ${res.status}`);
-  const text = await res.text();
-  if (text.trim().startsWith('<') || text.trim().startsWith('callback(')) {
-    throw new Error(
-      `GAS relay not yet deployed with doPost() support.\n` +
-      `  Fix: open script.google.com/home/projects/15mYzwwZdX3XIlJVJcs1ts7nbhmb_nLM3b8Ib8OZTGeWw9gB_VgCe3TNw/edit\n` +
-      `  Paste updated bin/dashboard-data.gs → Deploy → Manage deployments → New version → Deploy`
-    );
-  }
-  const data = JSON.parse(text);
+  if (!res.ok) throw new Error(`GAS relay HTTP ${res.status}: ${await res.text()}`);
+  const data = await res.json();
   if (data.error) {
     if (data.error.startsWith('CF_BLOCKED')) {
       throw new Error(
@@ -139,9 +132,23 @@ async function gasRelayFetch(instance, token) {
   return data;
 }
 
-// ── Fetch all data via GAS relay ──────────────────────────────────────────────
+// ── Fetch all data (browser relay or GAS relay) ───────────────────────────────
 
-const raw = await gasRelayFetch(INSTANCE, portaltoken);
+let raw;
+if (FROM_BROWSER) {
+  const tmpFile = path.resolve('tmp-ft-browser-pull.json');
+  if (!existsSync(tmpFile)) {
+    console.error('Missing tmp-ft-browser-pull.json — run pull-ft-via-browser.mjs first.');
+    process.exit(1);
+  }
+  const pulled = JSON.parse(readFileSync(tmpFile, 'utf8'));
+  console.log(`Reading browser-pulled data (${pulled.pulledAt})…`);
+  console.log(`  ${(pulled.users||[]).length} users, ${(pulled.segments||[]).length} segments, ${(pulled.activities||[]).length} activities`);
+  console.log(`  ${Object.keys(pulled.changelogs||{}).length} changelogs, ${Object.keys(pulled.segFilters||{}).length} segment filters`);
+  raw = pulled;
+} else {
+  raw = await gasRelayFetch(INSTANCE, portaltoken);
+}
 
 // ── Build lookup maps ─────────────────────────────────────────────────────────
 
