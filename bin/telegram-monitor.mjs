@@ -274,6 +274,7 @@ try {
       end_date:       event.end_date,
       banner_link:    event.banner_link,
       tnc_link:       event.tnc_link,
+      requestor:      'Bot',
     }, { dryRun: !COMMIT });
 
     if (COMMIT) {
