@@ -22,15 +22,29 @@ const INSTANCES = {
 const { host, url, label } = INSTANCES[INSTANCE] || {};
 if (!host) { console.error('Unknown instance:', INSTANCE); process.exit(1); }
 
-// SunBrowser CDP endpoint — probed from port 53845
-const CDP_WS = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
+const CDP_PORT     = 53845;
+const CDP_FALLBACK = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
 
-console.log(`Connecting to SunBrowser CDP…`);
-const browser = await chromium.connectOverCDP(CDP_WS);
+async function getCdpWsUrl() {
+  try {
+    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { webSocketDebuggerUrl } = await res.json();
+    if (webSocketDebuggerUrl) return webSocketDebuggerUrl;
+  } catch (e) {
+    console.warn(`  CDP version probe failed (${e.message}) — using fallback GUID`);
+  }
+  return CDP_FALLBACK;
+}
+
+console.log(`Probing SunBrowser CDP…`);
+const cdpWs = await getCdpWsUrl();
+const browser = await chromium.connectOverCDP(cdpWs);
 console.log(`Connected.`);
 
-// Get all cookies for the FT domain
-const ctx = browser.contexts()[0] || await browser.newContext();
+// Find the context that owns the FT tab, then read its cookies
+const ftPage = browser.contexts().flatMap(c => c.pages()).find(p => p.url().includes(host));
+const ctx = ftPage ? ftPage.context() : browser.contexts()[0] || await browser.newContext();
 const allCookies = await ctx.cookies([`https://${host}/`]);
 const portalCookie = allCookies.find(c => c.name === 'portaltoken');
 

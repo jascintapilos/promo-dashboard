@@ -29,3 +29,6 @@ __MACOSX/
 Thumbs.db
 Desktop.ini
 Banner/
+
+# FastTrack browser relay temp files
+tmp-ft-browser-pull*.json

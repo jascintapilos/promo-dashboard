@@ -133,9 +133,9 @@ async function gasRelayFetch(instance, token) {
 
 let raw;
 if (FROM_BROWSER) {
-  const tmpFile = path.resolve('tmp-ft-browser-pull.json');
+  const tmpFile = path.resolve(`tmp-ft-browser-pull-${INSTANCE}.json`);
   if (!existsSync(tmpFile)) {
-    console.error('Missing tmp-ft-browser-pull.json — run pull-ft-via-browser.mjs first.');
+    console.error(`Missing tmp-ft-browser-pull-${INSTANCE}.json — run pull-ft-via-browser.mjs --instance=${INSTANCE} first.`);
     process.exit(1);
   }
   const pulled = JSON.parse(readFileSync(tmpFile, 'utf8'));

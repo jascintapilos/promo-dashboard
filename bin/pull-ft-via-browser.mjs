@@ -9,9 +9,14 @@
  *   node bin/pull-ft-via-browser.mjs --instance=ws1 [--write]
  *
  * The --write flag appends rows to the Google Sheet (same as pull-ft-campaigns.mjs).
+ *
+ * REQUIRES: AdsPower must be running with an open, logged-in FT tab for the
+ * target instance. SunBrowser CDP port: 53845.
  */
 import { chromium } from 'playwright';
 import path from 'node:path';
+import { writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
@@ -27,10 +32,25 @@ const INSTANCES = {
 const { host, label } = INSTANCES[INSTANCE] || {};
 if (!host) { console.error('Unknown instance:', INSTANCE); process.exit(1); }
 
-const CDP_WS = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
+// ── CDP connection (dynamic GUID resolution) ──────────────────────────────────
+// The SunBrowser GUID changes on every AdsPower restart — always probe first.
+const CDP_PORT      = 53845;
+const CDP_FALLBACK  = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
+
+async function getCdpWsUrl() {
+  try {
+    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { webSocketDebuggerUrl } = await res.json();
+    if (webSocketDebuggerUrl) return webSocketDebuggerUrl;
+  } catch (e) {
+    console.warn(`  CDP version probe failed (${e.message}) — using fallback GUID`);
+  }
+  return CDP_FALLBACK;
+}
 
 // ── Browser script (runs inside the FT tab) ───────────────────────────────────
-// Must be a plain function string — no Node.js imports. Uses browser fetch + cookies.
+// Plain function string — no Node.js imports. Uses browser fetch + cookies.
 function buildBrowserScript(year) {
   return `(async () => {
     const pt = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('portaltoken='));
@@ -48,14 +68,10 @@ function buildBrowserScript(year) {
       return r.json();
     }
 
-    // 1. Users
     const usersData = await ftGet('/crm-api/Authentication/AdminUsers');
     if (!usersData.Success) return { error: 'AdminUsers: ' + (usersData.Errors?.[0]?.Message || 'failed') };
 
-    // 2. Segments
     const segsData = await ftGet('/crm-api/ActivityManager/Segments/ByCategory/1');
-
-    // 3. Activities (one-off, TriggerType=2)
     const actsData = await ftPost('/crm-api/ActivityManager/Activities/GetActivities', { archived: false, activityTypeId: 1 });
 
     const year = ${JSON.stringify(year)};
@@ -64,7 +80,6 @@ function buildBrowserScript(year) {
       return d.slice(0, 4) === year && a.TriggerTypeId === 2;
     });
 
-    // 4. Changelogs in batches of 20 using Promise.all
     const changelogs = {};
     const BATCH = 20;
     for (let i = 0; i < ytdActs.length; i += BATCH) {
@@ -78,7 +93,6 @@ function buildBrowserScript(year) {
       });
     }
 
-    // 5. GetSelective for no-region segments
     function extractRegion(text) {
       const t = (text || '').toUpperCase();
       if (t.includes('MYR') || /\\bRM\\d/.test(t)) return 'MY';
@@ -129,22 +143,27 @@ function buildBrowserScript(year) {
 console.log(`FastTrack CRM pull (browser relay) — ${label} (${INSTANCE})`);
 console.log(`Mode: ${WRITE ? 'WRITE' : 'DRY RUN'}\n`);
 
-console.log('Connecting to SunBrowser CDP…');
-const browser = await chromium.connectOverCDP(CDP_WS);
-const ctx = browser.contexts()[0];
-const pages = ctx ? ctx.pages() : [];
-const ftPage = pages.find(p => p.url().includes(host));
+console.log('Probing SunBrowser CDP…');
+const cdpWs = await getCdpWsUrl();
+console.log(`CDP: ${cdpWs.slice(0, 60)}…`);
+
+const browser = await chromium.connectOverCDP(cdpWs);
+
+// Search ALL contexts (each AdsPower profile is a separate context)
+const allPages = browser.contexts().flatMap(c => c.pages());
+const ftPage = allPages.find(p => p.url().includes(host));
 
 if (!ftPage) {
-  console.error(`No open FT page found for ${host}`);
-  console.error('Open pages:', pages.map(p => p.url()).join(', ') || '(none)');
-  console.error('\nPlease open the FT CRM tab in AdsPower and log in first.');
+  console.error(`\nNo open FT page found for ${host}`);
+  console.error('Open pages across all contexts:',
+    allPages.map(p => p.url()).join('\n  ') || '(none)');
+  console.error(`\nPlease open ${host} in AdsPower and log in, then re-run.`);
   await browser.close().catch(() => {});
   process.exit(1);
 }
 
 if (ftPage.url().includes('/login')) {
-  console.error(`FT tab is on login page. Please log in first.`);
+  console.error(`FT tab is on login page (${ftPage.url()}). Please log in first.`);
   await browser.close().catch(() => {});
   process.exit(1);
 }
@@ -166,18 +185,15 @@ const { users, segments, activities, changelogs, segFilters } = result;
 console.log(`\n  ${users.length} users, ${segments.length} segments, ${activities.length} activities`);
 console.log(`  ${Object.keys(changelogs).length} changelogs, ${Object.keys(segFilters).length} segment filters`);
 
-// ── Hand off to pull-ft-campaigns.mjs processing via dynamic import ───────────
-// Write results to a temp file, then let pull-ft-campaigns.mjs pick them up.
-// Alternatively, duplicate the row-building logic here.
-// For now: write to a temp JSON file and print summary.
-import { writeFileSync } from 'node:fs';
-const tmpFile = path.resolve('tmp-ft-browser-pull.json');
-writeFileSync(tmpFile, JSON.stringify({ instance: INSTANCE, label, pulledAt: new Date().toISOString(), users, segments, activities, changelogs, segFilters }, null, 2));
+// Instance-scoped temp file — prevents clobber if instances run concurrently
+const tmpFile = path.resolve(`tmp-ft-browser-pull-${INSTANCE}.json`);
+writeFileSync(tmpFile, JSON.stringify({
+  instance: INSTANCE, label, pulledAt: new Date().toISOString(),
+  users, segments, activities, changelogs, segFilters,
+}, null, 2));
 console.log(`\nData written to ${tmpFile}`);
-console.log('\nNow processing rows via pull-ft-campaigns.mjs…');
+console.log('\nProcessing rows via pull-ft-campaigns.mjs…');
 
-// Spawn the processor
-import { spawn } from 'node:child_process';
 const args = [path.resolve('bin/pull-ft-campaigns.mjs'), `--instance=${INSTANCE}`, '--from-browser-pull'];
 if (WRITE) args.push('--write');
 const child = spawn(process.execPath, args, { stdio: 'inherit', cwd: process.cwd() });
