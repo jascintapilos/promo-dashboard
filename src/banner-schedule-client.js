@@ -27,21 +27,25 @@ export const BANNER_TAB         = 'Sheet1';
 const DATA_START_ROW = 2;   // Row 1 is the header
 const MAX_SCAN_ROWS  = 500; // Safety cap for reads
 
-// Fixed column letters (C is hidden in the UI but exists in the sheet)
+// Fixed column letters
+// A=Banner ID, B=Campaign Title, C=Promo Drafts Link, D=Status, E=Requestor,
+// F=PIC (left blank for bot entries), G=Type of Promotion, H=Backoffice/Brand,
+// I=Platform/Placement, J=Start Date, K=End Date, L=Banner Link, M=T&C Link
 const COL = {
   banner_id:      'A',
   campaign_title: 'B',
   status:         'D',
   requestor:      'E',
-  type:           'F',
-  brand:          'G',
-  platform:       'H',
-  start_date:     'I',
-  end_date:       'J',
-  banner_link:    'K',
-  tnc_link:       'L',
-  ready_date:     'M',
-  remarks:        'N',
+  // F = PIC — never written by code; left blank for automated entries
+  type:           'G',
+  brand:          'H',
+  platform:       'I',
+  start_date:     'J',
+  end_date:       'K',
+  banner_link:    'L',
+  tnc_link:       'M',
+  ready_date:     'N',
+  remarks:        'O',
 };
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -53,7 +57,7 @@ export async function readAllEntries() {
   const { sheets } = await getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: BANNER_SCHEDULE_ID,
-    range: `${BANNER_TAB}!A${DATA_START_ROW}:N${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
+    range: `${BANNER_TAB}!A${DATA_START_ROW}:O${DATA_START_ROW + MAX_SCAN_ROWS - 1}`,
     valueRenderOption:    'UNFORMATTED_VALUE',
     dateTimeRenderOption: 'FORMATTED_STRING',
   });
@@ -65,15 +69,16 @@ export async function readAllEntries() {
       campaign_title:  (row[1]  ?? '').toString().trim(),
       status:          (row[3]  ?? '').toString().trim(),
       requestor:       (row[4]  ?? '').toString().trim(),
-      type:            (row[5]  ?? '').toString().trim(),
-      brand:           (row[6]  ?? '').toString().trim(),
-      platform:        (row[7]  ?? '').toString().trim(),
-      start_date:      (row[8]  ?? '').toString().trim(),
-      end_date:       (row[9]  ?? '').toString().trim(),
-      banner_link:    (row[10] ?? '').toString().trim(),
-      tnc_link:       (row[11] ?? '').toString().trim(),
-      ready_date:     (row[12] ?? '').toString().trim(),
-      remarks:        (row[13] ?? '').toString().trim(),
+      // row[5] = F = PIC (not mapped)
+      type:            (row[6]  ?? '').toString().trim(),
+      brand:           (row[7]  ?? '').toString().trim(),
+      platform:        (row[8]  ?? '').toString().trim(),
+      start_date:      (row[9]  ?? '').toString().trim(),
+      end_date:        (row[10] ?? '').toString().trim(),
+      banner_link:     (row[11] ?? '').toString().trim(),
+      tnc_link:        (row[12] ?? '').toString().trim(),
+      ready_date:      (row[13] ?? '').toString().trim(),
+      remarks:         (row[14] ?? '').toString().trim(),
     }))
     .filter(e => e.banner_id !== '');
 }
