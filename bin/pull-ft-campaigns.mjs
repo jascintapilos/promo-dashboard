@@ -72,13 +72,6 @@ if (!INSTANCES[INSTANCE]) {
 
 // ── Session loading ────────────────────────────────────────────────────────────
 
-const SESSION_FILE = path.resolve(`ft-session-${INSTANCE}.local.json`);
-if (!existsSync(SESSION_FILE)) {
-  console.error(`No session file for "${INSTANCE}". Run: node bin/save-ft-token.mjs --instance=${INSTANCE} --token=<portaltoken>`);
-  process.exit(1);
-}
-
-const session = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
 const URLS = { ws1: 'https://mb8.ft-crm.com/', qpro1: 'https://alpha-iota-qp1.ft-crm.com/', qp2: 'https://alpha-iota-qp2.ft-crm.com/v2/' };
 function sessionExpiredMsg(inst) {
   return [
@@ -89,22 +82,26 @@ function sessionExpiredMsg(inst) {
   ].join('\n');
 }
 
-const portalCookie = session.cookies?.find(c => c.name === 'portaltoken');
-const portaltoken = portalCookie?.value || session.token || '';
-if (!portaltoken) {
-  console.error(sessionExpiredMsg(INSTANCE));
-  process.exit(1);
+let portaltoken = '';
+let cookieExp = 0;
+if (!FROM_BROWSER) {
+  const SESSION_FILE = path.resolve(`ft-session-${INSTANCE}.local.json`);
+  if (!existsSync(SESSION_FILE)) {
+    console.error(`No session file for "${INSTANCE}". Run: node bin/save-ft-token.mjs --instance=${INSTANCE} --token=<portaltoken>`);
+    process.exit(1);
+  }
+  const session = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
+  const portalCookie = session.cookies?.find(c => c.name === 'portaltoken');
+  portaltoken = portalCookie?.value || session.token || '';
+  if (!portaltoken) { console.error(sessionExpiredMsg(INSTANCE)); process.exit(1); }
+  cookieExp = portalCookie?.expires || 0;
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (cookieExp > 0 && cookieExp < nowSec + 300) { console.error(sessionExpiredMsg(INSTANCE)); process.exit(1); }
 }
 
-const cookieExp = portalCookie?.expires || 0;
-const nowSec = Math.floor(Date.now() / 1000);
-if (cookieExp > 0 && cookieExp < nowSec + 300) {
-  console.error(sessionExpiredMsg(INSTANCE));
-  process.exit(1);
-}
-
-console.log(`\nFastTrack CRM pull — ${session.label} (${INSTANCE})`);
-console.log(`Token expires: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie'}`);
+const modeLabel = INSTANCES[INSTANCE].label;
+console.log(`\nFastTrack CRM pull — ${modeLabel} (${INSTANCE})`);
+if (!FROM_BROWSER) console.log(`Token expires: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie'}`);
 console.log(`Mode: ${WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
 
 // ── GAS relay via web app ─────────────────────────────────────────────────────
