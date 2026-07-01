@@ -11,15 +11,16 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
 > **AVOID "process P###" and "run P###"** — both trigger the Anthropic built-in `promo-batch-runner` skill and bypass this flow. Use **"canary P###"** or **"fire P###"** as the primary triggers.
 
 1. **`node bin/ingest-requests.js`** — refresh from sheet
+1.5. **⚠ MANDATORY — Show summary table immediately** — Read `captures/requests/<handle>.json` and output the summary table as the **very first thing in your reply**, before running any QC or canary commands. Do NOT skip this step. Do NOT defer it. The user must see the resolved fields before anything else. Fields by bonus type:
+   - **Deposit/Reload:** `Code` | `Name EN` | `Name ZH` | `Name ID` | `Bonus %` | `Min Deposit` | `Max Bonus` | `TO` | `Validity` | `Reward Validity` | `Campaign` | `Brands` | `Regions`
+   - **Free Credit:** `Code` | `Name EN` | `Name ZH` | `Name ID` | `FC Amount` | `Max Transfer Out` | `TO` | `Validity` | `Reward Validity` | `Campaign` | `Brands` | `Regions`
+   - **Free Spin:** `Code` | `Name EN` | `Name ZH` | `Name ID` | `Spins` | `Spin Value` | `Game` | `Min Deposit` | `TO` | `Validity` | `Reward Validity` | `Campaign` | `Brands` | `Regions`
+   - Show one row per currency when `per_currency_overrides` has different values — never collapse differing amounts into one row.
+   - Skip columns that are not applicable for the bonus type (e.g. no Spins column on a Deposit promo).
+   - For batch requests (P### range), show one row per handle.
 2. **`/qc-engine <handle>`** — Triage Officer (READY / NOTE / RETURN). If RETURN, STOP and surface what to fix.
 3. **`node bin/canary-multi-brand.js <handle> --parallel`** — dry-run (writes plan bundles)
 4. **`/pre-qc <handle>`** — Pre-QC Agent (PASS / WARNING / FAIL). Present the table.
-4.5. **Display pre-commit mechanics summary table** — Read `captures/requests/<handle>.json` and render a one-glance table BEFORE asking the user to commit. This is mandatory — do not skip. Fields depend on bonus type:
-   - **Deposit/Reload:** Code | Name EN | Name ZH/ID | Bonus % | Min Deposit | Max Bonus | TO | Reward Validity
-   - **Free Credit:** Code | Name EN | Name ZH/ID | FC Amount | Max Transfer Out | TO | Reward Validity
-   - **Free Spin:** Code | Name EN | Name ZH/ID | Spins | Spin Value | Game | Min Deposit | TO | Reward Validity
-   - If `per_currency_overrides` has different values across currencies, show one row per currency — never collapse differing values into one row.
-   - Name column pulls from `promotion_name_zh_id` (serves both ZH and ID locales).
 5. **WAIT for user direction.** Do NOT auto-commit. User says "commit it" or "fix X first".
 6. **`node bin/canary-multi-brand.js <handle> --commit --parallel --parallel-qc`** — live save (only after user confirms)
 6.5. **WS1/WS2 Welcome Bonus only — manual Rewards tab step:** If the saved promo is a Welcome Bonus on a WS1 or WS2 brand, remind the operator: _"Go to BO → 3.3 Promotion Suite → Welcome Bonus → Rewards tab → add this promo code."_ Do not proceed to deep-qc until operator confirms this is done.
