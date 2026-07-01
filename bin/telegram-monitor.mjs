@@ -40,15 +40,19 @@ function ok(msg)   { console.log(`  ✓  ${msg}`); }
 function warn(msg) { console.log(`  ⚠  ${msg}`); }
 function fail(msg) { console.error(`  ✗  ${msg}`); }
 
-// Parse "06 July - 27 September 2026" or "01 July - 19 July 2026"
+// Parse "06 July - 27 September 2026" or "01 Juli 2026, 11.00 (GMT+8) - 08 Juli 2026, 10.59 (GMT+8)"
 function parsePeriod(periodStr) {
   const MONTHS = {
-    january:1, february:2, march:3, april:4, may:5, june:6,
-    july:7, august:8, september:9, october:10, november:11, december:12,
+    january:1, februari:2, february:2, march:3, april:4, may:5, mei:5, june:6, juni:6,
+    july:7, juli:7, august:8, agustus:8, september:9, october:10, oktober:10,
+    november:11, december:12, desember:12,
   };
   const ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  const parts = periodStr.split(/\s*[-–]\s*/);
+  // Strip time and timezone info e.g. ", 11.00 (GMT+8)"
+  const clean = periodStr.replace(/,?\s*\d{1,2}[:.]\d{2}(\s*\(GMT[+-]\d+\))?/g, '').trim();
+
+  const parts = clean.split(/\s*[-–]\s*/);
   if (parts.length < 2) return null;
 
   function toSheetDate(s, fallbackYear) {
@@ -86,17 +90,22 @@ function parsePeriod(periodStr) {
 // Returns { provider, event_name, start_date, end_date, banner_link, tnc_link } or null.
 function parseAnnouncement(text) {
   // Must contain at least one recognisable event keyword
-  const hasKeyword = /Event\s*name|Nama\s*Event|Event\s*Period|Date\s*:/i.test(text);
+  const hasKeyword = /Event\s*name|Nama\s*Event|Event\s*Period|Periode\s*[:\-]|Date\s*:/i.test(text);
   if (!hasKeyword) return null;
 
-  // Event name — English or Indonesian
-  const nameMatch = text.match(/(?:Event\s*name|Nama\s*Event)\s*[:\-]\s*(.+)/i);
-  if (!nameMatch) return null;
-
-  // Period — English "Event Period: …" or Indonesian "Date: …"
+  // Period — English "Event Period: …", Indonesian "Periode : …", or "Date: …"
   const periodMatch = text.match(/Event\s*Period\s*[:\-]\s*(.+)/i)
+                   ?? text.match(/Periode\s*[:\-]\s*(.+)/i)
                    ?? text.match(/Date\s*[:\-]\s*(.+)/i);
   if (!periodMatch) return null;
+
+  // Event name — labeled ("Nama Event: X") or standalone ALL-CAPS line after provider
+  const labeledName = text.match(/(?:Event\s*name|Nama\s*Event)\s*[:\-]\s*(.+)/i);
+  const standaloneMatch = !labeledName
+    ? text.match(/(?:Provider[^\n]*\n+)([A-Z0-9&' ]{3,})\n/i)  // ALL-CAPS line after provider
+    : null;
+  const nameMatch = labeledName ?? standaloneMatch;
+  if (!nameMatch) return null;
 
   // Provider (optional)
   const provMatch = text.match(/Provider\s*[:\-]\s*(.+)/i);
