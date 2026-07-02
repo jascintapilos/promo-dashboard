@@ -91,6 +91,20 @@ async function resolveLayer1GpIds(site) {
     .map((r) => r.id);
 }
 
+// Resolve provider IDs for a category-restricted promo. The QPRO gameprovider
+// catalog includes a `categories` array on each row (probed 2026-07-02) — each
+// entry has { category: "SPORT"|"LIVE CASINO"|"SLOTS"|..., code: "SP"|"LC"|"SL"|... }.
+// We filter to providers tagged with at least one of the wallet category names
+// in `categoryNames` (matches categoriesOnly tokens from the request).
+// Called instead of resolveLayer1GpIds when categoriesOnly is set.
+async function resolveCategoryGpIds(site, categoryNames) {
+  const catSet = new Set(categoryNames.map((n) => n.toUpperCase()));
+  const { rows } = await getAllGameProviders(site);
+  return rows
+    .filter((r) => (r.categories || []).some((c) => catSet.has(String(c.category || '').toUpperCase())))
+    .map((r) => r.id);
+}
+
 // Layer-1-exclusion category IDs on QPRO11. Fallback only. New callers
 // pass `site` to buildApiPlan and the mapper resolves per-brand via
 // resolveCategoryIds() (allow-list of wallet category NAMES — uniform
@@ -823,7 +837,10 @@ export async function buildApiPlan(resolved, { brand, site } = {}) {
     const fsProviderPrefix = fsLabel.split(/[\s-]+/)[0].trim().toUpperCase();
     let catRes;
     [gpIdsForBrand, catRes, fsProviderIdForBrand] = await Promise.all([
-      isFs ? Promise.resolve(null) : resolveLayer1GpIds(site),
+      isFs ? Promise.resolve(null)
+           : (Array.isArray(categoriesOnly) && categoriesOnly.length
+               ? resolveCategoryGpIds(site, categoriesOnly)
+               : resolveLayer1GpIds(site)),
       resolveCategoryIds(site, { isFs, categoriesOnly }),
       isFs ? resolveFsProviderId(site, fsLabel) : Promise.resolve(null),
     ]);

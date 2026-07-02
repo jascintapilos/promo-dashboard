@@ -208,6 +208,50 @@ const QP2A_PUT_GAME_PROVIDER_IDS = {
   '48': 72, '49': 37, '50': 33, '51': 297, '52': 36,
 };
 
+// Category membership for QP2's providers, derived from QPRO gameprovider
+// catalog (probed 2026-07-02 on QPRO1 /api/bo/gameprovider, intersected with
+// QP2's 53-code catalog). Maps wallet category name (uppercase, matches
+// categoriesOnly tokens) → string codes eligible under that category.
+// A provider can belong to multiple categories (e.g. MGP: LC + FISHING).
+const QP2_CATEGORY_PROVIDER_CODES = {
+  'SPORT':       ['2BC', '9W', 'CMD', 'MAX', 'SBO', 'SBO2', 'WBET'],
+  'E-SPORTS':    ['2BC', 'CMD', 'IM', 'MAX', 'TF'],
+  'CRICKET':     ['2BC', '9W', 'MAX'],
+  'LIVE CASINO': ['AG', 'BG', 'EVOK', 'EZ', 'MGP', 'PP', 'PP2', 'PTI', 'SA', 'SEXY', 'VIVO', 'WM'],
+  'SLOTS':       ['AP', 'BNG', 'BOOM', 'BTG', 'CQ9', 'FC', 'FP', 'FS', 'HSG', 'JDB', 'JILI', 'JK',
+                  'KA', 'LIVE', 'LUCKY', 'MAHA', 'MGP', 'MONKEY', 'NET2', 'NEXT', 'NLC', 'PNG',
+                  'PP', 'PP2', 'PTI', 'RG', 'RT2', 'SG', 'SIMPLE', 'XE', 'YB'],
+  'FISHING':     ['BG', 'BTG', 'CQ9', 'FC', 'FS', 'JDB', 'JILI', 'JK', 'KA', 'LIVE', 'LUCKY',
+                  'MGP', 'MONKEY', 'SG', 'SIMPLE', 'YB', 'YL'],
+  'CRASH':       ['AVI', 'KA', 'SPRIBE'],
+};
+
+// Filters QP2A provider constants to the subset matching the given category
+// names. Returns { putIds, targetCodes } as numeric-keyed objects — drop-in
+// replacements for QP2A_PUT_GAME_PROVIDER_IDS and QP2A_TARGET_GAME_PROVIDER_CODES.
+// Returns null when categoriesOnly is empty/null (caller uses the full constants).
+function filterQp2ProvidersByCat(categoriesOnly) {
+  if (!Array.isArray(categoriesOnly) || !categoriesOnly.length) return null;
+  const catSet = new Set(categoriesOnly.map((n) => n.toUpperCase()));
+  const allowedCodes = new Set();
+  for (const [cat, codes] of Object.entries(QP2_CATEGORY_PROVIDER_CODES)) {
+    if (catSet.has(cat)) codes.forEach((c) => allowedCodes.add(c));
+  }
+  if (!allowedCodes.size) return null;
+  const putIds = {};
+  const targetCodes = {};
+  let idx = 0;
+  for (const k of Object.keys(QP2A_TARGET_GAME_PROVIDER_CODES)) {
+    const code = QP2A_TARGET_GAME_PROVIDER_CODES[k];
+    if (allowedCodes.has(code)) {
+      putIds[String(idx)] = QP2A_PUT_GAME_PROVIDER_IDS[k];
+      targetCodes[String(idx)] = code;
+      idx++;
+    }
+  }
+  return { putIds, targetCodes };
+}
+
 // Brand → site_id / merchant_id (QP2 is multi-merchant; one BO, four merchants).
 // site_id is shared (the IBC22 BO is site 1). merchant_id is per-brand —
 // confirmed 2026-05-15 via login.merchant_dropdown:
@@ -493,7 +537,7 @@ function fsGameCodeFromLabel(label) {
 // depositOptionsByCurrency: map of currency label → array of merchant bank IDs.
 // Pass null to skip deposit_options entirely (legacy behaviour). When provided,
 // each currency block gets its own list ([] for MYR, full list for SGD).
-function buildPromotionBody(resolved, brand, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null) {
+function buildPromotionBody(resolved, brand, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null, categoryProviders = null) {
   const bt = (resolved.bonus_type || '').toLowerCase();
   const isFs  = bt.includes('free spin');
   const isFc  = bt.includes('free credit');
@@ -568,16 +612,17 @@ function buildPromotionBody(resolved, brand, catIdsForBrand = null, fsGameCodeFo
     withdrawal_unlock: 0,
     // For Free Spin promos, the eligible game-provider list collapses to the
     // single FS provider (e.g. PP2) — the same one as Free Spin Game Provider.
-    // Other bonus types keep the full Layer-1 inverted exclusion list.
+    // For category-restricted promos, categoryProviders.targetCodes holds the
+    // filtered subset; otherwise the full Layer-1 list applies.
     game_provider_codes: isFs
       ? { '0': fsProviderCodeFromLabel(r.game_provider) }
-      : QP2A_TARGET_GAME_PROVIDER_CODES,
+      : (categoryProviders?.targetCodes ?? QP2A_TARGET_GAME_PROVIDER_CODES),
     target: {
       type: 1,
       multiplier,
       game_provider_codes: isFs
         ? { '0': fsProviderCodeFromLabel(r.game_provider) }
-        : QP2A_TARGET_GAME_PROVIDER_CODES,
+        : (categoryProviders?.targetCodes ?? QP2A_TARGET_GAME_PROVIDER_CODES),
     },
     deposit_count: 0,
     active_period: 0,
@@ -732,7 +777,7 @@ function buildNameBodies(resolved, promotionId) {
 
 // ── PUT /promotion/<id> builder (with optional dialog popup link) ────────
 
-function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null) {
+function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null, categoryProviders = null) {
   const ids = QP2_BRAND_TO_IDS[brand];
   if (!ids || !ids.merchantId) throw new Error(`api-mapper-qp2: brand "${brand}" merchant_id not configured`);
   const r = resolved.parsed || {};
@@ -805,9 +850,10 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
     // For Free Spin promos, restrict to just the FS provider. PUT body uses
     // numeric IDs at the top level (quirk vs POST which uses string codes);
     // target.game_provider_codes still uses string codes on PUT.
+    // For category-restricted promos, categoryProviders holds filtered subsets.
     game_provider_codes: isFs
       ? { '0': QP2_FS_PROVIDER_ID_BY_PREFIX[fsProviderCodeFromLabel(r.game_provider)] ?? fsProviderId }
-      : QP2A_PUT_GAME_PROVIDER_IDS,
+      : (categoryProviders?.putIds ?? QP2A_PUT_GAME_PROVIDER_IDS),
     target: {
       type: 1,
       // V25 capture: PUT serializes multiplier as a 2-decimal string ("5.00").
@@ -815,7 +861,7 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
       multiplier: Number(multiplier).toFixed(2),
       game_provider_codes: isFs
         ? { '0': fsProviderCodeFromLabel(r.game_provider) }
-        : QP2A_TARGET_GAME_PROVIDER_CODES,
+        : (categoryProviders?.targetCodes ?? QP2A_TARGET_GAME_PROVIDER_CODES),
     },
     message_template_id: templateId || 0,
     message_template_sms_id: 0,
@@ -865,6 +911,11 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   const isFs = (resolved.bonus_type || '').toLowerCase().includes('free spin');
   const categoriesOnly = resolved.instructions?.categories_only || null;
   const tierConstraint = resolved.instructions?.tier_constraint || null;
+  // Category-restricted non-FS promos: filter game_provider_codes to the
+  // subset matching the requested wallet categories.
+  const categoryProviders = !isFs && Array.isArray(categoriesOnly) && categoriesOnly.length
+    ? filterQp2ProvidersByCat(categoriesOnly)
+    : null;
   const catRes = site ? await resolveQp2CategoryIds(site, { isFs, categoriesOnly }) : null;
   const catIdsForBrand = catRes?.ids ?? null;
   const catNamesForBrand = catRes?.names ?? null;
@@ -930,12 +981,12 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   }
 
   return {
-    promotion: buildPromotionBody(effectiveResolved, brand, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand),
+    promotion: buildPromotionBody(effectiveResolved, brand, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand, categoryProviders),
     messageTemplate: await buildMessageTemplateBody(effectiveResolved, brand),
     dialogPopup: await buildDialogPopupBody(effectiveResolved, brand),
     buildNames: (promotionId) => buildNameBodies(effectiveResolved, promotionId),
     buildUpdate: (promotionId, templateId, dialogPopup) =>
-      buildUpdateBody(effectiveResolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand),
+      buildUpdateBody(effectiveResolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand, categoryProviders),
     currencyFilter: effectiveResolved !== resolved
       ? { kept: effectiveResolved.currencies, dropped: resolved.currencies.filter((c) => !effectiveResolved.currencies.includes(c)) }
       : null,
