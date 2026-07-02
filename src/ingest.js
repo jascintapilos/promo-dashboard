@@ -348,8 +348,13 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   //   "Free Credit 100" / "Free Credit MYR 100"    (amount after label)
   //   "38 Free Credits, TO 10"                      (amount before label)
   //   "20 FC" / "20FC"                              (shorthand)
+  // CCY_PREFIX: a run of zero or more currency tokens, each optionally
+  // followed by a separator ("/", ",", "&", or "or"). Tolerates dual/multi-
+  // currency phrasing like "RM / SGD 100", "RM/SGD", "MYR & SGD 1,000",
+  // "RM or SGD 300" that the older single-token prefix could not parse.
+  const CCY_PREFIX = String.raw`(?:(?:RM|S\$|Rp|[A-Z]{2,3}\$?)\s*(?:[\/,&]|or\b)?\s*)*`;
   const fcMatch =
-       text.match(/Free\s+Credit\s+(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*(\d+(?:\.\d+)?)/i)
+       text.match(new RegExp(String.raw`Free\s+Credit\s+${CCY_PREFIX}(\d+(?:\.\d+)?)`, 'i'))
     || text.match(/(\d+(?:\.\d+)?)\s*FC\b/i)
     || text.match(/(\d+(?:\.\d+)?)\s+Free\s+Credits?\b/i);
   if (fcMatch) parsed.free_credit_amount = Number(fcMatch[1]);
@@ -362,14 +367,14 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   // and value, and any of these label spellings: "Max Bonus", "Max. Bonus",
   // "Maximum Bonus", "max bns", "Max Cap", or bare "Cap" (operator alias).
   // Comma thousands separators tolerated: "Max Cap RM1,288" → 1288.
-  const maxBonus = text.match(/\b(?:Max(?:\.|imum)?\s+Bonus|max\s+bns|max\s+bonus|(?:max\s+)?cap)\s*[:=]?\s*(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)/i);
+  const maxBonus = text.match(new RegExp(String.raw`\b(?:Max(?:\.|imum)?\s+Bonus|max\s+bns|max\s+bonus|(?:max\s+)?cap)\s*[:=]?\s*${CCY_PREFIX}([\d,]+(?:\.\d+)?)`, 'i'));
   if (maxBonus) parsed.max_bonus = Number(maxBonus[1].replace(/,/g, ''));
 
   // Min Deposit: "min dep 50" / "min depo 300" / "min dep: RM 50" / "Min Deposit 100"
   // / "Min dep = 100" / "Min Dep RM1,288". Accepts `:`, `=`, or bare space.
   // Comma thousands separators tolerated. Captured separately per-currency
   // below if a per-region prefix is present.
-  const minDepGeneric = text.match(/(?:min(?:imum)?\s+(?:dep(?:osit)?|depo)|min\.?\s+depo?)\s*[:=]?\s*(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)/i);
+  const minDepGeneric = text.match(new RegExp(String.raw`(?:min(?:imum)?\s+(?:dep(?:osit)?|depo)|min\.?\s+depo?)\s*[:=]?\s*${CCY_PREFIX}([\d,]+(?:\.\d+)?)`, 'i'));
   if (minDepGeneric) parsed.min_deposit = Number(minDepGeneric[1].replace(/,/g, ''));
 
   // "Dep RMx get RMy" shorthand — column M pattern for deposit promos where
