@@ -992,5 +992,6 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
       : null,
     memberGroupIds: memberGroupIdsForBrands,
     blacklistTemplateId: blacklistTemplateIdForBrand,
+    tierConstraint,
   };
 }
