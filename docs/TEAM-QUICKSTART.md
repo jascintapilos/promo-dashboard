@@ -74,6 +74,18 @@ node bin/sheets-test.mjs
 ```
 Should print the current month's sheet name with no errors.
 
+### 7. Sync team memory to your Claude profile (one-time)
+
+Open PowerShell **inside the `promo-automation` folder** and run:
+
+```powershell
+$enc = ($PWD.Path -replace ':', '-' -replace '\\', '-'); $dst = "$env:USERPROFILE\.claude\projects\$enc\memory"; New-Item -ItemType Directory -Force $dst | Out-Null; Copy-Item memory\* $dst -Force; "Done — copied to $dst"
+```
+
+This copies the shared rule files (QC patterns, platform quirks, naming conventions) into your Claude profile so they load automatically at the start of every session — same as the rest of the team.
+
+**After this, memory stays in sync automatically.** The auto-pull hook runs on every message, pulls the latest repo, and re-copies any updated memory files to your profile. No manual steps needed going forward.
+
 That's it. No Playwright, no Chrome profile needed.
 
 ---

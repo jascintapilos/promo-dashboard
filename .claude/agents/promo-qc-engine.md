@@ -83,13 +83,15 @@ Verify presence and basic shape only:
   * Deposit → `min_deposit`, `bonus_rate_pct`, `to_multiplier`, `max_bonus`
   * Free Credit → `free_credit_amount`, `to_multiplier`
   * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`; FS provider present or resolvable by the namer (absence is NOTE, not RETURN — the canary's game-code resolver can infer it; emit NOTE so it is visible downstream)
-* FS hard platform limits (RETURN immediately — save will fail):
-  * `parsed.spin_count` ≤ 88 — **exception:** emit NOTE (not RETURN) when `promo_code` starts with `REFEREE_` or `REFERRER_` (WS1 referral program — operator-confirmed override)
-  * `parsed.value_per_spin` ≥ 0.50 — **exception:** emit NOTE (not RETURN) when `promo_code` starts with `REFEREE_` or `REFERRER_` (WS1 referral program — operator-confirmed override)
+* **WS1 Referral Program — FS limits do NOT apply.** Before checking any FS platform limit, inspect `promo_code`: strip any leading `FT_`, then check if the result starts with `REFEREE_` or `REFERRER_`. If YES → emit NOTE (not RETURN) for any spin_count or value_per_spin value, regardless of how far outside platform norms they are. Operator-confirmed override. Do not treat as a violation.
+* FS hard platform limits — apply ONLY when the promo_code check above is NO (i.e. not a referral code):
+  * `parsed.spin_count` must be ≤ 88 — RETURN if violated (save will fail on IGMP)
+  * `parsed.value_per_spin` must be ≥ 0.50 — RETURN if violated (save will fail on IGMP)
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
 * Campaign objective prefix (if `campaign` is set on the request): promo_code must contain the required tokens for that campaign type. Strip leading `FT_` from promo_code before checking. Emit NOTE if tokens are missing. Skip entirely if `campaign` is blank or null.
+* Category restriction flag: if `instructions.categories_only` or `instructions.category_only` is set (non-null, non-empty), emit NOTE: "Category-restricted promo — downstream plan must restrict game_provider_ids to providers in that category only. Both Categories AND Game Providers must be configured together in BO, or the bonus can be transferred to any provider." This is a NOTE (not RETURN) — structural flag for Pre-QC and Sentinel to enforce.
 
 You do NOT check:
 
@@ -160,7 +162,7 @@ These are intentional and well-understood:
 * `tier_constraint` absent on QPRO requests — only applies to QP2.
 * `instructions` block empty or absent — most requests don't have special instructions.
 * Empty `code_prefixes` — fine.
-* `spin_count > 88` or `value_per_spin < 0.50` when `promo_code` starts with `REFEREE_` or `REFERRER_` — WS1 referral program, operator-confirmed override. Downgrade both from RETURN to NOTE so they are visible downstream.
+* **`spin_count > 88` or `value_per_spin < 0.50` on referral codes** — strip leading `FT_` from promo_code, then if it starts with `REFEREE_` or `REFERRER_`, these are NOT violations. The WS1 referral program uses operator-confirmed non-standard FS parameters. Emit NOTE, not RETURN. Examples: `REFEREE_NODEP_200FS_GOO`, `FT_REFERRER_NODEP_88FS_GOO`.
 
 ---
 

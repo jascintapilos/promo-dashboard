@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git pull origin main --ff-only --quiet 2>/dev/null; true",
+            "command": "git pull origin main --ff-only --quiet 2>/dev/null; REPO=$(git rev-parse --show-toplevel 2>/dev/null); PARENT=$(dirname \"$REPO\"); DRIVE=$(echo \"$PARENT\" | cut -c2 | tr '[:lower:]' '[:upper:]'); REST=$(echo \"$PARENT\" | cut -c3- | sed 's|/|-|g'); ENC=\"${DRIVE}-${REST}\"; MEM_DST=\"$HOME/.claude/projects/$ENC/memory\"; [ -d \"$REPO/memory\" ] && [ -d \"$MEM_DST\" ] && cp \"$REPO/memory/\"*.md \"$MEM_DST/\" 2>/dev/null; true",
             "timeout": 15
           }
         ]
@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "REPO=$(git rev-parse --show-toplevel 2>/dev/null) && cd \"$REPO\" && git add bin/ src/ data/ docs/ .claude/ user-skills/ CLAUDE.md README.md install-skills.bat install-skills.sh 2>/dev/null; if ! git diff --cached --quiet 2>/dev/null; then git commit -m \"auto: sync $(date +%Y-%m-%d)\" && git push origin main; fi",
+            "command": "REPO=$(git rev-parse --show-toplevel 2>/dev/null) && cd \"$REPO\" && git add bin/ src/ data/ docs/ .claude/ user-skills/ memory/ CLAUDE.md README.md install-skills.bat install-skills.sh 2>/dev/null; if ! git diff --cached --quiet 2>/dev/null; then git commit -m \"auto: sync $(date +%Y-%m-%d)\" && git push origin main; fi",
             "timeout": 30
           }
         ]
