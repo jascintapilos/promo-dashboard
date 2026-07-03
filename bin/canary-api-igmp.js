@@ -627,7 +627,14 @@ await (async () => {
   // activation. Condition: sub_type=Welcome AND siteId is WS1/WS2.
   // Falls back to a manual reminder (with PromotionId printed) if the
   // suite GET endpoint name is wrong — verified on first live Welcome run.
-  const isWelcomeBonus = String(rec.parsed?.sub_type || '').toLowerCase() === 'welcome';
+  // Welcome-bonus detection: any promo on a WELCOME BONUS campaign belongs in
+  // the suite so a new player can claim only one (RedeemableCount=1), regardless
+  // of bonus_sub_type (No Dep FS, Free Credit, Deposit all qualify). Operator
+  // rule 2026-07-03. Falls back to the legacy sub_type=Welcome signal.
+  const campaignStr = String(rec.campaign || '').toUpperCase();
+  const isWelcomeBonus = String(rec.parsed?.sub_type || '').toLowerCase() === 'welcome'
+    || /WELCOME\s*BONUS/.test(campaignStr)
+    || /\bACQ\b/.test(campaignStr);
   const isWs1OrWs2 = siteId.startsWith('ws1') || siteId === 'ws2';
   console.log('');
   console.log('── Promotion Suite ──────────────────────────────────────────────');
@@ -636,7 +643,8 @@ await (async () => {
     let suiteAssigned = false;
     try {
       const suiteInfoRes = await igmpPost(siteId, '/PM/GetPromotionSuiteInfo', { PromotionSuiteId: WELCOME_SUITE_ID });
-      const rawItems = suiteInfoRes?.data?.Promotions
+      const rawItems = suiteInfoRes?.data?.PromotionSuiteItems
+        ?? suiteInfoRes?.data?.Promotions
         ?? suiteInfoRes?.data?.Items
         ?? suiteInfoRes?.data?.PromotionIds
         ?? (Array.isArray(suiteInfoRes?.data) ? suiteInfoRes.data : null);
@@ -648,7 +656,7 @@ await (async () => {
         console.log(`  ✓ Already in WELCOME BONUS suite (PromotionId=${promoId})`);
         suiteAssigned = true;
       } else {
-        const updatedIds = [...currentIds, promoId];
+        const updatedIds = [...new Set([...currentIds, promoId])];  // dedupe — suite data can carry dupes
         const updateRes = await igmpPost(siteId, '/PM/UpdatePromotionSuiteItems', {
           PromotionSuiteId: WELCOME_SUITE_ID,
           PromotionId: updatedIds,
