@@ -622,6 +622,61 @@ await (async () => {
     console.warn('⚠ Activation skipped — PromotionId not available');
   }
 
+  // ── Promotion Suite Assignment (Welcome Bonus on WS1/WS2) ───────────
+  // Auto-adds the promo to WELCOME BONUS suite (Id=1) immediately after
+  // activation. Condition: sub_type=Welcome AND siteId is WS1/WS2.
+  // Falls back to a manual reminder (with PromotionId printed) if the
+  // suite GET endpoint name is wrong — verified on first live Welcome run.
+  const isWelcomeBonus = String(rec.parsed?.sub_type || '').toLowerCase() === 'welcome';
+  const isWs1OrWs2 = siteId.startsWith('ws1') || siteId === 'ws2';
+  console.log('');
+  console.log('── Promotion Suite ──────────────────────────────────────────────');
+  if (commit && promoId && isWelcomeBonus && isWs1OrWs2) {
+    const WELCOME_SUITE_ID = 1;
+    let suiteAssigned = false;
+    try {
+      const suiteInfoRes = await igmpPost(siteId, '/PM/GetPromotionSuiteInfo', { PromotionSuiteId: WELCOME_SUITE_ID });
+      const rawItems = suiteInfoRes?.data?.Promotions
+        ?? suiteInfoRes?.data?.Items
+        ?? suiteInfoRes?.data?.PromotionIds
+        ?? (Array.isArray(suiteInfoRes?.data) ? suiteInfoRes.data : null);
+      if (rawItems == null) throw new Error('GetPromotionSuiteInfo: unexpected response shape');
+      const currentIds = rawItems
+        .map(p => Number(typeof p === 'object' ? (p.PromotionId ?? p.Id ?? p) : p))
+        .filter(Boolean);
+      if (currentIds.includes(promoId)) {
+        console.log(`  ✓ Already in WELCOME BONUS suite (PromotionId=${promoId})`);
+        suiteAssigned = true;
+      } else {
+        const updatedIds = [...currentIds, promoId];
+        const updateRes = await igmpPost(siteId, '/PM/UpdatePromotionSuiteItems', {
+          PromotionSuiteId: WELCOME_SUITE_ID,
+          PromotionId: updatedIds,
+        });
+        const ok = updateRes?.success === true
+          || (Array.isArray(updateRes?.message) && updateRes.message.some(m => /success/i.test(m)));
+        if (ok) {
+          console.log(`✓ Added to WELCOME BONUS suite (PromotionId=${promoId}, suite total=${updatedIds.length})`);
+          suiteAssigned = true;
+        } else {
+          console.warn(`⚠ Suite update response unexpected: ${JSON.stringify(updateRes).slice(0, 200)}`);
+        }
+      }
+    } catch (e) {
+      console.warn(`⚠ Suite auto-assign failed: ${e.message.split('\n')[0]}`);
+    }
+    if (!suiteAssigned) {
+      console.warn(`  → Manual: BO → Promotion Suite → WELCOME BONUS → Rewards tab → add PromotionId=${promoId}`);
+    }
+  } else if (!commit) {
+    console.log(isWelcomeBonus && isWs1OrWs2
+      ? '  (dry-run — would add to WELCOME BONUS suite after activation)'
+      : '  (skipped — not a Welcome Bonus on WS1/WS2)');
+  } else {
+    const why = !promoId ? 'PromotionId not captured' : !isWelcomeBonus ? 'sub_type≠Welcome' : 'not WS1/WS2 site';
+    console.log(`  (skipped — ${why})`);
+  }
+
   // ── QC bundle (Sentinel) ─────────────────────────────────────────────
   // Mirror QPRO/QP2 shape so /deep-qc's sentinel can read it directly:
   //   live_state.list_row   — GetPromotionInfoByCode response (QC L1)

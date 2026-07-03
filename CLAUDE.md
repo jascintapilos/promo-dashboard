@@ -4,6 +4,12 @@ Working directory: `C:\Users\vdiuser\Downloads\promo-automation\promo-automation
 
 ---
 
+## Team memory (shared rules — read every session)
+
+Read [`memory/MEMORY.md`](memory/MEMORY.md) at the start of every session. It indexes shared feedback rules, QC patterns, platform quirks, and project context that apply to all operators. When you save a new memory during a session, also commit the file to `memory/` so teammates get it on next pull.
+
+---
+
 ## Auto-flow rules (MUST follow)
 
 When the user prompts a promo request — phrasings like **"canary P172"**, **"fire P172"**, **"go P172"**, **"canary P175-P180"**, or a pasted Slack delegation with P### / B### — Claude **MUST** execute this sequence automatically without asking for permission step-by-step:
