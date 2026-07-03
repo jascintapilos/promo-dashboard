@@ -137,6 +137,11 @@ function resolvePromoDateRange(rec, { endOfYearDefault = false } = {}) {
 // Assignment team, who pick by PromotionName.
 //
 function buildMechanicsTag(rec) {
+  // Opt-in: operator may request a clean PromotionName with no mechanics spec
+  // (e.g. "18 Free Spins on Gates of Olympus" without the "(FS18 / …)" tail).
+  // Default behaviour unchanged — the tag is what the WS1 Manual Reward
+  // Assignment team picks by, so only suppress when explicitly flagged.
+  if (rec.suppress_mechanics_tag) return '';
   const bt = String(rec.bonus_type || '').toLowerCase();
   const parts = [];
 
