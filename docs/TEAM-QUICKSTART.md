@@ -86,6 +86,21 @@ This copies the shared rule files (QC patterns, platform quirks, naming conventi
 
 **After this, memory stays in sync automatically.** The auto-pull hook runs on every message, pulls the latest repo, and re-copies any updated memory files to your profile. No manual steps needed going forward.
 
+### 8. WS1/WS2 session setup (only if you handle WS1/WS2 promos)
+
+WS1/WS2 uses cookie-based auth. You need to capture a live session for each site you work on — this opens Chrome, you log in manually, and the cookies are saved locally.
+
+```bash
+node bin/igmp-session-capture.mjs --site=ws1-v3-my
+node bin/igmp-session-capture.mjs --site=ws1-v3-sg
+```
+
+Available sites: `ws1-v3-my`, `ws1-v3-sg`, `ws1-v3-id`, `ws1-v3-th`, `ws1-v3-kh`, `ws2`
+
+You need your own `best-in-asia.com` BO login — ask Jascinta or the BO admin to provision one.
+
+**Sessions last ~8 hours.** When a session expires, the canary prints a clear error with the exact `--site` flag to re-capture. Re-run the command for that site and you're good.
+
 That's it. No Playwright, no Chrome profile needed.
 
 ---
