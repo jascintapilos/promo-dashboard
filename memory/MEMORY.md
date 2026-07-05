@@ -73,6 +73,7 @@
 - [Deposit/withdrawal thresholds](feedback_promo_deposit_withdrawal_thresholds.md) — min_deposit + max caps within platform limits. Data in data/deposit-withdrawal-limits.json.
 
 ## IGMP / WS1
+- [IGMP GetPromotionsList misses FreeCredit promos](feedback_igmp_list_misses_freecredit.md) — exact-code checks MUST use GetPromotionInfoByCode; T&C rows via GetPromotionRewardContents; list-based name-collision probe unreliable for FC.
 - [WS1/WS2 RedemptionType rule](feedback_igmp_redemption_type_rule.md) — min_deposit=0 → Claim (1); min_deposit>0 → Deposit (0). All bonus types.
 - [WS1 FC ExpiryMinutes = claim window](feedback_igmp_fc_expiry_minutes.md) — ExpiryMinutes = rewards_validity_days x 1440. EffectiveMinutes is always 1.
 - [WS1 FC T&C no withdrawal clause when no cap](feedback_igmp_tnc_no_withdrawal_clause.md) — maxXfer=0 = omit clause 1 entirely; renumber 1-5.

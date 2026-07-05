@@ -354,7 +354,7 @@ function campaignIntroZh(rec, bonusType) {
     const amount = Number(rec.free_credit_amount ?? rec.parsed?.free_credit_amount ?? 0);
     const amountStr = amount > 0 ? `${pref} ${amount}` : '';
     if (tier.includes('vip') || tier.includes('diamond') || tier.includes('platinum'))
-      return `专属礼物 — 领取 ${amountStr} 免费分数，畅玩您喜爱的游戏！`;
+      return `专属礼物 — 领取 ${amountStr} 免费分数，畅玩您喜爱的游戏！`.replace('  ', ' ');
     if (campaign.includes('comeback') || campaign.includes('churned'))
       return `我们想念您！送您 ${amountStr} 免费分数，欢迎回来。`;
     if (campaign.toLowerCase().includes('june') || campaign.toLowerCase().includes('check-in') || campaign.toLowerCase().includes('checkin'))
@@ -463,9 +463,11 @@ function buildFcEn(rec) {
   const headers = minD > 0
     ? ['Min Deposit', 'Free Credit Amount', 'Turnover']
     : ['Free Credit Amount', 'Turnover'];
+  // Manual-input FC (reward_type 2) has no fixed amount — show "Variable".
+  const amountCellEn = Number(rec.reward_type) === 2 ? 'Variable' : `${pref} ${amount}`;
   const values  = minD > 0
-    ? [`${pref} ${minD}`, `${pref} ${amount}`, `${to}x`]
-    : [`${pref} ${amount}`, `${to}x`];
+    ? [`${pref} ${minD}`, amountCellEn, `${to}x`]
+    : [amountCellEn, `${to}x`];
 
   const stats = statsTable(headers, values);
 
@@ -477,7 +479,9 @@ function buildFcEn(rec) {
   const fcClausesEn = [];
   if (wcAmount > 0) fcClausesEn.push(`Maximum withdrawal is ${pref} ${wcAmount} only.`);
   fcClausesEn.push(`Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`);
-  fcClausesEn.push(`Each member can claim this promotion only once.`);
+  fcClausesEn.push(rec.recurring
+    ? `This promotion can be claimed multiple times unless stated otherwise.`
+    : `Each member can claim this promotion only once.`);
   fcClausesEn.push(fcCatClause(cats, false));
   fcClausesEn.push(`Promotion codes are time-limited and cannot be extended once expired.`);
   fcClausesEn.push(`General ${brand} ${link} apply.`);
@@ -508,9 +512,10 @@ function buildFcZh(rec) {
   const headers = minD > 0
     ? ['最低存款金额', '免费分数', '流水量']
     : ['免费分数', '流水量'];
+  const amountCellZh = Number(rec.reward_type) === 2 ? '不固定' : `${pref} ${amount}`;
   const values  = minD > 0
-    ? [`${pref} ${minD}`, `${pref} ${amount}`, `${to}x`]
-    : [`${pref} ${amount}`, `${to}x`];
+    ? [`${pref} ${minD}`, amountCellZh, `${to}x`]
+    : [amountCellZh, `${to}x`];
 
   const stats = statsTable(headers, values);
 
@@ -519,7 +524,9 @@ function buildFcZh(rec) {
   const fcClausesZh = [];
   if (wcAmountZh > 0) fcClausesZh.push(`最高提款金额仅为 ${pref} ${wcAmountZh}。`);
   fcClausesZh.push(`红利自发放之日起 ${validityDays} 天内有效，除非另有说明。`);
-  fcClausesZh.push(`每位会员仅限领取一次此优惠。`);
+  fcClausesZh.push(rec.recurring
+    ? `此优惠可多次领取，除非另有说明。`
+    : `每位会员仅限领取一次此优惠。`);
   fcClausesZh.push(fcCatClause(cats, true));
   fcClausesZh.push(`优惠码有时间限制，一旦过期将无法延长。`);
   fcClausesZh.push(`适用 ${brand} 一般${link}。`);
