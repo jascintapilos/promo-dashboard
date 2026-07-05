@@ -257,6 +257,29 @@ await (async () => {
     return bail(0);
   }
 
+  // ── Code idempotency probe ──────────────────────────────────────────
+  // AddBonus/AddFreeCredit only fail late with "Promotion code is not
+  // available." — probe the exact code up front. GetPromotionInfoByCode
+  // covers ALL promotion types (the list probe below can't be trusted for
+  // this — see memory/feedback_igmp_list_misses_freecredit.md).
+  {
+    console.log('');
+    console.log('── Code idempotency ─────────────────────────────────────────────');
+    try {
+      const existing = await igmpPost(siteId, '/PM/GetPromotionInfoByCode', { PromotionCode: plan.body.PromotionCode });
+      const ex = existing?.data;
+      if (ex?.PromotionId) {
+        console.error(`✗ Code "${plan.body.PromotionCode}" already exists on ${siteId}:`);
+        console.error(`    id=${ex.PromotionId}  type=${ex.PromotionType}  active=${ex.IsActive}  published=${ex.IsPublished}  name="${ex.PromotionName}"`);
+        console.error('  Nothing saved. Amend the existing promo via the /PM/Update* endpoints instead.');
+        return bail(10);
+      }
+      console.log(`✓ "${plan.body.PromotionCode}" not yet on ${siteId}`);
+    } catch (e) {
+      console.warn(`⚠ Code idempotency probe failed (non-fatal): ${e.message.split('\n')[0]}`);
+    }
+  }
+
   // ── PromotionName uniqueness check ──────────────────────────────────
   {
     const plannedName = plan.body.PromotionName;
@@ -266,8 +289,10 @@ await (async () => {
       try {
         let allRows = [];
         for (let pg = 1; pg <= 40; pg++) {
+          // PromotionType MUST be '' (all types) — 0 silently filters to
+          // Bonus-only, hiding FreeCredit/FreeSpin/etc. name collisions.
           const r = await igmpPost(siteId, `/PM/GetPromotionsList?pageNum=${pg}&rowPerPage=200`, {
-            PromotionCode: '', PromotionName: '', PromotionType: 0, IsActive: '', IsPublished: '',
+            PromotionCode: '', PromotionName: '', PromotionType: '', IsActive: '', IsPublished: '',
           });
           const rows = r?.data ?? [];
           if (!rows.length) break;
