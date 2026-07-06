@@ -230,7 +230,7 @@ const QP2_CATEGORY_PROVIDER_CODES = {
 // names. Returns { putIds, targetCodes } as numeric-keyed objects — drop-in
 // replacements for QP2A_PUT_GAME_PROVIDER_IDS and QP2A_TARGET_GAME_PROVIDER_CODES.
 // Returns null when categoriesOnly is empty/null (caller uses the full constants).
-function filterQp2ProvidersByCat(categoriesOnly) {
+export function filterQp2ProvidersByCat(categoriesOnly) {
   if (!Array.isArray(categoriesOnly) || !categoriesOnly.length) return null;
   const catSet = new Set(categoriesOnly.map((n) => n.toUpperCase()));
   const allowedCodes = new Set();
@@ -477,6 +477,7 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const o = resolved.per_currency_overrides?.[currencyLabel] || {};
   const r = resolved.parsed || {};
   const spinCount = o.spin_count ?? r.spin_count ?? 0;
+  const aplRaw = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin = o.value_per_spin ?? r.value_per_spin ?? 0;
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
@@ -488,7 +489,12 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
     end_time: '23:59:59',
     coins: 0,
     lines: 0,
-    amount_per_line: Number(Number(valuePerSpin).toFixed(4)),
+    // If sheet stated amount_per_line directly, use it.
+    // Else: divide value_per_spin by 20 (operator house convention for
+    // PP2 20-line games), floor to 2dp (0.40 → 0.02).
+    amount_per_line: aplRaw != null
+      ? +Number(aplRaw).toFixed(4)
+      : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds: spinCount,
     min_deposit: o.min_deposit ?? r.min_deposit ?? 0,
     max_withdraw_type: '1',
@@ -684,7 +690,7 @@ async function buildMessageTemplateBody(resolved, brand) {
 
 // ── Dialog Popup POST body builder ───────────────────────────────────────
 
-async function buildDialogPopupBody(resolved, brand) {
+export async function buildDialogPopupBody(resolved, brand) {
   if (resolved.popup_dialog !== true) return null;
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   const ids = QP2_BRAND_TO_IDS[brand];

@@ -5,6 +5,7 @@
 import crypto from 'node:crypto';
 import { getOrRefreshSession, refreshSession, clearSession } from './session-cache.js';
 import { getSite } from './sites.js';
+import { computeValuePerSpin } from './fs-lines-resolver.js';
 
 // AES-256-CBC password encryption matching the SPA bundle:
 //   key = SHA256(site.reqSignKey)
@@ -329,6 +330,16 @@ export async function getPromotionDetail(site, promotionId) {
 
   const perCurrency = {};
   for (const cc of currencies) {
+    const rawApl = nz(cc.amount_per_line);
+    // `value_per_spin` is a DERIVED player-facing field:
+    //   value_per_spin = amount_per_line × lines_per_spin
+    // The reader used to alias raw wire `amount_per_line` as `value_per_spin` —
+    // apples-to-oranges compare that let a 20x-overpayment QP2 mapper bug
+    // stay hidden for six weeks. Now we expose BOTH:
+    //   - `amount_per_line`  — raw wire, trust always
+    //   - `value_per_spin`   — computed, null when lines resolver can't decide
+    // Lines resolver reads game code (from main.free_spin_game_code).
+    const derived = computeValuePerSpin(rawApl, main.free_spin_game_code);
     perCurrency[cc.currency] = {
       min_deposit: nz(cc.min_transfer) ?? nz(cc.min_deposit),
       max_bonus: nz(cc.max_bonus),
@@ -339,7 +350,9 @@ export async function getPromotionDetail(site, promotionId) {
       free_credit_amount: nz(cc.free_credit_amount ?? cc.bonus_amount),
       bonus_rate: nz(cc.bonus_rate),
       spin_count: cc.rounds || null,
-      value_per_spin: nz(cc.amount_per_line),
+      amount_per_line: rawApl,
+      value_per_spin: derived.value_per_spin,
+      lines_per_spin: derived.lines_per_spin,
     };
   }
   // Take any one currency block as the "global" parsed fields — they're
@@ -370,7 +383,9 @@ export async function getPromotionDetail(site, promotionId) {
     currencies: currencies.map((cc) => cc.currency),
     parsed: {
       spin_count: sample.spin_count,
+      amount_per_line: sample.amount_per_line,
       value_per_spin: sample.value_per_spin,
+      lines_per_spin: sample.lines_per_spin,
       to_multiplier: main.target?.[0]?.multiplier ?? null,
       bonus_rate_pct: Number(main.bonus_rate) || sample.bonus_rate || null,
       game: main.free_spin_game_code || null,

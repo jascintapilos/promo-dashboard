@@ -660,7 +660,7 @@ const CTA_TEXT_BY_DOCKEY = {
   ID: { claim: 'Klaim Sekarang', deposit: 'Deposit',  right: 'Info Lanjut' },
 };
 
-async function buildDialogPopupBody(resolved, brand) {
+export async function buildDialogPopupBody(resolved, brand) {
   if (resolved.popup_dialog !== true) return null;
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   const r = resolved.parsed || {};
