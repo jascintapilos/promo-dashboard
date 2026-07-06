@@ -54,6 +54,7 @@ await (async () => {
     return bail(2);
   }
   const commit = flags.commit === true;
+  const allowDupName = flags['allow-dup-name'] === true; // operator override: save even if PromotionName already exists on the BO
   const testMode = flags.test === true; // prepend TEST_ to the resolved FT_ code
   // Resolution order: --site explicit → --brand → default ws1-v3-my.
   const brand = flags.brand;
@@ -305,9 +306,13 @@ await (async () => {
           for (const c of collisions) {
             console.error(`    id=${c.PromotionId}  code=${c.PromotionCode}  active=${c.IsActive}`);
           }
-          console.error('  Manual Reward Assignment picks by name — duplicates break selection.');
-          console.error('  Fix: adjust the promo name in the source sheet and re-ingest.');
-          return bail(8);
+          if (allowDupName) {
+            console.warn('  ⚠ --allow-dup-name set — proceeding despite collision (operator override).');
+          } else {
+            console.error('  Manual Reward Assignment picks by name — duplicates break selection.');
+            console.error('  Fix: adjust the promo name in the source sheet and re-ingest, or pass --allow-dup-name.');
+            return bail(8);
+          }
         }
         console.log(`✓ "${plannedName}" unique on ${siteId}`);
       } catch (e) {
