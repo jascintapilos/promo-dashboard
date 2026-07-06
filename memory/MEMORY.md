@@ -81,6 +81,8 @@
 - [UpdateBonusDetails RedeemableDay must be "0,1,2,3,4,5,6" string](feedback_igmp_redeemable_day_all_days.md) — Never int 0. Read from GetBonusInfo and pass through.
 - [IGMP Deposit T&C: rewards_validity + provider exclusions](feedback_igmp_tnc_dep_validity_and_provider_exclusions.md) — Point 1 reads rewards_validity_days; point 3 appends provider exclusion list.
 - [IGMP edit + status: WS1 ONLY never publish](project_igmp_edit_status_endpoints.md) — Final step = activate only. Run from live BO tab; stale cookie 500s.
+- [WS1 MY legacy name dedupe (active-only) + open FS/FC bucket](project_ws1_legacy_name_dedupe.md) — 2026-07-06: 57 Bonus-type renamed unique; 99 active dup groups remain in FS/FC space (mostly campaign prize pools), bucket-2 plan on hold.
+- [WS1 MY TLEO T&C backfilled from SG](project_ws1_my_tleo_tnc_missing.md) — 2026-07-06: 41/42 Bonus TLEO cloned (SGD→RM, mb8sg→mb8mys); OPEN: FT_REL_TLEO_45PCT_458MX skipped — MY cap=450 vs code/SG 458, fix cap then rerun fix-ws1-my-tleo-tnc.mjs.
 
 ## Workflow & Process
 - [Directory sheet first](feedback_directory_first.md) — Always resolve brand/BO/PIC/tool by reading Directory before asking.
