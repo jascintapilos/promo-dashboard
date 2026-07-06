@@ -345,7 +345,7 @@
       </div>
     </div>
     <div class="head-right">
-      <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
+      <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">Last 7 days</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
     </div>
   </div>
@@ -2054,8 +2054,8 @@ loadData();
       });
     },
   });
-  picker.setDateRange(weekStart(),today);
-  const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
+  picker.setDateRange(new Date(Date.now()-6*864e5),today);
+  const f=new Date(Date.now()-6*864e5);f.setHours(0,0,0,0);_filterFrom=f;
   const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
 })();
 
