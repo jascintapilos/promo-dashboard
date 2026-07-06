@@ -132,6 +132,7 @@
 ## References
 - [Directory sheet](reference_directory_sheet.md) — master reference for brands, BO links, tool list, SOPs, team roster.
 - [Banner Schedule sheet](reference_banner_schedule.md) — B-ID task tracker; B=b_id, D=draft folder (search Drive by title).
+- [Banner Schedule sync sheet columns](reference_banner_schedule_sync_sheet.md) — telegram-sync sheet (1YqxgQ...); C=Status, D=Requestor="Bot", E=PIC blank. Different sheet from the B-ID tracker.
 - [Banner image dimensions](reference_banner_dimensions.md) — WS1 v3/v4, WS2, QPRO/QPLY sizes per placement.
 - [QP2 Dialog Popup form](reference_qp2_dialog_popup_form.md) — /settings/dialog (15.1.2). Linked via Dialog Popup kt-dropdown on Edit modal.
 - [Inbox T&C docs](reference_inbox_tnc_docs.md) — QPRO/QP2: 8-clause format. WS1/WS2: 5-clause format.
