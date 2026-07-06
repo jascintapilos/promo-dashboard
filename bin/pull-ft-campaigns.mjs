@@ -332,9 +332,11 @@ if (teamRows.length === 0) {
 
 // Guard: verify tab has a header + at least one data row before appending.
 // If Smartico crashed after clearing the tab, abort rather than leave a headerless sheet.
+let totalRowsInTab = 0;
 try {
   const headerCheck = await sheets.spreadsheets.values.get({
-    spreadsheetId: OPS_ID, range: `'${TAB}'!A1:A2`,
+    spreadsheetId: OPS_ID, range: `'${TAB}'!A:A`,
+    valueRenderOption: 'UNFORMATTED_VALUE',
   });
   const vals = headerCheck.data.values || [];
   if (!vals[0] || vals[0][0] !== 'Date' || vals.length < 2) {
@@ -342,8 +344,39 @@ try {
     console.error(`   Smartico pull may have failed. Re-run pull-smartico-campaigns.mjs --write first.`);
     process.exit(4);
   }
+  totalRowsInTab = vals.length; // includes header row
 } catch (e) {
   console.warn(`  (Could not verify tab header: ${e.message}; proceeding with append.)`);
+}
+
+// In overwrite mode (not --append): delete any existing rows for this FT instance
+// before writing fresh data. This prevents duplicates on re-runs.
+if (!APPEND && totalRowsInTab > 1) {
+  const allResp = await sheets.spreadsheets.values.get({
+    spreadsheetId: OPS_ID, range: `'${TAB}'!D:D`, // CRM Tool column
+    valueRenderOption: 'UNFORMATTED_VALUE',
+  });
+  const toolCol = allResp.data.values || [];
+  const rowsToDelete = [];
+  for (let i = 1; i < toolCol.length; i++) { // skip header (row 0)
+    if ((toolCol[i]?.[0] || '') === crmTool) {
+      rowsToDelete.push(i + 1); // 1-based sheet row
+    }
+  }
+  if (rowsToDelete.length > 0) {
+    console.log(`Clearing ${rowsToDelete.length} existing '${crmTool}' rows before re-write...`);
+    const metaR = await sheets.spreadsheets.get({ spreadsheetId: OPS_ID, fields: 'sheets.properties(sheetId,title)' });
+    const gid = metaR.data.sheets.find(s => s.properties.title === TAB).properties.sheetId;
+    rowsToDelete.sort((a, b) => b - a); // bottom-to-top
+    const CHUNK = 500;
+    for (let i = 0; i < rowsToDelete.length; i += CHUNK) {
+      const requests = rowsToDelete.slice(i, i + CHUNK).map(rowNum => ({
+        deleteDimension: { range: { sheetId: gid, dimension: 'ROWS', startIndex: rowNum - 1, endIndex: rowNum } },
+      }));
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: OPS_ID, requestBody: { requests } });
+    }
+    console.log(`  Cleared.`);
+  }
 }
 
 const appendResp = await sheets.spreadsheets.values.append({
