@@ -11,13 +11,14 @@
  * The --write flag appends rows to the Google Sheet (same as pull-ft-campaigns.mjs).
  *
  * REQUIRES: AdsPower must be running with an open, logged-in FT tab for the
- * target instance. SunBrowser CDP port: 53845.
+ * target instance. CDP port is auto-detected from DevToolsActivePort.
  */
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { parseArgs } from './_args.js';
+import { getCdpWsUrl } from './_cdp-url.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
@@ -32,47 +33,46 @@ const INSTANCES = {
 const { host, label } = INSTANCES[INSTANCE] || {};
 if (!host) { console.error('Unknown instance:', INSTANCE); process.exit(1); }
 
-// ── CDP connection (dynamic GUID resolution) ──────────────────────────────────
-// The SunBrowser GUID changes on every AdsPower restart — always probe first.
-const CDP_PORT      = 53845;
-const CDP_FALLBACK  = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
-
-async function getCdpWsUrl() {
-  try {
-    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { webSocketDebuggerUrl } = await res.json();
-    if (webSocketDebuggerUrl) return webSocketDebuggerUrl;
-  } catch (e) {
-    console.warn(`  CDP version probe failed (${e.message}) — using fallback GUID`);
-  }
-  return CDP_FALLBACK;
-}
-
 // ── Browser script (runs inside the FT tab) ───────────────────────────────────
 // Plain function string — no Node.js imports. Uses browser fetch + cookies.
-function buildBrowserScript(year) {
+function buildBrowserScript(year, apiBase) {
   return `(async () => {
     const pt = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('portaltoken='));
     const token = pt ? pt.split('=').slice(1).join('=') : null;
     if (!token) return { error: 'no portaltoken cookie' };
 
+    // API base detected by Node.js side via CDP Network events before this script runs.
+    const API = ${JSON.stringify(apiBase)};
+
     function h() { return { authtoken: token, Accept: 'application/json', 'Content-Type': 'application/json' }; }
 
     async function ftGet(path) {
-      const r = await fetch(path, { credentials: 'include', headers: h() });
+      const r = await fetch(API + path, { credentials: 'include', headers: h() });
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) {
+        const txt = await r.text();
+        if (txt.includes('<!DOCTYPE') || txt.includes('<html')) return { error: 'session_expired', path, status: r.status };
+        throw new Error('non-JSON from ' + path + ': ' + txt.slice(0,120));
+      }
       return r.json();
     }
     async function ftPost(path, body) {
-      const r = await fetch(path, { method: 'POST', credentials: 'include', headers: h(), body: JSON.stringify(body) });
+      const r = await fetch(API + path, { method: 'POST', credentials: 'include', headers: h(), body: JSON.stringify(body) });
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) {
+        const txt = await r.text();
+        if (txt.includes('<!DOCTYPE') || txt.includes('<html')) return { error: 'session_expired', path, status: r.status };
+        throw new Error('non-JSON from ' + path + ': ' + txt.slice(0,120));
+      }
       return r.json();
     }
 
-    const usersData = await ftGet('/crm-api/Authentication/AdminUsers');
+    const usersData = await ftGet('Authentication/AdminUsers');
+    if (usersData.error === 'session_expired') return { error: 'Session expired or not logged in — please log into ' + location.hostname + ' and retry' };
     if (!usersData.Success) return { error: 'AdminUsers: ' + (usersData.Errors?.[0]?.Message || 'failed') };
 
-    const segsData = await ftGet('/crm-api/ActivityManager/Segments/ByCategory/1');
-    const actsData = await ftPost('/crm-api/ActivityManager/Activities/GetActivities', { archived: false, activityTypeId: 1 });
+    const segsData = await ftGet('ActivityManager/Segments/ByCategory/1');
+    const actsData = await ftPost('ActivityManager/Activities/GetActivities', { archived: false, activityTypeId: 1 });
 
     const year = ${JSON.stringify(year)};
     const ytdActs = (actsData?.Data || []).filter(a => {
@@ -85,7 +85,7 @@ function buildBrowserScript(year) {
     for (let i = 0; i < ytdActs.length; i += BATCH) {
       const batch = ytdActs.slice(i, i + BATCH);
       const results = await Promise.all(batch.map(a =>
-        fetch('/crm-api/Changelog/Entity/activity/' + a.ActivityId, { credentials: 'include', headers: h() })
+        fetch(API + 'Changelog/Entity/activity/' + a.ActivityId, { credentials: 'include', headers: h() })
           .then(r => r.json()).catch(() => null)
       ));
       batch.forEach((a, idx) => {
@@ -124,7 +124,7 @@ function buildBrowserScript(year) {
     const segFilters = {};
     for (let j = 0; j < noRegionIds.length; j += 50) {
       try {
-        const gsr = await ftPost('/crm-api/ActivityManager/Segments/GetSelective', noRegionIds.slice(j, j + 50));
+        const gsr = await ftPost('ActivityManager/Segments/GetSelective', noRegionIds.slice(j, j + 50));
         (gsr?.Data || []).forEach(s => { if (s.SegmentFilter) segFilters[String(s.SegmentId)] = s.SegmentFilter; });
       } catch (_) {}
     }
@@ -169,10 +169,60 @@ if (ftPage.url().includes('/login')) {
 }
 
 console.log(`Using FT tab: ${ftPage.url()}`);
+
+// ── Discover the versioned API prefix via CDP network events ──────────────────
+// FT CRM injects a path segment (e.g. /crm-api/x2avv90vh1/) that changes per
+// deployment. We sniff one real API request to extract it, falling back to a
+// direct probe of known candidate prefixes.
+let apiBase = '/crm-api/'; // default fallback
+
+const cdpSession = await ftPage.context().newCDPSession(ftPage);
+await cdpSession.send('Network.enable');
+
+const apiPrefixPromise = new Promise(resolve => {
+  cdpSession.on('Network.requestWillBeSent', ({ request }) => {
+    const m = request.url.match(/\/crm-api\/([a-z0-9]+)\//);
+    if (m) resolve('/crm-api/' + m[1] + '/');
+  });
+  // Resolve with null after 5s if no API call fires
+  setTimeout(() => resolve(null), 5000);
+});
+
+// Trigger a lightweight API call so CDP captures its URL
+await ftPage.evaluate(() => {
+  const pt = document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('portaltoken='));
+  const token = pt ? pt.split('=').slice(1).join('=') : null;
+  // Fire and forget — we only need CDP to see the request
+  fetch('/crm-api/', { credentials: 'include', headers: { authtoken: token } }).catch(() => {});
+}).catch(() => {});
+
+const detected = await apiPrefixPromise;
+await cdpSession.send('Network.disable').catch(() => {});
+await cdpSession.detach().catch(() => {});
+
+if (detected) {
+  apiBase = detected;
+  console.log(`API base detected: ${apiBase}`);
+} else {
+  // Probe candidate prefixes directly
+  console.log('Network sniff timed out — probing known prefixes…');
+  const candidates = await ftPage.evaluate(async () => {
+    return performance.getEntriesByType('resource')
+      .map(e => { const m = e.name.match(/\/crm-api\/([a-z0-9]+)\//); return m ? '/crm-api/' + m[1] + '/' : null; })
+      .filter(Boolean);
+  });
+  if (candidates.length > 0) {
+    apiBase = candidates[0];
+    console.log(`API base from perf entries: ${apiBase}`);
+  } else {
+    console.log(`API base: using fallback ${apiBase}`);
+  }
+}
+
 console.log('Running API calls inside the browser…');
 
 const year = String(new Date().getFullYear());
-const result = await ftPage.evaluate(new Function(`return ${buildBrowserScript(year)}`));
+const result = await ftPage.evaluate(new Function(`return ${buildBrowserScript(year, apiBase)}`));
 
 await browser.close().catch(() => {});
 

@@ -10,6 +10,7 @@ import { chromium } from 'playwright';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
+import { getCdpWsUrl } from './_cdp-url.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE   = flags.instance || 'ws1';
@@ -24,21 +25,6 @@ const INSTANCES = {
 
 const { host, url, label } = INSTANCES[INSTANCE] || {};
 if (!host) { console.error('Unknown instance:', INSTANCE); process.exit(1); }
-
-const CDP_PORT     = 53845;
-const CDP_FALLBACK = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
-
-async function getCdpWsUrl() {
-  try {
-    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { webSocketDebuggerUrl } = await res.json();
-    if (webSocketDebuggerUrl) return webSocketDebuggerUrl;
-  } catch (e) {
-    console.warn(`  CDP version probe failed (${e.message}) — using fallback GUID`);
-  }
-  return CDP_FALLBACK;
-}
 
 console.log('Probing SunBrowser CDP…');
 const cdpWs = await getCdpWsUrl();

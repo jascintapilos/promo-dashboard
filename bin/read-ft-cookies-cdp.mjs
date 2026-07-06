@@ -8,6 +8,7 @@ import { chromium } from 'playwright';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
+import { getCdpWsUrl } from './_cdp-url.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
@@ -21,21 +22,6 @@ const INSTANCES = {
 
 const { host, url, label } = INSTANCES[INSTANCE] || {};
 if (!host) { console.error('Unknown instance:', INSTANCE); process.exit(1); }
-
-const CDP_PORT     = 53845;
-const CDP_FALLBACK = 'ws://127.0.0.1:53845/devtools/browser/f002fadf-3a94-42f2-bf35-e9dde1d58e74';
-
-async function getCdpWsUrl() {
-  try {
-    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { webSocketDebuggerUrl } = await res.json();
-    if (webSocketDebuggerUrl) return webSocketDebuggerUrl;
-  } catch (e) {
-    console.warn(`  CDP version probe failed (${e.message}) — using fallback GUID`);
-  }
-  return CDP_FALLBACK;
-}
 
 console.log(`Probing SunBrowser CDP…`);
 const cdpWs = await getCdpWsUrl();
@@ -58,8 +44,6 @@ allCookies.forEach(c => {
 // (bypasses the MCP extension's security filter — operates directly over CDP)
 let jwtToken = null;
 let lsAll = {};
-const pages = ctx.pages ? ctx.pages() : [];
-const ftPage = pages.find(p => p.url().includes(host));
 if (ftPage) {
   try {
     lsAll = await ftPage.evaluate(() => {
@@ -81,8 +65,7 @@ if (ftPage) {
     console.log('Could not read localStorage:', e.message);
   }
 } else {
-  console.log('\nNo open FT page found in browser context — cannot read localStorage.');
-  console.log('FT pages open:', pages.map(p => p.url()).join(', ') || '(none)');
+  console.log('\nNo open FT page found — cannot read localStorage.');
 }
 
 // Prefer jwttoken over portaltoken as the API auth value
