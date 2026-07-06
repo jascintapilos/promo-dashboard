@@ -20,6 +20,7 @@
 import { cmsClient, loadCmsCreds } from '../src/cms-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
+import { enforceDateFormat } from '../src/sheet-date-format.js';
 import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
@@ -174,12 +175,16 @@ if (errors.length) console.log(`\n⚠ Errors:\n  ${errors.join('\n  ')}`);
 
 if (WRITE && fresh.length) {
   const values = fresh.map((r) => [r.uploaded || ddmmyyyy(new Date(r.start)), r.start, r.brand, r.region, r.title, r.end, r.status, r.creator]);
-  await sheets.spreadsheets.values.append({
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID, range: `'${BANNER_TAB}'!A:H`,
     valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS',
     requestBody: { values },
   });
   console.log(`\n✅ Appended ${values.length} CMS banners to '${BANNER_TAB}'.`);
+
+  // Same append-formatting gap as pull-bo-banners-to-sheet.mjs — force the
+  // date format on exactly the rows just written.
+  await enforceDateFormat(sheets, SHEET_ID, BANNER_TAB, appendRes.data.updates.updatedRange, [0, 1, 5]);
 } else if (!WRITE) {
   console.log(`\n(DRY RUN — nothing written. Re-run with --write to append ${fresh.length} rows.)`);
 }

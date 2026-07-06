@@ -16,11 +16,19 @@ import { getOpsSheetId } from '../src/ops-sheet.js';
 const { sheets } = await getSheetsClient();
 const ID = getOpsSheetId();
 
-// dateFormat: 'dmy' = DD/MM/YYYY → client-side sort (correct)
-//             'iso' = YYYY-MM-DD → API sort (lex-order = correct)
+// dateFormat: 'dmy' = DD/MM/YYYY text → client-side sort (correct)
+//             'iso' = YYYY-MM-DD, or a real numeric/date-typed cell →
+//                     native API sort (lex/numeric order = correct either way)
+//
+// Banner Log holds a genuine DATE-typed value in col A (see
+// src/sheet-date-format.js) — routing it through the 'dmy' client-side path
+// would read the FORMATTED display string and write it back with RAW,
+// permanently flattening the real date into inert text. Native sortRange
+// only reorders rows; it never rewrites cell values, so it's safe for both
+// real dates and lexicographically-sortable ISO text.
 const TABS = [
   { name: 'Promo Code Log',        dateCol: 0, dateFormat: 'dmy' },
-  { name: 'Banner Log',            dateCol: 0, dateFormat: 'dmy' },
+  { name: 'Banner Log',            dateCol: 0, dateFormat: 'iso' },
   { name: 'CRM Assignment Log',    dateCol: 0, dateFormat: 'iso' },
   { name: 'Manual Entry (CRM)',    dateCol: 0, dateFormat: 'dmy' },
   { name: 'Manual Entry (Promo)',  dateCol: 0, dateFormat: 'dmy' },

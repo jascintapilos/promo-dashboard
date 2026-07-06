@@ -22,6 +22,7 @@ import { getAllBanners } from '../src/api-client.js';
 import { QP2_BRAND_TO_IDS } from '../src/api-mapper-qp2.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
+import { enforceDateFormat } from '../src/sheet-date-format.js';
 import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
@@ -142,9 +143,37 @@ try {
 // ── Dedupe against Banner Log ─────────────────────────────────────────────
 const { sheets } = await getSheetsClient();
 
+// Normalise a date value (serial number, DD/MM/YYYY, D/M/YYYY, or ISO) to
+// DD/MM/YYYY for consistent dedup key comparison.
+function normaliseDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  // Excel/Sheets serial number (e.g. 46201)
+  if (/^\d{4,6}$/.test(s)) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Number(s) * 864e5);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+  }
+  // Already DD/MM/YYYY or D/M/YYYY → normalise with leading zeros
+  const dm = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dm) {
+    const p = (n) => String(Number(n)).padStart(2, '0');
+    return `${p(dm[1])}/${p(dm[2])}/${dm[3]}`;
+  }
+  // ISO YYYY-MM-DD
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return s;
+}
+
 async function readBannerLogKeys() {
   try {
-    const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `'${BANNER_TAB}'!A:G` });
+    // Use UNFORMATTED_VALUE to get raw serial numbers — avoids locale/format mismatch
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${BANNER_TAB}'!A:G`,
+      valueRenderOption: 'UNFORMATTED_VALUE',
+    });
     const rows = res.data.values || [];
     const hdr = rows[0] || [];
     const cTitle = hdr.findIndex((c) => /banner.?title/i.test(String(c)));
@@ -152,7 +181,9 @@ async function readBannerLogKeys() {
     const cStart = hdr.findIndex((c) => /^start/i.test(String(c)));
     const keys = new Set();
     for (const r of rows.slice(1)) {
-      const title = (r[cTitle] || '').trim(), brand = (r[cBrand] || '').trim(), start = (r[cStart] || '').trim();
+      const title = (r[cTitle] || '').trim();
+      const brand = (r[cBrand] || '').trim();
+      const start = normaliseDate(r[cStart]);
       if (title) keys.add(`${title}|||${brand}|||${start}`);
     }
     return keys;
@@ -164,7 +195,7 @@ const known = await readBannerLogKeys();
 const fresh = [], dupes = [], junkSkipped = [];
 for (const row of collected) {
   if (JUNK_RX.test(row.title)) { junkSkipped.push(row); continue; }
-  (known.has(`${row.title}|||${row.brand}|||${row.start}`) ? dupes : fresh).push(row);
+  (known.has(`${row.title}|||${row.brand}|||${normaliseDate(row.start)}`) ? dupes : fresh).push(row);
 }
 
 // ── Report ────────────────────────────────────────────────────────────────
@@ -183,7 +214,7 @@ if (errors.length) console.log(`\n⚠ Errors:\n  ${errors.join('\n  ')}`);
 // ── Write ─────────────────────────────────────────────────────────────────
 if (WRITE && fresh.length) {
   const values = fresh.map((r) => [r.uploaded, r.start, r.brand, r.region, r.title, r.end, r.status, r.uploadedBy]);
-  await sheets.spreadsheets.values.append({
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `'${BANNER_TAB}'!A:H`,
     valueInputOption: 'USER_ENTERED',
@@ -191,6 +222,11 @@ if (WRITE && fresh.length) {
     requestBody: { values },
   });
   console.log(`\n✅ Appended ${values.length} rows directly to '${BANNER_TAB}'.`);
+
+  // Appended rows are brand-new grid rows and don't inherit column date
+  // formatting — Sheets types the date strings as serials but displays them
+  // as bare numbers. Force the date format on exactly the rows just written.
+  await enforceDateFormat(sheets, SHEET_ID, BANNER_TAB, appendRes.data.updates.updatedRange, [0, 1, 5]);
 } else if (!WRITE) {
   console.log(`\n(DRY RUN — re-run with --write to append ${fresh.length} new rows to '${BANNER_TAB}'.)`);
 }
