@@ -165,7 +165,9 @@ if (!SKIP_IGMP) {
       const all = [];
       for (let pg = 1; pg <= 40; pg++) {
         const r = await igmpPost(siteId, `/PM/GetPromotionsList?pageNum=${pg}&rowPerPage=200`,
-          { PromotionCode: '', PromotionName: '', PromotionType: 0, IsActive: '', IsPublished: '' });
+          // PromotionType MUST be '' (all types) — 0 silently filters to Bonus-only
+          // and drops every FreeCredit/FreeSpin promo (confirmed live 2026-07-05).
+          { PromotionCode: '', PromotionName: '', PromotionType: '', IsActive: '', IsPublished: '' });
         const rows = r?.data || [];
         if (!rows.length) break;
         all.push(...rows);
