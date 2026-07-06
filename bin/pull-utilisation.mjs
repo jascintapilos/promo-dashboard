@@ -40,6 +40,7 @@ const TRACKERS = [
   { name: 'Gaby',     id: '1s9Pw3nretdNlsRoMRnBC5SLUa_wpxIQoQuGjsNGxKFU', region: 'ID' },
   { name: 'Bangun',   id: '1EPtu6NUWj-rKBGdHQy8CafzpNbFP1Zca5z6n5G2EoQk', region: 'ID' },
   { name: 'Michelle', id: '1tBdE9qJO77_VckO-FU2DYIF-jaHnMig6H8KWgOyImjw', region: 'MY', resigned: true },
+  { name: 'Kasturi',  id: '15uFk1o8orzisTR4HxwIkvqOre2SwvQtiQMhfdVx7MEY', region: 'MY', startDate: '2026-07-01' },
 ];
 
 // Unrecorded personal leave days confirmed via TG morning-chain absence + Slack cross-check.
@@ -106,9 +107,9 @@ const PH_WEEKDAYS = {
 };
 
 // Count Mon–Fri weekdays from startDate to endDate (inclusive) × 8hrs.
-// endDate defaults to today.
+// endDate defaults to lastBizDay (today excluded — day isn't complete yet).
 function weekdayHoursSince(startDate, endDate) {
-  const end = new Date(endDate || new Date()); end.setHours(0,0,0,0);
+  const end = new Date(endDate || lastBizDay); end.setHours(0,0,0,0);
   const start = new Date(startDate); start.setHours(0,0,0,0);
   let days = 0;
   for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -118,15 +119,24 @@ function weekdayHoursSince(startDate, endDate) {
   return days * 8;
 }
 
-// Count PH dates in this region between startKey and endKey (defaults to today).
+// Count PH dates in this region between startKey and endKey (defaults to lastBizDay).
 function phDaysTaken(region, startKey, endKey) {
-  const limitKey = endKey || dateKey(new Date());
+  const limitKey = endKey || dateKey(lastBizDay);
   const set = PH_WEEKDAYS[region] || new Set();
   return [...set].filter(d => d >= startKey && d <= limitKey).length;
 }
 
 const today = new Date();
 const YEAR = today.getFullYear();
+
+// Denominator ceiling = last completed business day (today isn't done yet).
+// Today is excluded so a Monday pull doesn't add 8h that haven't been worked.
+const lastBizDay = (() => {
+  const d = new Date(today); d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+  return d;
+})();
 
 // Month tab matching: returns all tab names that belong to the current year
 const MONTH_ABBR = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
@@ -180,7 +190,7 @@ function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFro
   const result = new Map();
   const phSet = PH_WEEKDAYS[region] || new Set();
   const start = new Date(startDate); start.setHours(0, 0, 0, 0);
-  const end = endDate ? new Date(endDate) : new Date(today); end.setHours(0, 0, 0, 0);
+  const end = endDate ? new Date(endDate) : new Date(lastBizDay); end.setHours(0, 0, 0, 0);
   // Start from the Monday of the week that contains startDate
   const cur = new Date(start);
   const dow0 = cur.getDay();
@@ -350,7 +360,8 @@ async function getUtilisation(tracker) {
     //   - their last logged date (if resigned)
     //   - today (if active)
     // PHs and AL are only counted within that window.
-    const startDate = personMinDate || new Date(today.getFullYear(), 0, 1);
+    const startDate = tracker.startDate ? new Date(tracker.startDate)
+                    : personMinDate || new Date(today.getFullYear(), 0, 1);
     const endDate   = tracker.resigned && personMaxDate ? personMaxDate : null; // null = today
     const startKey  = dateKey(startDate);
     const endKey    = endDate ? dateKey(endDate) : null;
