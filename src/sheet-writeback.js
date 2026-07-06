@@ -21,7 +21,10 @@ export async function writebackPromoFields(resolved) {
   }
 
   const client = await getSheetsClient();
-  const tab = await resolveCurrentMonthTab(client);
+  // Prefer the tab the request was ingested from over "current month" —
+  // otherwise a retroactive fix for a past-month request corrupts a
+  // same-numbered row in whatever tab is current today.
+  const tab = resolved.source_tab || await resolveCurrentMonthTab(client);
   const header = await readHeader(client, tab);
   const colMap = detectColumnMapFromHeader(header);
 

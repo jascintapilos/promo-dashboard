@@ -311,7 +311,11 @@ if (commit && anySucceeded && hasValues && request.source_line) {
     const { getSheetsClient, resolveCurrentMonthTab, readHeader,
             detectColumnMapFromHeader, writeFields } = await import('../src/sheets-client.js');
     const c = await getSheetsClient();
-    const tab = await resolveCurrentMonthTab(c);
+    // Use the tab the request was actually ingested from — NOT "current
+    // month". Retroactively fixing a past-month request (e.g. re-canarying
+    // a June request in July) must write back to June, or it silently
+    // corrupts a same-numbered row in the current month's tab.
+    const tab = request.source_tab || await resolveCurrentMonthTab(c);
     const header = await readHeader(c, tab);
     const colMap = detectColumnMapFromHeader(header);
     const res = await writeFields(c, tab, request.source_line, valuesByField, colMap);

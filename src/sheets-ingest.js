@@ -71,6 +71,12 @@ export async function ingestCurrentMonthFromSheet({
     if (!cells || cells.length === 0) continue;
     const rec = rowToRecord(cells, colMap, sheetRowNum);
     if (!rec) continue;
+    // Remember which tab this record came from — writeback must target the
+    // SAME tab, not "whatever month it is today". Without this, fixing a
+    // request from a past month (e.g. re-canarying a June request in July)
+    // silently writes into the current month's tab at the same row number,
+    // corrupting an unrelated row. See project_sheet_writeback_tab_bug.md.
+    rec.source_tab = tab;
     if (onlyQcCompleted && !/qc.*complete/i.test(rec.status)) continue;
     // Auto-name: if the operator left promo_code blank, derive from
     // bonus_type + parsed.* + instructions. Don't clobber existing values.
