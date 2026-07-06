@@ -10,14 +10,16 @@
 //   findNextSlots(count)           → Slot[]  (pre-populated OR auto-created IDs)
 //   addBannerEntries(entry)        → SavedSlot[]
 //
-// Column layout (confirmed from sheet UI):
-//   A  Banner ID          D  Status              H  Platform / Placement
-//   B  Campaign Title     E  Requestor            I  Start Date
-//   C  (hidden column)    F  Type of Promotion    J  End Date
-//                         G  Backoffice / Brand   K  Banner Link
-//                                                 L  T&C Link
-//                                                 M  Ready Date
-//                                                 N  Remarks
+// Column layout (confirmed from live sheet header row A1:L1):
+//   A  Banner ID          E  PIC                  I  Start Date
+//   B  Campaign Title     F  Type of Promotion    J  End Date
+//   C  Status             G  Backoffice / Brand   K  Banner Link
+//   D  Requestor          H  Platform / Placement L  T&C Link
+//   (M/N unlabeled — used locally for Ready Date / Remarks)
+//   NOTE: there is NO "Promo Drafts Link" column. An earlier version of this
+//   client assumed a hidden column C, which shifted every write one column to
+//   the right (Status→D, Requestor→E=PIC, etc.). Keep this map matched to the
+//   real header row.
 
 import { getSheetsClient } from './sheets-client.js';
 
@@ -28,24 +30,24 @@ const DATA_START_ROW = 2;   // Row 1 is the header
 const MAX_SCAN_ROWS  = 500; // Safety cap for reads
 
 // Fixed column letters
-// A=Banner ID, B=Campaign Title, C=Promo Drafts Link, D=Status, E=Requestor,
-// F=PIC (left blank for bot entries), G=Type of Promotion, H=Backoffice/Brand,
-// I=Platform/Placement, J=Start Date, K=End Date, L=Banner Link, M=T&C Link
+// A=Banner ID, B=Campaign Title, C=Status, D=Requestor, E=PIC (left blank for
+// bot entries), F=Type of Promotion, G=Backoffice/Brand, H=Platform/Placement,
+// I=Start Date, J=End Date, K=Banner Link, L=T&C Link
 const COL = {
   banner_id:      'A',
   campaign_title: 'B',
-  status:         'D',
-  requestor:      'E',
-  // F = PIC — never written by code; left blank for automated entries
-  type:           'G',
-  brand:          'H',
-  platform:       'I',
-  start_date:     'J',
-  end_date:       'K',
-  banner_link:    'L',
-  tnc_link:       'M',
-  ready_date:     'N',
-  remarks:        'O',
+  status:         'C',
+  requestor:      'D',
+  // E = PIC — never written by code; left blank for automated entries
+  type:           'F',
+  brand:          'G',
+  platform:       'H',
+  start_date:     'I',
+  end_date:       'J',
+  banner_link:    'K',
+  tnc_link:       'L',
+  ready_date:     'M',
+  remarks:        'N',
 };
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -65,20 +67,20 @@ export async function readAllEntries() {
   return rows
     .map((row, i) => ({
       row:             DATA_START_ROW + i,
-      banner_id:       (row[0]  ?? '').toString().trim(),
-      campaign_title:  (row[1]  ?? '').toString().trim(),
-      status:          (row[3]  ?? '').toString().trim(),
-      requestor:       (row[4]  ?? '').toString().trim(),
-      // row[5] = F = PIC (not mapped)
-      type:            (row[6]  ?? '').toString().trim(),
-      brand:           (row[7]  ?? '').toString().trim(),
-      platform:        (row[8]  ?? '').toString().trim(),
-      start_date:      (row[9]  ?? '').toString().trim(),
-      end_date:        (row[10] ?? '').toString().trim(),
-      banner_link:     (row[11] ?? '').toString().trim(),
-      tnc_link:        (row[12] ?? '').toString().trim(),
-      ready_date:      (row[13] ?? '').toString().trim(),
-      remarks:         (row[14] ?? '').toString().trim(),
+      banner_id:       (row[0]  ?? '').toString().trim(),  // A
+      campaign_title:  (row[1]  ?? '').toString().trim(),  // B
+      status:          (row[2]  ?? '').toString().trim(),  // C
+      requestor:       (row[3]  ?? '').toString().trim(),  // D
+      // row[4] = E = PIC (not mapped)
+      type:            (row[5]  ?? '').toString().trim(),  // F
+      brand:           (row[6]  ?? '').toString().trim(),  // G
+      platform:        (row[7]  ?? '').toString().trim(),  // H
+      start_date:      (row[8]  ?? '').toString().trim(),  // I
+      end_date:        (row[9]  ?? '').toString().trim(),  // J
+      banner_link:     (row[10] ?? '').toString().trim(),  // K
+      tnc_link:        (row[11] ?? '').toString().trim(),  // L
+      ready_date:      (row[12] ?? '').toString().trim(),  // M
+      remarks:         (row[13] ?? '').toString().trim(),  // N
     }))
     .filter(e => e.banner_id !== '');
 }
