@@ -33,20 +33,17 @@ echo [6b/12] Pulling Smartico CRM segments + activities into CRM Assignment Log.
 node bin\pull-smartico-campaigns.mjs --write --no-preserve >> %LOG% 2>&1
 if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs smartico "Smartico CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs smartico "Smartico CRM" FAILED "exit %ERRORLEVEL%" >> %LOG% 2>&1 & echo SMARTICO PULL FAILED (exit %ERRORLEVEL%) >> %LOG%)
 
-echo [7/12] Pulling FastTrack WS1 CRM segments (via AdsPower browser relay)... >> %LOG%
-echo   REQUIRES: AdsPower open with logged-in FT tab for mb8.ft-crm.com >> %LOG%
-node bin\pull-ft-via-browser.mjs --instance=ws1 --write >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" FAILED "exit %ERRORLEVEL% - open AdsPower FT tab and log in" >> %LOG% 2>&1 & echo FT WS1 PULL FAILED >> %LOG%)
+echo [7/12] Pulling FastTrack WS1 CRM segments (headless, unattended)... >> %LOG%
+node bin\pull-ft-headless.mjs --instance=ws1 --write >> %LOG% 2>&1
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-ws1 "FT WS1/WS2 CRM" FAILED "exit %ERRORLEVEL% - try node bin\pull-ft-via-browser.mjs --instance=ws1 --write with AdsPower open" >> %LOG% 2>&1 & echo FT WS1 PULL FAILED >> %LOG%)
 
-echo [8/12] Pulling FastTrack QPRO1 CRM segments (via AdsPower browser relay)... >> %LOG%
-echo   REQUIRES: AdsPower open with logged-in FT tab for alpha-iota-qp1.ft-crm.com >> %LOG%
-node bin\pull-ft-via-browser.mjs --instance=qpro1 --write >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" FAILED "exit %ERRORLEVEL% - open AdsPower FT tab and log in" >> %LOG% 2>&1 & echo FT QPRO1 PULL FAILED >> %LOG%)
+echo [8/12] Pulling FastTrack QPRO1 CRM segments (headless, unattended)... >> %LOG%
+node bin\pull-ft-headless.mjs --instance=qpro1 --write >> %LOG% 2>&1
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qpro1 "FT QPRO1 CRM" FAILED "exit %ERRORLEVEL% - try node bin\pull-ft-via-browser.mjs --instance=qpro1 --write with AdsPower open" >> %LOG% 2>&1 & echo FT QPRO1 PULL FAILED >> %LOG%)
 
-echo [9/12] Pulling FastTrack QP2 CRM segments (via AdsPower browser relay)... >> %LOG%
-echo   REQUIRES: AdsPower open with logged-in FT tab for alpha-iota-qp2.ft-crm.com >> %LOG%
-node bin\pull-ft-via-browser.mjs --instance=qp2 --write >> %LOG% 2>&1
-if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" FAILED "exit %ERRORLEVEL% - open AdsPower FT tab and log in" >> %LOG% 2>&1 & echo FT QP2 PULL FAILED >> %LOG%)
+echo [9/12] Pulling FastTrack QP2 CRM segments (headless, unattended)... >> %LOG%
+node bin\pull-ft-headless.mjs --instance=qp2 --write >> %LOG% 2>&1
+if %ERRORLEVEL% equ 0 (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" OK >> %LOG% 2>&1) else (node bin\record-pull-status.mjs ft-qp2 "FT QP2A-D CRM" FAILED "exit %ERRORLEVEL% - try node bin\pull-ft-via-browser.mjs --instance=qp2 --write with AdsPower open" >> %LOG% 2>&1 & echo FT QP2 PULL FAILED >> %LOG%)
 
 echo [10/12] Pulling adhoc tasks from Slack into Adhoc Tasks tab... >> %LOG%
 node bin\pull-adhoc-tasks.mjs --commit >> %LOG% 2>&1
