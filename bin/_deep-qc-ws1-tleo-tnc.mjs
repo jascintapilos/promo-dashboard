@@ -102,6 +102,17 @@ for (const site of SITES) {
       if (!en || enText.length < 40) issues.push('L1: EN content missing/trivial');
       if (!zh || zhText.length < 40) issues.push('L1: ZH content missing/trivial');
 
+      // Q1 QPRO/QP2-template leak on WS1 (reference-inbox-tnc-docs): WS1/WS2
+      // must be the 5-clause format; QPRO/QP2's 8-clause format has a unique
+      // "Refresh button" reminder clause that never belongs on WS1. Found
+      // 2026-07-06: 3 codes (LC_20PCT_100MX, LC_45PCT_138MX_BR,
+      // LC_45PCT_48MX_BR) had this on BOTH sites — SG was manually corrected
+      // by the operator same-day, MY was NOT (still broken as of this check).
+      // Previously misclassified by this auditor as a harmless "newer
+      // template" — it is a real defect, not a valid variant.
+      if (en && /Refresh button/i.test(enText)) issues.push('Q1: EN contains QPRO/QP2-style "Refresh button" clause — wrong platform template, WS1 must use the 5-clause format');
+      if (zh && /刷新按钮/.test(zhText)) issues.push('Q1: ZH contains QPRO/QP2-style "刷新按钮" (Refresh button) clause — wrong platform template');
+
       const cap = Number(rew.CapBonusAmount);
       const minDep = Number(rew.MinimumActionAmount);
       const to = Number(rew.RolloverMultiplier);
