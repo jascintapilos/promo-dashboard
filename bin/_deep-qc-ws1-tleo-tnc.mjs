@@ -35,10 +35,13 @@ const SITES = [
 
 const strip = (html) => (html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
-function categoryFromCode(code) {
+// TLEO family convention (promo request sheet Apr/May 2026, col M):
+// _LC token = Live Casino only; _SL/_SLOT = Slots only; reload with NO
+// token = Slots only (NOT all-games); FC codes = Slots and LC only.
+function categoryFromCode(code, isFc) {
+  if (isFc) return 'SLOTLC';
   if (/_LC(_|$)/i.test(code)) return 'LC';
-  if (/_SL(_|$)|_SLOT(_|$)/i.test(code)) return 'SLOT';
-  return 'ALL';
+  return 'SLOT';
 }
 
 function clause(text, n) {
@@ -108,22 +111,6 @@ for (const site of SITES) {
         }
         if (to && !new RegExp(`\\b${to}x`).test(enText)) issues.push(`N1: EN missing ${to}x turnover`);
         if (to && zh && !new RegExp(`${to}x`).test(zhText)) issues.push(`N1: ZH missing ${to}x turnover`);
-        // C1 category restriction — legacy 5-clause format has it at clause 3,
-        // newer 8-clause format at clause 4; scan the full clause text and
-        // guard against the CONFLICTING scope also being present.
-        const catExp = categoryFromCode(code);
-        const enOk = catExp === 'LC'
-          ? /Live Casino/i.test(enText) && /Blackjack/i.test(enText) && !/all game categories/i.test(enText)
-          : catExp === 'SLOT'
-            ? /(Slots only|are Slots)/i.test(enText) && !/all game categories/i.test(enText)
-            : /all game categories/i.test(enText) && /Virtual Sports/i.test(enText);
-        const zhOk = !zh ? false : catExp === 'LC'
-          ? /真人娱乐/.test(zhText) && !/所有游戏/.test(zhText)
-          : catExp === 'SLOT'
-            ? /老虎机/.test(zhText) && !/所有游戏/.test(zhText)
-            : /所有游戏/.test(zhText);
-        if (!enOk) issues.push(`C1: EN category restriction ≠ ${catExp} — clause3="${clause(enText, 3).slice(0, 60)}" clause4="${clause(enText, 4).slice(0, 60)}"`);
-        if (zh && !zhOk) issues.push(`C1: ZH category restriction ≠ ${catExp} — clause3="${clause(zhText, 3).slice(0, 40)}" clause4="${clause(zhText, 4).slice(0, 40)}"`);
         // V1 validity (warn)
         const vm = clause(enText, 1).match(/valid for (\d+) day/);
         const expDays = rew.ExpiryMinutes ? Math.round(rew.ExpiryMinutes / 1440) : null;
@@ -136,6 +123,25 @@ for (const site of SITES) {
         // F1 FC amount + turnover
         if (fixed && !new RegExp(`\\b${fixed}\\b`).test(enText)) issues.push(`F1: EN missing FC amount ${fixed}`);
         if (to && !new RegExp(`\\b${to}x`).test(enText)) issues.push(`F1: EN missing ${to}x turnover`);
+      }
+
+      // C1 category restriction (all types) — legacy 5-clause format has it
+      // at clause 3, newer 8-clause format at clause 4; scan the full text
+      // and guard against the CONFLICTING scope also being present.
+      if (en) {
+        const catExp = categoryFromCode(code, isFc);
+        const enOk = catExp === 'LC'
+          ? /Live Casino/i.test(enText) && /Blackjack/i.test(enText) && !/all game categories/i.test(enText)
+          : catExp === 'SLOTLC'
+            ? /Slots and Live Casino only/i.test(enText) && !/all game categories/i.test(enText)
+            : /(Slots only|are Slots)/i.test(enText) && !/all game categories/i.test(enText) && !/Live Casino/i.test(enText);
+        const zhOk = !zh ? false : catExp === 'LC'
+          ? /真人娱乐/.test(zhText) && !/所有游戏/.test(zhText)
+          : catExp === 'SLOTLC'
+            ? /老虎机游戏及真人娱乐场/.test(zhText) && !/所有游戏/.test(zhText)
+            : /老虎机/.test(zhText) && !/所有游戏/.test(zhText) && !/真人娱乐/.test(zhText);
+        if (!enOk) issues.push(`C1: EN category restriction ≠ ${catExp} — clause3="${clause(enText, 3).slice(0, 60)}" clause4="${clause(enText, 4).slice(0, 60)}"`);
+        if (zh && !zhOk) issues.push(`C1: ZH category restriction ≠ ${catExp} — clause3="${clause(zhText, 3).slice(0, 40)}" clause4="${clause(zhText, 4).slice(0, 40)}"`);
       }
 
       // X1 currency
