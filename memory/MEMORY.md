@@ -74,6 +74,7 @@
 
 ## IGMP / WS1
 - [IGMP GetPromotionsList misses FreeCredit promos](feedback_igmp_list_misses_freecredit.md) — PromotionType:0 body param = Bonus-only filter (use '' for all types); exact-code checks use GetPromotionInfoByCode; T&C rows via GetPromotionRewardContents.
+- [UpdatePromotionRewardDetails wipes reward T&C](feedback_igmp_reward_details_put_wipes_tnc.md) — IGMP reward-detail PUT silently deletes PromotionRewardContents; read contents before, re-post after, verify. UpdatePromotionDetails is safe.
 - [WS1/WS2 RedemptionType rule](feedback_igmp_redemption_type_rule.md) — min_deposit=0 → Claim (1); min_deposit>0 → Deposit (0). All bonus types.
 - [WS1 FC ExpiryMinutes = claim window](feedback_igmp_fc_expiry_minutes.md) — ExpiryMinutes = rewards_validity_days x 1440. EffectiveMinutes is always 1.
 - [WS1 FC T&C no withdrawal clause when no cap](feedback_igmp_tnc_no_withdrawal_clause.md) — maxXfer=0 = omit clause 1 entirely; renumber 1-5.

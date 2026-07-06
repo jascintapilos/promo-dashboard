@@ -9,8 +9,8 @@ metadata:
 
 Deep QC of TLEO reward T&C (2026-07-06, `bin/_deep-qc-ws1-tleo-tnc.mjs` + 2 Sentinel agents): **T&C content verified correct 54/54 on BOTH WS1 MY and SG** — category clauses match code tokens (LC→Live Casino excl. Blackjack, SL/SLOT→Slots excl. Arcade/Table, else all-categories excl. Blackjack+Virtual Sports), titles match live rates, stats numbers match live economics, currency/links per-site correct. Note: TLEO T&C exist in TWO formats — legacy 5-clause (category at clause 3) and newer 8-clause (category at clause 4, rids MY 15190-15192 / SG 13026-13028); QC must scan full text, not clause position.
 
-**OPEN findings (names, not T&C):**
-1. **WS1 SG — 5 wrong-rate names (worst):** FT_REL_TLEO_20PCT_300MX_BR (pid 2817), 20PCT_400MX_BR (2818), LC_20PCT_20MX_BR (2822), LC_20PCT_300MX_BR (2823), LC_20PCT_400MX_BR (2824) — PromotionName + RewardName = "Time Limited Exclusive Offer - 45% Reload Bonus" but live pct=20. Wrong-reward risk for Manual Reward team.
+**Findings:**
+1. **FIXED 2026-07-06** (bin/_fix-sg-tleo-wrong-rate-names.mjs — renamed to MY-twin names; the reward-detail PUT wiped their T&C, restored via bin/_restore-sg-tleo-tnc-5.mjs, see [[feedback-igmp-reward-details-put-wipes-tnc]]; deep-QC 54/54 PASS both sites after): FT_REL_TLEO_20PCT_300MX_BR (pid 2817), 20PCT_400MX_BR (2818), LC_20PCT_20MX_BR (2822), LC_20PCT_300MX_BR (2823), LC_20PCT_400MX_BR (2824) — PromotionName + RewardName = "Time Limited Exclusive Offer - 45% Reload Bonus" but live pct=20. Wrong-reward risk for Manual Reward team.
 2. **WS1 SG — names never deduped:** "20% Reload Bonus" ×17, "TLEO 45%" ×14, "45%" ×9 etc. The 2026-07-04 uniqueness pass was MY-only.
 3. **WS1 MY + SG — FC BR pairs share names:** FT_TLEO_FC228/458/888_10X vs _BR → "Exclusive Offer - N Free Credit" ×2 each (FC codes were invisible to the Bonus-only listing used by the original dedupe).
 
