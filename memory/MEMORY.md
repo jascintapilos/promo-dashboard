@@ -77,6 +77,7 @@
 - [UpdatePromotionRewardDetails wipes reward T&C](feedback_igmp_reward_details_put_wipes_tnc.md) — IGMP reward-detail PUT silently deletes PromotionRewardContents; read contents before, re-post after, verify. UpdatePromotionDetails is safe.
 - [WS1/WS2 RedemptionType rule](feedback_igmp_redemption_type_rule.md) — min_deposit=0 → Claim (1); min_deposit>0 → Deposit (0). All bonus types.
 - [WS1 FC ExpiryMinutes = claim window](feedback_igmp_fc_expiry_minutes.md) — ExpiryMinutes = rewards_validity_days x 1440. EffectiveMinutes is always 1.
+- [WS1 FC expiry lives on outer wrapper, not reward object](feedback_igmp_fc_expiry_outer_wrapper.md) — data.ExpiryMinutes (outer), NOT PromotionRewards[0].ExpiryMinutes (always 0). QC E1 check added 2026-07-06.
 - [WS1 FC T&C no withdrawal clause when no cap](feedback_igmp_tnc_no_withdrawal_clause.md) — maxXfer=0 = omit clause 1 entirely; renumber 1-5.
 - [WS1 FC has no separate MT](feedback_igmp_ws1_no_mt.md) — T&C embedded in PromotionRewardContents. Inbox is manual (NM module).
 - [UpdateBonusDetails RedeemableDay must be "0,1,2,3,4,5,6" string](feedback_igmp_redeemable_day_all_days.md) — Never int 0. Read from GetBonusInfo and pass through.

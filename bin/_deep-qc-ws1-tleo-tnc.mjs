@@ -13,6 +13,13 @@
 //     V1  clause-1 validity days == ExpiryMinutes/1440 (WARN only)
 //   FreeCredit:
 //     F1  FixedBonusAmount + ROx turnover present in EN
+//     E1  clause-2 "valid for N day(s)" == outer.ExpiryMinutes/1440 (FAIL —
+//         real claim-window promise vs enforcement; the reward-level
+//         rew.ExpiryMinutes field is always 0 for FreeCredit and must NOT be
+//         used — the live value lives on the OUTER GetFreeCreditInfo
+//         response, sibling to Promotion. Found 2026-07-06: SG's 12 TLEO FC
+//         promos had ExpiryMinutes=0 (no enforced claim window) while their
+//         T&C promised "valid for 1 day" — operator had fixed MY only.
 //   All:
 //     L1  locales en+zh both non-trivial
 //     X1  currency: no SGD anywhere on MY; RM present (MY)
@@ -80,7 +87,8 @@ for (const site of SITES) {
 
     try {
       const det = await igmpPost(site.siteId, detailEndpoint, { PromotionId: p.PromotionId });
-      const promo = det?.data?.Promotion || det?.data;
+      const outer = det?.data;
+      const promo = outer?.Promotion || outer;
       const rew = promo?.PromotionRewards?.[0];
       if (!rew?.RewardId) throw new Error('no PromotionRewards[0]');
       const ct = await igmpPost(site.siteId, '/PM/GetPromotionRewardContents', { RewardId: rew.RewardId });
@@ -123,6 +131,14 @@ for (const site of SITES) {
         // F1 FC amount + turnover
         if (fixed && !new RegExp(`\\b${fixed}\\b`).test(enText)) issues.push(`F1: EN missing FC amount ${fixed}`);
         if (to && !new RegExp(`\\b${to}x`).test(enText)) issues.push(`F1: EN missing ${to}x turnover`);
+        // E1 claim-window: outer.ExpiryMinutes (NOT rew.ExpiryMinutes, which
+        // is always 0 for FreeCredit) must match the "valid for N day(s)"
+        // clause — otherwise the T&C promises an expiry the system won't
+        // enforce (or vice versa).
+        const em = clause(enText, 2).match(/valid for (\d+) day/i) || enText.match(/valid for (\d+) day/i);
+        const liveExpDays = Number.isFinite(outer?.ExpiryMinutes) ? outer.ExpiryMinutes / 1440 : null;
+        if (em && !outer?.ExpiryMinutes) issues.push(`E1: T&C says "valid for ${em[1]} day(s)" but outer.ExpiryMinutes=${outer?.ExpiryMinutes ?? 'missing'} — NO claim window enforced`);
+        else if (em && liveExpDays !== null && Number(em[1]) !== liveExpDays) issues.push(`E1: T&C says "valid for ${em[1]} day(s)" but outer.ExpiryMinutes=${outer.ExpiryMinutes} (${liveExpDays}d)`);
       }
 
       // C1 category restriction (all types) — legacy 5-clause format has it
@@ -174,7 +190,7 @@ for (const site of SITES) {
 
       bundle.push({
         code, pid: p.PromotionId, rid: rew.RewardId, type: p.PromotionType, active: p.IsActive,
-        live: { minDep, cap, to, pct, fixed, expiryMinutes: rew.ExpiryMinutes },
+        live: { minDep, cap, to, pct, fixed, expiryMinutes: isFc ? outer?.ExpiryMinutes : rew.ExpiryMinutes },
         names: { promotionName: promo.PromotionName, rewardName: rew.RewardName },
         categoryExpected: isFc ? null : categoryFromCode(code),
         clause3: isFc ? null : { en: clause(enText, 3), zh: clause(zhText, 3) },
