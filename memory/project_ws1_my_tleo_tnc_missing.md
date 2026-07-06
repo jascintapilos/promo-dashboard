@@ -1,6 +1,6 @@
 ---
 name: project-ws1-my-tleo-tnc-missing
-description: "WS1 MY TLEO reward T&C backfilled 2026-07-06 (41/42 via SG clone); FT_REL_TLEO_45PCT_458MX still open (cap 450 vs 458 mismatch)."
+description: "WS1 MY TLEO reward T&C fully backfilled 2026-07-06 (42/42 via SG clone); 458MX cap corrected 450->458."
 metadata: 
   node_type: memory
   type: project
