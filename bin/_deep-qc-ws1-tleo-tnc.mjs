@@ -152,6 +152,11 @@ for (const site of SITES) {
         if (capTok && Number(capTok[1]) !== cap) issues.push(`K1: ${field} says CAP${capTok[1]} but live cap=${cap}`);
         const minTok = (name || '').match(/MIN(\d+)/);
         if (minTok && Number(minTok[1]) !== minDep) issues.push(`K1: ${field} says MIN${minTok[1]} but live minDep=${minDep}`);
+        // K2: rate/amount in the display name must match live config
+        const rateTok = (name || '').match(/(\d+)%/);
+        if (rateTok && !isFc && pct && Number(rateTok[1]) !== pct) issues.push(`K2: ${field} "${name}" says ${rateTok[1]}% but live pct=${pct}`);
+        const fcTok = (name || '').match(/(\d+)\s*Free Credit/i);
+        if (fcTok && isFc && fixed && Number(fcTok[1]) !== fixed) issues.push(`K2: ${field} "${name}" says ${fcTok[1]} FC but live amount=${fixed}`);
       }
       // K1b code CAP/MX token vs live cap
       const codeCap = code.match(/(\d+)MX/);
@@ -178,6 +183,24 @@ for (const site of SITES) {
       fail++;
       console.log(`  ✗ ${code}: ${(e.message || e).slice(0, 100)}`);
       bundle.push({ code, pid: p.PromotionId, error: String(e.message || e).slice(0, 200) });
+    }
+  }
+
+  // D1: duplicate PromotionName / RewardName within the TLEO set (Manual
+  // Reward dropdown is keyed on RewardName — feedback-ws1-ws2-unique-promo-name)
+  for (const field of ['promotionName', 'rewardName']) {
+    const byName = new Map();
+    for (const b of bundle) {
+      const n = (b.names?.[field] || '').trim();
+      if (!n) continue;
+      (byName.get(n) || byName.set(n, []).get(n)).push(b.code);
+    }
+    const dups = [...byName.entries()].filter(([, l]) => l.length > 1);
+    if (dups.length) {
+      console.log(`\n  D1: duplicate ${field}s within TLEO set:`);
+      dups.forEach(([n, l]) => console.log(`     "${n}" ×${l.length}  [${l.join(', ')}]`));
+      warn += dups.length;
+      bundle.push({ code: `__dup_${field}__`, duplicates: Object.fromEntries(dups) });
     }
   }
 
