@@ -84,6 +84,8 @@
 - [WS1 MY legacy name dedupe (active-only) + open FS/FC bucket](project_ws1_legacy_name_dedupe.md) — 2026-07-06: 57 Bonus-type renamed unique; 99 active dup groups remain in FS/FC space (mostly campaign prize pools), bucket-2 plan on hold.
 - [WS1 MY TLEO T&C backfilled from SG](project_ws1_my_tleo_tnc_missing.md) — 2026-07-06: 42/42 Bonus TLEO cloned (SGD→RM, mb8sg→mb8mys); CLOSED: 458MX cap corrected 450→458 + TOPEN: FT_REL_TLEO_45PCT_458MX skipped — MY cap=450 vs code/SG 458, fix cap then rerun fix-ws1-my-tleo-tnc.mjs.C backfilled; final probe 54/54 both sites.
 
+- [WS1 SG TLEO name issues (deep QC 2026-07-06)](project_ws1_sg_tleo_name_issues.md) — T&C content clean 54/54 both sites; OPEN: SG has 5 "45%" names paying 20%, SG names never deduped, FC BR pairs share names both sites.
+
 ## Workflow & Process
 - [Directory sheet first](feedback_directory_first.md) — Always resolve brand/BO/PIC/tool by reading Directory before asking.
 - [Promo upload order: 3.3 first, then 14.2/15.2](feedback_promo_workflow_order.md) — Promotion Contents BEFORE Banners always.
