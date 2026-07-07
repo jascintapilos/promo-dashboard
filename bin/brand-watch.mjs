@@ -31,6 +31,8 @@
  * Usage:
  *   node bin/brand-watch.mjs             # dry-run (no sheet writes, no state save)
  *   node bin/brand-watch.mjs --commit    # live: log deltas + save state + heartbeat
+ *   node bin/brand-watch.mjs --commit --dashboard   # + delta digest to dashboard feed
+ *   node bin/brand-watch.mjs --commit --dashboard --slack --slack-channel=C...
  *   node bin/brand-watch.mjs --commit --max-rows=300
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -41,10 +43,13 @@ import { runListingChecks, buildIgmpNameCounts, verdictFromFindings } from '../s
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 import { upsertRows } from '../src/qc-results-log.js';
+import { postToSlack, appendDashboardNotification } from '../src/notify.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const commit = flags.commit === true;
 const maxRows = Number(flags['max-rows'] || 300);
+const postDashboard = flags.dashboard === true;
+const postSlack = flags.slack === true;
 const STATE_FILE = 'captures/brand-watch-state.json';
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -193,13 +198,53 @@ if (dropped) {
 }
 const entries = queue.map((q) => q.entry);
 
-// ── 6. Commit ──────────────────────────────────────────────────────────────
+// ── 6. Digest (Wave 2) — one summary per run, fired on completion ──────────
+// Posted only when there is something to say: the baseline announcement, or
+// any post-baseline delta. Quiet days post nothing — the System Status
+// heartbeat is the aliveness signal, the digest is the "look at this" signal.
+const digestNeeded = isBaselineRun || newFindings.length > 0 || changedFindings.length > 0 || resolved.length > 0;
+const anyDeltaFail = [...newFindings, ...changedFindings].some((f) => f.verdict === 'FAIL');
+
+function buildDigest() {
+  if (isBaselineRun) {
+    return {
+      type: 'info',
+      title: 'Brand Watch — baseline created',
+      lines: [
+        `${codes.length} live codes across the estate scanned (${Object.entries(checkCounts).map(([k, v]) => `${k}=${v}`).join(', ') || 'no findings'}).`,
+        `${entries.length} baseline FAIL(s) logged to QC Results Log ([baseline] marker); ${newFindings.filter((f) => f.verdict === 'WARNING').length} warning(s) grandfathered in state.`,
+        'From tomorrow, only NEW / CHANGED / RESOLVED findings are reported.',
+      ],
+    };
+  }
+  const lines = [];
+  const detail = (f) => `[${f.verdict}] ${f.key.replace('::', ' / ')} — ${f.reasons.join('; ')}`;
+  const ranked = [...newFindings, ...changedFindings].sort((a, b) => (a.verdict === 'FAIL' ? 0 : 1) - (b.verdict === 'FAIL' ? 0 : 1));
+  for (const f of ranked.slice(0, 12)) lines.push(`${newFindings.includes(f) ? 'NEW' : 'CHANGED'} ${detail(f)}`);
+  if (ranked.length > 12) lines.push(`…and ${ranked.length - 12} more — see QC Results Log (trigger=daily-watch)`);
+  if (resolved.length) lines.push(`Resolved: ${resolved.length} previously-flagged promo(s) now clean.`);
+  if (siteErrors.length) lines.push(`⚠ Partial run: ${siteErrors.map((se) => se.brand).join(', ')} unreachable — their findings held, not re-checked.`);
+  return {
+    type: anyDeltaFail ? 'warning' : 'info',
+    title: `Brand Watch — ${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved`,
+    lines,
+  };
+}
+
+// ── 7. Commit ──────────────────────────────────────────────────────────────
 const statusLabel = siteErrors.length ? 'PARTIAL' : 'OK';
 const detail = `${codes.length} live · ${current.size} open findings (${counts.FAIL} FAIL) · ${isBaselineRun ? `baseline run, ${entries.length} FAIL rows logged` : `${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved`}${dropped ? ` · ${dropped} rows deferred` : ''}${siteErrors.length ? ` · ${siteErrors.length} site(s) unreachable` : ''}`;
 
 if (!commit) {
   console.log(`\nDry-run only. Would write ${entries.length} QC Results Log row(s), save state, and record heartbeat:`);
   console.log(`  System Status → brand-watch | ${statusLabel} | ${detail}`);
+  if (digestNeeded) {
+    const d = buildDigest();
+    console.log(`  Digest (${d.type}): ${d.title}`);
+    for (const l of d.lines) console.log(`    ${l}`);
+  } else {
+    console.log('  Digest: nothing to report — would not post.');
+  }
   process.exit(0);
 }
 
@@ -219,6 +264,29 @@ writeFileSync(STATE_FILE, JSON.stringify({
   entries: nextEntries,
 }, null, 2));
 console.log(`✓ State saved → ${STATE_FILE} (${Object.keys(nextEntries).length} open findings tracked)`);
+
+// Digest posts must not abort the run — the heartbeat still needs to land.
+if ((postDashboard || postSlack) && !digestNeeded) {
+  console.log('Digest: nothing to report — skipping post (heartbeat still recorded).');
+} else if (digestNeeded) {
+  const d = buildDigest();
+  if (postDashboard) {
+    try {
+      await appendDashboardNotification({ type: d.type, title: d.title, message: d.lines.join('\n'), source: 'brand-watch' });
+      console.log('✓ Digest appended to dashboard Notifications feed');
+    } catch (e) { console.error(`⚠ Dashboard digest failed: ${e.message.split('\n')[0]}`); }
+  }
+  if (postSlack) {
+    const channel = flags['slack-channel'] || process.env.SLACK_ALERT_CHANNEL;
+    if (!channel) console.error('⚠ --slack requires --slack-channel=C... or SLACK_ALERT_CHANNEL');
+    else {
+      try {
+        await postToSlack(channel, [`*${d.title}*`, ...d.lines.map((l) => `• ${l}`)].join('\n'));
+        console.log(`✓ Digest posted to Slack ${channel}`);
+      } catch (e) { console.error(`⚠ Slack digest failed: ${e.message.split('\n')[0]}`); }
+    }
+  }
+}
 
 recordStatus(statusLabel, detail);
 console.log('Done.');
