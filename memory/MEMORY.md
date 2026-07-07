@@ -17,6 +17,7 @@
 - [Canary end-of-run: BO accuracy + QC Completed](feedback_canary_end_qc_status.md) — Report N/N saves verified AND write status="QC Completed" to each row.
 - [Always lead promo replies with summary table](feedback_always_summary_table.md) — One-glance table of resolved fields before any rendered body.
 - [Promo request sheet — current-month tab only](feedback_promo_request_sheet_current_month.md) — P### numbers repeat across months; always resolve to current-month tab.
+- [MT verify = content checks, not byte-equality](feedback_mt_verify_content_checks.md) — BO re-encodes HTML; qc-mt-tnc.js QPRO branch stale vs renderer attempt-3.
 
 ## QPRO Rules
 - [QPRO QC endpoint paths](feedback_qpro_qc_endpoints.md) — Use list + /promotioncurrency + /messagetemplate + /popups for QC.
@@ -104,6 +105,9 @@
 
 ## Project State & Dashboards
 - [Handover state — 2026-07-01 (current)](project_handover_state_2026-07-01.md) — **Read first when picking up.** P003/P004 WS1 referral FS done; referral exception logic in all 3 QC agents.
+- [FT_REL_30PCT_8X MT + blacklist fix](project_ft_rel_30pct_8x_fix.md) — 2026-07-07: CNY copy leak fixed on 8 BOs; Jan-2026 MTs = CNY-leak sweep candidate.
+- [WC_SLVR QP2C provider fix](project_wc_slvr_qp2_provider_fix.md) — 2026-07-06: 4 ACE66 promos restricted to SPORT; echo-style PUT is the safe QP2 fix template.
+- [Estate cat/GP sweep](project_estate_cat_gp_sweep.md) — 2026-07-06: 7,947 actives swept; 45-promo fix batch ready (fix-cat-gp-estate.mjs --include-overbroad), awaiting commit approval.
 - [IGMP QC bundles wired](project_igmp_qc_bundles.md) — canary-api-igmp.js writes plan + QC bundles. Pre-QC + Sentinel + ZH gate wired.
 - [Sheets API integration — active via OAuth](project_sheets_api_oauth.md) — Live read + write via bin/sheets-test.mjs. GCP promo-bot-496510.
 - [Parallel + Pre-QC + Deep-QC sub-agent fan-out](project_parallel_qc_deep_qc.md) — --parallel-qc ~3x faster; /qc-engine (triage); /pre-qc (plan); /deep-qc (sentinel).
