@@ -100,6 +100,27 @@ For FAIL/WARNING brands, expand each issue with:
   4. Re-invoke `/pre-qc <handle>`
 - **WARNINGS only, no FAIL** → user decides. WARNING means "complete but unusual" — often safe to proceed; Sentinel will catch any actual business-rule violations after save.
 
+### 5. Persist verdicts to the QC Results Log (MANDATORY — never skip, even on FAIL)
+
+Bot verdicts must not evaporate with the session (monitoring proposal Phase 1: "never omit silently"). After presenting the table, write one entry per brand to a temp file and commit in ONE batch call:
+
+```sh
+node bin/log-qc-results-batch.mjs --input=tmp/qc-log-<handle>-preqc.json --commit
+```
+
+Entry shape — `code` from each plan bundle's `promo_code`, verdict per brand from the agent's `status`:
+
+```json
+[
+  { "code": "<promo_code>", "brand": "QPRO5", "handle": "P073", "stage": "pre-qc", "verdict": "PASS" },
+  { "code": "<promo_code>", "brand": "QP2A",  "handle": "P073", "stage": "pre-qc", "verdict": "WARNING", "reason": "unusual TO multiplier (16x)" }
+]
+```
+
+- `reason` is required for WARNING/FAIL (one-line issue summary).
+- FAIL rows still get logged — a Blocked verdict in the log is data, not noise.
+- Do this in the same turn as the table, before waiting for commit direction.
+
 ## Auto-flow integration
 
 When auto-fired (per `feedback_auto_pre_qc_on_request.md`):

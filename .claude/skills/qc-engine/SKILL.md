@@ -95,6 +95,27 @@ For RETURN/NOTE handles, expand each entry with:
 
 **Critical: never override RETURN.** The Triage Officer's job is to reject malformed requests at the gate. Pushing past RETURN guarantees a wasted canary cycle and possibly a corrupt save.
 
+### 5. Persist verdicts to the QC Results Log (MANDATORY — never skip, even on RETURN)
+
+Bot verdicts must not evaporate with the session (monitoring proposal Phase 1: "never omit silently"). After presenting the table, write one entry per (handle × brand) to a temp file and commit in ONE batch call:
+
+```sh
+node bin/log-qc-results-batch.mjs --input=tmp/qc-log-<handle>-triage.json --commit
+```
+
+Entry shape — `code` from `captures/requests/<handle>.json` `promo_code`, one entry per brand in the request's `brands` list, same triage verdict for all:
+
+```json
+[
+  { "code": "<promo_code>", "brand": "QPRO5", "handle": "P172", "stage": "triage", "verdict": "READY" },
+  { "code": "<promo_code>", "brand": "QP2A",  "handle": "P172", "stage": "triage", "verdict": "RETURN", "reason": "parsed.spin_count missing" }
+]
+```
+
+- `reason` is required for NOTE/RETURN (use the `missing_or_unusual` summary).
+- RETURN rows still get logged — a Blocked verdict in the log is data, not noise.
+- Do this in the same turn as the table; don't wait for user direction.
+
 ## Auto-flow integration
 
 When this skill auto-fires (per `feedback_auto_pre_qc_on_request.md`):

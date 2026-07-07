@@ -102,6 +102,28 @@ For FAIL/WARNING/INCONCLUSIVE brands, expand each finding with:
 
 **Critical: never override Sentinel.** If Sentinel returns INCONCLUSIVE or FAIL, do not soften the verdict in the table. The whole point of Sentinel is to be harder to convince than a human reviewer.
 
+### 5. Persist verdicts to the QC Results Log (MANDATORY — never skip, even on FAIL/INCONCLUSIVE)
+
+Bot verdicts must not evaporate with the session (monitoring proposal Phase 1: "never omit silently"). After presenting the table, write one entry per brand to a temp file and commit in ONE batch call:
+
+```sh
+node bin/log-qc-results-batch.mjs --input=tmp/qc-log-<handle>-sentinel.json --commit
+```
+
+Entry shape — `code` from each bundle's `promo_code`:
+
+```json
+[
+  { "code": "<promo_code>", "brand": "QPRO5", "handle": "P073", "stage": "sentinel", "verdict": "PASS", "trigger": "post-creation", "depth": "full" },
+  { "code": "<promo_code>", "brand": "QP2A", "handle": "P073", "stage": "sentinel", "verdict": "FAIL", "trigger": "post-creation", "depth": "full", "reason": "auto_reward_activation=false" }
+]
+```
+
+- `trigger`: `post-creation` when /deep-qc runs as part of the save auto-flow; `manual` for ad-hoc re-runs on older saves. `depth` is always `full` here (bundle-backed).
+- `reason` is required for WARNING/FAIL/INCONCLUSIVE (one-line finding summary).
+- If a Sentinel sub-agent timed out and you reported INCONCLUSIVE, log that INCONCLUSIVE — a timeout is a verdict, not a blank.
+- Do this in the same turn as the table, before the sheets-writeback step.
+
 ## Notes
 
 - Sub-agents run **in parallel** within a single Agent-tool message. Wall-clock ~10-15s per batch regardless of brand count.

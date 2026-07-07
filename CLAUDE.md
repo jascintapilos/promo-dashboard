@@ -34,9 +34,11 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
 8. **`node bin/sheets-writeback.mjs <handle> --field=status --value="QC Completed" --commit`** — write QC Completed back to sheet. Run this after every deep-qc, regardless of WARNING or INCONCLUSIVE, as long as there is no FAIL.
 
 **Skip conditions:**
-- User says "skip qc" or "no qc" in their message → run only the canary commands, no skill invocations
+- User says "skip qc" or "no qc" in their message → run only the canary commands, no skill invocations — **but still log the skip** (see QC Results Log persistence below): after the commit, write `{"code","brand","handle","stage":"skip"}` entries per brand and run `node bin/log-qc-results-batch.mjs --input=tmp/qc-log-<handle>-skip.json --commit` so the log shows `Not Evaluated` instead of a silently missing row.
 - Idempotency fails (code already on BO for ALL brands) → no plan bundles get written; surface the idempotency block and stop
-- Triage returns RETURN → STOP. Tell the user what to fix; do not attempt dry-run.
+- Triage returns RETURN → STOP. Tell the user what to fix; do not attempt dry-run. The RETURN verdict still gets logged (skill step 5).
+
+**QC Results Log persistence (MANDATORY):** every QC gate persists its verdicts to the 'QC Results Log' tab via `node bin/log-qc-results-batch.mjs --input=<entries.json> --commit` — this is step 5 inside each of the three skills (/qc-engine, /pre-qc, /deep-qc). Never end a QC gate without the log write: RETURN/FAIL/INCONCLUSIVE and skips are all logged explicitly. This feeds the per-brand monitoring system (see docs/promo-monitoring-system-proposal.md Phase 1) — a missing row silently biases every downstream pass-rate metric.
 
 **Each QC skill spawns its sub-agent with EXACTLY this prompt** — keep it short, no exploration:
 
