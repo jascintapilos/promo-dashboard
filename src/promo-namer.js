@@ -30,7 +30,7 @@
 //   source = 'override' | 'derived' | 'incomplete' | 'unsupported'
 //   missing = []      (set only when source = 'incomplete')
 
-import { findCampaignRule } from './campaign-prefix-rules.js';
+import { findCampaignRule, resolveConvention } from './campaign-prefix-rules.js';
 
 const CATEGORY_SUFFIX = {
   'Slots':       '_SLT',
@@ -162,21 +162,36 @@ export function deriveNames(record) {
     const campaignSuffix = inferCampaignSuffix(record);
     if (campaignSuffix) code += campaignSuffix;
   }
-  // Auto-apply campaign objective tokens from campaign-prefix-rules.js.
-  // Reads the campaign column (e.g. "CRM - Retention") and prepends any
-  // required tokens (CRM_, ADHOC_, CHURN_, RET_, etc.) not already present.
-  // VIP_ is skipped here — it's handled by the tier block below so it lands
-  // outermost among the identity prefixes.
-  const campaignRule = findCampaignRule(record.campaign);
-  if (campaignRule) {
-    const upperCode = code.toUpperCase();
-    const tokensToAdd = campaignRule.required.filter((t) => {
-      const tok = (t.endsWith('_') ? t : `${t}_`).toUpperCase();
-      return tok !== 'VIP_' && !upperCode.includes(tok);
-    });
-    for (const t of [...tokensToAdd].reverse()) {
-      const tok = t.endsWith('_') ? t : `${t}_`;
-      code = `${tok}${code}`;
+  // New convention (approved 2026-07-07): rows using the sheet dropdowns
+  // (Requestor = owner code, Campaign = objective label) get the prefix
+  // chain OWNER_OBJECTIVE_[NODEP]_ and skip the legacy campaign token rules.
+  // RET always = churn: a churn-objective reload keeps RET (not the base
+  // REL) so the code never carries a contradictory segment token.
+  const convention = resolveConvention(record);
+  if (convention) {
+    if (convention.objective === 'RET') code = code.replace(/^REL_/i, 'RET_');
+    const chain = [convention.owner, convention.objective];
+    if (convention.nodep) chain.push('NODEP');
+    for (const t of chain.reverse()) {
+      if (!code.toUpperCase().split('_').includes(t)) code = `${t}_${code}`;
+    }
+  } else {
+    // Legacy: auto-apply campaign objective tokens from campaign-prefix-rules.js.
+    // Reads the campaign column (e.g. "CRM - Retention") and prepends any
+    // required tokens (CRM_, ADHOC_, CHURN_, RET_, etc.) not already present.
+    // VIP_ is skipped here — it's handled by the tier block below so it lands
+    // outermost among the identity prefixes.
+    const campaignRule = findCampaignRule(record.campaign);
+    if (campaignRule) {
+      const upperCode = code.toUpperCase();
+      const tokensToAdd = campaignRule.required.filter((t) => {
+        const tok = (t.endsWith('_') ? t : `${t}_`).toUpperCase();
+        return tok !== 'VIP_' && !upperCode.includes(tok);
+      });
+      for (const t of [...tokensToAdd].reverse()) {
+        const tok = t.endsWith('_') ? t : `${t}_`;
+        code = `${tok}${code}`;
+      }
     }
   }
   // Tier prefix (operator rule 2026-05-16): membership-tier markers go at

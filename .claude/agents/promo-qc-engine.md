@@ -90,7 +90,7 @@ Verify presence and basic shape only:
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
-* Campaign objective prefix (if `campaign` is set on the request): promo_code must contain the required tokens for that campaign type. Strip leading `FT_` from promo_code before checking. Emit NOTE if tokens are missing. Skip entirely if `campaign` is blank or null.
+* Campaign objective prefix (if `campaign` is set on the request): promo_code must contain the required tokens for that campaign type. New-convention rows (`campaign_owner` set) use the owner×objective check; legacy rows use the token table. Strip leading `TEST_`/`FT_` from promo_code before checking. Emit NOTE if tokens are missing. Skip entirely if `campaign` is blank or null.
 * Category restriction flag: if `instructions.categories_only` or `instructions.category_only` is set (non-null, non-empty), emit NOTE: "Category-restricted promo — downstream plan must restrict game_provider_ids to providers in that category only. Both Categories AND Game Providers must be configured together in BO, or the bonus can be transferred to any provider." This is a NOTE (not RETURN) — structural flag for Pre-QC and Sentinel to enforce.
 
 You do NOT check:
@@ -200,7 +200,20 @@ Downstream handoff:
 
 ## Campaign objective → required promo_code tokens
 
-When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code is missing required tokens. Strip leading `FT_` from promo_code before checking. Skip if campaign is blank or null.
+When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code is missing required tokens. Strip leading `TEST_` and `FT_` from promo_code before checking. Skip if campaign is blank or null.
+
+### New convention (takes precedence — approved 2026-07-07, effective 1 Aug 2026)
+
+If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `FT_OWNER_OBJECTIVE_[NODEP]_MECHANIC`. Check as `_`-separated segments, NOT substrings:
+
+* promo_code must contain the `campaign_owner` value as a segment
+* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `WELC`; starts with `Churn` → `RET`; equals `Retention` → `REL`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
+* if `no_deposit` is `true`, promo_code must contain `NODEP` as a segment
+* `CHURN` as a segment is a **banned token** under the new convention — emit NOTE if present (churn is always `RET`)
+
+Skip the legacy table entirely for new-convention rows. Do not require `ACQ_`, `VIP_`, or `CHURN_` on them.
+
+### Legacy mapping (grandfathered rows — `campaign_owner` is null)
 
 Match the campaign value case-insensitively:
 

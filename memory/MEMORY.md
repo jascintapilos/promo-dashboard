@@ -104,6 +104,7 @@
 - [Browser identity — Jascinta's Chrome](feedback_browser_identity.md) — 2 browsers connected. Use switch_browser at session START to let Jascinta name hers.
 
 ## Project State & Dashboards
+- [Promo code prefix convention (approved)](project_promo_code_prefix_convention.md) — FT_OWNER_OBJECTIVE matrix; sheet dropdowns + Phase 3 parser/namer/QC-agent support live.
 - [Handover state — 2026-07-01 (current)](project_handover_state_2026-07-01.md) — **Read first when picking up.** P003/P004 WS1 referral FS done; referral exception logic in all 3 QC agents.
 - [FT_REL_30PCT_8X MT + blacklist fix](project_ft_rel_30pct_8x_fix.md) — 2026-07-07: CNY copy leak fixed on 8 BOs; Jan-2026 MTs = CNY-leak sweep candidate.
 - [WC_SLVR QP2C provider fix](project_wc_slvr_qp2_provider_fix.md) — 2026-07-06: 4 ACE66 promos restricted to SPORT; echo-style PUT is the safe QP2 fix template.

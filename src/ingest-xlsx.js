@@ -29,6 +29,8 @@ import {
   BRAND_TO_SITE,
 } from './ingest.js';
 
+import { OWNER_CODES } from './campaign-prefix-rules.js';
+
 // ── XLSX XML parsing ────────────────────────────────────────────────────
 
 async function loadSharedStrings(extractedDir) {
@@ -194,6 +196,10 @@ const HEADER_ALIASES = {
   // The May 2026 tab labels this column "Details to Change (if any)".
   change_details:       [/^change\s*details/i, /^details\s*to\s*change/i],
   max_per_player:       [/^max\s*per\s*player/i],
+  // New-convention columns added 2026-07-07 (Z/AA/AB on July 2026 tab).
+  stakeholder:          [/^stakeholder/i],
+  no_deposit:           [/^no\s*deposit/i],
+  suggested_prefix:     [/^suggested\s*prefix/i],
 };
 
 export function detectColumnMap(headerCells) {
@@ -286,11 +292,22 @@ export function rowToRecord(cells, colMap, sourceLine) {
   const maxPlayerRaw = String(get('max_per_player') ?? '').trim();
   const maxPlayerCaps = parseMaxPlayerCaps(maxPlayerRaw);
 
+  // New convention (2026-07-07): Requestor column doubles as campaign owner
+  // when it holds one of the owner codes. Person-name requestors → null
+  // (legacy row; campaign prefix falls back to CAMPAIGN_PREFIX_RULES).
+  const requestorRaw = String(get('requestor') ?? '');
+  const ownerCandidate = requestorRaw.trim().toUpperCase();
+  const campaignOwner = OWNER_CODES.includes(ownerCandidate) ? ownerCandidate : null;
+
   const record = {
     request_id: requestId,
     status,
     remark,
-    requestor: String(get('requestor') ?? ''),
+    requestor: requestorRaw,
+    campaign_owner: campaignOwner,
+    stakeholder: String(get('stakeholder') ?? '').trim() || null,
+    no_deposit: /^yes$/i.test(String(get('no_deposit') ?? '').trim()),
+    suggested_prefix: String(get('suggested_prefix') ?? '').trim() || null,
     date: maybeExcelDate(get('date')),
     priority: String(get('priority') ?? ''),
     deadline: maybeExcelDate(get('deadline')),

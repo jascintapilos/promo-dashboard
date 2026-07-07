@@ -13,6 +13,85 @@
 // campaign value from the sheet is matched against `pattern` (case-insensitive).
 // If no pattern matches, the check is skipped (blank or unknown campaign = no rule).
 
+// ── New convention (approved 2026-07-07, effective 1 Aug 2026) ──────────
+//
+// Code format: FT_OWNER_OBJECTIVE_[NODEP]_MECHANIC/DATE.
+// Active when the source row uses the new sheet dropdowns: the Requestor
+// column (E) holds an owner code and the Campaign column (K) holds one of
+// the five objective labels. When active, the legacy CAMPAIGN_PREFIX_RULES
+// below are skipped — they encode the pre-approval token vocabulary
+// (CHURN_, VIP_, ACQ_) that the new convention retires. Legacy rules remain
+// for grandfathered rows (free-text campaign values from before Aug 2026).
+//
+// RET always = churn segment, REL always = active segment. CHURN_ is a
+// banned token under the new convention.
+
+export const OWNER_CODES = ['CRM', 'VM', 'TSM', 'AM', 'AFF'];
+
+// K-column dropdown labels → objective code. Anchored to the dropdown
+// values written by Ref - Codes (e.g. "ACQ - Welcome", "Churn - Reactivation").
+const OBJECTIVE_LABELS = [
+  { pattern: /^ACQ\b/i,                  code: 'WELC' },
+  { pattern: /^Churn\b/i,                code: 'RET' },
+  { pattern: /^Retention$/i,             code: 'REL' },
+  { pattern: /^Ad\s*Hoc\b/i,             code: 'ADHOC' },
+  { pattern: /^Grooming\b/i,             code: 'GROOM' },
+];
+
+/**
+ * Detect whether a record uses the new dropdown convention.
+ * Returns { owner, objective, nodep, expectedPrefix } or null (legacy row).
+ */
+export function resolveConvention(record) {
+  const owner = String(record?.requestor || '').trim().toUpperCase();
+  if (!OWNER_CODES.includes(owner)) return null;
+  const campaign = String(record?.campaign || '').trim();
+  const hit = OBJECTIVE_LABELS.find((o) => o.pattern.test(campaign));
+  if (!hit) return null;
+  const nodep = record?.no_deposit === true;
+  return {
+    owner,
+    objective: hit.code,
+    nodep,
+    expectedPrefix: `${owner}_${hit.code}${nodep ? '_NODEP' : ''}`,
+  };
+}
+
+/**
+ * Validate a promo_code against the new owner×objective convention.
+ * Returns { ok: true, skipped: true } for legacy rows (caller should fall
+ * back to validateCampaignPrefix), { ok: true } on pass, or
+ * { ok: false, missing, banned, message } on mismatch.
+ */
+export function validatePrefixConvention(record, promoCode) {
+  const conv = resolveConvention(record);
+  if (!conv) return { ok: true, skipped: true };
+
+  // Strip TEST_ and FT_ (site/test prefixes — not convention tokens).
+  const code = String(promoCode || '').toUpperCase().replace(/^TEST_/, '').replace(/^FT_/, '');
+  const segs = code.split('_');
+  const missing = [];
+  if (!segs.includes(conv.owner)) missing.push(`${conv.owner}_`);
+  if (!segs.includes(conv.objective)) missing.push(`${conv.objective}_`);
+  if (conv.nodep && !segs.includes('NODEP')) missing.push('NODEP_');
+  const banned = segs.includes('CHURN') ? ['CHURN_'] : [];
+
+  if (!missing.length && !banned.length) return { ok: true, convention: conv };
+  return {
+    ok: false,
+    convention: conv,
+    missing,
+    banned,
+    message:
+      `Owner "${conv.owner}" + objective "${conv.objective}"${conv.nodep ? ' + NODEP' : ''} ` +
+      `requires prefix ${conv.expectedPrefix}_.` +
+      (missing.length ? ` Missing: ${missing.join(', ')}.` : '') +
+      (banned.length ? ` Banned token present: ${banned.join(', ')} (use RET for churn).` : ''),
+  };
+}
+
+// ── Legacy rules (grandfathered rows — pre-Aug 2026 free-text campaigns) ──
+
 export const CAMPAIGN_PREFIX_RULES = [
   {
     label:    'ACQ (WELCOME BONUS)',
