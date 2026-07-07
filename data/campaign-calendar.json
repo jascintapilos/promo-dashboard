@@ -14,6 +14,11 @@
     "(found manually 2026-07-07 — this file exists so that never recurs)."
   ],
   "graceDays": 14,
+  "code_exclusion_tokens": [
+    "CNY", "XMAS", "CHRISTMAS", "MERDEKA", "RAYA", "HARIRAYA", "VALENTINE",
+    "MOONCAKE", "MIDAUTUMN", "WC26", "WORLDCUP"
+  ],
+  "_code_exclusion_tokens_doc": "Added 2026-07-08 per Wai Yip: promo CODE or NAME containing any of these tokens (case-insensitive substring match) is treated as deliberately seasonal and SKIPPED by brand-watch ENTIRELY — no config check, no MT check, no popup check, no currency check, nothing. This is broader than marker_terms below: marker_terms only gate the seasonal-copy-leak content check on promos that are NOT code-excluded (e.g. a promo with no seasonal token in its code but 'Year of the Horse' baked into its MT copy still gets caught by that check). OWNER: same as campaigns[] below — add a token here when a new campaign's naming convention needs the same treatment.",
   "game_title_exclusions": [
     "Starlight Christmas",
     "Christmas Big Bass Bonanza",

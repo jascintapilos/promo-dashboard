@@ -76,3 +76,17 @@ export function checkCampaignLeakName(cand, leakyTerms) {
     message: `Promo name mentions "${h.term}" but ${h.campaign} ended ${h.windowEnd} — stale seasonal promo still active`,
   }));
 }
+
+// Deliberately seasonal promos (per Wai Yip, 2026-07-08) are out of scope
+// for brand-watch entirely — not just the seasonal-copy check above, but
+// EVERY check (config, MT, popup, currency). Matched on the promo's own
+// code/name containing a campaign token from data/campaign-calendar.json,
+// not on content — a promo whose MT merely mentions a holiday in passing
+// (no token in its code) is still monitored normally.
+const CODE_EXCLUSION_TOKENS = (CAL.code_exclusion_tokens || []).map((t) => t.toLowerCase());
+
+export function isSeasonalCode(cand) {
+  if (!CODE_EXCLUSION_TOKENS.length) return false;
+  const haystack = `${cand.code || ''} ${cand.name || ''}`.toLowerCase();
+  return CODE_EXCLUSION_TOKENS.some((t) => haystack.includes(t));
+}

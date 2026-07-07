@@ -30,6 +30,14 @@
  *     RESOLVED (previously-flagged code now clean → PASS row).
  *   - Unchanged findings and never-flagged clean codes write nothing.
  *
+ * Seasonal exclusion (per Wai Yip, 2026-07-08): any promo whose CODE or
+ * NAME contains a campaign token from data/campaign-calendar.json
+ * (code_exclusion_tokens) is skipped by EVERY check above — config, MT,
+ * popup, currency, IGMP rotation, all of it. Deliberately seasonal promos
+ * are out of scope for monitoring. This is separate from the seasonal-copy
+ * -leak check, which still catches a holiday reference baked into a
+ * promo's COPY when its code carries no such token.
+ *
  * Every run ends with a System Status heartbeat row (via
  * bin/record-pull-status.mjs) — including zero-finding runs — so a silently
  * dead watchman is visible within a day. Sites that fail to list are
@@ -49,7 +57,7 @@ import { parseArgs } from './_args.js';
 import { fetchAllLiveCodes } from '../src/live-codes.js';
 import { runListingChecks, buildIgmpNameCounts, verdictFromFindings } from '../src/structural-checks.js';
 import { checkMtContent, buildDomainToBrand } from '../src/mt-content-checks.js';
-import { buildLeakyTerms, checkCampaignLeakMt, checkCampaignLeakName } from '../src/campaign-checks.js';
+import { buildLeakyTerms, checkCampaignLeakMt, checkCampaignLeakName, isSeasonalCode } from '../src/campaign-checks.js';
 import { igmpPost } from '../src/igmp-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
@@ -78,6 +86,9 @@ console.log('\nFetching live codes across all brands…');
 const { codes, siteErrors } = await fetchAllLiveCodes();
 for (const se of siteErrors) console.log(`  ⚠ ${se.brand}: ${se.message}`);
 console.log(`  ${codes.length} live codes across ${new Set(codes.map((c) => c.brand)).size} brands (${siteErrors.length} site(s) failed)`);
+const codesByKey = new Map(codes.map((c) => [`${c.brand}::${c.code}`, c]));
+const excludedKeys = new Set(codes.filter(isSeasonalCode).map((c) => `${c.brand}::${c.code}`));
+if (excludedKeys.size) console.log(`  ${excludedKeys.size} seasonal-tagged code(s) excluded from all checks (data/campaign-calendar.json code_exclusion_tokens)`);
 if (!codes.length) {
   console.error('No live codes fetched at all — refusing to run (would mark the whole estate resolved).');
   if (commit) recordStatus('FAILED', 'no live codes fetched — all sites unreachable?');
@@ -93,6 +104,7 @@ console.log(`Campaign calendar: ${leakyTerms.length} closed-campaign marker term
 const current = new Map(); // key -> { cand, verdict, reasons, checks }
 const checkCounts = {};
 for (const cand of codes) {
+  if (excludedKeys.has(`${cand.brand}::${cand.code}`)) continue;
   const results = [
     ...runListingChecks(cand, { today: TODAY, nameCountBySite }),
     // MT bodies ride the list response on QPRO/QP2 — content checks are free.
@@ -151,7 +163,7 @@ for (const [key, prev] of Object.entries(priorEntries)) {
   const brand = key.split('::')[0];
   if (failedBrands.has(brand)) { nextEntries[key] = prev; continue; } // no evidence ≠ fixed
   if (!liveKeys.has(key)) continue; // code no longer live — drop silently, nothing to verify
-  if (prev.logged) resolved.push({ key, prev }); // only close out rows that were actually opened
+  if (prev.logged) resolved.push({ key, prev, excluded: excludedKeys.has(key) }); // only close out rows that were actually opened
 }
 
 // ── 3b. IGMP reward-contents rotation (detail fetches, capped) ──────────────
@@ -169,7 +181,7 @@ const detailStats = { checked: 0, firstCheck: 0, errors: 0, grandfathered: 0 };
 const checkedToday = new Set();
 
 const igmpBatch = codes
-  .filter((c) => c.platform === 'igmp' && (c.promotionType === 'Bonus' || c.promotionType === 'FreeCredit') && !failedBrands.has(c.brand))
+  .filter((c) => c.platform === 'igmp' && (c.promotionType === 'Bonus' || c.promotionType === 'FreeCredit') && !failedBrands.has(c.brand) && !excludedKeys.has(`${c.brand}::${c.code}`))
   .map((c) => ({ c, key: `${c.brand}::${c.code}`, last: priorDetailChecked[`${c.brand}::${c.code}`] || '' }))
   .sort((a, b) => a.last.localeCompare(b.last)) // never-checked ('') first, then oldest
   .slice(0, detailCap);
@@ -216,6 +228,7 @@ if (igmpBatch.length) {
 for (const [key, prev] of Object.entries(priorDetail)) {
   if (nextDetail[key] || checkedToday.has(key)) continue;
   if (!liveKeys.has(key)) continue; // promo gone — drop
+  if (excludedKeys.has(key)) { if (prev.logged) resolved.push({ key, prev, ns: 'detail', excluded: true }); continue; } // now seasonal-excluded — stop tracking
   nextDetail[key] = prev;
 }
 
@@ -252,7 +265,12 @@ if (isBaselineRun) {
 } else {
   show('NEW findings', newFindings);
   show('CHANGED findings', changedFindings);
-  if (resolved.length) console.log(`\nRESOLVED: ${resolved.map((r) => r.key.replace('::', ' / ')).join(', ')}`);
+  if (resolved.length) {
+    const trueResolved = resolved.filter((r) => !r.excluded);
+    const excl = resolved.filter((r) => r.excluded);
+    if (trueResolved.length) console.log(`\nRESOLVED: ${trueResolved.map((r) => r.key.replace('::', ' / ')).join(', ')}`);
+    if (excl.length) console.log(`\nEXCLUDED (seasonal code, stopped monitoring — not verified fixed): ${excl.map((r) => r.key.replace('::', ' / ')).join(', ')}`);
+  }
 }
 
 // ── 5. Build QC Results Log entries ────────────────────────────────────────
@@ -281,9 +299,12 @@ if (isBaselineRun) {
     ...changedFindings.map((f) => mkQ(f)),
     ...backlogFindings.map((f) => mkQ(f, stateFor(f)[f.key]?.baseline ? '[baseline] ' : '')),
     ...detailBaselineQueue.map((f) => mkQ(f, '[baseline] ')),
-    ...resolved.map(({ key, ns }) => {
+    ...resolved.map(({ key, ns, excluded }) => {
       const [brand, code] = key.split('::');
-      return { key, ns: ns || 'listing', entry: { code, brand, region: '', stage: 'sentinel', verdict: 'PASS', trigger: 'daily-watch', depth: 'structural', reason: `resolved ${nowIso.slice(0, 10)}` } };
+      const reason = excluded
+        ? `excluded ${nowIso.slice(0, 10)}: seasonal promo code, no longer monitored`
+        : `resolved ${nowIso.slice(0, 10)}`;
+      return { key, ns: ns || 'listing', entry: { code, brand, region: '', stage: 'sentinel', verdict: 'PASS', trigger: 'daily-watch', depth: 'structural', reason } };
     }),
   ];
 }
@@ -322,7 +343,10 @@ function buildDigest() {
   const ranked = [...newFindings, ...changedFindings].sort((a, b) => (a.verdict === 'FAIL' ? 0 : 1) - (b.verdict === 'FAIL' ? 0 : 1));
   for (const f of ranked.slice(0, 12)) lines.push(`${newFindings.includes(f) ? 'NEW' : 'CHANGED'} ${detail(f)}`);
   if (ranked.length > 12) lines.push(`…and ${ranked.length - 12} more — see QC Results Log (trigger=daily-watch)`);
-  if (resolved.length) lines.push(`Resolved: ${resolved.length} previously-flagged promo(s) now clean.`);
+  const excludedCount = resolved.filter((r) => r.excluded).length;
+  const trueResolvedCount = resolved.length - excludedCount;
+  if (trueResolvedCount) lines.push(`Resolved: ${trueResolvedCount} previously-flagged promo(s) now clean.`);
+  if (excludedCount) lines.push(`Excluded: ${excludedCount} promo(s) newly matched a seasonal code token — dropped from monitoring, not verified fixed.`);
   if (detailStats.checked) lines.push(`IGMP rotation: ${detailStats.checked} reward-contents checked (${detailStats.firstCheck} first-time, ${detailStats.grandfathered} grandfathered).`);
   if (siteErrors.length) lines.push(`⚠ Partial run: ${siteErrors.map((se) => se.brand).join(', ')} unreachable — their findings held, not re-checked.`);
   return {
