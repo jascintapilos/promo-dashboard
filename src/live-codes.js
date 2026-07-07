@@ -25,6 +25,19 @@ export const IGMP_SITES = [
   { siteId: 'ws2', brand: 'WS2', region: 'MY' },
 ];
 
+// brand -> { platform, siteId, merchantId? } — for callers that need to
+// re-fetch a single code's live detail given only the brand label from a
+// findings/state file (which doesn't carry siteId).
+export function brandToSite(brand) {
+  const qpro = QPRO_BRANDS.find((b) => b.brand === brand);
+  if (qpro) return { platform: 'qpro', siteId: qpro.siteId };
+  const qp2 = QP2_MERCHANTS.find((b) => b.brand === brand);
+  if (qp2) return { platform: 'qp2', siteId: qp2.siteId, merchantId: qp2.merchantId };
+  const igmp = IGMP_SITES.find((b) => b.brand === brand);
+  if (igmp) return { platform: 'igmp', siteId: igmp.siteId, region: igmp.region };
+  return null;
+}
+
 // ── Index local qc-bundles once: brand::promo_code -> {handle, savedAt} ──
 export function buildBundleIndex() {
   const index = new Map();

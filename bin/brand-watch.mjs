@@ -135,7 +135,7 @@ for (const [key, f] of current) {
   // Baseline WARNINGs are held in state only — they surface if they CHANGE.
   const held = absorbThis || (prev ? (Boolean(prev.held) && !changed) : (isBaselineRun && f.verdict === 'WARNING'));
   nextEntries[key] = {
-    verdict: f.verdict, reasons: f.reasons, signature, held,
+    verdict: f.verdict, reasons: f.reasons, checks: f.checks, signature, held,
     baseline: prev ? Boolean(prev.baseline) : (isBaselineRun || absorbThis),
     logged: changed ? false : Boolean(prev?.logged),
     firstSeen: prev?.firstSeen || nowIso, lastSeen: nowIso,
@@ -190,12 +190,13 @@ if (igmpBatch.length) {
       for (const r of findings) checkCounts[r.check] = (checkCounts[r.check] || 0) + 1;
       const verdict = verdictFromFindings(findings);
       const reasons = findings.map((r) => r.message);
+      const checks = findings.map((r) => r.check);
       const signature = `${verdict}::${reasons.join('|')}`;
       const changed = prev && prev.signature !== signature;
       const isRollingBaseline = !prev && firstCheck;
       const held = prev ? (Boolean(prev.held) && !changed) : (isRollingBaseline && verdict === 'WARNING');
       nextDetail[key] = {
-        verdict, reasons, signature, held,
+        verdict, reasons, checks, signature, held,
         baseline: prev ? Boolean(prev.baseline) : isRollingBaseline,
         logged: changed ? false : Boolean(prev?.logged),
         firstSeen: prev?.firstSeen || nowIso, lastSeen: nowIso,
