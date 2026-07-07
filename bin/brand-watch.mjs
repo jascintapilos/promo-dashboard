@@ -1,0 +1,232 @@
+#!/usr/bin/env node
+/**
+ * Brand Watch — daily 5pm per-brand estate monitor (Wave 1: listing-level).
+ * See docs/promo-monitoring-system-proposal.md + advisor review 2026-07-07.
+ *
+ * Walks every live promo across all brands (QPRO1-17, QP2A-D, WS1 regions,
+ * WS2) using ~25 list pulls total — no per-code detail fetches — and runs the
+ * shared structural checks (src/structural-checks.js):
+ *
+ *   FAIL     expired-but-active · category/provider inconsistent (QPRO/QP2)
+ *            duplicate active PromotionName (IGMP)
+ *   WARNING  message template missing · dialog popup missing (QPRO/QP2)
+ *
+ * Baseline + delta model (trust protection — the estate has known legacy
+ * findings; day one must not scream):
+ *   - First run writes captures/brand-watch-state.json and logs only
+ *     baseline FAILs to the QC Results Log (reason prefixed "[baseline]").
+ *     Baseline WARNINGs are held in the state file only — they surface later
+ *     if they CHANGE, which is the actual signal (e.g. a popup disappearing
+ *     is the documented PUT-wipe bug; a popup never having existed is not).
+ *   - Later runs log only deltas: NEW findings, CHANGED findings, and
+ *     RESOLVED (previously-flagged code now clean → PASS row).
+ *   - Unchanged findings and never-flagged clean codes write nothing.
+ *
+ * Every run ends with a System Status heartbeat row (via
+ * bin/record-pull-status.mjs) — including zero-finding runs — so a silently
+ * dead watchman is visible within a day. Sites that fail to list are
+ * reported as PARTIAL and their previously-flagged entries are NOT marked
+ * resolved (no evidence ≠ fixed).
+ *
+ * Usage:
+ *   node bin/brand-watch.mjs             # dry-run (no sheet writes, no state save)
+ *   node bin/brand-watch.mjs --commit    # live: log deltas + save state + heartbeat
+ *   node bin/brand-watch.mjs --commit --max-rows=300
+ */
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { parseArgs } from './_args.js';
+import { fetchAllLiveCodes } from '../src/live-codes.js';
+import { runListingChecks, buildIgmpNameCounts, verdictFromFindings } from '../src/structural-checks.js';
+import { getSheetsClient } from '../src/sheets-client.js';
+import { getOpsSheetId } from '../src/ops-sheet.js';
+import { upsertRows } from '../src/qc-results-log.js';
+
+const { flags } = parseArgs(process.argv.slice(2));
+const commit = flags.commit === true;
+const maxRows = Number(flags['max-rows'] || 300);
+const STATE_FILE = 'captures/brand-watch-state.json';
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log(`BRAND WATCH — daily listing-level estate pass ${commit ? '(LIVE)' : '(dry-run)'}`);
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+// ── 1. Enumerate the estate ────────────────────────────────────────────────
+console.log('\nFetching live codes across all brands…');
+const { codes, siteErrors } = await fetchAllLiveCodes();
+for (const se of siteErrors) console.log(`  ⚠ ${se.brand}: ${se.message}`);
+console.log(`  ${codes.length} live codes across ${new Set(codes.map((c) => c.brand)).size} brands (${siteErrors.length} site(s) failed)`);
+if (!codes.length) {
+  console.error('No live codes fetched at all — refusing to run (would mark the whole estate resolved).');
+  if (commit) recordStatus('FAILED', 'no live codes fetched — all sites unreachable?');
+  process.exit(1);
+}
+
+// ── 2. Run checks ──────────────────────────────────────────────────────────
+const TODAY = new Date();
+const nameCountBySite = buildIgmpNameCounts(codes);
+const current = new Map(); // key -> { cand, verdict, reasons, checks }
+const checkCounts = {};
+for (const cand of codes) {
+  const results = runListingChecks(cand, { today: TODAY, nameCountBySite });
+  if (!results.length) continue;
+  for (const r of results) checkCounts[r.check] = (checkCounts[r.check] || 0) + 1;
+  current.set(`${cand.brand}::${cand.code}`, {
+    cand,
+    verdict: verdictFromFindings(results),
+    reasons: results.map((r) => r.message),
+    checks: results.map((r) => r.check),
+  });
+}
+
+// ── 3. Diff against state (baseline on first run) ──────────────────────────
+const prior = existsSync(STATE_FILE) ? JSON.parse(readFileSync(STATE_FILE, 'utf8')) : null;
+const isBaselineRun = !prior;
+const priorEntries = prior?.entries || {};
+const nowIso = new Date().toISOString();
+
+// Brands we could not list this run — hold their prior findings as-is.
+const failedBrands = new Set(siteErrors.map((se) => se.brand.split('/')[0]));
+const liveKeys = new Set(codes.map((c) => `${c.brand}::${c.code}`));
+
+const newFindings = [];      // first time flagged (or baseline)
+const changedFindings = [];  // flagged before, different reasons/verdict now
+const backlogFindings = [];  // unchanged but never yet written (deferred by an earlier row cap)
+const resolved = [];         // flagged before, code still live, now clean
+const nextEntries = {};
+
+for (const [key, f] of current) {
+  const prev = priorEntries[key];
+  const signature = `${f.verdict}::${f.reasons.join('|')}`;
+  const changed = prev && prev.signature !== signature;
+  // Baseline WARNINGs are held in state only — they surface if they CHANGE.
+  const held = prev ? (Boolean(prev.held) && !changed) : (isBaselineRun && f.verdict === 'WARNING');
+  nextEntries[key] = {
+    verdict: f.verdict, reasons: f.reasons, signature, held,
+    baseline: prev ? Boolean(prev.baseline) : isBaselineRun,
+    logged: changed ? false : Boolean(prev?.logged),
+    firstSeen: prev?.firstSeen || nowIso, lastSeen: nowIso,
+  };
+  if (!prev) newFindings.push({ key, ...f });
+  else if (changed) changedFindings.push({ key, ...f, prevSignature: prev.signature });
+  else if (!prev.logged && !held) backlogFindings.push({ key, ...f }); // capped out of an earlier run — still owed a row
+}
+
+for (const [key, prev] of Object.entries(priorEntries)) {
+  if (current.has(key)) continue;
+  const brand = key.split('::')[0];
+  if (failedBrands.has(brand)) { nextEntries[key] = prev; continue; } // no evidence ≠ fixed
+  if (!liveKeys.has(key)) continue; // code no longer live — drop silently, nothing to verify
+  if (prev.logged) resolved.push({ key, prev }); // only close out rows that were actually opened
+}
+
+// ── 4. Report ──────────────────────────────────────────────────────────────
+const counts = { FAIL: 0, WARNING: 0 };
+for (const f of current.values()) counts[f.verdict]++;
+console.log(`\nFindings across estate: ${current.size} (${counts.FAIL} FAIL, ${counts.WARNING} WARNING)`);
+console.log(`  By check: ${Object.entries(checkCounts).map(([k, v]) => `${k}=${v}`).join(' · ') || 'none'}`);
+
+// Full findings report for baseline review / digest tooling — every run.
+mkdirSync('captures', { recursive: true });
+writeFileSync('captures/brand-watch-report.json', JSON.stringify({
+  runAt: nowIso, isBaselineRun, liveCodes: codes.length, siteErrors, checkCounts,
+  findings: [...current.entries()].map(([key, f]) => ({ key, verdict: f.verdict, checks: f.checks, reasons: f.reasons })),
+}, null, 2));
+console.log('  Full findings report → captures/brand-watch-report.json');
+console.log(isBaselineRun
+  ? '  FIRST RUN — everything above becomes the grandfathered baseline.'
+  : `  Delta vs last run: ${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved${backlogFindings.length ? `, ${backlogFindings.length} still owed from earlier caps` : ''}.`);
+
+const show = (label, list) => {
+  if (!list.length) return;
+  console.log(`\n${label}:`);
+  for (const { key, verdict, reasons } of list.slice(0, 40)) {
+    console.log(`  [${verdict}] ${key.replace('::', ' / ')}`);
+    for (const r of reasons) console.log(`      - ${r}`);
+  }
+  if (list.length > 40) console.log(`  … and ${list.length - 40} more`);
+};
+if (isBaselineRun) {
+  show('Baseline FAILs (will be logged with [baseline] marker)', newFindings.filter((f) => f.verdict === 'FAIL'));
+  console.log(`\nBaseline WARNINGs held in state only (not logged): ${newFindings.filter((f) => f.verdict === 'WARNING').length}`);
+} else {
+  show('NEW findings', newFindings);
+  show('CHANGED findings', changedFindings);
+  if (resolved.length) console.log(`\nRESOLVED: ${resolved.map((r) => r.key.replace('::', ' / ')).join(', ')}`);
+}
+
+// ── 5. Build QC Results Log entries ────────────────────────────────────────
+const toEntry = ({ key, verdict, reasons }, reasonPrefix = '') => {
+  const [brand, code] = key.split('::');
+  const cand = current.get(key)?.cand;
+  return {
+    code, brand, region: cand?.region || '', stage: 'sentinel', verdict,
+    trigger: 'daily-watch', depth: 'structural',
+    reason: reasonPrefix + reasons.join(' | '),
+  };
+};
+
+// Everything queued carries its state key so we can mark logged=true only
+// for rows that actually get written this run.
+let queue;
+if (isBaselineRun) {
+  queue = newFindings.filter((f) => f.verdict === 'FAIL').map((f) => ({ key: f.key, entry: toEntry(f, '[baseline] ') }));
+} else {
+  queue = [
+    ...newFindings.map((f) => ({ key: f.key, entry: toEntry(f, nextEntries[f.key]?.baseline ? '[baseline] ' : '') })),
+    ...changedFindings.map((f) => ({ key: f.key, entry: toEntry(f) })),
+    ...backlogFindings.map((f) => ({ key: f.key, entry: toEntry(f, nextEntries[f.key]?.baseline ? '[baseline] ' : '') })),
+    ...resolved.map(({ key }) => {
+      const [brand, code] = key.split('::');
+      return { key, entry: { code, brand, region: '', stage: 'sentinel', verdict: 'PASS', trigger: 'daily-watch', depth: 'structural', reason: `resolved ${nowIso.slice(0, 10)}` } };
+    }),
+  ];
+}
+
+// No silent caps — deferred rows keep logged=false in state and re-queue
+// every run until written, FAILs and resolutions first.
+queue.sort((a, b) => (a.entry.verdict === 'WARNING' ? 1 : 0) - (b.entry.verdict === 'WARNING' ? 1 : 0));
+const dropped = Math.max(0, queue.length - maxRows);
+if (dropped) {
+  console.log(`\n⚠ Row cap: logging first ${maxRows} of ${queue.length} entries (FAILs/resolutions first) — ${dropped} deferred, they re-queue next run until written.`);
+  queue = queue.slice(0, maxRows);
+}
+const entries = queue.map((q) => q.entry);
+
+// ── 6. Commit ──────────────────────────────────────────────────────────────
+const statusLabel = siteErrors.length ? 'PARTIAL' : 'OK';
+const detail = `${codes.length} live · ${current.size} open findings (${counts.FAIL} FAIL) · ${isBaselineRun ? `baseline run, ${entries.length} FAIL rows logged` : `${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved`}${dropped ? ` · ${dropped} rows deferred` : ''}${siteErrors.length ? ` · ${siteErrors.length} site(s) unreachable` : ''}`;
+
+if (!commit) {
+  console.log(`\nDry-run only. Would write ${entries.length} QC Results Log row(s), save state, and record heartbeat:`);
+  console.log(`  System Status → brand-watch | ${statusLabel} | ${detail}`);
+  process.exit(0);
+}
+
+if (entries.length) {
+  const { sheets } = await getSheetsClient();
+  const OPS_ID = getOpsSheetId();
+  const { committed } = await upsertRows(sheets, OPS_ID, entries, { commit: true });
+  console.log(`\n✓ QC Results Log: ${committed.updateCount} update(s), ${committed.appendCount} append(s)`);
+  for (const { key } of queue) if (nextEntries[key]) nextEntries[key].logged = true;
+} else {
+  console.log('\n✓ No deltas — nothing to log (clean day).');
+}
+
+mkdirSync('captures', { recursive: true });
+writeFileSync(STATE_FILE, JSON.stringify({
+  createdAt: prior?.createdAt || nowIso, lastRunAt: nowIso,
+  entries: nextEntries,
+}, null, 2));
+console.log(`✓ State saved → ${STATE_FILE} (${Object.keys(nextEntries).length} open findings tracked)`);
+
+recordStatus(statusLabel, detail);
+console.log('Done.');
+
+function recordStatus(status, detailText) {
+  try {
+    execFileSync(process.execPath, ['bin/record-pull-status.mjs', 'brand-watch', 'Brand Watch (5pm)', status, detailText], { stdio: 'inherit' });
+  } catch (e) {
+    console.error(`⚠ Could not record System Status heartbeat: ${e.message.split('\n')[0]}`);
+  }
+}

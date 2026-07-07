@@ -37,6 +37,10 @@ import { igmpPost } from '../src/igmp-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 import { upsertRows } from '../src/qc-results-log.js';
+import {
+  checkCategoryNoProvider, checkExpiredActiveQproQp2, checkMessageTemplatePresence,
+  checkIgmpExpiredActive, checkIgmpDuplicateName, verdictFromFindings,
+} from '../src/structural-checks.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const commit = flags.commit === true;
@@ -73,10 +77,6 @@ const findings = []; // { code, brand, verdict, reasons: [] }
 // ── must be checked against the WHOLE site, not just this week's batch)   ──
 const igmpSitesNeeded = [...new Set(igmpCandidates.map((c) => c.siteId))];
 const TODAY = new Date();
-function parseDdmmyyyy(s) {
-  const m = String(s || '').match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-  return m ? new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`) : null;
-}
 
 for (const siteId of igmpSitesNeeded) {
   console.log(`\nFetching full site list for ${siteId} (peer visibility for duplicate-name check)…`);
@@ -91,47 +91,31 @@ for (const siteId of igmpSitesNeeded) {
     if (list.length < 200) break;
     pg++;
   }
-  const active = all.filter((p) => p.IsActive && !p.IsExpired);
-  const byName = new Map();
-  for (const p of active) {
-    if (!byName.has(p.PromotionName)) byName.set(p.PromotionName, []);
-    byName.get(p.PromotionName).push(p);
-  }
+  const active = all.filter((p) => p.IsActive && !p.IsExpired && p.PromotionType === 'Bonus');
+  const nameCounts = new Map();
+  for (const p of active) nameCounts.set(p.PromotionName, (nameCounts.get(p.PromotionName) || 0) + 1);
+  const nameCountBySite = new Map([[siteId, nameCounts]]);
   const byCode = new Map(all.map((p) => [p.PromotionCode, p]));
 
   for (const cand of igmpCandidates.filter((c) => c.siteId === siteId)) {
     const p = byCode.get(cand.code);
-    const reasons = [];
     if (!p) { findings.push({ ...cand, verdict: 'INCONCLUSIVE', reasons: ['code not found in fresh BO pull — may have been deactivated/renamed since sweep started'] }); continue; }
-    const dupes = byName.get(p.PromotionName) || [];
-    if (dupes.length > 1) {
-      reasons.push(`PromotionName "${p.PromotionName}" shared with ${dupes.length - 1} other active promo(s) on this site — Reward Assignment dropdown can't distinguish them`);
-    }
-    const end = parseDdmmyyyy(p.PromotionEndDate);
-    if (p.IsActive && end && end < TODAY) {
-      reasons.push(`Flagged active but PromotionEndDate (${p.PromotionEndDate}) has already passed`);
-    }
-    findings.push({ ...cand, verdict: reasons.length ? 'FAIL' : 'PASS', reasons });
+    const checkResults = [
+      ...checkIgmpDuplicateName({ siteId, name: p.PromotionName, promotionType: p.PromotionType }, nameCountBySite),
+      ...(p.IsActive ? checkIgmpExpiredActive({ endDate: p.PromotionEndDate }, TODAY) : []),
+    ];
+    findings.push({ ...cand, verdict: verdictFromFindings(checkResults), reasons: checkResults.map((r) => r.message) });
   }
 }
 
 // ── QPRO/QP2: everything needed was already carried on the candidate ────────
 for (const cand of qproQp2Candidates) {
-  const reasons = [];
-  const catSet = cand.category && cand.category !== '-' && cand.category !== '';
-  const provSet = cand.gameProvider && cand.gameProvider !== '-' && cand.gameProvider !== '';
-  if (catSet !== provSet) {
-    reasons.push(`Category (${cand.category || '—'}) and Game Provider (${cand.gameProvider || '—'}) inconsistent — must both be restricted or both left open`);
-  }
-  if (cand.validTo && cand.status === 1) {
-    const validTo = new Date(cand.validTo);
-    if (validTo < TODAY) reasons.push(`Flagged active but valid_to (${cand.validTo}) has already passed`);
-  }
-  const findingVerdict = reasons.length ? 'FAIL' : 'PASS';
-  if (!cand.messageTemplateCount) {
-    reasons.push('No message template attached');
-  }
-  findings.push({ ...cand, verdict: reasons.length && findingVerdict === 'PASS' ? 'WARNING' : findingVerdict, reasons });
+  const checkResults = [
+    ...checkCategoryNoProvider(cand),
+    ...checkExpiredActiveQproQp2(cand, TODAY),
+    ...checkMessageTemplatePresence(cand),
+  ];
+  findings.push({ ...cand, verdict: verdictFromFindings(checkResults), reasons: checkResults.map((r) => r.message) });
 }
 
 // ── Report ────────────────────────────────────────────────────────────────
