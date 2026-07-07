@@ -21,3 +21,5 @@ Sheet changes applied 2026-07-07 to the Promo Code Request sheet (1dqvCM9SoPLJ2i
 - Effective for new requests from 1 Aug 2026; existing live codes grandfathered.
 
 Phase 3 (repo side) done 2026-07-07: ingest emits `campaign_owner` (from Requestor col when ∈ owner codes; person name → null = legacy row), `stakeholder`, `no_deposit`, `suggested_prefix`. `src/campaign-prefix-rules.js` has `resolveConvention()` + `validatePrefixConvention()` (new convention takes precedence; legacy CAMPAIGN_PREFIX_RULES kept for grandfathered rows). Namer prepends OWNER_OBJECTIVE_[NODEP]_ and swaps a leading REL_→RET_ for churn-objective reloads. All 3 QC agents (promo-qc-engine, promo-qc, sentinel) check the new convention first and treat CHURN as a banned segment on new rows.
+
+Rollout: team-wide Slack announcement (was step 4.3) cancelled per Wai Yip 2026-07-07 — do not post it. Remaining open step: mid-Aug 2026 spot-check of Aug-tab rows for legacy-style codes / empty dropdowns / CHURN tokens.
