@@ -8,8 +8,14 @@
 // Enable Gmail API in GCP: https://console.cloud.google.com/apis/library/gmail.googleapis.com
 
 import { getGoogleAuth, loadGoogleapis } from './google-auth.js';
+import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
 
 const POLL_INTERVAL_MS = 4000;
+
+// Fallback when the Gmail API is unavailable: another process (or Claude via the
+// Gmail MCP) writes the 6-digit code to this file and we pick it up on next poll.
+const OTP_DROP_FILE = path.resolve('tmp/ft-otp-drop.txt');
 
 /**
  * Wait for a 6-digit OTP to appear in the inbox after `afterMs`.
@@ -27,14 +33,28 @@ export async function waitForFtOtp({ afterMs = Date.now(), timeoutMs = 120_000 }
   const afterSec = Math.floor(afterMs / 1000);
   const deadline = Date.now() + timeoutMs;
 
+  // Clear any stale drop file from a previous run
+  try { if (existsSync(OTP_DROP_FILE) && statSync(OTP_DROP_FILE).mtimeMs < afterMs) unlinkSync(OTP_DROP_FILE); } catch (_) {}
+  try { mkdirSync(path.dirname(OTP_DROP_FILE), { recursive: true }); } catch (_) {}
+
   process.stdout.write('  Waiting for OTP email');
 
   // Track seen message IDs so we don't re-process
   const seen = new Set();
+  let gmailAvailable = true;
 
   while (Date.now() < deadline) {
     await delay(POLL_INTERVAL_MS);
     process.stdout.write('.');
+
+    // Drop-file fallback — works even when the Gmail API is unavailable
+    const dropped = readOtpDropFile(afterMs);
+    if (dropped) {
+      process.stdout.write(`\n  OTP: ${dropped} (from drop file)\n`);
+      return dropped;
+    }
+
+    if (!gmailAvailable) continue;
 
     let listRes;
     try {
@@ -45,12 +65,13 @@ export async function waitForFtOtp({ afterMs = Date.now(), timeoutMs = 120_000 }
       });
     } catch (e) {
       if (e.code === 403 || String(e.message).includes('Gmail API')) {
-        throw new Error(
-          'Gmail API not accessible. Make sure:\n' +
-          '  1. Gmail API is enabled in GCP → https://console.cloud.google.com/apis/library/gmail.googleapis.com\n' +
-          '  2. OAuth token includes gmail.readonly scope → re-run: node bin/sheets-oauth.mjs\n' +
-          `  (original error: ${e.message})`
+        gmailAvailable = false;
+        process.stdout.write(
+          '\n  Gmail API unavailable — falling back to drop file.\n' +
+          `  Write the 6-digit code to: ${OTP_DROP_FILE}\n` +
+          '  (To fix Gmail: enable the API in GCP + re-consent with gmail.readonly)\n'
         );
+        continue;
       }
       // Transient network error — keep polling
       continue;
@@ -88,6 +109,22 @@ export async function waitForFtOtp({ afterMs = Date.now(), timeoutMs = 120_000 }
 
 function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+// Read a 6-digit code from the drop file if it was written after `afterMs`.
+// Consumes (deletes) the file on successful read.
+function readOtpDropFile(afterMs) {
+  try {
+    if (!existsSync(OTP_DROP_FILE)) return null;
+    if (statSync(OTP_DROP_FILE).mtimeMs < afterMs) return null;
+    const raw = readFileSync(OTP_DROP_FILE, 'utf8');
+    const m = raw.match(/\b(\d{6})\b/);
+    if (!m) return null;
+    unlinkSync(OTP_DROP_FILE);
+    return m[1];
+  } catch (_) {
+    return null;
+  }
 }
 
 function getHeader(msgData, name) {

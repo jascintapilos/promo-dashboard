@@ -39,8 +39,16 @@ const INSTANCES = {
   qp2:   { url: 'https://alpha-iota-qp2.ft-crm.com/v2/',      label: 'QP2A–D' },
 };
 
-// Email used for FT login OTP (all three instances)
-const FT_LOGIN_EMAIL = 'jascinta.pilos@thebrandingpeople.co';
+// Email used for FT login OTP (all three instances).
+// Resolution: --email flag → FT_LOGIN_EMAIL env → ft-login.local.json → team default.
+const LOGIN_CONFIG_FILE = path.resolve('ft-login.local.json');
+const FT_LOGIN_EMAIL =
+  flags.email ||
+  process.env.FT_LOGIN_EMAIL ||
+  (existsSync(LOGIN_CONFIG_FILE)
+    ? JSON.parse(readFileSync(LOGIN_CONFIG_FILE, 'utf8')).email
+    : null) ||
+  'jascinta.pilos@thebrandingpeople.co';
 
 if (!INSTANCES[INSTANCE]) {
   console.error(`Unknown instance "${INSTANCE}". Use: ws1 | qpro1 | qp2`);
