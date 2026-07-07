@@ -110,15 +110,23 @@ export function buildTncLinkHtml({ platform, locale, brandInfo }) {
   return `<a href="${base}/en-my/info-center/terms-and-conditions">${term}</a>`;
 }
 
-// Sentence-11 T&C post-process: in the <li> that has `:url/terms-conditions`
-// as plain text, wrap the localized T&C term with a hyperlink using the :url
-// placeholder. Applies to Deposit/FC templates (which use <li>). FS templates
-// use <p> and the `:url/terms-conditions` parameter is left as-is — the BO
-// resolves it at display time without needing an explicit <a> tag.
-function hyperlinkTnc(html, docKey, platform) {
+// Sentence-11 T&C post-process: wrap the localized T&C term in a hyperlink to
+// the resolved brand-domain URL, dropping the trailing :url placeholder. QPRO
+// only. Attempt 3 (2026-07-07): the first two attempts both used a
+// double-quoted href (`href="..."`, first with the bare :url placeholder,
+// then with this same resolved URL) and rendered broken on two separate live
+// QPRO inbox tests regardless of what the href contained — the raw href
+// leaked out as the link text and the surrounding markup leaked as visible
+// characters. Using single-quoted href here tests whether the break is the
+// message HTML being inserted into a double-quoted attribute context
+// upstream, where our own `"` would prematurely close it. Unproven until
+// checked against a live delivered message. Falls back to no-op (leaves the
+// :url placeholder untouched) if no brand domain is available.
+function hyperlinkTnc(html, docKey, tncLinkHtml) {
+  const url = /href="([^"]+)"/.exec(tncLinkHtml || '')?.[1];
+  if (!url) return html;
   const term = TNC_TERM_BY_DOCKEY[docKey] || TNC_TERM_BY_DOCKEY.EN;
-  const targetAttr = String(platform || '').toLowerCase() === 'qp2' ? ' target="_blank"' : '';
-  const link = `<a${targetAttr} href=":url/terms-conditions">${term}</a>`;
+  const link = `<a href='${url}'>${term}</a>`;
   return html.replace(/<li>([^<]*)\s*:url\/terms-conditions\s*([^<]*)<\/li>/, (m, before, after) => {
     const linked = before.includes(term)
       ? before.replace(term, link)
@@ -612,9 +620,9 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
     template = template.split(':brandname').join(merchantName);
     subject  = subject.split(':brandname').join(merchantName);
   } else {
-    // QPRO: hyperlink the T&C term using the :url placeholder.
-    // The BO substitutes :url per-brand at display time, same as :brandname.
-    template = hyperlinkTnc(template, docKey, pf);
+    // QPRO: wrap the term in a single-quoted-href anchor to the resolved
+    // brand-domain URL (attempt 3 — see hyperlinkTnc's doc comment for why).
+    template = hyperlinkTnc(template, docKey, tncLinkHtml);
   }
 
   return {

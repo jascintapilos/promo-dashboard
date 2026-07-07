@@ -1,0 +1,722 @@
+<title>Promo Code Monitoring — Dashboard Mockup</title>
+<style>
+  :root{
+    --bg:#f2f4f3;
+    --surface:#ffffff;
+    --border:#dfe4e2;
+    --border-soft:#ebeeec;
+    --ink:#14201d;
+    --ink-soft:#57635f;
+    --ink-faint:#8b948f;
+    --accent:#0f5e56;
+    --accent-soft:#e4efec;
+    --accent-soft-border:#c7ddd8;
+    --good:#1e8e5a;
+    --good-soft:#e6f4ec;
+    --warn:#c98a1e;
+    --warn-soft:#faf1de;
+    --high:#c2570a;
+    --high-soft:#fbe9dc;
+    --critical:#b33a3a;
+    --critical-soft:#f8e5e5;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  a{color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .shell{
+    max-width:1280px;
+    margin:0 auto;
+    padding:28px 28px 64px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .brandmark{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .brandmark .eyebrow{
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:700;
+  }
+  .brandmark h1{
+    margin:0;
+    font-size:21px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    text-wrap:balance;
+  }
+  .brandmark .sub{
+    color:var(--ink-soft);
+    font-size:12.5px;
+  }
+  .asof{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--ink-soft);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:7px 12px;
+  }
+  .asof .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;}
+  .asof strong{color:var(--ink);font-weight:600;}
+
+  .filterbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink-soft);
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-family:var(--sans);
+  }
+  .chip:hover{border-color:var(--accent-soft-border);color:var(--ink);}
+  .chip.active{
+    background:var(--accent-soft);
+    border-color:var(--accent-soft-border);
+    color:var(--accent);
+    font-weight:600;
+  }
+  .filter-sep{width:1px;height:18px;background:var(--border);}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+  }
+  .card-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    padding:14px 16px 10px;
+  }
+  .card-head h2{
+    margin:0;
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .card-head .meta{
+    font-size:11.5px;
+    color:var(--ink-faint);
+  }
+  .card-body{padding:0 16px 16px;}
+
+  /* ---------- KPI strip ---------- */
+  .kpistrip{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+  }
+  .kpi{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .kpi .label{
+    font-size:11px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    font-weight:600;
+  }
+  .kpi .value{
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .kpi .delta{font-size:12px;}
+  .kpi .delta.up{color:var(--good);}
+  .kpi .delta.down{color:var(--critical);}
+  .kpi .delta.flat{color:var(--ink-faint);}
+
+  /* ---------- Main grid ---------- */
+  .maingrid{
+    display:grid;
+    grid-template-columns:1.7fr 1fr;
+    gap:16px;
+    align-items:start;
+  }
+  .col{display:flex;flex-direction:column;gap:16px;}
+
+  /* ---------- Table ---------- */
+  .tablewrap{overflow-x:auto;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.8px;
+  }
+  th{
+    text-align:left;
+    font-size:10.5px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    font-weight:600;
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{
+    padding:9px 10px;
+    border-bottom:1px solid var(--border-soft);
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+  tr:last-child td{border-bottom:none;}
+  tr.rowhover:hover{background:#fafbfa;}
+  td.brand{font-weight:600;}
+  td.num, th.num{text-align:right;}
+  .platform-tag{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    background:#eef0ef;
+    border-radius:5px;
+    padding:1px 6px;
+    font-weight:600;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;}
+  .pill.low{background:var(--good-soft);color:var(--good);}
+  .pill.low::before{background:var(--good);}
+  .pill.medium{background:var(--warn-soft);color:var(--warn);}
+  .pill.medium::before{background:var(--warn);}
+  .pill.high{background:var(--high-soft);color:var(--high);}
+  .pill.high::before{background:var(--high);}
+  .pill.critical{background:var(--critical-soft);color:var(--critical);}
+  .pill.critical::before{background:var(--critical);}
+
+  .bar{
+    width:64px;
+    height:6px;
+    border-radius:4px;
+    background:var(--border-soft);
+    overflow:hidden;
+    display:inline-block;
+    vertical-align:middle;
+  }
+  .bar > span{display:block;height:100%;border-radius:4px;background:var(--accent);}
+  .bar.good > span{background:var(--good);}
+  .bar.warn > span{background:var(--warn);}
+  .bar.crit > span{background:var(--critical);}
+
+  /* ---------- Risk panel ---------- */
+  .risk-item{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:11px 0;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .risk-item:last-child{border-bottom:none;padding-bottom:2px;}
+  .risk-item:first-child{padding-top:2px;}
+  .risk-row1{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .risk-row1 .brand-name{font-weight:700;font-size:13.5px;}
+  .risk-tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .tag{
+    font-size:10.5px;
+    padding:2px 7px;
+    border-radius:5px;
+    background:#f2f0ea;
+    color:#8a6d1f;
+    border:1px solid #eae4d3;
+    font-weight:600;
+  }
+  .tag.rep{background:#fbeaea;color:var(--critical);border-color:#f3d7d7;}
+  .tag.vol{background:#eaf1fb;color:#2a5f9e;border-color:#d7e5f5;}
+  .tag.cov{background:#f1eafb;color:#6a3fa0;border-color:#e3d7f5;}
+  .tag.inc{background:var(--high-soft);color:var(--high);border-color:#f3ddc9;}
+  .risk-score{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
+
+  /* ---------- Sampling summary ---------- */
+  .sampling-row{
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    align-items:center;
+    gap:10px;
+    padding:8px 0;
+    border-bottom:1px solid var(--border-soft);
+    font-size:12.5px;
+  }
+  .sampling-row:last-child{border-bottom:none;}
+  .sampling-row .sname{font-weight:600;}
+  .sampling-row .srate{font-family:var(--mono);color:var(--ink-soft);font-size:12px;}
+  .sampling-foot{
+    display:flex;
+    justify-content:space-between;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    padding-top:10px;
+    margin-top:4px;
+    border-top:1px dashed var(--border);
+  }
+
+  /* ---------- Error trend ---------- */
+  .trend-row{
+    display:grid;
+    grid-template-columns:90px 1fr 100px;
+    align-items:center;
+    gap:10px;
+    padding:8px 0;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .trend-row:last-child{border-bottom:none;}
+  .stackbar{
+    display:flex;
+    height:14px;
+    border-radius:4px;
+    overflow:hidden;
+    background:var(--border-soft);
+  }
+  .stackbar span{display:block;height:100%;}
+  .s1{background:var(--critical);}
+  .s2{background:var(--warn);}
+  .s3{background:#cfd4d2;}
+  .trend-legend{
+    display:flex;
+    gap:14px;
+    font-size:11px;
+    color:var(--ink-soft);
+    padding:4px 0 2px;
+  }
+  .trend-legend .lg{display:flex;align-items:center;gap:5px;}
+  .trend-legend .sw{width:8px;height:8px;border-radius:2px;}
+
+  /* ---------- SLA ---------- */
+  .sla-row{
+    display:grid;
+    grid-template-columns:100px 1fr 130px;
+    align-items:center;
+    gap:10px;
+    padding:8px 0;
+    border-bottom:1px solid var(--border-soft);
+    font-size:12.5px;
+  }
+  .sla-row:last-child{border-bottom:none;}
+  .sla-track{
+    display:flex;
+    height:10px;
+    border-radius:4px;
+    overflow:hidden;
+    background:var(--border-soft);
+  }
+  .sla-track span{display:block;height:100%;}
+  .ontime{background:var(--good);}
+  .atrisk{background:var(--warn);}
+  .breached{background:var(--critical);}
+  .sla-avg{text-align:right;font-family:var(--mono);color:var(--ink-soft);}
+
+  /* ---------- Issues feed ---------- */
+  .issue{
+    display:flex;
+    gap:10px;
+    padding:11px 0;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .issue:last-child{border-bottom:none;}
+  .issue .stripe{width:3px;border-radius:2px;flex:none;align-self:stretch;}
+  .issue .stripe.critical{background:var(--critical);}
+  .issue .stripe.high{background:var(--high);}
+  .issue .stripe.medium{background:var(--warn);}
+  .issue-body{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .issue-title{font-size:13px;font-weight:600;}
+  .issue-meta{font-size:11.5px;color:var(--ink-faint);}
+  .issue-meta b{color:var(--ink-soft);font-weight:600;}
+  .issue-desc{font-size:12.3px;color:var(--ink-soft);}
+
+  .section-note{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    padding:0 16px 14px;
+    margin-top:-6px;
+  }
+
+  @media (max-width:980px){
+    .kpistrip{grid-template-columns:repeat(2,1fr);}
+    .maingrid{grid-template-columns:1fr;}
+  }
+</style>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brandmark">
+      <div class="eyebrow">Promo Operations</div>
+      <h1>Promo Code Monitoring</h1>
+      <div class="sub">Per-brand accuracy, risk &amp; SLA — bot QC + human sampling, unified</div>
+    </div>
+    <div class="asof"><span class="dot"></span> Last refreshed <strong class="num">03 Jul 2026, 06:00</strong> · all sources OK</div>
+  </div>
+
+  <div class="filterbar">
+    <span class="chip active">All Platforms</span>
+    <span class="chip">QPRO</span>
+    <span class="chip">QP2</span>
+    <span class="chip">WS1 / WS2</span>
+    <div class="filter-sep"></div>
+    <span class="chip active">All Regions</span>
+    <span class="chip">MY</span>
+    <span class="chip">SG</span>
+    <span class="chip">ID</span>
+    <span class="chip">TH</span>
+    <span class="chip">KH</span>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpistrip">
+    <div class="kpi">
+      <div class="label">Codes created (7d)</div>
+      <div class="value num">142</div>
+      <div class="delta up">▲ 12% vs prior 7d</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Bot auto-pass rate</div>
+      <div class="value num">88.0%</div>
+      <div class="delta flat">flat vs last week</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Human QC pass rate</div>
+      <div class="value num">85.7%</div>
+      <div class="delta down">▼ 3.1 pts</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Brands High / Critical risk</div>
+      <div class="value num">3 <span style="font-size:13px;color:var(--ink-faint);font-family:var(--sans);">of 25</span></div>
+      <div class="delta down">▲ 1 vs last week</div>
+    </div>
+    <div class="kpi">
+      <div class="label">SLA on-time</div>
+      <div class="value num">91.4%</div>
+      <div class="delta up">▲ 2.0 pts</div>
+    </div>
+  </div>
+
+  <div class="maingrid">
+    <!-- LEFT COLUMN -->
+    <div class="col">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Per-Brand Performance</h2>
+          <span class="meta">25 brands · sorted by risk</span>
+        </div>
+        <div class="card-body">
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Brand</th><th>Region</th><th>BO</th>
+                  <th class="num">Volume 7d</th>
+                  <th class="num">Bot Pass</th>
+                  <th class="num">Human Sample</th>
+                  <th class="num">Human Pass</th>
+                  <th class="num">SLA On-Time</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="rowhover">
+                  <td class="brand">WS2</td><td>MY</td><td><span class="platform-tag">IGMP</span></td>
+                  <td class="num">31</td>
+                  <td class="num">74%<span class="bar warn"><span style="width:74%"></span></span></td>
+                  <td class="num">15%</td>
+                  <td class="num">67%</td>
+                  <td class="num">78%</td>
+                  <td><span class="pill critical">Critical</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">QPRO2</td><td>MY, SG</td><td><span class="platform-tag">QPRO</span></td>
+                  <td class="num">18</td>
+                  <td class="num">82%<span class="bar warn"><span style="width:82%"></span></span></td>
+                  <td class="num">11%</td>
+                  <td class="num">50%</td>
+                  <td class="num">83%</td>
+                  <td><span class="pill high">High</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">QP2D</td><td>MY, SG</td><td><span class="platform-tag">QP2</span></td>
+                  <td class="num">14</td>
+                  <td class="num">86%<span class="bar good"><span style="width:86%"></span></span></td>
+                  <td class="num">14%</td>
+                  <td class="num">50%</td>
+                  <td class="num">86%</td>
+                  <td><span class="pill high">High</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">WS1</td><td>MY, SG, ID</td><td><span class="platform-tag">IGMP</span></td>
+                  <td class="num">27</td>
+                  <td class="num">91%<span class="bar good"><span style="width:91%"></span></span></td>
+                  <td class="num">15%</td>
+                  <td class="num">100%</td>
+                  <td class="num">96%</td>
+                  <td><span class="pill medium">Medium</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">QPRO6</td><td>MY</td><td><span class="platform-tag">QPRO</span></td>
+                  <td class="num">9</td>
+                  <td class="num">100%<span class="bar good"><span style="width:100%"></span></span></td>
+                  <td class="num">15%</td>
+                  <td class="num">100%</td>
+                  <td class="num">100%</td>
+                  <td><span class="pill low">Low</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">QP2A</td><td>MY, SG</td><td><span class="platform-tag">QP2</span></td>
+                  <td class="num">11</td>
+                  <td class="num">100%<span class="bar good"><span style="width:100%"></span></span></td>
+                  <td class="num">18%</td>
+                  <td class="num">100%</td>
+                  <td class="num">100%</td>
+                  <td><span class="pill low">Low</span></td>
+                </tr>
+                <tr class="rowhover">
+                  <td class="brand">QPRO8</td><td>MY</td><td><span class="platform-tag">QPRO</span></td>
+                  <td class="num">7</td>
+                  <td class="num">95%<span class="bar good"><span style="width:95%"></span></span></td>
+                  <td class="num">14%</td>
+                  <td class="num">100%</td>
+                  <td class="num">100%</td>
+                  <td><span class="pill low">Low</span></td>
+                </tr>
+                <tr class="rowhover" style="opacity:.55;">
+                  <td class="brand">···</td><td>···</td><td><span class="platform-tag">···</span></td>
+                  <td class="num">···</td><td class="num">···</td><td class="num">···</td><td class="num">···</td><td class="num">···</td>
+                  <td><span class="pill low">Low</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section-note">Bot Pass bar reuses the severity palette (green ≥90%, amber 75–89%, red &lt;75%) — one visual language across the whole dashboard.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Error Trend by Brand</h2>
+          <span class="meta">trailing 4 weeks, by severity</span>
+        </div>
+        <div class="card-body">
+          <div class="trend-legend">
+            <span class="lg"><span class="sw s1"></span>S1 – High</span>
+            <span class="lg"><span class="sw s2"></span>S2 – Medium</span>
+            <span class="lg"><span class="sw s3"></span>S3 – Low</span>
+          </div>
+          <div class="trend-row">
+            <div>WS2</div>
+            <div class="stackbar"><span class="s1" style="width:30%"></span><span class="s2" style="width:45%"></span><span class="s3" style="width:15%"></span></div>
+            <div class="num" style="font-size:12px;color:var(--ink-soft);">4 in 4wk</div>
+          </div>
+          <div class="trend-row">
+            <div>QPRO2</div>
+            <div class="stackbar"><span class="s1" style="width:0%"></span><span class="s2" style="width:60%"></span><span class="s3" style="width:10%"></span></div>
+            <div class="num" style="font-size:12px;color:var(--ink-soft);">2 in 4wk</div>
+          </div>
+          <div class="trend-row">
+            <div>QP2D</div>
+            <div class="stackbar"><span class="s1" style="width:0%"></span><span class="s2" style="width:50%"></span><span class="s3" style="width:0%"></span></div>
+            <div class="num" style="font-size:12px;color:var(--ink-soft);">1 in 4wk</div>
+          </div>
+          <div class="trend-row">
+            <div>WS1</div>
+            <div class="stackbar"><span class="s1" style="width:0%"></span><span class="s2" style="width:0%"></span><span class="s3" style="width:20%"></span></div>
+            <div class="num" style="font-size:12px;color:var(--ink-soft);">1 in 4wk</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>SLA Performance by Brand</h2>
+          <span class="meta">On-time / at-risk / breached, trailing 30d</span>
+        </div>
+        <div class="card-body">
+          <div class="sla-row">
+            <div>WS2</div>
+            <div class="sla-track"><span class="ontime" style="width:70%"></span><span class="atrisk" style="width:12%"></span><span class="breached" style="width:18%"></span></div>
+            <div class="sla-avg">avg 6h 40m</div>
+          </div>
+          <div class="sla-row">
+            <div>QPRO2</div>
+            <div class="sla-track"><span class="ontime" style="width:80%"></span><span class="atrisk" style="width:12%"></span><span class="breached" style="width:8%"></span></div>
+            <div class="sla-avg">avg 3h 05m</div>
+          </div>
+          <div class="sla-row">
+            <div>QP2A</div>
+            <div class="sla-track"><span class="ontime" style="width:100%"></span></div>
+            <div class="sla-avg">avg 1h 50m</div>
+          </div>
+          <div class="sla-row">
+            <div>WS1</div>
+            <div class="sla-track"><span class="ontime" style="width:96%"></span><span class="atrisk" style="width:4%"></span></div>
+            <div class="sla-avg">avg 2h 20m</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Needs Attention</h2>
+          <span class="meta">risk band ≥ High</span>
+        </div>
+        <div class="card-body">
+          <div class="risk-item">
+            <div class="risk-row1">
+              <span class="brand-name">WS2</span>
+              <span class="risk-score">score 12<span style="color:var(--ink-faint);">/15</span></span>
+            </div>
+            <div class="risk-tags">
+              <span class="tag rep">Repeat error</span>
+              <span class="tag cov">Low coverage</span>
+              <span class="tag inc">Bot/human mismatch</span>
+            </div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-row1">
+              <span class="brand-name">QPRO2</span>
+              <span class="risk-score">score 9<span style="color:var(--ink-faint);">/15</span></span>
+            </div>
+            <div class="risk-tags">
+              <span class="tag rep">Repeat error</span>
+              <span class="tag vol">Volume spike</span>
+            </div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-row1">
+              <span class="brand-name">QP2D</span>
+              <span class="risk-score">score 8<span style="color:var(--ink-faint);">/15</span></span>
+            </div>
+            <div class="risk-tags">
+              <span class="tag cov">Low coverage</span>
+              <span class="tag vol">Urgent load</span>
+            </div>
+          </div>
+        </div>
+        <div class="section-note">Factors overlap — one real incident often trips 2–3 tags at once. A brand isn't three separate problems.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>QC Sampling Summary</h2>
+          <span class="meta">this week vs target</span>
+        </div>
+        <div class="card-body">
+          <div class="sampling-row">
+            <div class="sname">WS2</div>
+            <div class="srate">15% <span style="color:var(--critical);">→ 6%</span></div>
+            <span class="pill critical">Below target</span>
+          </div>
+          <div class="sampling-row">
+            <div class="sname">QPRO2</div>
+            <div class="srate">15% <span style="color:var(--warn);">→ 11%</span></div>
+            <span class="pill medium">Below target</span>
+          </div>
+          <div class="sampling-row">
+            <div class="sname">WS1</div>
+            <div class="srate">15% <span style="color:var(--good);">→ 15%</span></div>
+            <span class="pill low">On target</span>
+          </div>
+          <div class="sampling-row">
+            <div class="sname">QPRO6, QP2A +14 more</div>
+            <div class="srate num">bot-sufficient</div>
+            <span class="pill low">Auto-skipped</span>
+          </div>
+          <div class="sampling-foot">
+            <span>Escalations this week: <b class="num" style="color:var(--ink-soft);">2</b></span>
+            <span>Suggestion override rate: <b class="num" style="color:var(--ink-soft);">9%</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Latest Issues</h2>
+          <span class="meta">action required</span>
+        </div>
+        <div class="card-body">
+          <div class="issue">
+            <div class="stripe critical"></div>
+            <div class="issue-body">
+              <div class="issue-title">Sentinel: FAIL — FT_VIP_50PCT_1000_3X</div>
+              <div class="issue-meta"><b>WS2</b> · Deposit Bonus · 2h ago</div>
+              <div class="issue-desc">Rollover multiplier mismatch vs approved request. Needs recreate, not in-place fix.</div>
+            </div>
+          </div>
+          <div class="issue">
+            <div class="stripe high"></div>
+            <div class="issue-body">
+              <div class="issue-title">Pre-QC: WARNING — VIP_REL_30PCT_12X_GLD</div>
+              <div class="issue-meta"><b>QPRO2</b> · Deposit Bonus · 5h ago</div>
+              <div class="issue-desc">Game categories and providers not both restricted — provider list empty.</div>
+            </div>
+          </div>
+          <div class="issue">
+            <div class="stripe medium"></div>
+            <div class="issue-body">
+              <div class="issue-title">Human QC: Fail — QA-W1-006</div>
+              <div class="issue-meta"><b>QP2D</b> · Free Credit · yesterday</div>
+              <div class="issue-desc">Deposit options not selected for SG; bonus calc incorrect. Root cause: Bot Error.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

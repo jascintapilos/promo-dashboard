@@ -41,7 +41,10 @@ those platforms have their own publish/activation semantics; do not assume.
   ExpiryMinutes, AutoRedemption, EffectiveMinutes}` (read current from
   GetFreeCreditInfo).
 - Other tab calls (not usually needed): `/PM/UpdatePromotionDetails` (name/dates),
-  `/PM/UpdatePromotionRewardDetails` (min/%/cap/TO/caps), `/PM/UpdatePromotionSettings`,
+  `/PM/UpdatePromotionRewardDetails` (RewardName/qty/cap/KYC/withdrawal-cap/max-balance
+  ONLY — it silently IGNORES MinimumActionAmount, BonusPercentage, RolloverMultiplier;
+  those are CREATE-ONLY on deposit bonuses, see feedback_igmp_min_deposit_create_only,
+  verified live 2026-07-07), `/PM/UpdatePromotionSettings`,
   `/PM/BulkAddorUpdatePromotionRewardContents` (per-locale T&C, body
   `{RewardId, PromotionRewardContents:[{Locale,PromotionRewardName,Content}]}`).
 - **Activate/deactivate**: `POST /PM/UpdatePromotionStatus {PromotionId, IsActive:true|false}`.

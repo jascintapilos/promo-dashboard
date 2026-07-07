@@ -1,0 +1,79 @@
+{
+  "_doc": [
+    "Campaign calendar for seasonal-copy-leak detection (brand-watch Wave 4,",
+    "advisor review 2026-07-07: detect DATES, not words). One entry per",
+    "campaign per year. marker_terms are evaluated ONLY when the campaign",
+    "window is closed (window_end + graceDays < today) AND the term does not",
+    "belong to any currently-open campaign — so in-season copy never flags.",
+    "Keep terms high-precision (5-10 per campaign): a term should only ever",
+    "appear in that campaign's copy. Latin terms match on word boundaries;",
+    "CJK terms match as substrings.",
+    "OWNER: whoever plans campaign copy adds next year's entry when the",
+    "campaign brief goes out — one JSON row, nothing else to update.",
+    "Origin incident: FT_REL_30PCT_8X carried CNY copy for ~5 months on 8 BOs",
+    "(found manually 2026-07-07 — this file exists so that never recurs)."
+  ],
+  "graceDays": 14,
+  "game_title_exclusions": [
+    "Starlight Christmas",
+    "Christmas Big Bass Bonanza",
+    "Sweet Bonanza Xmas",
+    "Santa's Wonderland",
+    "Santa's Great Gifts",
+    "Merry Christmas",
+    "Christmas Carol Megaways",
+    "World Cup Football"
+  ],
+  "_game_title_exclusions_doc": "Slot GAME titles containing marker terms — stripped from text before scanning, because an FS promo on a seasonal-themed game is legitimately live year-round. Campaign phrasing around the game name (e.g. 'Grand Christmas Streak Challenge') still flags.",
+  "campaigns": [
+    {
+      "id": "xmas-ny-2025",
+      "name": "Christmas & New Year 2025/26",
+      "window_start": "2025-11-20",
+      "window_end": "2026-01-15",
+      "marker_terms": ["Christmas", "Xmas", "Santa", "圣诞", "聖誕", "Natal"]
+    },
+    {
+      "id": "cny-2026",
+      "name": "Chinese New Year 2026 (Year of the Horse, CNY 2026-02-17)",
+      "window_start": "2026-01-10",
+      "window_end": "2026-03-08",
+      "marker_terms": ["Chinese New Year", "Lunar New Year", "CNY", "新年快乐", "农历新年", "恭喜发财", "贺岁", "Year of the Horse", "Tahun Baru Cina", "Imlek"]
+    },
+    {
+      "id": "valentine-2026",
+      "name": "Valentine's Day 2026",
+      "window_start": "2026-01-25",
+      "window_end": "2026-02-28",
+      "marker_terms": ["Valentine", "情人节", "情人節"]
+    },
+    {
+      "id": "raya-2026",
+      "name": "Ramadan / Hari Raya Aidilfitri 2026 (Eid ~2026-03-20)",
+      "window_start": "2026-02-15",
+      "window_end": "2026-04-20",
+      "marker_terms": ["Hari Raya", "Aidilfitri", "Ramadan", "Ramadhan", "Lebaran", "开斋节", "Duit Raya"]
+    },
+    {
+      "id": "merdeka-2025",
+      "name": "Merdeka 2025 (MY National Day 2025-08-31)",
+      "window_start": "2025-08-01",
+      "window_end": "2025-09-16",
+      "marker_terms": ["Merdeka"]
+    },
+    {
+      "id": "mid-autumn-2025",
+      "name": "Mid-Autumn Festival 2025 (2025-10-06)",
+      "window_start": "2025-09-08",
+      "window_end": "2025-10-20",
+      "marker_terms": ["Mid-Autumn", "Mooncake", "中秋", "月饼", "月餅"]
+    },
+    {
+      "id": "wc-2026",
+      "name": "FIFA World Cup 2026 (final 2026-07-19)",
+      "window_start": "2026-05-15",
+      "window_end": "2026-08-02",
+      "marker_terms": ["World Cup", "FIFA", "世界杯", "世界盃", "Piala Dunia", "WC26"]
+    }
+  ]
+}

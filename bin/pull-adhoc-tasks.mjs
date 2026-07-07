@@ -1,8 +1,16 @@
 /**
  * pull-adhoc-tasks.mjs
  *
- * Scan Slack (#promotions-team, #ba-promo) for adhoc task assignments and
- * write new rows to the Weekly Report 'Adhoc Tasks' tab.
+ * Scan Slack (#promotions-team, #ba-promo) and Telegram (morning-chain
+ * group, via bin/tg-bot-poll.mjs's local capture) for adhoc task
+ * assignments and write new rows to the Weekly Report 'Adhoc Tasks' tab.
+ *
+ * The Telegram parser is a first pass, not yet tuned against real data the
+ * way the Slack regexes below are (MEETING_RX/BOT_HEADER_RX/TEAM_TASK_RX
+ * clearly took iteration) — expect to adjust deriveModule/hasAction-style
+ * heuristics for tgParseTask() once real morning-chain messages flow in.
+ * Telegram coverage only starts from whenever the bot was added to the
+ * group — Bot API has no way to fetch history from before that.
  *
  * Schema: Date | Task Type | Task | Assignee
  *
@@ -20,6 +28,7 @@ import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
+import { searchMessages as tgSearchMessages, getBotConfig as tgGetBotConfig } from '../src/tg-store.js';
 import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
@@ -193,6 +202,37 @@ function parseBa(msg) {
   });
 }
 
+// ── Telegram: morning-chain group ────────────────────────────────────────────
+// Fill in as usernames are confirmed — unmapped mentions fall back to the
+// raw @username, matching SLACK_USER_MAP's fallback behaviour.
+const TG_USER_MAP = {};
+
+function parseTg(msg) {
+  const text = msg.text || '';
+  if (text.length < 15) return [];
+  if (BOT_HEADER_RX.test(text)) return [];
+  if (MEETING_RX.test(text)) return [];
+
+  const hasAction = /\b(help|please|kindly|update|amend|review|create|add|fix|do|prepare|translate|upload|deploy|submit|qc|verify|monitor|brief|join|need|check|remove|edit|send|share)\b/i.test(text);
+  const mentions = (msg.entities || []).map((e) => e.username || e.text?.replace(/^@/, '')).filter(Boolean);
+  if (!hasAction && !mentions.length) return [];
+
+  const firstLine = text.split('\n')[0].trim();
+  const date = msg.date.slice(0, 10);
+  const module = deriveModule(text);
+  const taskType = MODULE_TO_TYPE[module] || 'Housekeeping';
+  const task = firstLine.length > 5 ? firstLine.slice(0, 100) : text.slice(0, 100);
+
+  if (mentions.length) {
+    return mentions.map((u) => ({
+      date, taskType, task,
+      assignee: TG_USER_MAP[u] || u,
+      _source: 'TG morning-chain',
+    }));
+  }
+  return [{ date, taskType, task, assignee: msg.from || 'Team', _source: 'TG morning-chain' }];
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 console.log(`\n━━ Adhoc Tasks pull — ${new Date().toISOString().slice(0,10)} ━━`);
 console.log(`Lookback: ${DAYS} days  Mode: ${COMMIT ? 'COMMIT' : 'DRY RUN'}\n`);
@@ -213,6 +253,19 @@ const baMsgs = await fetchHistory(CHANNELS.ba.id, oldestTs);
 const baRows = baMsgs.flatMap(m => (m.type === 'message' && !m.subtype) ? parseBa(m) : []);
 console.log(`${baMsgs.length} messages → ${baRows.length} task row(s)`);
 rows.push(...baRows);
+
+// Scan Telegram morning-chain group (local capture — see bin/tg-bot-poll.mjs)
+const tgConfig = tgGetBotConfig();
+if (tgConfig?.chatId) {
+  process.stdout.write(`Scanning TG morning-chain… `);
+  const sinceIso = new Date(Date.now() - DAYS * 86400 * 1000).toISOString().slice(0, 10);
+  const tgMsgs = tgSearchMessages({ since: sinceIso, limit: 5000 });
+  const tgRows = tgMsgs.flatMap(parseTg);
+  console.log(`${tgMsgs.length} messages → ${tgRows.length} task row(s)`);
+  rows.push(...tgRows);
+} else {
+  console.log('Skipping Telegram — not yet configured (see bin/tg-bot-poll.mjs setup).');
+}
 
 // Sort by date descending
 rows.sort((a, b) => b.date.localeCompare(a.date));

@@ -49,6 +49,7 @@ import { parseArgs } from './_args.js';
 import { fetchAllLiveCodes } from '../src/live-codes.js';
 import { runListingChecks, buildIgmpNameCounts, verdictFromFindings } from '../src/structural-checks.js';
 import { checkMtContent, buildDomainToBrand } from '../src/mt-content-checks.js';
+import { buildLeakyTerms, checkCampaignLeakMt, checkCampaignLeakName } from '../src/campaign-checks.js';
 import { igmpPost } from '../src/igmp-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
@@ -60,6 +61,12 @@ const commit = flags.commit === true;
 const maxRows = Number(flags['max-rows'] || 300);
 const postDashboard = flags.dashboard === true;
 const postSlack = flags.slack === true;
+// One-time flag for the run right after NEW CHECKS are added to the suite:
+// pre-existing WARNING findings the new checks surface get absorbed into
+// held state (grandfathered) instead of flooding the log and digest as
+// hundreds of "NEW" deltas. FAILs are never absorbed.
+const absorbNewChecks = flags['absorb-new-checks'] === true;
+let absorbed = 0;
 const STATE_FILE = 'captures/brand-watch-state.json';
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -81,6 +88,8 @@ if (!codes.length) {
 const TODAY = new Date();
 const nameCountBySite = buildIgmpNameCounts(codes);
 const domainToBrand = buildDomainToBrand();
+const leakyTerms = buildLeakyTerms(TODAY);
+console.log(`Campaign calendar: ${leakyTerms.length} closed-campaign marker term(s) in effect`);
 const current = new Map(); // key -> { cand, verdict, reasons, checks }
 const checkCounts = {};
 for (const cand of codes) {
@@ -88,6 +97,8 @@ for (const cand of codes) {
     ...runListingChecks(cand, { today: TODAY, nameCountBySite }),
     // MT bodies ride the list response on QPRO/QP2 — content checks are free.
     ...(cand.platform === 'igmp' ? [] : checkMtContent(cand, { domainToBrand })),
+    ...(cand.platform === 'igmp' ? [] : checkCampaignLeakMt(cand, leakyTerms)),
+    ...checkCampaignLeakName(cand, leakyTerms),
   ];
   if (!results.length) continue;
   for (const r of results) checkCounts[r.check] = (checkCounts[r.check] || 0) + 1;
@@ -120,15 +131,17 @@ for (const [key, f] of current) {
   const prev = priorEntries[key];
   const signature = `${f.verdict}::${f.reasons.join('|')}`;
   const changed = prev && prev.signature !== signature;
+  const absorbThis = absorbNewChecks && f.verdict === 'WARNING' && (!prev || changed);
   // Baseline WARNINGs are held in state only — they surface if they CHANGE.
-  const held = prev ? (Boolean(prev.held) && !changed) : (isBaselineRun && f.verdict === 'WARNING');
+  const held = absorbThis || (prev ? (Boolean(prev.held) && !changed) : (isBaselineRun && f.verdict === 'WARNING'));
   nextEntries[key] = {
     verdict: f.verdict, reasons: f.reasons, signature, held,
-    baseline: prev ? Boolean(prev.baseline) : isBaselineRun,
+    baseline: prev ? Boolean(prev.baseline) : (isBaselineRun || absorbThis),
     logged: changed ? false : Boolean(prev?.logged),
     firstSeen: prev?.firstSeen || nowIso, lastSeen: nowIso,
   };
-  if (!prev) newFindings.push({ key, ...f });
+  if (absorbThis) absorbed++;
+  else if (!prev) newFindings.push({ key, ...f });
   else if (changed) changedFindings.push({ key, ...f, prevSignature: prev.signature });
   else if (!prev.logged && !held) backlogFindings.push({ key, ...f }); // capped out of an earlier run — still owed a row
 }
@@ -221,7 +234,7 @@ writeFileSync('captures/brand-watch-report.json', JSON.stringify({
 console.log('  Full findings report → captures/brand-watch-report.json');
 console.log(isBaselineRun
   ? '  FIRST RUN — everything above becomes the grandfathered baseline.'
-  : `  Delta vs last run: ${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved${backlogFindings.length ? `, ${backlogFindings.length} still owed from earlier caps` : ''}.`);
+  : `  Delta vs last run: ${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved${backlogFindings.length ? `, ${backlogFindings.length} still owed from earlier caps` : ''}${absorbed ? `, ${absorbed} absorbed (new-check grandfathering)` : ''}.`);
 
 const show = (label, list) => {
   if (!list.length) return;
@@ -320,7 +333,7 @@ function buildDigest() {
 
 // ── 7. Commit ──────────────────────────────────────────────────────────────
 const statusLabel = siteErrors.length ? 'PARTIAL' : 'OK';
-const detail = `${codes.length} live · ${current.size} open findings (${counts.FAIL} FAIL) · ${isBaselineRun ? `baseline run, ${entries.length} FAIL rows logged` : `${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved`}${detailStats.checked ? ` · rotation ${detailStats.checked} checked` : ''}${dropped ? ` · ${dropped} rows deferred` : ''}${siteErrors.length ? ` · ${siteErrors.length} site(s) unreachable` : ''}`;
+const detail = `${codes.length} live · ${current.size} open findings (${counts.FAIL} FAIL) · ${isBaselineRun ? `baseline run, ${entries.length} FAIL rows logged` : `${newFindings.length} new, ${changedFindings.length} changed, ${resolved.length} resolved`}${absorbed ? ` · ${absorbed} absorbed (new checks)` : ''}${detailStats.checked ? ` · rotation ${detailStats.checked} checked` : ''}${dropped ? ` · ${dropped} rows deferred` : ''}${siteErrors.length ? ` · ${siteErrors.length} site(s) unreachable` : ''}`;
 
 if (!commit) {
   console.log(`\nDry-run only. Would write ${entries.length} QC Results Log row(s), save state, and record heartbeat:`);

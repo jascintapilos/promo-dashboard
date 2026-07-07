@@ -34,6 +34,7 @@ const TABS = [
   { name: 'Manual Entry (Promo)',  dateCol: 0, dateFormat: 'dmy' },
   { name: 'Manual Entry (Banner)', dateCol: 0, dateFormat: 'dmy' },
   { name: 'New Games',             dateCol: 0, dateFormat: 'dmy' },
+  { name: 'Adhoc Tasks',           dateCol: 0, dateFormat: 'iso' },
 ];
 
 // Parse DD/MM/YYYY → Date. Falls back to ISO parse for manually typed dates.

@@ -7,6 +7,7 @@
 - [Promo name strips mechanics](feedback_promo_name_from_column_m_no_mechanics.md) — Strip Min Dep/TO/Max Cap; don't append "Bonus"/"VIP".
 - [QPRO name from column M](feedback_qpro_name_from_column_m.md) — QPRO BO promotion.name = col M with tier lines stripped.
 - [WS1/WS2 PromotionName must be unique](feedback_ws1_ws2_unique_promo_name.md) — Manual Reward team picks by name. Probe BO before commit.
+- [Player-neutral rename suffixes](feedback_player_neutral_rename_suffixes.md) — Dedupe suffixes = mechanics from saved BO config (MIN/CAP/TOx) + numeral fallback; never FT/REL/channel tokens.
 
 ## Save & QC Flow
 - [Always re-ingest before run](feedback_always_reingest_before_run.md) — Step 1: node bin/ingest-requests.js. Never hand-edit fixtures.
@@ -86,6 +87,8 @@
 - [UpdateBonusDetails RedeemableDay must be "0,1,2,3,4,5,6" string](feedback_igmp_redeemable_day_all_days.md) — Never int 0. Read from GetBonusInfo and pass through.
 - [IGMP Deposit T&C: rewards_validity + provider exclusions](feedback_igmp_tnc_dep_validity_and_provider_exclusions.md) — Point 1 reads rewards_validity_days; point 3 appends provider exclusion list.
 - [IGMP edit + status: WS1 ONLY never publish](project_igmp_edit_status_endpoints.md) — Final step = activate only. Run from live BO tab; stale cookie 500s.
+- [WS1 deposit min-deposit is CREATE-ONLY](feedback_igmp_min_deposit_create_only.md) — no edit endpoint for min/%/TO on deposit bonuses; fix = deactivate + recreate with suffix bump.
+- [WS1 SG legacy name dedupe done](project_ws1_sg_legacy_name_dedupe.md) — 2026-07-07: 54 renamed player-neutral; MIN18 anomaly + WS2 8 findings + MY rework flagged.
 - [WS1 MY legacy name dedupe (active-only) + open FS/FC bucket](project_ws1_legacy_name_dedupe.md) — 2026-07-06: 57 Bonus-type renamed unique; 99 active dup groups remain in FS/FC space (mostly campaign prize pools), bucket-2 plan on hold.
 - [WS1 MY TLEO T&C backfilled from SG](project_ws1_my_tleo_tnc_missing.md) — 2026-07-06: 42/42 Bonus TLEO cloned (SGD→RM, mb8sg→mb8mys); CLOSED: 458MX cap corrected 450→458 + TOPEN: FT_REL_TLEO_45PCT_458MX skipped — MY cap=450 vs code/SG 458, fix cap then rerun fix-ws1-my-tleo-tnc.mjs.C backfilled; final probe 54/54 both sites.
 
