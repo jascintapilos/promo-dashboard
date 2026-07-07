@@ -12,7 +12,8 @@ FastTrack CRM API paths include an opaque **per-instance tenant segment** betwee
 `https://<instance>.ft-crm.com/crm-api/<TENANT>/<Endpoint>`
 
 - **qpro1** (`alpha-iota-qp1.ft-crm.com`) tenant = `2jdauyjn44` (confirmed 2026-07-07, API version 18183).
-- ws1 / qp2 have their OWN tenant codes — discover per instance (do not assume `2jdauyjn44`).
+- **ws1** (`mb8.ft-crm.com`) tenant = `x2avv90vh1` (confirmed 2026-07-07; AdminUsers 75, Segments cat1 2114, Activities 1777). gabrielle account = brandId 230.
+- **qp2** tenant still unknown — discover per instance (do not assume another instance's code).
 
 **Gotcha:** a bare path like `/crm-api/Authentication/AdminUsers` (as older probe scripts + [[project-ft-crm-pull]] documented) returns **HTTP 200 with the SPA HTML shell**, not JSON — it looks "OK" but `content-type: text/html`. Always include the tenant segment. Verified working with tenant: AdminUsers (83 users, Success:true), Segments/ByCategory/1 (1509), Activities/GetActivities (1457).
 
