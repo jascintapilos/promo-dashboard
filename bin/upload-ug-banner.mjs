@@ -74,9 +74,13 @@ function fail(msg) { console.error(`✗ ${msg}`); process.exit(1); }
 const commit = !!args.commit;
 const title = args.title || fail('--title is required');
 const imagePath = path.resolve(ROOT, args.image || fail('--image is required'));
-const popUrl = args.url || fail('--url is required (absolute path, e.g. /promotion)');
+// --url= (empty) and --category=NONE are allowed: persisted records (e.g. B23)
+// show both stored blank despite the form's required markers.
+const popUrl = args.url === true ? '' : (args.url ?? fail('--url is required (absolute path e.g. /promotion, or --url= for blank)'));
 const sequence = String(args.sequence ?? '1');
-const categories = String(args.category || 'ALL').split(',').map(s => s.trim()).filter(Boolean);
+const categories = String(args.category || 'ALL').toUpperCase() === 'NONE'
+  ? []
+  : String(args.category || 'ALL').split(',').map(s => s.trim()).filter(Boolean);
 const language = args.language || 'Bhs Indonesia';
 const status = args.status || 'Show In Promotion';
 const platform = args.platform || 'ALL PLATFORM';
@@ -99,7 +103,7 @@ if (args['content-file']) {
   contentHtml = readFileSync(f, 'utf8');
 }
 
-if (!popUrl.startsWith('/')) fail(`--url must be an absolute path starting with / (got: ${popUrl})`);
+if (popUrl && !popUrl.startsWith('/')) fail(`--url must be an absolute path starting with / (got: ${popUrl})`);
 if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStart)) fail(`--start must be yyyy-mm-dd (got: ${dateStart})`);
 if (dateEnd && !/^\d{4}-\d{2}-\d{2}$/.test(dateEnd)) fail(`--end must be yyyy-mm-dd (got: ${dateEnd})`);
 if (dateEnd && dateEnd < dateStart) fail(`--end (${dateEnd}) is before --start (${dateStart})`);
@@ -187,19 +191,21 @@ await setSelect('#status', status);
 await setSelect('#platform', platform);
 await setSelect('#img_type', imgType);
 
-// Category is a multi-select
-const catOk = await page.evaluate((cats) => {
-  const el = document.querySelector('#sel_category');
-  if (!el) return false;
-  for (const o of el.options) o.selected = cats.includes(o.text.trim());
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-  if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
-  return [...el.selectedOptions].length === cats.length;
-}, categories);
-if (!catOk) { await browser.close(); fail(`could not select categories: ${categories.join(', ')}`); }
+// Category is a multi-select; skip entirely for --category=NONE
+if (categories.length) {
+  const catOk = await page.evaluate((cats) => {
+    const el = document.querySelector('#sel_category');
+    if (!el) return false;
+    for (const o of el.options) o.selected = cats.includes(o.text.trim());
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
+    return [...el.selectedOptions].length === cats.length;
+  }, categories);
+  if (!catOk) { await browser.close(); fail(`could not select categories: ${categories.join(', ')}`); }
+}
 
 await page.fill('#title', title);
-await page.fill('#pop_up_url', popUrl);
+if (popUrl) await page.fill('#pop_up_url', popUrl);
 await page.fill('#sequence', sequence);
 if (promoCode) await page.fill('#promoCode', promoCode).catch(() => console.log('⚠ promo code field not fillable (disabled?) — skipped'));
 
