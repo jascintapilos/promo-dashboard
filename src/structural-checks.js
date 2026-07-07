@@ -61,6 +61,19 @@ export function checkExpiredActiveQproQp2(cand, today = new Date()) {
   return [];
 }
 
+// An active promo with NO currency rows is unclaimable and matches the
+// documented promotion_currency PUT-wipe bug (project_qpro_put_currency_wipe).
+// Calibration 2026-07-07: 0/1,251 active promos on qpro1+qpro5 are legitimately
+// empty — high-precision FAIL.
+export function checkCurrenciesPresent(cand) {
+  const c = cand.currencies;
+  const empty = c == null || (Array.isArray(c) ? c.length === 0 : String(c).trim() === '' || String(c).trim() === '-');
+  if (empty) {
+    return [{ severity: 'FAIL', check: 'currency-wiped', message: 'No promotion currencies configured — promo is unclaimable (matches the promotion_currency PUT-wipe bug)' }];
+  }
+  return [];
+}
+
 export function checkMessageTemplatePresence(cand) {
   if (!cand.messageTemplateCount) {
     return [{ severity: 'WARNING', check: 'mt-missing', message: 'No message template attached' }];
@@ -136,6 +149,7 @@ export function runListingChecks(cand, { today = new Date(), nameCountBySite } =
   // checkExpiredActiveQproQp2 deliberately excluded — see its comment.
   return [
     ...checkCategoryNoProvider(cand),
+    ...checkCurrenciesPresent(cand),
     ...checkMessageTemplatePresence(cand),
     ...checkDialogPopupPresence(cand),
   ];

@@ -87,7 +87,11 @@ export async function fetchAllLiveCodes() {
   const qproQp2Fields = (r) => ({
     name: r.name, category: r.category, gameProvider: r.game_provider,
     messageTemplateCount: (r.message_templates || []).length,
+    // Full per-locale MT bodies come inline on the list response (confirmed
+    // live 2026-07-07) — carried so MT content checks need no extra fetches.
+    messageTemplates: (r.message_templates || []).map((t) => ({ settings_locale_id: t.settings_locale_id, subject: t.subject, message: t.message })),
     dialogPopupCount: (r.dialog_popup_list || []).length,
+    currencies: r.currencies,
     validTo: r.valid_to, status: r.status,
   });
 
