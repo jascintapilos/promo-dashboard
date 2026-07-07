@@ -117,6 +117,7 @@
 - [Parallel + Pre-QC + Deep-QC sub-agent fan-out](project_parallel_qc_deep_qc.md) — --parallel-qc ~3x faster; /qc-engine (triage); /pre-qc (plan); /deep-qc (sentinel).
 - [BO auto-pull + YTD backfill](project_bo_autopull.md) — pull-bo-ytd.mjs; 2249 YTD promos into Promo Code Log; nightly 10AM bat.
 - [FastTrack CRM pull](project_ft_crm_pull.md) — pull-ft-campaigns.mjs; sessions expire 8h; capture-ft-sessions-all.bat.
+- [FT API tenant segment](project_ft_api_tenant_segment.md) — /crm-api/ paths need per-instance tenant (qpro1=2jdauyjn44); bare path returns SPA HTML.
 - [Smartico CRM pull](project_smartico_crm_pull.md) — j_segment + j_audience_scheduled; TOTP 2FA; SPA API: use listSPAAll().
 - [Utilisation leave overrides](project_utilisation_leave_overrides.md) — leaveOverrides in pull-utilisation.mjs; 2026-06-19: team avg 64.1%.
 - [Weekly Report dashboard (live)](project_weekly_report_dashboard.md) — dashboard.html + GAS JSONP; GitHub Pages jascintapilos.github.io/promo-dashboard/.

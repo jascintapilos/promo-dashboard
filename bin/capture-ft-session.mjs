@@ -124,19 +124,20 @@ if (MANUAL) {
   } catch (e) {
     console.error(`\nAuto-login failed: ${e.message}`);
     console.error('Re-run with --manual to complete login interactively.');
-    await browser.close().catch(() => {});
+    await Promise.race([browser.close().catch(() => {}), new Promise(r => setTimeout(r, 5000))]);
     process.exit(1);
   }
 }
 
-await browser.close().catch(() => {});
-
 if (!captured) {
+  await closeBrowserSafely(browser);
   console.error('\nNo session token found within timeout.');
   process.exit(1);
 }
 
 // ── Save session + profile ────────────────────────────────────────────────
+// Write files BEFORE closing the browser — headless Chrome's close() can hang,
+// and the session file is the payload we must not lose.
 
 const store = {
   instance:     INSTANCE,
@@ -163,7 +164,17 @@ if (captured.storageState) {
   console.log(`Profile saved  → ${PROFILE_FILE}`);
 }
 
+await closeBrowserSafely(browser);
 console.log('\nDone.');
+process.exit(0);
+
+// Close the browser but never let a headless-close hang block the process.
+async function closeBrowserSafely(browser) {
+  await Promise.race([
+    browser.close().catch(() => {}),
+    new Promise(resolve => setTimeout(resolve, 5000)),
+  ]);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -486,7 +497,13 @@ async function extractSession(page, ctx, loginUrl) {
   }).catch(() => ({}));
 
   console.log(`\nLogged in! URL: ${page.url()}`);
-  const storageState = await ctx.storageState().catch(() => null);
+  // storageState() can hang indefinitely in headless Chrome — cap it so the
+  // session file (the important part) always gets written.
+  const storageState = await Promise.race([
+    ctx.storageState().catch(() => null),
+    new Promise(resolve => setTimeout(() => resolve(null), 8000)),
+  ]);
+  if (!storageState) console.log('  (storageState unavailable — skipping profile save)');
   const mainCookies  = cookies.filter(c => c.domain.includes(host) && c.value.length > 10);
   const bestCookie   = mainCookies[0];
 
