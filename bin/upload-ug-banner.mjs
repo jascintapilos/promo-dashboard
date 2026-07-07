@@ -36,6 +36,8 @@
 //   --commit              live save — clicks Create and verifies via the listing
 //   --profile=<id>        AdsPower profile user_id (default: k1bt9w43)
 //   --adspower=<host>     AdsPower Local API base (default: http://127.0.0.1:50325)
+//   --cdp=<port|url>      connect straight to a CDP endpoint (skips the AdsPower
+//                         API lookup; use when the API stops reporting debug_port)
 //
 // Outputs a QC bundle to captures/ug-banner/<slug>.json + screenshots alongside.
 
@@ -129,25 +131,31 @@ async function adsGet(pathname) {
   return res.json().catch(() => null);
 }
 
-const apiStatus = await adsGet('/status');
-if (!apiStatus || apiStatus.code !== 0) {
-  fail(`AdsPower Local API not reachable at ${adspower}.\n  Open the AdsPower app, log in, and enable the Local API, then retry.`);
-}
-
-// Reuse the browser if the profile is already open, else start it
 let cdpEndpoint = null;
-const active = await adsGet(`/api/v1/browser/active?user_id=${profileId}`);
-if (active?.code === 0 && active.data?.status === 'Active' && active.data?.ws?.puppeteer) {
-  cdpEndpoint = active.data.ws.puppeteer;
-  console.log(`✓ AdsPower profile ${profileId} already open`);
+if (args.cdp) {
+  cdpEndpoint = /^\d+$/.test(String(args.cdp)) ? `http://127.0.0.1:${args.cdp}` : String(args.cdp);
+  console.log(`✓ using explicit CDP endpoint ${cdpEndpoint}`);
 } else {
-  const started = await adsGet(`/api/v1/browser/start?user_id=${profileId}&open_tabs=1`);
-  if (started?.code !== 0) fail(`AdsPower could not start profile ${profileId}: ${started?.msg || 'no response'}`);
-  cdpEndpoint = started.data.ws.puppeteer;
-  console.log(`✓ AdsPower profile ${profileId} started`);
+  const apiStatus = await adsGet('/status');
+  if (!apiStatus || apiStatus.code !== 0) {
+    fail(`AdsPower Local API not reachable at ${adspower}.\n  Open the AdsPower app, log in, and enable the Local API, then retry.`);
+  }
+  // Reuse the browser if the profile is already open, else start it
+  const active = await adsGet(`/api/v1/browser/active?user_id=${profileId}`);
+  if (active?.code === 0 && active.data?.status === 'Active' && active.data?.ws?.puppeteer) {
+    cdpEndpoint = active.data.ws.puppeteer;
+    console.log(`✓ AdsPower profile ${profileId} already open`);
+  } else {
+    const started = await adsGet(`/api/v1/browser/start?user_id=${profileId}&open_tabs=1`);
+    if (started?.code !== 0) fail(`AdsPower could not start profile ${profileId}: ${started?.msg || 'no response'}`);
+    cdpEndpoint = started.data.ws.puppeteer;
+    console.log(`✓ AdsPower profile ${profileId} started`);
+  }
+  if (!cdpEndpoint) fail('AdsPower did not return a CDP endpoint — find the port (netstat + /json/version) and pass --cdp=<port>.');
+  cdpEndpoint = cdpEndpoint.replace(/^ws:/, 'http:').replace(/\/devtools.*$/, '');
 }
 
-const browser = await chromium.connectOverCDP(cdpEndpoint.replace(/^ws:/, 'http:').replace(/\/devtools.*$/, ''));
+const browser = await chromium.connectOverCDP(cdpEndpoint);
 const ctx = browser.contexts()[0];
 const page = ctx.pages()[0] || await ctx.newPage();
 
