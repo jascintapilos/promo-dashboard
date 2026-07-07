@@ -24,7 +24,7 @@ export function buildDomainToBrand() {
   const map = new Map();
   for (const section of ['qpro', 'qp2']) {
     for (const [brand, info] of Object.entries(DIR[section] || {})) {
-      for (const u of [info.website, info.tncDomain]) {
+      for (const u of [info.website, info.tncDomain, ...(info.aliases || [])]) {
         const h = hostOf(u);
         if (h) map.set(h, brand);
       }
