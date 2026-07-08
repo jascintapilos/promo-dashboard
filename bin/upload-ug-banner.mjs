@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // UG BO (3MPLAY-NS3 — SBO28/UG01, MENANG7/UG02) banner uploader — module 8.11.
 //
-// Drives the authenticated AdsPower browser profile via Playwright CDP, so no
-// password/CAPTCHA is needed. The AdsPower app must be running with its Local
-// API enabled and the profile must hold a live BO session (log in manually
-// once inside the AdsPower browser if the session has expired).
+// Auth via src/ug-session.js: first run opens a headed browser and waits for
+// you to log in manually (password + CAPTCHA), then saves the session to
+// <brand>-session.local.json. Every run after that restores the saved
+// session and skips the login screen entirely — no AdsPower dependency.
+// If the saved session has expired, it automatically re-prompts for login.
 //
 // Form reference: memory/project_ug_banner_upload_811.md + Google doc
 // 14frPSZ1D87paZjKPPjAdRLFRl2V7pYtqWqaBPAAWGNw.
@@ -34,23 +35,22 @@
 //   --promo-code=<code>   optional promo code text
 //   --dry-run             fill the form + screenshot, do NOT click Create (default)
 //   --commit              live save — clicks Create and verifies via the listing
-//   --profile=<id>        AdsPower profile user_id (default: k1bt9w43)
-//   --adspower=<host>     AdsPower Local API base (default: http://127.0.0.1:50325)
-//   --cdp=<port|url>      connect straight to a CDP endpoint (skips the AdsPower
-//                         API lookup; use when the API stops reporting debug_port)
+//   --brand=<UG01|UG02>   which BO login/session to use (default: UG01)
+//   --headed              force a visible browser even if the saved session is valid
 //
 // Outputs a QC bundle to captures/ug-banner/<slug>.json + screenshots alongside.
+// Run `node bin/ug-login.mjs --brand=UG01` first to seed the session file if
+// you'd rather log in ahead of time instead of on first upload.
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import sharp from 'sharp';
+import { getUgPage, BO_BASE } from '../src/ug-session.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const BO_BASE = 'https://3m-ns3-admin.com';
 const LIST_URL = `${BO_BASE}/Website/BannerSetting`;
 const CREATE_URL = `${BO_BASE}/Website/BannerSetting/create/`;
 const REQUIRED_W = 360, REQUIRED_H = 160;
@@ -89,8 +89,8 @@ const platform = args.platform || 'ALL PLATFORM';
 const imgType = args['img-type'] || 'Single';
 const noExpiry = !!args['no-expiry'];
 const promoCode = args['promo-code'] || '';
-const profileId = args.profile || 'k1bt9w43';
-const adspower = args.adspower || 'http://127.0.0.1:50325';
+const brand = (args.brand || 'UG01').toUpperCase();
+const forceHeaded = !!args.headed;
 
 // Today in GMT+7 (BO timezone) regardless of VDI timezone
 const nowGmt7 = new Date(Date.now() + 7 * 3600e3);
@@ -123,53 +123,9 @@ if (meta.width !== REQUIRED_W || meta.height !== REQUIRED_H) {
 }
 console.log(`✓ image ${path.basename(imagePath)} is ${meta.width}x${meta.height}px`);
 
-// ── AdsPower session ──────────────────────────────────────────────────────────
+// ── Session (auto-login on first run, reused on every run after) ───────────────
 
-async function adsGet(pathname) {
-  const res = await fetch(`${adspower}${pathname}`).catch(() => null);
-  if (!res) return null;
-  return res.json().catch(() => null);
-}
-
-let cdpEndpoint = null;
-if (args.cdp) {
-  cdpEndpoint = /^\d+$/.test(String(args.cdp)) ? `http://127.0.0.1:${args.cdp}` : String(args.cdp);
-  console.log(`✓ using explicit CDP endpoint ${cdpEndpoint}`);
-} else {
-  const apiStatus = await adsGet('/status');
-  if (!apiStatus || apiStatus.code !== 0) {
-    fail(`AdsPower Local API not reachable at ${adspower}.\n  Open the AdsPower app, log in, and enable the Local API, then retry.`);
-  }
-  // Reuse the browser if the profile is already open, else start it
-  const active = await adsGet(`/api/v1/browser/active?user_id=${profileId}`);
-  if (active?.code === 0 && active.data?.status === 'Active' && active.data?.ws?.puppeteer) {
-    cdpEndpoint = active.data.ws.puppeteer;
-    console.log(`✓ AdsPower profile ${profileId} already open`);
-  } else {
-    const started = await adsGet(`/api/v1/browser/start?user_id=${profileId}&open_tabs=1`);
-    if (started?.code !== 0) fail(`AdsPower could not start profile ${profileId}: ${started?.msg || 'no response'}`);
-    cdpEndpoint = started.data.ws.puppeteer;
-    console.log(`✓ AdsPower profile ${profileId} started`);
-  }
-  if (!cdpEndpoint) fail('AdsPower did not return a CDP endpoint — find the port (netstat + /json/version) and pass --cdp=<port>.');
-  cdpEndpoint = cdpEndpoint.replace(/^ws:/, 'http:').replace(/\/devtools.*$/, '');
-}
-
-const browser = await chromium.connectOverCDP(cdpEndpoint);
-const ctx = browser.contexts()[0];
-const page = ctx.pages()[0] || await ctx.newPage();
-
-// ── Login check ───────────────────────────────────────────────────────────────
-
-await page.goto(LIST_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
-await page.waitForTimeout(1500);
-const loggedOut = await page.evaluate(() =>
-  !!document.querySelector('input[type=password]') || /log\s*in/i.test(document.title === '' ? '' : (document.querySelector('button[type=submit]')?.innerText || ''))
-);
-if (loggedOut || !page.url().includes('/Website/BannerSetting')) {
-  await browser.close();
-  fail(`BO session is not logged in (landed on ${page.url()}).\n  Open the AdsPower browser and log in to ${BO_BASE} manually, then retry.`);
-}
+const { browser, page } = await getUgPage({ brand, headless: true, headed: forceHeaded });
 console.log('✓ BO session is live');
 
 // ── Fill the create form ──────────────────────────────────────────────────────

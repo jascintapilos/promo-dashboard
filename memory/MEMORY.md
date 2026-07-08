@@ -140,7 +140,7 @@
 - [WS1/WS2 platform + UICarousel IDs](project_ws1_ws2_platforms.md) — Directus 10.8.2. MB8 MY=226,TH=28,ID=132,KH=80,SG=54,AU=227,PH=158.
 - [BIA (WS1/WS2) Directus API](project_bia_directus_api.md) — promo_testbot@client.com. promotions_translations.content = 3.3 equivalent.
 - [Brand & platform ecosystem](project_brand_ecosystem.md) — 30+ brands across WS1/WS2/WS3, QPRO1-19, QP2A-D, NX/UG.
-- [UG banner upload — module 8.11](project_ug_banner_upload_811.md) — 3MPLAY-NS3 (SBO28/MENANG7); bin/upload-ug-banner.mjs; access via AdsPower profile k1bt9w43 + Playwright CDP (bypasses CAPTCHA).
+- [UG banner upload — module 8.11](project_ug_banner_upload_811.md) — 3MPLAY-NS3 (SBO28/MENANG7); bin/upload-ug-banner.mjs; local Chromium + saved session (bin/ug-login.mjs), no AdsPower.
 
 ## References
 - [Directory sheet](reference_directory_sheet.md) — master reference for brands, BO links, tool list, SOPs, team roster.
