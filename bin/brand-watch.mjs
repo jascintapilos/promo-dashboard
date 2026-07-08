@@ -462,22 +462,26 @@ async function igmpRewardContentChecks(cand) {
   // unexceptioned documented rules, near-zero legitimate-variant space)
 
   // RedemptionType must match MinimumActionAmount per feedback_igmp_redemption_type_rule.
-  // Confirmed exception (Jascinta, 2026-07-08): a PercentageBased match
-  // bonus is inherently deposit-triggered regardless of MinimumActionAmount
-  // — "0" means "any deposit amount qualifies for the match," not "no
-  // deposit needed." RedemptionType stays Deposit(0) unconditionally for
-  // this reward type. The min-deposit-derived rule (feedback_igmp_redemption_type_rule)
-  // applies to every other reward type as documented. Live calibration
-  // 2026-07-08 at n=1000: 6/6 hits were exactly this exception class before
-  // this carve-out (Mid-Month Diamond/Platinum/Gold/Silver 50% Bonus,
-  // 10PERCENTUNLIMITEDBONUS on WS1_SG/WS1_KH) — now correctly excluded.
+  // WARNING, permanently — NOT auto-classified, per two live-calibration
+  // corrections on 2026-07-08 that both used rew.RewardTypeString ===
+  // 'PercentageBased' as the signal and got opposite answers from it:
+  //   - Mid-Month Diamond/Platinum/Gold/Silver 50% Bonus, 10PERCENTUNLIMITED
+  //     BONUS: PercentageBased, MinimumActionAmount=0, confirmed Deposit(0)
+  //     IS correct ("0" = any deposit amount qualifies for the match).
+  //   - Optimove_Lossback_*, *_weekly_rescue_bonus_*: ALSO PercentageBased
+  //     (percentage of LOSSES, not of a deposit), MinimumActionAmount=0,
+  //     confirmed Claim(1) IS correct (no-deposit-required rebate).
+  // RewardTypeString does not distinguish "percentage of a deposit" from
+  // "percentage of losses" — there is no reliable field-based signal found
+  // yet to auto-classify this, so the check states the plain default rule
+  // and flags both known exception name patterns in the message for a human
+  // to recognize at a glance, rather than guessing a third heuristic wrong.
   const minAction = Number(rew.MinimumActionAmount ?? 0);
-  const isMatchBonus = rew.RewardTypeString === 'PercentageBased';
-  const expectedRedemptionType = isMatchBonus ? 0 : (minAction > 0 ? 0 : 1);
+  const expectedRedemptionType = minAction > 0 ? 0 : 1;
   if (Number(rew.RedemptionType) !== expectedRedemptionType) {
     findings.push({
-      severity: 'FAIL', check: 'igmp-redemption-type-mismatch',
-      message: `RedemptionType=${rew.RedemptionType} (${rew.RedemptionTypeString || '?'}) inconsistent with MinimumActionAmount=${minAction} — should be ${expectedRedemptionType === 0 ? 'Deposit (0)' : 'Claim (1)'}`,
+      severity: 'WARNING', check: 'igmp-redemption-type-mismatch',
+      message: `RedemptionType=${rew.RedemptionType} (${rew.RedemptionTypeString || '?'}) inconsistent with MinimumActionAmount=${minAction} — should be ${expectedRedemptionType === 0 ? 'Deposit (0)' : 'Claim (1)'} per the documented rule, UNLESS this is a percentage-match bonus (any deposit qualifies, confirmed Deposit-correct) or a loss-back/rescue rebate (no deposit needed, confirmed Claim-correct) — both known exceptions to the min-deposit rule, see feedback_igmp_redemption_type_rule`,
     });
   }
 
