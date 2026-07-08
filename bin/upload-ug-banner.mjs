@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 // UG BO (3MPLAY-NS3 — SBO28/UG01, MENANG7/UG02) banner uploader — module 8.11.
 //
-// Auth via src/ug-session.js: first run opens a headed browser and waits for
-// you to log in manually (password + CAPTCHA), then saves the session to
-// <brand>-session.local.json. Every run after that restores the saved
-// session and skips the login screen entirely — no AdsPower dependency.
-// If the saved session has expired, it automatically re-prompts for login.
+// Auth via src/adspower-session.js: connects to the AdsPower profile for the
+// given brand over its Local API + Playwright CDP. AdsPower owns the proxy,
+// browser fingerprint, and the BO login session itself (cookies persist on
+// its side) — this script does no session storage of its own. If the
+// profile's BO session has expired, log in once inside the AdsPower browser
+// window (password + CAPTCHA — cannot be scripted) and AdsPower remembers it
+// from then on. On exit the script calls AdsPower's stop endpoint, which
+// closes the browser and syncs its cloud data.
 //
 // Form reference: memory/project_ug_banner_upload_811.md + Google doc
 // 14frPSZ1D87paZjKPPjAdRLFRl2V7pYtqWqaBPAAWGNw.
@@ -35,22 +38,24 @@
 //   --promo-code=<code>   optional promo code text
 //   --dry-run             fill the form + screenshot, do NOT click Create (default)
 //   --commit              live save — clicks Create and verifies via the listing
-//   --brand=<UG01|UG02>   which BO login/session to use (default: UG01)
-//   --headed              force a visible browser even if the saved session is valid
+//   --brand=<UG01|UG02>   which AdsPower profile to use (default: UG01; see
+//                         src/adspower-session.js BRAND_PROFILES for the map)
+//   --profile=<user_id>   use a raw AdsPower profile id directly (overrides --brand)
+//   --keep-open           don't call AdsPower's stop endpoint when done (leaves
+//                         the profile's browser open for a follow-up run)
 //
 // Outputs a QC bundle to captures/ug-banner/<slug>.json + screenshots alongside.
-// Run `node bin/ug-login.mjs --brand=UG01` first to seed the session file if
-// you'd rather log in ahead of time instead of on first upload.
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { getUgPage, BO_BASE } from '../src/ug-session.js';
+import { startProfile, stopProfile } from '../src/adspower-session.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
+const BO_BASE = 'https://3m-ns3-admin.com';
 const LIST_URL = `${BO_BASE}/Website/BannerSetting`;
 const CREATE_URL = `${BO_BASE}/Website/BannerSetting/create/`;
 const REQUIRED_W = 360, REQUIRED_H = 160;
@@ -89,8 +94,8 @@ const platform = args.platform || 'ALL PLATFORM';
 const imgType = args['img-type'] || 'Single';
 const noExpiry = !!args['no-expiry'];
 const promoCode = args['promo-code'] || '';
-const brand = (args.brand || 'UG01').toUpperCase();
-const forceHeaded = !!args.headed;
+const brandOrProfile = args.profile || (args.brand || 'UG01').toUpperCase();
+const keepOpen = !!args['keep-open'];
 
 // Today in GMT+7 (BO timezone) regardless of VDI timezone
 const nowGmt7 = new Date(Date.now() + 7 * 3600e3);
@@ -123,205 +128,228 @@ if (meta.width !== REQUIRED_W || meta.height !== REQUIRED_H) {
 }
 console.log(`✓ image ${path.basename(imagePath)} is ${meta.width}x${meta.height}px`);
 
-// ── Session (auto-login on first run, reused on every run after) ───────────────
+// ── AdsPower session ─────────────────────────────────────────────────────────
 
-const { browser, page } = await getUgPage({ brand, headless: true, headed: forceHeaded });
-console.log('✓ BO session is live');
+const { browser, page, userId } = await startProfile(brandOrProfile);
+console.log(`✓ AdsPower profile ${userId} connected`);
 
-// ── Fill the create form ──────────────────────────────────────────────────────
+let exitCode = 0;
+try {
+  await page.goto(LIST_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForTimeout(1500);
+  const loggedOut = await page.evaluate(() => !!document.querySelector('input[type=password]'));
+  if (loggedOut || !page.url().includes('/Website/BannerSetting')) {
+    throw new Error(
+      `BO session is not logged in (landed on ${page.url()}).\n` +
+      `  Open the AdsPower browser window for profile ${userId} and log in manually (password + CAPTCHA) — AdsPower will remember it from then on.`
+    );
+  }
+  console.log('✓ BO session is live');
 
-await page.goto(CREATE_URL, { waitUntil: 'networkidle', timeout: 45000 });
-await page.waitForSelector('#title', { timeout: 15000 });
+  // ── Fill the create form ────────────────────────────────────────────────────
 
-// Selects: set language FIRST (it swaps the title/content labels), then the rest.
-// These may be bootstrap-select enhanced, so set value + fire change + refresh.
-async function setSelect(sel, label) {
-  const ok = await page.evaluate(([sel, label]) => {
-    const el = document.querySelector(sel);
-    if (!el) return false;
-    const opt = [...el.options].find(o => o.text.trim() === label);
-    if (!opt) return false;
-    el.value = opt.value;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-    if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
-    return true;
-  }, [sel, label]);
-  if (!ok) { await browser.close(); fail(`could not set ${sel} to "${label}"`); }
-}
+  await page.goto(CREATE_URL, { waitUntil: 'networkidle', timeout: 45000 });
+  await page.waitForSelector('#title', { timeout: 15000 });
 
-await setSelect('#sel_lang_banner', language);
-await page.waitForTimeout(500);
-await setSelect('#status', status);
-await setSelect('#platform', platform);
-await setSelect('#img_type', imgType);
+  // Selects: set language FIRST (it swaps the title/content labels), then the rest.
+  // These may be bootstrap-select enhanced, so set value + fire change + refresh.
+  async function setSelect(sel, label) {
+    const ok = await page.evaluate(([sel, label]) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      const opt = [...el.options].find(o => o.text.trim() === label);
+      if (!opt) return false;
+      el.value = opt.value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
+      return true;
+    }, [sel, label]);
+    if (!ok) throw new Error(`could not set ${sel} to "${label}"`);
+  }
 
-// Category is a multi-select; skip entirely for --category=NONE
-if (categories.length) {
-  const catOk = await page.evaluate((cats) => {
-    const el = document.querySelector('#sel_category');
-    if (!el) return false;
-    for (const o of el.options) o.selected = cats.includes(o.text.trim());
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-    if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
-    return [...el.selectedOptions].length === cats.length;
-  }, categories);
-  if (!catOk) { await browser.close(); fail(`could not select categories: ${categories.join(', ')}`); }
-}
+  await setSelect('#sel_lang_banner', language);
+  await page.waitForTimeout(500);
+  await setSelect('#status', status);
+  await setSelect('#platform', platform);
+  await setSelect('#img_type', imgType);
 
-await page.fill('#title', title);
-if (popUrl) await page.fill('#pop_up_url', popUrl);
-await page.fill('#sequence', sequence);
-if (promoCode) await page.fill('#promoCode', promoCode).catch(() => console.log('⚠ promo code field not fillable (disabled?) — skipped'));
+  // Category is a multi-select; skip entirely for --category=NONE
+  if (categories.length) {
+    const catOk = await page.evaluate((cats) => {
+      const el = document.querySelector('#sel_category');
+      if (!el) return false;
+      for (const o of el.options) o.selected = cats.includes(o.text.trim());
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      if (window.jQuery && jQuery(el).data('selectpicker')) jQuery(el).selectpicker('refresh');
+      return [...el.selectedOptions].length === cats.length;
+    }, categories);
+    if (!catOk) throw new Error(`could not select categories: ${categories.join(', ')}`);
+  }
 
-await page.fill('#date_start', dateStart);
-if (noExpiry) {
-  await page.check('#no_limit');
-} else {
-  await page.fill('#date_until', dateEnd);
-}
+  await page.fill('#title', title);
+  if (popUrl) await page.fill('#pop_up_url', popUrl);
+  await page.fill('#sequence', sequence);
+  if (promoCode) await page.fill('#promoCode', promoCode).catch(() => console.log('⚠ promo code field not fillable (disabled?) — skipped'));
 
-// Banner image — the visible dropzone proxies input[name=bannerImage]
-await page.setInputFiles('input[name="bannerImage"]', imagePath);
-console.log('✓ image attached');
+  await page.fill('#date_start', dateStart);
+  if (noExpiry) {
+    await page.check('#no_limit');
+  } else {
+    await page.fill('#date_until', dateEnd);
+  }
 
-// Content — the page has several Summernote instances with misleading names:
-// #txtEditor (banner_MultipleImgtxtEditor) is the HIDDEN Multiple-image editor;
-// the VISIBLE "Content (<language>)" editor is #langTxtEditor (tc_eng_modal).
-// Target whichever textarea's note-editor is actually visible, verify read-back.
-if (contentHtml) {
-  const result = await page.evaluate((html) => {
+  // Banner image — the visible dropzone proxies input[name=bannerImage]
+  await page.setInputFiles('input[name="bannerImage"]', imagePath);
+  console.log('✓ image attached');
+
+  // Content — the page has several Summernote instances with misleading names:
+  // #txtEditor (banner_MultipleImgtxtEditor) is the HIDDEN Multiple-image editor;
+  // the VISIBLE "Content (<language>)" editor is #langTxtEditor (tc_eng_modal).
+  // Target whichever textarea's note-editor is actually visible, verify read-back.
+  if (contentHtml) {
+    const result = await page.evaluate((html) => {
+      const vis = el => !!el && el.offsetParent !== null;
+      const target = [...document.querySelectorAll('textarea')].find(ta =>
+        ta.nextElementSibling?.classList?.contains('note-editor') && vis(ta.nextElementSibling)
+      ) || document.querySelector('#langTxtEditor');
+      if (!target) return { ok: false, how: 'no visible content editor found' };
+      const $ = window.jQuery;
+      if ($ && $(target).summernote) {
+        $(target).summernote('code', html);
+        const back = $(target).summernote('code') || '';
+        if (back.replace(/\s+/g, '') === html.replace(/\s+/g, ''))
+          return { ok: true, how: `summernote (#${target.id || target.name})` };
+      }
+      const ed = target.nextElementSibling?.querySelector?.('.note-editable');
+      if (ed) {
+        ed.innerHTML = html;
+        target.value = html;
+        return { ok: ed.innerHTML.length > 0, how: `dom (#${target.id || target.name})` };
+      }
+      return { ok: false, how: 'editor found but not settable' };
+    }, contentHtml);
+    if (!result.ok) throw new Error(`could not set content editor HTML (${result.how})`);
+    console.log(`✓ content set via ${result.how}`);
+  }
+
+  // ── Snapshot + summary ──────────────────────────────────────────────────────
+
+  const outDir = path.join(ROOT, 'captures', 'ug-banner');
+  mkdirSync(outDir, { recursive: true });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+  // Screenshots are best-effort — AdsPower windows sometimes refuse captureScreenshot
+  async function shot(file) {
+    const p = path.join(outDir, file);
+    const ok = await page.screenshot({ path: p, fullPage: true })
+      .catch(() => page.screenshot({ path: p }))
+      .catch(() => null);
+    if (!ok) { console.log(`⚠ screenshot failed (${file}) — continuing`); return null; }
+    return p;
+  }
+
+  // Read the form back from the DOM so verification doesn't depend on a screenshot
+  const readback = await page.evaluate(() => {
+    const selText = s => { const el = document.querySelector(s); return el ? [...el.selectedOptions].map(o => o.text.trim()).join(', ') : null; };
+    const val = s => document.querySelector(s)?.value ?? null;
     const vis = el => !!el && el.offsetParent !== null;
-    const target = [...document.querySelectorAll('textarea')].find(ta =>
-      ta.nextElementSibling?.classList?.contains('note-editor') && vis(ta.nextElementSibling)
-    ) || document.querySelector('#langTxtEditor');
-    if (!target) return { ok: false, how: 'no visible content editor found' };
-    const $ = window.jQuery;
-    if ($ && $(target).summernote) {
-      $(target).summernote('code', html);
-      const back = $(target).summernote('code') || '';
-      if (back.replace(/\s+/g, '') === html.replace(/\s+/g, ''))
-        return { ok: true, how: `summernote (#${target.id || target.name})` };
-    }
-    const ed = target.nextElementSibling?.querySelector?.('.note-editable');
-    if (ed) {
-      ed.innerHTML = html;
-      target.value = html;
-      return { ok: ed.innerHTML.length > 0, how: `dom (#${target.id || target.name})` };
-    }
-    return { ok: false, how: 'editor found but not settable' };
-  }, contentHtml);
-  if (!result.ok) { await browser.close(); fail(`could not set content editor HTML (${result.how})`); }
-  console.log(`✓ content set via ${result.how}`);
-}
+    const contentTa = [...document.querySelectorAll('textarea')].find(ta =>
+      ta.nextElementSibling?.classList?.contains('note-editor') && vis(ta.nextElementSibling));
+    return {
+      status: selText('#status'), platform: selText('#platform'), language: selText('#sel_lang_banner'),
+      title: val('#title'), pop_up_url: val('#pop_up_url'), sequence: val('#sequence'),
+      categories: selText('#sel_category'), img_type: selText('#img_type'),
+      date_start: val('#date_start'), date_until: val('#date_until'),
+      no_expiry: document.querySelector('#no_limit')?.checked ?? null,
+      image_attached: !!document.querySelector('input[name="bannerImage"]')?.files?.length,
+      content_html: (contentTa?.nextElementSibling?.querySelector('.note-editable')?.innerHTML || '').slice(0, 200),
+    };
+  });
+  console.log('\n── Form read-back (from live DOM) ────────');
+  console.log(JSON.stringify(readback, null, 2));
 
-// ── Snapshot + summary ────────────────────────────────────────────────────────
+  const mismatches = [];
+  if (readback.title !== title) mismatches.push('title');
+  if (readback.pop_up_url !== popUrl) mismatches.push('pop_up_url');
+  if (readback.sequence !== sequence) mismatches.push('sequence');
+  if (readback.date_start !== dateStart) mismatches.push('date_start');
+  if (!noExpiry && readback.date_until !== dateEnd) mismatches.push('date_until');
+  if (!readback.image_attached) mismatches.push('image');
+  if (contentHtml && !readback.content_html) mismatches.push('content');
+  if (mismatches.length) throw new Error(`form read-back mismatch on: ${mismatches.join(', ')}`);
+  console.log('✓ read-back matches plan');
 
-const outDir = path.join(ROOT, 'captures', 'ug-banner');
-mkdirSync(outDir, { recursive: true });
-const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+  const shotPlan = await shot(`${slug}__plan.png`);
 
-// Screenshots are best-effort — AdsPower windows sometimes refuse captureScreenshot
-async function shot(file) {
-  const p = path.join(outDir, file);
-  const ok = await page.screenshot({ path: p, fullPage: true })
-    .catch(() => page.screenshot({ path: p }))
-    .catch(() => null);
-  if (!ok) { console.log(`⚠ screenshot failed (${file}) — continuing`); return null; }
-  return p;
-}
-
-// Read the form back from the DOM so verification doesn't depend on a screenshot
-const readback = await page.evaluate(() => {
-  const selText = s => { const el = document.querySelector(s); return el ? [...el.selectedOptions].map(o => o.text.trim()).join(', ') : null; };
-  const val = s => document.querySelector(s)?.value ?? null;
-  const vis = el => !!el && el.offsetParent !== null;
-  const contentTa = [...document.querySelectorAll('textarea')].find(ta =>
-    ta.nextElementSibling?.classList?.contains('note-editor') && vis(ta.nextElementSibling));
-  return {
-    status: selText('#status'), platform: selText('#platform'), language: selText('#sel_lang_banner'),
-    title: val('#title'), pop_up_url: val('#pop_up_url'), sequence: val('#sequence'),
-    categories: selText('#sel_category'), img_type: selText('#img_type'),
-    date_start: val('#date_start'), date_until: val('#date_until'),
-    no_expiry: document.querySelector('#no_limit')?.checked ?? null,
-    image_attached: !!document.querySelector('input[name="bannerImage"]')?.files?.length,
-    content_html: (contentTa?.nextElementSibling?.querySelector('.note-editable')?.innerHTML || '').slice(0, 200),
+  const plan = {
+    bo: BO_BASE, module: '8.11 BannerSetting', mode: commit ? 'commit' : 'dry-run',
+    title, language, status, platform, img_type: imgType,
+    pop_up_url: popUrl, sequence: Number(sequence), categories,
+    date_start: dateStart, date_until: noExpiry ? null : dateEnd, no_expired_time: noExpiry,
+    promo_code: promoCode || null,
+    image: { file: path.relative(ROOT, imagePath), width: meta.width, height: meta.height },
+    content_chars: contentHtml.length,
+    readback,
+    screenshots: { plan: shotPlan ? path.relative(ROOT, shotPlan) : null },
+    ts: new Date().toISOString(),
   };
-});
-console.log('\n── Form read-back (from live DOM) ────────');
-console.log(JSON.stringify(readback, null, 2));
 
-const mismatches = [];
-if (readback.title !== title) mismatches.push('title');
-if (readback.pop_up_url !== popUrl) mismatches.push('pop_up_url');
-if (readback.sequence !== sequence) mismatches.push('sequence');
-if (readback.date_start !== dateStart) mismatches.push('date_start');
-if (!noExpiry && readback.date_until !== dateEnd) mismatches.push('date_until');
-if (!readback.image_attached) mismatches.push('image');
-if (contentHtml && !readback.content_html) mismatches.push('content');
-if (mismatches.length) { await browser.close(); fail(`form read-back mismatch on: ${mismatches.join(', ')}`); }
-console.log('✓ read-back matches plan');
+  console.log('\n── Plan ──────────────────────────────────');
+  console.log(JSON.stringify(plan, null, 2));
 
-const shotPlan = await shot(`${slug}__plan.png`);
+  if (!commit) {
+    writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(plan, null, 2));
+    console.log(`\n✓ DRY-RUN complete — form filled + verified, Create NOT clicked.`);
+    if (shotPlan) console.log(`  Review screenshot: ${shotPlan}`);
+    console.log(`  Re-run with --commit to save.`);
+  } else {
+    // ── Commit ────────────────────────────────────────────────────────────────
 
-const plan = {
-  bo: BO_BASE, module: '8.11 BannerSetting', mode: commit ? 'commit' : 'dry-run',
-  title, language, status, platform, img_type: imgType,
-  pop_up_url: popUrl, sequence: Number(sequence), categories,
-  date_start: dateStart, date_until: noExpiry ? null : dateEnd, no_expired_time: noExpiry,
-  promo_code: promoCode || null,
-  image: { file: path.relative(ROOT, imagePath), width: meta.width, height: meta.height },
-  content_chars: contentHtml.length,
-  readback,
-  screenshots: { plan: shotPlan ? path.relative(ROOT, shotPlan) : null },
-  ts: new Date().toISOString(),
-};
+    console.log('\nClicking Create…');
+    await Promise.all([
+      page.waitForURL(/Website\/BannerSetting(?!\/create)/, { timeout: 30000 }).catch(() => null),
+      page.click('button:has-text("Create")'),
+    ]);
+    await page.waitForTimeout(2500);
 
-console.log('\n── Plan ──────────────────────────────────');
-console.log(JSON.stringify(plan, null, 2));
+    if (!page.url().includes('/Website/BannerSetting') || page.url().includes('/create')) {
+      const shotErr = await shot(`${slug}__error.png`);
+      const errText = await page.evaluate(() =>
+        [...document.querySelectorAll('.alert, .invalid-feedback, .help-block, .text-danger')]
+          .map(e => e.innerText.trim()).filter(Boolean).join(' | '));
+      throw new Error(
+        `save did not redirect to listing (still on ${page.url()})\n` +
+        `  validation: ${errText || '(none shown)'}\n  screenshot: ${shotErr || '(capture failed)'}`
+      );
+    }
 
-if (!commit) {
-  writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(plan, null, 2));
-  console.log(`\n✓ DRY-RUN complete — form filled + verified, Create NOT clicked.`);
-  if (shotPlan) console.log(`  Review screenshot: ${shotPlan}`);
-  console.log(`  Re-run with --commit to save.`);
-  await browser.close();
-  process.exit(0);
+    await page.goto(LIST_URL, { waitUntil: 'networkidle', timeout: 45000 });
+    await page.waitForTimeout(1500);
+    const found = await page.evaluate((t) => document.body.innerText.includes(t), title);
+    const shotSaved = await shot(`${slug}__saved.png`);
+
+    plan.saved = found;
+    plan.screenshots.saved = shotSaved ? path.relative(ROOT, shotSaved) : null;
+    writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(plan, null, 2));
+
+    if (found) {
+      console.log(`\n✓ SAVED — "${title}" is on the Banner Settings listing.`);
+      console.log(`  QC bundle: captures/ug-banner/${slug}.json`);
+    } else {
+      console.log(`\n⚠ Create submitted but "${title}" was NOT found on the listing — verify manually.`);
+      console.log(`  Screenshot: ${shotSaved}`);
+      exitCode = 2;
+    }
+  }
+} catch (err) {
+  console.error(`✗ ${err.message}`);
+  exitCode = 1;
+} finally {
+  if (!keepOpen) {
+    await stopProfile(userId);
+    console.log(`✓ AdsPower profile ${userId} stopped (cloud data synced)`);
+  } else {
+    console.log(`ℹ --keep-open set — leaving AdsPower profile ${userId} running`);
+  }
 }
-
-// ── Commit ────────────────────────────────────────────────────────────────────
-
-console.log('\nClicking Create…');
-await Promise.all([
-  page.waitForURL(/Website\/BannerSetting(?!\/create)/, { timeout: 30000 }).catch(() => null),
-  page.click('button:has-text("Create")'),
-]);
-await page.waitForTimeout(2500);
-
-// Verify: banner title appears on the listing
-if (!page.url().includes('/Website/BannerSetting') || page.url().includes('/create')) {
-  const shotErr = await shot(`${slug}__error.png`);
-  const errText = await page.evaluate(() =>
-    [...document.querySelectorAll('.alert, .invalid-feedback, .help-block, .text-danger')]
-      .map(e => e.innerText.trim()).filter(Boolean).join(' | '));
-  await browser.close();
-  fail(`save did not redirect to listing (still on ${page.url()})\n  validation: ${errText || '(none shown)'}\n  screenshot: ${shotErr || '(capture failed)'}`);
-}
-
-await page.goto(LIST_URL, { waitUntil: 'networkidle', timeout: 45000 });
-await page.waitForTimeout(1500);
-const found = await page.evaluate((t) => document.body.innerText.includes(t), title);
-const shotSaved = await shot(`${slug}__saved.png`);
-
-plan.saved = found;
-plan.screenshots.saved = shotSaved ? path.relative(ROOT, shotSaved) : null;
-writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(plan, null, 2));
-
-if (found) {
-  console.log(`\n✓ SAVED — "${title}" is on the Banner Settings listing.`);
-  console.log(`  QC bundle: captures/ug-banner/${slug}.json`);
-} else {
-  console.log(`\n⚠ Create submitted but "${title}" was NOT found on the listing — verify manually.`);
-  console.log(`  Screenshot: ${shotSaved}`);
-}
-await browser.close();
-process.exit(found ? 0 : 2);
+process.exit(exitCode);

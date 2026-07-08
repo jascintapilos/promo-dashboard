@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-// Interactive one-time login capture for the UG BO (3MPLAY-NS3).
-// Opens a visible browser, waits for you to log in (password + CAPTCHA),
-// then saves the session to <brand>-session.local.json for reuse by
-// bin/upload-ug-banner.mjs and any other UG script.
+// Warms up an AdsPower profile for the UG BO and waits for you to log in
+// inside the AdsPower browser window (if not already logged in). AdsPower
+// persists the session itself once you're in — there is nothing for this
+// script to save locally, unlike a plain local-browser flow.
 //
 // Usage
 // ─────
-//   node bin/ug-login.mjs                 # UG01 / SBO28 (default)
-//   node bin/ug-login.mjs --brand=UG02     # UG02 / MENANG7
-//   node bin/ug-login.mjs --brand=UG01 --force   # re-login even if a session file exists
+//   node bin/ug-login.mjs                  # UG01 / SBO28 (default)
+//   node bin/ug-login.mjs --brand=UG02      # UG02 / MENANG7
+//   node bin/ug-login.mjs --profile=<id>    # raw AdsPower profile id
+//   node bin/ug-login.mjs --keep-open       # don't stop the profile when done
 
-import { existsSync, unlinkSync } from 'node:fs';
-import { getUgPage, sessionFilePath } from '../src/ug-session.js';
+import { startProfile, stopProfile } from '../src/adspower-session.js';
 
 const args = {};
 for (const a of process.argv.slice(2)) {
@@ -19,17 +19,50 @@ for (const a of process.argv.slice(2)) {
   if (m) args[m[1]] = m[2] === undefined ? true : m[2];
 }
 
-const brand = (args.brand || 'UG01').toUpperCase();
-const file = sessionFilePath(brand);
+const brandOrProfile = args.profile || (args.brand || 'UG01').toUpperCase();
+const keepOpen = !!args['keep-open'];
+const BO_BASE = 'https://3m-ns3-admin.com';
+const LOGIN_WAIT_MS = 10 * 60 * 1000;
 
-if (args.force && existsSync(file)) {
-  unlinkSync(file);
-  console.log(`removed existing session file for a fresh login: ${file}`);
+function isLoggedInUrl(url) {
+  return /3m-ns3-admin\.com\/(dashboard|Website|Member|Transaction)/i.test(url) && !/login/i.test(url);
 }
 
-const { browser, page } = await getUgPage({ brand });
-console.log(`\n✓ ${brand} session ready. Landed on: ${page.url()}`);
-console.log(`  Session file: ${sessionFilePath(brand)}`);
-console.log('  Future runs of bin/upload-ug-banner.mjs will reuse it automatically.');
-await browser.close();
+const { browser, page, userId } = await startProfile(brandOrProfile);
+console.log(`✓ AdsPower profile ${userId} connected`);
+
+await page.goto(BO_BASE, { waitUntil: 'domcontentloaded', timeout: 45000 });
+await page.waitForTimeout(1500);
+
+if (isLoggedInUrl(page.url())) {
+  console.log(`✓ already logged in (${page.url()}) — AdsPower remembered the session.`);
+} else {
+  console.log('\n─────────────────────────────────────────────────────────');
+  console.log(` Profile ${userId}'s AdsPower browser window is open on your desktop.`);
+  console.log(' Please log in manually: username, password, and the');
+  console.log(' "Validation" CAPTCHA image, then click LOG IN.');
+  console.log(' AdsPower will remember this session for future runs.');
+  console.log(`  (waiting up to ${LOGIN_WAIT_MS / 60000} minutes)`);
+  console.log('─────────────────────────────────────────────────────────\n');
+
+  const deadline = Date.now() + LOGIN_WAIT_MS;
+  let loggedIn = false;
+  while (Date.now() < deadline) {
+    if (isLoggedInUrl(page.url())) { loggedIn = true; break; }
+    await page.waitForTimeout(2000);
+  }
+  if (!loggedIn) {
+    if (!keepOpen) await stopProfile(userId);
+    console.error(`✗ timed out waiting for login (${LOGIN_WAIT_MS / 60000} min). Re-run when ready.`);
+    process.exit(1);
+  }
+  console.log(`✓ logged in — landed on ${page.url()}`);
+}
+
+if (!keepOpen) {
+  await stopProfile(userId);
+  console.log(`✓ AdsPower profile ${userId} stopped (cloud data synced)`);
+} else {
+  console.log(`ℹ --keep-open set — leaving AdsPower profile ${userId} running`);
+}
 process.exit(0);
