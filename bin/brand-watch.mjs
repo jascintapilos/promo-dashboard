@@ -431,10 +431,24 @@ function recordStatus(status, detailText) {
 
 // Wave 3 detail checks for one IGMP Bonus/FreeCredit promo (2 GETs):
 // detail → PromotionRewards[0].RewardId → GetPromotionRewardContents.
+//
+// IGMP field-authority rule (advisor review 2026-07-08, see
+// feedback_igmp_wrapper_field_authority.md): detail responses split real
+// values across the OUTER wrapper (det.data) and the nested reward object
+// (PromotionRewards[0]) inconsistently per bonus type, and some reward-level
+// fields are dead placeholders (e.g. rew.ExpiryMinutes is always 0 — never
+// trust it). Verified live 2026-07-08 against GetBonusInfo/GetFreeCreditInfo:
+//   outer.RedeemableDay   — Bonus ONLY (undefined on FreeCredit's outer)
+//   outer.ExpiryMinutes   — FreeCredit ONLY (absent from Bonus's outer keys —
+//                           no equivalent field exists for Bonus; stays a
+//                           documented no-op there, not a weakened check)
+//   rew.RedemptionType, rew.MinimumActionAmount, rew.WithdrawalCap — both
+//                           types, reward-level, reliable.
 async function igmpRewardContentChecks(cand) {
   const isFc = cand.promotionType === 'FreeCredit';
   const det = await igmpPost(cand.siteId, isFc ? '/PM/GetFreeCreditInfo' : '/PM/GetBonusInfo', { PromotionId: cand.promotionId });
-  const promo = det?.data?.Promotion || det?.data;
+  const outer = det?.data;
+  const promo = outer?.Promotion || outer;
   const rew = promo?.PromotionRewards?.[0];
   const findings = [];
   if (!rew?.RewardId) {
@@ -442,6 +456,43 @@ async function igmpRewardContentChecks(cand) {
     findings.push({ severity: 'WARNING', check: 'reward-missing', message: 'No PromotionRewards[0] on active promo' });
     return findings;
   }
+
+  // ── Tier A: deterministic structured-field checks — safe as FAIL ─────────
+  // (advisor review 2026-07-08: pure numeric/enum comparisons against
+  // unexceptioned documented rules, near-zero legitimate-variant space)
+
+  // RedemptionType must match MinimumActionAmount per feedback_igmp_redemption_type_rule.
+  // WARNING, not FAIL (downgraded from the advisor's original "safe as FAIL"
+  // call): live calibration 2026-07-08 at n=1000 found 6/6 hits clustered on
+  // PercentageBased match bonuses (e.g. "Mid-Month Diamond 50% Bonus") where
+  // MinimumActionAmount=0 may legitimately mean "any deposit qualifies,
+  // still deposit-triggered" rather than "no deposit needed" — an exception
+  // class the documented rule didn't anticipate. Pending confirmation from
+  // Jascinta on whether this is a real bug or a documented exception; keep
+  // at WARNING until resolved either way.
+  const minAction = Number(rew.MinimumActionAmount ?? 0);
+  const expectedRedemptionType = minAction > 0 ? 0 : 1;
+  if (Number(rew.RedemptionType) !== expectedRedemptionType) {
+    findings.push({
+      severity: 'WARNING', check: 'igmp-redemption-type-mismatch',
+      message: `RedemptionType=${rew.RedemptionType} (${rew.RedemptionTypeString || '?'}) inconsistent with MinimumActionAmount=${minAction} — should be ${expectedRedemptionType === 0 ? 'Deposit (0)' : 'Claim (1)'} per the documented rule, UNLESS this is a percentage-match bonus where 0 means "any deposit qualifies" rather than "no deposit needed" (unconfirmed exception, see feedback_igmp_redemption_type_rule)`,
+    });
+  }
+
+  // RedeemableDay corruption signature (Bonus only — field doesn't exist on
+  // FreeCredit's outer wrapper). Scoped NARROWLY to the exact "0" corruption
+  // value per feedback_igmp_redeemable_day_all_days, not a broad "isn't
+  // all 7 days" assertion — some promos may legitimately restrict days.
+  if (!isFc) {
+    const rd = outer?.RedeemableDay;
+    if (rd === 0 || rd === '0') {
+      findings.push({
+        severity: 'FAIL', check: 'igmp-redeemable-day-corrupted',
+        message: `RedeemableDay="${rd}" — matches the known UpdateBonusDetails corruption signature (integer 0 silently reinterpreted as Sunday-only), not a legitimate all-days or restricted-days value`,
+      });
+    }
+  }
+
   const ct = await igmpPost(cand.siteId, '/PM/GetPromotionRewardContents', { RewardId: rew.RewardId });
   const rows = Array.isArray(ct?.data) ? ct.data : [];
   const totalLen = rows.reduce((n, r) => n + String(r.Content || '').length, 0);
@@ -455,6 +506,41 @@ async function igmpRewardContentChecks(cand) {
   if (leak) {
     // Proven incident class (feedback_ws1_qpro_template_leak) — hard FAIL.
     findings.push({ severity: 'FAIL', check: 'qpro-template-leak', message: `Reward T&C contains the QPRO/QP2 "Refresh button" clause (locale ${leak.Locale}) — WS1/WS2 must use the 5-clause format` });
+  }
+
+  // ── Tier B: free-text/HTML-parsing checks — WARNING first (advisor review
+  // 2026-07-08: legitimate-variant space is invisible until a rotation's
+  // worth of real hits has been inspected; promote to FAIL only after that) ──
+  if (isFc) {
+    const enRow = rows.find((r) => /^en$/i.test(r.Locale || ''));
+    const claimMatch = String(enRow?.Content || '').match(/valid\s+for\s+(\d+)\s*day/i);
+    if (claimMatch) {
+      const promisedDays = Number(claimMatch[1]);
+      const liveDays = Number.isFinite(outer?.ExpiryMinutes) ? outer.ExpiryMinutes / 1440 : null;
+      if (!outer?.ExpiryMinutes) {
+        findings.push({ severity: 'WARNING', check: 'igmp-fc-expiry-mismatch', message: `T&C promises "valid for ${promisedDays} day(s)" but outer.ExpiryMinutes=${outer?.ExpiryMinutes ?? 'missing'} — no claim window enforced` });
+      } else if (liveDays !== promisedDays) {
+        findings.push({ severity: 'WARNING', check: 'igmp-fc-expiry-mismatch', message: `T&C promises "valid for ${promisedDays} day(s)" but live ExpiryMinutes=${outer.ExpiryMinutes} (${liveDays}d)` });
+      }
+    }
+
+    // Withdrawal-clause presence: only the unambiguous direction — a REAL cap
+    // (WithdrawalCap>0) with NO withdrawal-related clause at all, i.e. a
+    // capped promo that never discloses the cap to players. The reverse
+    // direction (cap=0, does the T&C mention withdrawal at all) was tried
+    // and dropped after live calibration 2026-07-08: 23/23 first-sample hits
+    // were false positives — "No maximum withdrawal." is the CORRECT,
+    // commonly-used disclosure sentence for cap=0 and legitimately contains
+    // the phrase "maximum withdrawal"; distinguishing an asserted cap amount
+    // from a negated no-cap disclosure is a semantic judgment, not something
+    // a regex should attempt (that's the AI review layer's job, not this
+    // tier's). See feedback_igmp_tnc_no_withdrawal_clause for the omission
+    // convention this could someday re-check with a negation-aware parser.
+    const cap = Number(rew.WithdrawalCap ?? 0);
+    const hasWithdrawalClause = rows.some((r) => /maximum\s+withdrawal|withdrawal\s+cap|最高提款|提款上限/i.test(String(r.Content || '')));
+    if (cap > 0 && !hasWithdrawalClause) {
+      findings.push({ severity: 'WARNING', check: 'igmp-fc-tnc-cap-mismatch', message: `WithdrawalCap=${cap} configured but no withdrawal clause found in T&C content — cap not disclosed to players` });
+    }
   }
   return findings;
 }
