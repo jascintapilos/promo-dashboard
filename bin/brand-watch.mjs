@@ -462,20 +462,22 @@ async function igmpRewardContentChecks(cand) {
   // unexceptioned documented rules, near-zero legitimate-variant space)
 
   // RedemptionType must match MinimumActionAmount per feedback_igmp_redemption_type_rule.
-  // WARNING, not FAIL (downgraded from the advisor's original "safe as FAIL"
-  // call): live calibration 2026-07-08 at n=1000 found 6/6 hits clustered on
-  // PercentageBased match bonuses (e.g. "Mid-Month Diamond 50% Bonus") where
-  // MinimumActionAmount=0 may legitimately mean "any deposit qualifies,
-  // still deposit-triggered" rather than "no deposit needed" — an exception
-  // class the documented rule didn't anticipate. Pending confirmation from
-  // Jascinta on whether this is a real bug or a documented exception; keep
-  // at WARNING until resolved either way.
+  // Confirmed exception (Jascinta, 2026-07-08): a PercentageBased match
+  // bonus is inherently deposit-triggered regardless of MinimumActionAmount
+  // — "0" means "any deposit amount qualifies for the match," not "no
+  // deposit needed." RedemptionType stays Deposit(0) unconditionally for
+  // this reward type. The min-deposit-derived rule (feedback_igmp_redemption_type_rule)
+  // applies to every other reward type as documented. Live calibration
+  // 2026-07-08 at n=1000: 6/6 hits were exactly this exception class before
+  // this carve-out (Mid-Month Diamond/Platinum/Gold/Silver 50% Bonus,
+  // 10PERCENTUNLIMITEDBONUS on WS1_SG/WS1_KH) — now correctly excluded.
   const minAction = Number(rew.MinimumActionAmount ?? 0);
-  const expectedRedemptionType = minAction > 0 ? 0 : 1;
+  const isMatchBonus = rew.RewardTypeString === 'PercentageBased';
+  const expectedRedemptionType = isMatchBonus ? 0 : (minAction > 0 ? 0 : 1);
   if (Number(rew.RedemptionType) !== expectedRedemptionType) {
     findings.push({
-      severity: 'WARNING', check: 'igmp-redemption-type-mismatch',
-      message: `RedemptionType=${rew.RedemptionType} (${rew.RedemptionTypeString || '?'}) inconsistent with MinimumActionAmount=${minAction} — should be ${expectedRedemptionType === 0 ? 'Deposit (0)' : 'Claim (1)'} per the documented rule, UNLESS this is a percentage-match bonus where 0 means "any deposit qualifies" rather than "no deposit needed" (unconfirmed exception, see feedback_igmp_redemption_type_rule)`,
+      severity: 'FAIL', check: 'igmp-redemption-type-mismatch',
+      message: `RedemptionType=${rew.RedemptionType} (${rew.RedemptionTypeString || '?'}) inconsistent with MinimumActionAmount=${minAction} — should be ${expectedRedemptionType === 0 ? 'Deposit (0)' : 'Claim (1)'}`,
     });
   }
 
