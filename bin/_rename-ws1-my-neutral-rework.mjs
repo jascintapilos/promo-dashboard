@@ -157,6 +157,16 @@ function detectRework(p) {
 // suspect value in the name (none known on MY yet; SG had one).
 const SUPPRESS_MIN = new Set([]);
 
+// Config-identical twins whose only real difference is the intended VIP tier
+// (in the code only — probed 2026-07-07: all 83 GetBonusInfo fields identical,
+// no T&C rows, nothing extra by code). Name gets the numeral fallback; the
+// tier moves to the BO-internal PromotionDescription so Manual Reward
+// operators keep the distinction. Appended once (rerun-safe).
+const DESC_TAG = new Map([
+  [2166, 'GOLD tier'],
+  [2167, 'PLATINUM tier'],
+]);
+
 const reEscape = (s) => s.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
 
 // Player-neutral mechanics for one promo, from its saved BO reward config.
@@ -270,7 +280,9 @@ console.log(`\nRename plan — ${effective.length} promos:\n`);
 for (const r of effective) {
   console.log(`  id=${r.id}  active=${r.active ? 'Y' : 'n'}  ${r.code}  [${r.mech}]`);
   console.log(`    old: "${r.oldName}"`);
-  console.log(`    new: "${r.newName}"\n`);
+  console.log(`    new: "${r.newName}"`);
+  if (DESC_TAG.has(r.id)) console.log(`    desc: append " | ${DESC_TAG.get(r.id)}"`);
+  console.log('');
 }
 if (stillDup.length) {
   console.log('✗ Plan still produces duplicate names:');
@@ -296,10 +308,13 @@ for (const r of effective) {
     const start = toDateString(promo.PromotionStartDate);
     const end = toDateString(promo.PromotionEndDate);
     if (!start || !end) throw new Error(`unparseable dates start=${promo.PromotionStartDate} end=${promo.PromotionEndDate}`);
+    let desc = promo.PromotionDescription || '';
+    const tag = DESC_TAG.get(r.id);
+    if (tag && !desc.includes(tag)) desc = desc ? `${desc} | ${tag}` : tag;
     await post('/PM/UpdatePromotionDetails', {
       PromotionId: promo.PromotionId,
       PromotionName: r.newName,
-      PromotionDescription: promo.PromotionDescription || '',
+      PromotionDescription: desc,
       PromotionStartDate: start,
       PromotionEndDate: end,
     });
