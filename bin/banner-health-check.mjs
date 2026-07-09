@@ -31,9 +31,20 @@
 //                        runs on with no banner. Heuristic: matches banner ->
 //                        campaign by brand + overlapping date window, so the
 //                        named campaign is a best guess for a human to confirm.
+//   UNTRACKED_LIVE_BANNER  A banner that is Active AND live on the homepage
+//                        right now, but has no B-ID entry anywhere in the
+//                        Banner Schedule sheet (current + previous month tabs)
+//                        covering its brand + date window -- i.e. it did not
+//                        go through the tracked upload pipeline (banner-pre-qc/
+//                        banner-deep-qc never saw it, since both are scoped to
+//                        B-IDs in the sheet). Scoped to banners that STARTED
+//                        within --lookback days -- banners predating the B-ID
+//                        tracking convention are a standing backlog, not a
+//                        process gap, and are counted, not listed.
 //
-// The first three are pure BO-row logic (no sheet). ENDS_BEFORE_CAMPAIGN needs
-// the Banner Schedule sheet; pass --no-sheet to skip it (and the Google auth).
+// The first three are pure BO-row logic (no sheet). ENDS_BEFORE_CAMPAIGN and
+// UNTRACKED_LIVE_BANNER need the Banner Schedule sheet; pass --no-sheet to
+// skip both (and the Google auth).
 //
 //   node bin/banner-health-check.mjs                 # all live QPRO+QP2, console
 //   node bin/banner-health-check.mjs --site=qpro1    # one site
@@ -159,8 +170,16 @@ function classifyProvider(label) {
 
 // -- Banner Schedule cross-reference index -----------------------------------
 // Returns a Map: siteId -> [{ bId, campaign, merchantKey, start, end }].
-// merchantKey is the uppercased brand merchant name (QP2 only; null for QPRO,
-// which is single-brand per BO). Empty map if the sheet read is skipped/fails.
+// merchantKey is the uppercased brand merchant name (QP2 only; null for QPRO
+// and BIA, which are single-brand per BO/site). Empty map if the sheet read is
+// skipped/fails.
+//
+// Reads the current-month tab AND the previous-month tab. A single tab isn't
+// enough for the UNTRACKED_LIVE_BANNER check below: a campaign entered near
+// the end of last month (e.g. started 28-Jun) lives in last month's tab even
+// though the banner is still live today in July -- reading only "this month"
+// would make every such banner look untracked. Two months covers the full
+// --lookback window (default 30d) with room to spare.
 
 const SCHEDULE_SHEET_ID = '1vpyjhqiKzcn2XHovcN2tEa4UkzUMqTmFsUZ59m-n8_E';
 
@@ -170,49 +189,73 @@ async function loadScheduleIndex() {
   const { google } = await loadGoogleapis();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  // Resolve the current-month tab ("Jun 2026"). Fall back to the first tab
-  // whose title parses as a month if today's exact label isn't present.
   const meta = await sheets.spreadsheets.get({
     spreadsheetId: SCHEDULE_SHEET_ID,
     fields: 'sheets.properties(title)',
   });
   const titles = (meta.data.sheets || []).map((s) => s.properties.title);
-  const want = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); // "Jun 2026"
-  const tab = titles.find((t) => t.toLowerCase() === want.toLowerCase())
+
+  const now = new Date();
+  const wantCurrent = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); // "Jun 2026"
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const wantPrev = prevMonthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+  const tabCurrent = titles.find((t) => t.toLowerCase() === wantCurrent.toLowerCase())
     || titles.find((t) => /^[A-Za-z]{3}\s+\d{4}$/.test(t));
-  if (!tab) throw new Error(`no month tab found; tabs: ${titles.join(', ')}`);
+  if (!tabCurrent) throw new Error(`no month tab found; tabs: ${titles.join(', ')}`);
+  const tabPrev = titles.find((t) => t.toLowerCase() === wantPrev.toLowerCase());
 
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SCHEDULE_SHEET_ID,
-    range: `'${tab}'!A1:P200`,
-    valueRenderOption: 'UNFORMATTED_VALUE',
-    dateTimeRenderOption: 'FORMATTED_STRING',
-  });
-  const rows = res.data.values || [];
-
+  // Dedupe: if there's no tab for the current month yet, tabCurrent falls back
+  // to the first month-pattern tab in the sheet, which can coincide with
+  // tabPrev -- don't read (or report) the same tab twice.
+  const tabsToRead = [...new Set([tabCurrent, tabPrev].filter(Boolean))];
   const index = new Map();
   let campaigns = 0;
-  for (const r of rows) {
-    const bId = String(r[1] ?? '').trim();          // col B
-    if (!/^B\d+$/i.test(bId)) continue;             // header / blank / separator
-    const brandRaw = String(r[8] ?? '').trim();     // col I
-    const start = parseScheduleDate(r[10], 'start'); // col K
-    const end = parseScheduleDate(r[11], 'end');     // col L
-    if (!start || !end) continue;                   // undated row -- can't compare
-    const info = lookupBrand(brandRaw);
-    if (!info?.siteId) continue;                    // unmapped / BIA-only -- skip
-    const entry = {
-      bId: bId.toUpperCase(),
-      campaign: String(r[2] ?? '').trim(),          // col C
-      merchantKey: info.platform === 'qp2' ? info.merchantName.toUpperCase() : null,
-      start,
-      end,
-    };
-    if (!index.has(info.siteId)) index.set(info.siteId, []);
-    index.get(info.siteId).push(entry);
-    campaigns++;
+  for (const tab of tabsToRead) {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SCHEDULE_SHEET_ID,
+      range: `'${tab}'!A1:P200`,
+      valueRenderOption: 'UNFORMATTED_VALUE',
+      dateTimeRenderOption: 'FORMATTED_STRING',
+    });
+    const rows = res.data.values || [];
+    for (const r of rows) {
+      const bId = String(r[1] ?? '').trim();          // col B
+      if (!/^B\d+$/i.test(bId)) continue;             // header / blank / separator
+      const brandRaw = String(r[8] ?? '').trim();     // col I
+      const start = parseScheduleDate(r[10], 'start'); // col K
+      const end = parseScheduleDate(r[11], 'end');     // col L
+      if (!start || !end) continue;                   // undated row -- can't compare
+      const info = lookupBrand(brandRaw);
+      if (!info?.siteId) continue;                    // unmapped / not yet configured -- skip
+      const entry = {
+        bId: bId.toUpperCase(),
+        campaign: String(r[2] ?? '').trim(),          // col C
+        merchantKey: info.platform === 'qp2' ? info.merchantName.toUpperCase() : null,
+        start,
+        end,
+      };
+      if (!index.has(info.siteId)) index.set(info.siteId, []);
+      index.get(info.siteId).push(entry);
+      campaigns++;
+    }
   }
-  return { index, tab, campaigns };
+  return { index, tab: tabsToRead.join(' + '), campaigns };
+}
+
+// True if any schedule entry's date window overlaps [start, end] for the given
+// merchant (QP2 only -- null merchantKey on either side always matches, since
+// QPRO/BIA are single-brand per site). Used to test whether a live banner has
+// ANY B-ID covering it -- existence, not identity, so no grace period is
+// needed the way findOverrunCampaign needs one.
+function hasScheduleCoverage(scheduleEntries, { merchantKey, start, end }) {
+  if (!scheduleEntries || !start || !end) return true; // can't evaluate -- don't flag on missing data
+  const bStart = start.getTime();
+  const bEnd = end.getTime();
+  return scheduleEntries.some((c) => {
+    if (c.merchantKey && merchantKey && c.merchantKey !== merchantKey) return false;
+    return c.start.getTime() <= bEnd && c.end.getTime() >= bStart;
+  });
 }
 
 // Find the campaign a banner overruns, if any. Returns the overlapping campaign
@@ -237,6 +280,7 @@ function findOverrunCampaign(scheduleEntries, { merchantKey, start, end }) {
 const FLAG_LABEL = {
   TOO_FEW_BANNERS: `HOMEPAGE < ${HOMEPAGE_MIN}`,
   OUT_OF_ORDER: 'OUT OF ORDER',
+  UNTRACKED_LIVE_BANNER: 'UNTRACKED',
   NOT_ACTIVATED: 'NOT ACTIVATED',
   ENDS_BEFORE_CAMPAIGN: 'ENDS < CAMPAIGN',
   ALREADY_EXPIRED: 'ALREADY EXPIRED',
@@ -244,8 +288,8 @@ const FLAG_LABEL = {
 };
 // Composition first (the primary intent), then date/activation housekeeping.
 const REPORT_ORDER = [
-  'TOO_FEW_BANNERS', 'OUT_OF_ORDER', 'NOT_ACTIVATED', 'ENDS_BEFORE_CAMPAIGN',
-  'ALREADY_EXPIRED', 'EXPIRING_SOON',
+  'TOO_FEW_BANNERS', 'OUT_OF_ORDER', 'UNTRACKED_LIVE_BANNER', 'NOT_ACTIVATED',
+  'ENDS_BEFORE_CAMPAIGN', 'ALREADY_EXPIRED', 'EXPIRING_SOON',
 ];
 
 function fmtDate(d) {
@@ -275,6 +319,10 @@ async function probeSite(site, scheduleIndex) {
   // Banners past their end that are still Active, but expired longer ago than
   // the lookback window -- a standing housekeeping backlog, counted not listed.
   let staleBacklog = 0;
+  // Live homepage banners with no covering Banner Schedule B-ID, but that
+  // started before the lookback window -- pre-dates the B-ID tracking
+  // convention, a standing backlog rather than a current process gap.
+  let untrackedBacklog = 0;
 
   for (const row of active.rows || []) {
     const start = parseBoDate(row.start_datetime);
@@ -361,6 +409,28 @@ async function probeSite(site, scheduleIndex) {
       ).join('; ');
       findings.push({ type: 'OUT_OF_ORDER', merchant, row: null, detail, sequence: seq });
     }
+
+    // Cross-reference each live banner against the Banner Schedule sheet. One
+    // with no covering B-ID at all bypassed the tracked upload pipeline --
+    // banner-pre-qc/banner-deep-qc are both scoped to B-IDs in the sheet, so
+    // neither ever saw it. Only recently-started banners are flagged; older
+    // ones predate the B-ID tracking convention and are backlog, not a gap.
+    if (scheduleEntries) {
+      for (const row of list) {
+        const start = parseBoDate(row.start_datetime);
+        const end = parseBoDate(row.end_datetime);
+        const covered = hasScheduleCoverage(scheduleEntries, {
+          merchantKey: isQp2 ? merchant.toUpperCase() : null,
+          start, end,
+        });
+        if (covered) continue;
+        if (start && start.getTime() >= NOW - LOOKBACK_MS) {
+          findings.push({ row, merchant, start, end, type: 'UNTRACKED_LIVE_BANNER' });
+        } else {
+          untrackedBacklog++;
+        }
+      }
+    }
   }
 
   // Per-merchant snapshot for the dashboard's "Homepage banner" view: count of
@@ -384,6 +454,7 @@ async function probeSite(site, scheduleIndex) {
     findings,
     staleBacklog,
     parkedDrafts,
+    untrackedBacklog,
     merchants: merchantsSnap,
   };
 }
@@ -392,7 +463,7 @@ async function probeSite(site, scheduleIndex) {
 // site.id 'ws2' → RWS77 host; everything else (ws1, ws1-classic-my) → MB8 host.
 // Returns the same shape as probeSite so the main loop and write-backs are
 // platform-agnostic.
-async function probeBiaSite(site) {
+async function probeBiaSite(site, scheduleIndex) {
   const creds = loadCmsCreds();
   const host = site.id === 'ws2'
     ? (creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com')
@@ -406,9 +477,11 @@ async function probeBiaSite(site) {
   ]);
   const carById = new Map(carousels.map((c) => [c.id, c]));
 
+  const scheduleEntries = scheduleIndex?.index.get(site.id) || null;
   const findings = [];
   let staleBacklog = 0;
   let parkedDrafts = 0;
+  let untrackedBacklog = 0;
   const liveNow = []; // published carousel images whose date window is open right now
 
   for (const img of images) {
@@ -451,6 +524,25 @@ async function probeBiaSite(site) {
     });
   }
 
+  // Cross-reference each live slide against the Banner Schedule sheet -- same
+  // check as probeSite. BIA brands (WS1 (MB8), WS1 (CLASSIC MB8), WS2 (RWS77))
+  // are mapped in src/banner-schedule.js BIA_BRANDS, so schedule coverage
+  // applies here too, not just QPRO/QP2.
+  if (scheduleEntries) {
+    for (const { img, car } of liveNow) {
+      const start = parseBiaDate(img.startDate, 'start');
+      const end = parseBiaDate(img.endDate, 'end');
+      const covered = hasScheduleCoverage(scheduleEntries, { merchantKey: null, start, end });
+      if (covered) continue;
+      const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
+      if (start && start.getTime() >= NOW - LOOKBACK_MS) {
+        findings.push({ row, merchant: brandLabel, start, end, type: 'UNTRACKED_LIVE_BANNER' });
+      } else {
+        untrackedBacklog++;
+      }
+    }
+  }
+
   const merchants = [{
     merchant: brandLabel,
     activeCount: liveNow.length,
@@ -466,6 +558,7 @@ async function probeBiaSite(site) {
     findings,
     staleBacklog,
     parkedDrafts,
+    untrackedBacklog,
     merchants,
   };
 }
@@ -562,6 +655,8 @@ async function writeMerchantStatusToWeeklyReport(siteResults, allFindings) {
       if (tooFew) statusParts.push(`Need ${HOMEPAGE_MIN - m.activeCount} more banner${HOMEPAGE_MIN - m.activeCount !== 1 ? 's' : ''}`);
       const outOfOrder = merchFindings.find((f) => f.type === 'OUT_OF_ORDER');
       if (outOfOrder) statusParts.push('Out of order');
+      const untracked = merchFindings.filter((f) => f.type === 'UNTRACKED_LIVE_BANNER').length;
+      if (untracked) statusParts.push(`${untracked} untracked`);
       // Action-needed flags
       const notAct = merchFindings.filter((f) => f.type === 'NOT_ACTIVATED').length;
       if (notAct) statusParts.push(`${notAct} draft live now`);
@@ -646,6 +741,7 @@ function findingLine(f) {
     case 'OUT_OF_ORDER': return `${who} -- out of order: ${f.detail}`;
     case 'NOT_ACTIVATED': return `${who} #${f.row.id} ${f.row.label || '(no label)'} -- draft live now, not activated (${fmtDate(f.start)} -> ${fmtDate(f.end)})`;
     case 'ENDS_BEFORE_CAMPAIGN': return `${who} #${f.row.id} ${f.row.label || '(no label)'} -- ends ${fmtDate(f.end)} before campaign ${fmtDate(f.campaignEnd)} [${f.campaign}]`;
+    case 'UNTRACKED_LIVE_BANNER': return `${who} #${f.row.id} ${f.row.label || '(no label)'} -- LIVE (${fmtDate(f.start)} -> ${fmtDate(f.end)}) but no B-ID found in Banner Schedule -- confirm it went through the tracked pipeline or backfill a B-ID`;
     default: return `${who} #${f.row.id} ${f.row.label || '(no label)'} -- ends ${fmtDate(f.end)}`;
   }
 }
@@ -655,7 +751,7 @@ function findingLine(f) {
 // NOT_ACTIVATED / ENDS_BEFORE_CAMPAIGN (the items a human must act on) are listed.
 function buildDashboardDigest() {
   const parts = [order_summary(counts) || 'no issues'];
-  const ACTIONABLE = ['TOO_FEW_BANNERS', 'OUT_OF_ORDER', 'NOT_ACTIVATED', 'ENDS_BEFORE_CAMPAIGN'];
+  const ACTIONABLE = ['TOO_FEW_BANNERS', 'OUT_OF_ORDER', 'UNTRACKED_LIVE_BANNER', 'NOT_ACTIVATED', 'ENDS_BEFORE_CAMPAIGN'];
   const actionable = REPORT_ORDER.filter((t) => ACTIONABLE.includes(t))
     .flatMap((t) => allFindings.filter((f) => f.type === t));
   if (actionable.length) {
@@ -665,8 +761,8 @@ function buildDashboardDigest() {
     }
     if (actionable.length > 14) parts.push(`...and ${actionable.length - 14} more`);
   }
-  if (staleBacklog || parkedDrafts) {
-    parts.push(`(suppressed backlog: ${staleBacklog} stale-active expired, ${parkedDrafts} parked drafts)`);
+  if (staleBacklog || parkedDrafts || untrackedBacklog) {
+    parts.push(`(suppressed backlog: ${staleBacklog} stale-active expired, ${parkedDrafts} parked drafts, ${untrackedBacklog} untracked pre-dating B-ID tracking)`);
   }
   if (biaSkipped.length) parts.push(`(not covered: ${biaSkipped.join(', ')})`);
   return parts.join('\n');
@@ -697,10 +793,10 @@ if (USE_SHEET) {
     scheduleIndex = await loadScheduleIndex();
     log(`Schedule: '${scheduleIndex.tab}' -- ${scheduleIndex.campaigns} dated campaign(s) indexed`);
   } catch (e) {
-    log(`Schedule: x-ref unavailable (${e.message.split('\n')[0]}) -- ENDS_BEFORE_CAMPAIGN disabled`);
+    log(`Schedule: x-ref unavailable (${e.message.split('\n')[0]}) -- ENDS_BEFORE_CAMPAIGN and UNTRACKED_LIVE_BANNER disabled`);
   }
 } else {
-  log('Schedule: skipped (--no-sheet) -- ENDS_BEFORE_CAMPAIGN disabled');
+  log('Schedule: skipped (--no-sheet) -- ENDS_BEFORE_CAMPAIGN and UNTRACKED_LIVE_BANNER disabled');
 }
 log('');
 
@@ -709,7 +805,7 @@ const errors = [];
 for (const site of targets) {
   try {
     const r = site.platform === 'bia'
-      ? await probeBiaSite(site)
+      ? await probeBiaSite(site, scheduleIndex)
       : await probeSite(site, scheduleIndex);
     siteResults.push(r);
     const n = r.findings.length;
@@ -726,6 +822,7 @@ const allFindings = siteResults.flatMap((r) =>
 const counts = allFindings.reduce((acc, f) => { acc[f.type] = (acc[f.type] || 0) + 1; return acc; }, {});
 const staleBacklog = siteResults.reduce((n, r) => n + (r.staleBacklog || 0), 0);
 const parkedDrafts = siteResults.reduce((n, r) => n + (r.parkedDrafts || 0), 0);
+const untrackedBacklog = siteResults.reduce((n, r) => n + (r.untrackedBacklog || 0), 0);
 
 function order_summary(c) {
   return REPORT_ORDER.filter((t) => c[t]).map((t) => `${c[t]} ${FLAG_LABEL[t]}`).join(' | ');
@@ -744,7 +841,7 @@ if (AS_JSON) {
     sites: targets.map((s) => s.id),
     biaNotCovered: biaSkipped,
     counts,
-    suppressed: { staleActiveBacklog: staleBacklog, parkedDrafts },
+    suppressed: { staleActiveBacklog: staleBacklog, parkedDrafts, untrackedBacklog },
     errors,
     findings: allFindings.map((f) => ({
       site: f.siteId,
@@ -790,6 +887,7 @@ if (AS_JSON) {
         let tail = `ends ${fmtDate(f.end)}`;
         if (type === 'NOT_ACTIVATED') tail = `window ${fmtDate(f.start)} -> ${fmtDate(f.end)}`;
         if (type === 'ENDS_BEFORE_CAMPAIGN') tail = `ends ${fmtDate(f.end)} < campaign ${fmtDate(f.campaignEnd)} [${f.campaign}]`;
+        if (type === 'UNTRACKED_LIVE_BANNER') tail = `live ${fmtDate(f.start)} -> ${fmtDate(f.end)} -- no B-ID in Banner Schedule`;
         log(`   ${tag} #${String(f.row.id).padEnd(5)} ${lbl} ${tail}`);
       }
       log('');
@@ -797,10 +895,11 @@ if (AS_JSON) {
   }
 
   log('Summary: ' + (order_summary(counts) || 'clean'));
-  if (staleBacklog || parkedDrafts) {
+  if (staleBacklog || parkedDrafts || untrackedBacklog) {
     const bits = [];
     if (staleBacklog) bits.push(`${staleBacklog} stale-active expired >${LOOKBACK_DAYS}d ago`);
     if (parkedDrafts) bits.push(`${parkedDrafts} evergreen parked draft(s)`);
+    if (untrackedBacklog) bits.push(`${untrackedBacklog} untracked (pre-dates B-ID tracking)`);
     log(`Suppressed (backlog, not alerted): ${bits.join(' | ')} -- raise --lookback to include`);
   }
   if (errors.length) log(`Probe errors: ${errors.map((e) => e.siteId).join(', ')}`);

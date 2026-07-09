@@ -1,6 +1,6 @@
 ---
 name: banner-batch-uploader
-description: Run a batch of banner uploads from the Banner Schedule spreadsheet by Banner Task Number range. Use when the user says "upload B01-B03", "upload B07", "upload B##,B##,B##" or any banner ID range pulled from the Banner Schedule. Reads the schedule, resolves each B-ID's brand → BO site. WS1/WS2 (BIA/Directus) uses the API-direct script bin/upload-ws1-banners-api.mjs (promo_testbot credentials, no Chrome needed). QPRO/QP2 brands hand off to the existing qpro-homepage-banner-upload / qp2-homepage-banner-upload skills.
+description: Run a batch of banner uploads from the Banner Schedule spreadsheet by Banner Task Number range. Use when the user says "upload B01-B03", "upload B07", "upload B##,B##,B##" or any banner ID range pulled from the Banner Schedule. Reads the schedule, resolves each B-ID's brand → BO site. WS1/WS2 (BIA/Directus) uses the API-direct script bin/upload-ws1-banners-api.mjs (promo_testbot credentials, no Chrome needed). QPRO/QP2 brands use the API-direct script bin/upload-promo.js (no Chrome needed) — do NOT hand off to the qpro-homepage-banner-upload / qp2-homepage-banner-upload marketplace skills, they are Chrome-driven and not wired to this project's pipeline.
 ---
 
 # Banner Batch Uploader
@@ -24,7 +24,7 @@ User says any of:
   | QPRO | Angular SPA (custom CMS) | QPRO1–19 | `qpro1`–`qpro19` |
   | QP2 | Angular SPA (custom CMS) | QP2A–D | `ibc22` |
   | **BIA** (Best-in-Asia) | **Directus** | WS1 (MB8), WS1 (Classic MB8), WS2 (RWS77) | `ws1`, `ws1-classic-my`, `ws2` |
-- **This skill is the orchestrator.** For QPRO/QP2 brands, it hands off to the existing per-platform banner-upload skills. For BIA brands (the WS1/WS2 family), it drives Directus directly using the field map below.
+- **This skill is the orchestrator.** For QPRO/QP2 brands, it runs `bin/upload-promo.js` API-direct (see [Routing](#routing) — never the Chrome-driven marketplace skills). For BIA brands (the WS1/WS2 family), it runs `bin/upload-ws1-banners-api.mjs`, driving Directus directly via REST API using the field map below (used only as reference for what the script does — the agent does not fill the drawer by hand).
 - **Pilot scope (May 2026):** B01-B30 covers WS1 (MB8), WS1 (Classic MB8), WS2 (RWS77), QPRO1–17, QP2A–D. Classic MB8 is **out of scope** until its kiosk BO is probed.
 
 ## Pre-flight
@@ -35,16 +35,16 @@ Before touching the BO:
 3. Surface missing and unsupported up front — don't try to plough through. Unsupported means the brand has no `bo-sites.json` entry yet (SBO28, WARUNG18, UG02, MENANG7, QPLY) or is the WS1 Classic MB8 kiosk (out of scope).
 4. For each found B-ID, confirm the row's `status` is `QC Completed` — banners in `Banner Requested`, `Pending PSD`, or `Waiting for Translation` are not ready to upload. Surface and skip.
 5. Confirm the user has the asset zip ready, or note that you'll prompt per B-ID.
-6. **Verify Chrome allowlist.** The `BO Access` Chrome's MCP extension must have allowlisted: `cms.best-in-asia.com` (WS1), `ws2-cms.best-in-asia.com` (WS2 — first-use needs whitelist). QPRO and QP2 hosts are already allowed if those skills work.
+6. **Verify Chrome allowlist (BIA only).** QPRO/QP2 upload is pure API (`bin/upload-promo.js`) and needs no Chrome. For BIA (WS1/WS2), the `BO Access` Chrome MCP extension must have allowlisted: `cms.best-in-asia.com` (WS1), `ws2-cms.best-in-asia.com` (WS2 — first-use needs whitelist). This is only needed for one-off admin tasks (e.g. carousel-ID discovery, activating a carousel item) — normal upload/commit runs are also API-direct and need no Chrome.
 
 ## What to gather from the user
 
 Per batch (once):
-1. **Asset delivery method** — does the user have one zip per B-ID, one big zip, or a Drive folder?
-2. **Confirm draft folder URLs are populated** in column D of the schedule (`Promo Drafts Link`). If a row's column D is blank, ask for the folder URL.
+1. **Confirm draft folder URLs / ClickUp links are populated** in columns C/D of the schedule (`Campaign` ClickUp link, `Promo Drafts Link`). If blank, ask for the folder or task URL.
 
 Per B-ID (as needed):
-3. **The unzipped banner image(s)** — agent prompts the user to drop the zip when reaching that B-ID. Filename convention varies by project; agent inspects what's in the zip and asks if the mapping is ambiguous.
+2. **Stage images automatically first** — run `node bin/pull-banner-from-clickup.mjs --bid=<B-ID>` (works for QPRO/QP2 and BIA filename conventions, and for BIA also checks Nextcloud share links). This auto-resolves the ClickUp task from the Banner Schedule and downloads the attachments into `Banner/{brand}-{campaign}/` — no zip drop-off needed.
+3. **Only if the puller can't find the task/images** — ask the user for a zip or Drive folder and inspect what's inside; ask if the filename-to-locale mapping is ambiguous.
 
 ## QPRO / QP2 platform — API-direct
 
@@ -69,6 +69,8 @@ Same 5-step flow as BIA:
 
 ```
 Step 1 — Confirm images staged in Banner/{brand}-{campaign}/
+  If missing: run node bin/pull-banner-from-clickup.mjs --bid=<B-ID> first (auto-resolves the
+  ClickUp task from the Banner Schedule and downloads attachments), or tell user to stage manually.
 Step 2 — Dry-run:  node bin/upload-promo.js --range=<B-ID>
 Step 3 — /banner-pre-qc <B-ID>  (visual + plan check)
 Step 3.5 — Compress: node bin/compress-banners.mjs Banner/{folder} Banner/{folder}-min
@@ -321,10 +323,10 @@ After each B-ID's drawer is filled and the user has clicked Submit on the parent
 
 ## Hard rules
 
-- **WS1/WS2: always use `upload-ws1-banners-api.mjs`.** Never drive Directus via Chrome MCP for WS1/WS2 — the API-direct script is faster, deterministic, and leaves an audit trail (QC bundles).
+- **WS1/WS2: always use `upload-ws1-banners-api.mjs`.** Never drive Directus via Chrome MCP for WS1/WS2 — the API-direct script is faster, deterministic, and leaves an audit trail (QC bundles). Don't use this script for QPRO or QP2 banners — they have their own API-direct script (see next rule).
+- **QPRO/QP2: always use `upload-promo.js`.** Never hand off to the `qpro-homepage-banner-upload` / `qp2-homepage-banner-upload` marketplace skills — they drive the BO via Chrome and are not wired to this project's pipeline (no QC bundle, no dry-run plan, no shared creative-mismatch guard). `upload-promo.js` is faster, deterministic, and leaves the same audit trail as the WS1/WS2 path.
 - **Stage images first, then commit.** Always run dry-run (`--range=B##`) first to confirm all images are found before running `--commit`.
 - **Never write the CMS password in chat.** Credentials live in `cms-creds.local.json` only.
-- **QPRO/QP2: hand off to the per-platform skills.** Don't use this script for QPRO or QP2 banners.
 - **One B-ID range at a time.** Don't commit multiple unrelated campaigns in one command — keeps QC bundles clean.
 
 ## Gotchas
@@ -342,8 +344,10 @@ After each B-ID's drawer is filled and the user has clicked Submit on the parent
 - BO config: [bo-sites.json](../../../bo-sites.json) (sites `ws1`, `ws1-classic-my`, `ws2`)
 - Password store: [bo-sites.local.json](../../../bo-sites.local.json) :: `passwords.jascinta`
 
-## When to use this vs. the per-platform skills
+## When to use this vs. running a script directly
 
-- **Single banner, brand explicitly named** ("upload banner to QPRO5", "set up banner on SPADE66") → use `qpro-homepage-banner-upload` or `qp2-homepage-banner-upload` directly.
-- **B-ID(s) from the Banner Schedule** ("upload B07", "upload B01-B03") → use this skill. It resolves the brand from the schedule and routes appropriately.
-- **Many banners across mixed brands in one go** → this skill is the right entry point; per-brand skills get called as needed.
+There's no separate "per-platform skill" anymore for QPRO/QP2/WS1/WS2 — both API-direct scripts (`upload-promo.js`, `upload-ws1-banners-api.mjs`) are the only upload path, and **both require a Banner Schedule B-ID** (they pull dates, campaign name, and the image-folder brand prefix from that row — there is no `--site=`/brand-only mode on either script).
+
+- **B-ID(s) from the Banner Schedule** ("upload B07", "upload B01-B03") → use this skill. It resolves the brand from the schedule and routes to the right script automatically.
+- **Many banners across mixed brands in one go** → this skill is the right entry point; it just runs the per-platform script for each B-ID in turn.
+- **Single banner, brand explicitly named, but no B-ID yet** ("upload banner to QPRO5", "set up banner on SPADE66") → there is no B-ID-free path. First create the row: `node bin/banner-schedule.mjs --add --title="..." --start="..." --end="..." --brands=<BRAND> --commit` (see [banner-schedule.mjs](../../../bin/banner-schedule.mjs)), then follow the normal B-ID flow above with the new B-ID.
