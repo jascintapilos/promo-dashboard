@@ -207,7 +207,7 @@ When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code 
 If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `FT_OWNER_OBJECTIVE_[NODEP]_MECHANIC`. Check as `_`-separated segments, NOT substrings:
 
 * promo_code must contain the `campaign_owner` value as a segment
-* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `WELC`; starts with `Churn` → `RET`; equals `Retention` → `REL`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
+* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `ACQ`; starts with `Churn` → `RET`; equals `Retention` → `REL`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
 * if `no_deposit` is `true`, promo_code must contain `NODEP` as a segment
 * `CHURN` as a segment is a **banned token** under the new convention — emit NOTE if present (churn is always `RET`)
 

@@ -4,7 +4,7 @@ description: >
   Promo Code QC and Naming Engine for iGaming/online casino promo setup.
   Use this skill whenever the user wants to: validate a promo code request,
   check if a promo row is complete, generate a standardized promo code name
-  (including the FT prefix, CRM/VM/TSM/AM/AFF owners, and WELC/REL/RET/
+  (including the FT prefix, CRM/VM/TSM/AM/AFF owners, and ACQ/REL/RET/
   ADHOC/GROOM/NODEP tokens), generate a Column M description, or process a
   batch of promo rows from a spreadsheet or pasted table. Trigger on any mention of promo code, promo request, QC
   promo, naming convention, Column M, bonus type, free spin, free credit,
@@ -103,7 +103,7 @@ The code is built by stacking pieces in this fixed order:
 2. `OWNER_` — owning team (`CRM`, `VM`, `TSM`, `AM`, `AFF`). **Required on
    new-convention rows** — read it from the Requestor/Campaign Owner dropdown
    (col E). Optional only on legacy rows (person name in col E).
-3. `OBJECTIVE` — campaign objective (`WELC`, `REL`, `RET`, `ADHOC`, `GROOM` — required)
+3. `OBJECTIVE` — campaign objective (`ACQ`, `REL`, `RET`, `ADHOC`, `GROOM` — required)
 4. `_NODEP` — modifier when no deposit required (Free Credit / Free Spin only)
 5. `_ECONOMICS` — bonus-type details (e.g. `148FS_FOO`, `40PCT`, `FC50`)
 6. `_TO` — turnover (e.g. `12X`, `3TO`)
@@ -112,7 +112,7 @@ The code is built by stacking pieces in this fixed order:
 
 | Objective Code | Sheet dropdown label | Meaning |
 |---|---|---|
-| `WELC` | ACQ - Welcome | Welcome / Acquisition bonuses (new players) |
+| `ACQ` | ACQ - Welcome | Welcome / Acquisition bonuses (new players) |
 | `REL` | Retention | Active segment (active player reloads) |
 | `RET` | Churn - Reactivation | Churn segment (winback/reactivation) |
 | `ADHOC` | Ad Hoc | Ad-hoc campaigns (bday, holiday, monthly camps) |
@@ -128,9 +128,9 @@ The code is built by stacking pieces in this fixed order:
 |---|---|---|
 | `CRM` | CRM team | `CRM_RET_40PCT_12X` |
 | `VM` | VIP Manager | `VM_REL_40PCT_12X` |
-| `TSM` | Tele Sales Manager | `TSM_WELC_FC50_5X` |
+| `TSM` | Tele Sales Manager | `TSM_ACQ_FC50_5X` |
 | `AM` | Account Manager | `AM_REL_30PCT_8X` |
-| `AFF` | Affiliate | `AFF_WELC_50PCT_10X` — AFF is an owner and pairs with an objective like any other team (never standalone) |
+| `AFF` | Affiliate | `AFF_ACQ_50PCT_10X` — AFF is an owner and pairs with an objective like any other team (never standalone) |
 
 `FT` is NOT an owner — it is a platform prefix: **only when the request
 includes WS1.** If WS1 is one of multiple brands in the same request, apply
@@ -139,7 +139,7 @@ the request has no WS1, no `FT_`.
 
 > **Owners are mutually exclusive:** exactly one owner code per promo code.
 > Any owner may pair with any objective (full 5×5 matrix is valid) — typical
-> pairings: TSM→WELC, VM→REL/RET/GROOM, CRM→any.
+> pairings: TSM→ACQ, VM→REL/RET/GROOM, CRM→any.
 
 **Stakeholder tags (`KN`, `CD`, `YH`, `JT`) never go into the promo code** —
 they live in the Stakeholder column (Z) only.
@@ -152,9 +152,9 @@ says "No Deposit" or "ND"), insert `_NODEP` **immediately after the objective**
 and before the economics block.
 
 Examples:
-- `CRM_WELC_NODEP_FC50_5X` — CRM welcome no-deposit free credit, $50, 5x TO
+- `CRM_ACQ_NODEP_FC50_5X` — CRM welcome no-deposit free credit, $50, 5x TO
 - `VM_REL_NODEP_88FS_GOO_5X` — VIP manager active no-deposit free spin, 88 spins on GOO
-- `TSM_WELC_NODEP_FC30_3X` — telesales welcome no-deposit FC30, 3x TO
+- `TSM_ACQ_NODEP_FC30_3X` — telesales welcome no-deposit FC30, 3x TO
 
 Do NOT add `_NODEP` to deposit bonuses (% bonuses always require a deposit by
 definition) or cashback. If unsure whether a Free Spin / Free Credit is
@@ -171,7 +171,7 @@ no-deposit, ask the user before generating the code.
 - Examples:
   - `CRM_REL_148FS_FOO_3TO` (CRM active reload, 148 spins on FOO, 3x TO)
   - `VM_REL_88FS_GOO_5X` (VIP manager reload, 88 spins on GOO)
-  - `TSM_WELC_NODEP_50FS_BBB_10X` (telesales welcome no-deposit 50 spins on BBB)
+  - `TSM_ACQ_NODEP_50FS_BBB_10X` (telesales welcome no-deposit 50 spins on BBB)
   - `FT_CRM_REL_148FS_FOO_3TO` (multi-brand request including WS1)
 
 **Deposit (% bonus):**
@@ -181,8 +181,8 @@ no-deposit, ask the user before generating the code.
 - Examples:
   - `CRM_RET_40PCT_12X` (CRM churn 40% reload, 12x TO)
   - `VM_RET_40PCT_12X` (VIP manager churn 40%)
-  - `CRM_WELC_120PCT_15X` (CRM welcome 120%)
-  - `TSM_WELC_100PCT_10X` (telesales welcome 100%)
+  - `CRM_ACQ_120PCT_15X` (CRM welcome 120%)
+  - `TSM_ACQ_100PCT_10X` (telesales welcome 100%)
   - `FT_VM_REL_50PCT_8X` (multi-brand including WS1, VIP manager active reload)
 - NODEP does not apply to % bonuses.
 
@@ -191,11 +191,11 @@ no-deposit, ask the user before generating the code.
 [FT_]OWNER_OBJ[_NODEP]_FCXX_[TO]X[_REMARK]
 ```
 - Examples:
-  - `CRM_WELC_NODEP_FC50_5X` (CRM welcome no-deposit FC50)
-  - `TSM_WELC_NODEP_FC30_3X` (telesales welcome no-deposit FC30)
+  - `CRM_ACQ_NODEP_FC50_5X` (CRM welcome no-deposit FC50)
+  - `TSM_ACQ_NODEP_FC30_3X` (telesales welcome no-deposit FC30)
   - `AM_REL_FC38_5X_DY2` (account manager active reload FC38, day-2 retention remark)
   - `FT_VM_RET_FC100_10X` (multi-brand including WS1, VIP manager churn)
-- Use `VARIABLE` in place of the amount when the FC amount is variable: `CRM_WELC_NODEP_FC_VARIABLE_2X`.
+- Use `VARIABLE` in place of the amount when the FC amount is variable: `CRM_ACQ_NODEP_FC_VARIABLE_2X`.
 
 ### Special / new campaign types
 
@@ -551,7 +551,7 @@ For multiple rows, output one full block (QC + BO INPUT) per row, then a summary
 
 | RN | Brand | Platform | Bonus Type | Status | Promo Code | Promotion Name |
 |---|---|---|---|---|---|---|
-| P001 | QP2A | QP2 | Free Spin | ✅ READY | FT_TSM_WELC_198FS_FOO_20TO | Slots - 198 Free Spins Welcome Bonus - Fortune of Olympus |
+| P001 | QP2A | QP2 | Free Spin | ✅ READY | FT_TSM_ACQ_198FS_FOO_20TO | Slots - 198 Free Spins Welcome Bonus - Fortune of Olympus |
 
 ---
 
@@ -561,7 +561,7 @@ For multiple rows, output one full block (QC + BO INPUT) per row, then a summary
 - **Requestor specifies code in Remark**: Use their code, but still validate it and note deviations.
 - **Multiple brands, same code**: One output row per brand variant if they differ; single row if identical.
 - **Multi-brand request including WS1**: Apply the `FT_` prefix to ALL brands in the request — not just to WS1 — so codes stay aligned across brands. Without WS1, no `FT_` on any brand.
-- **No-deposit Free Credit / Free Spin**: Insert `_NODEP` immediately after the objective (e.g. `CRM_WELC_NODEP_FC50_5X`). Trigger when the No Deposit? column (AA) says Yes, min dep is 0, OR when Bonus Type / Name/Details says "No Deposit" or "ND". Does not apply to deposit bonuses or cashback.
+- **No-deposit Free Credit / Free Spin**: Insert `_NODEP` immediately after the objective (e.g. `CRM_ACQ_NODEP_FC50_5X`). Trigger when the No Deposit? column (AA) says Yes, min dep is 0, OR when Bonus Type / Name/Details says "No Deposit" or "ND". Does not apply to deposit bonuses or cashback.
 - **Owners are mutually exclusive**: exactly one of CRM / VM / TSM / AM / AFF per code — never two.
 - **Legacy rows** (person name in Requestor col E, free-text campaign in col K): the owner prefix may be absent and old-style codes are acceptable — validate leniently, but never generate new codes with the banned `CHURN` token.
 - **Suggested Prefix (col AB) filled**: generated code must start with it (after any `FT_`); flag mismatches instead of silently overriding.
