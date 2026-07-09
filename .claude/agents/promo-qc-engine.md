@@ -202,14 +202,16 @@ Downstream handoff:
 
 When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code is missing required tokens. Strip leading `TEST_` and `FT_` from promo_code before checking. Skip if campaign is blank or null.
 
-### New convention (takes precedence — approved 2026-07-07, effective 1 Aug 2026)
+### New convention (takes precedence — rebuilt 2026-07-09, Pillar-based,
+### replaces the 2026-07-07 Owner/Objective version)
 
-If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `FT_OWNER_OBJECTIVE_[NODEP]_MECHANIC`. Check as `_`-separated segments, NOT substrings:
+If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `[FT_]PILLAR_TEAM_OBJECTIVE_[NODEP]_PROMO[_TO]`. Check as `_`-separated segments, NOT substrings:
 
-* promo_code must contain the `campaign_owner` value as a segment
-* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `ACQ` (as a segment prefix — either `ACQ_WELC` or `ACQ_REL` satisfies this); starts with `Churn` → `CHURN`; equals `Retention` → `RET`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
+* promo_code must contain the `campaign_owner` value as a segment (this is the TEAM segment; position among segments doesn't matter for this NOTE-level check, only presence)
+* promo_code must contain the Pillar token mapped from `campaign` (per 'Ref - Codes' D2:F10 — keep this list in sync with that range): `ACQ - Welcome` / `ACQ - Reload` → `ACQ`; `Retention` / `Churn - Reactivation` / `Ad Hoc` → `RET`; `VIP - Churn` → `VIP`; `Grooming` / `Whale - Probe` → `WHA`; `Branding` → `BRA`
+* promo_code must contain the Objective token mapped from `campaign`: `ACQ - Welcome` / `Branding` → `WELC`; `ACQ - Reload` / `Retention` → `REL`; `Churn - Reactivation` / `VIP - Churn` → `CHURN`; `Ad Hoc` → `ADHOC`; `Grooming` → `GROOM`; `Whale - Probe` → `PROBE`
 * if `no_deposit` is `true`, promo_code must contain `NODEP` as a segment
-* Churn must use `CHURN` as a segment, not `RET` — emit NOTE if `RET` appears where the campaign is Churn (as of 2026-07-09, `RET` means Retention and `CHURN` is no longer banned; this is a reversal of the prior rule)
+* `FT_` is opt-in only as of 2026-07-09 (no longer inferred from WS1/WS2 brand presence) — its presence or absence is NOT checked here. Nothing is a banned token under the current convention.
 
 Skip the legacy table entirely for new-convention rows. Do not require `ACQ_`, `VIP_`, or `CHURN_` on them.
 

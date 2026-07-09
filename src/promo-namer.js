@@ -162,15 +162,14 @@ export function deriveNames(record) {
     const campaignSuffix = inferCampaignSuffix(record);
     if (campaignSuffix) code += campaignSuffix;
   }
-  // New convention (approved 2026-07-07): rows using the sheet dropdowns
-  // (Requestor = owner code, Campaign = objective label) get the prefix
-  // chain OWNER_OBJECTIVE_[NODEP]_ and skip the legacy campaign token rules.
-  // RET always = churn: a churn-objective reload keeps RET (not the base
-  // REL) so the code never carries a contradictory segment token.
+  // New convention (rebuilt 2026-07-09 — Pillar-based, replaces the
+  // 2026-07-07 Owner/Objective version): rows using the sheet dropdowns
+  // (Requestor = team code, Campaign = Pillar×Objective combo label) get
+  // the prefix chain PILLAR_TEAM_OBJECTIVE_[NODEP]_ and skip the legacy
+  // campaign token rules.
   const convention = resolveConvention(record);
   if (convention) {
-    if (convention.objective === 'RET') code = code.replace(/^REL_/i, 'RET_');
-    const chain = [convention.owner, convention.objective];
+    const chain = [convention.pillar, convention.team, convention.objective];
     if (convention.nodep) chain.push('NODEP');
     for (const t of chain.reverse()) {
       if (!code.toUpperCase().split('_').includes(t)) code = `${t}_${code}`;
@@ -199,15 +198,12 @@ export function deriveNames(record) {
   if (tier && TIER_PREFIX[tier]) {
     code = `${TIER_PREFIX[tier]}_${code}`;
   }
-  // Platform-implied FT_ prefix for WS1/WS2 (IGMP). Per operator 2026-05-20:
-  // every WS1/WS2 promo gets `FT_` at the front regardless of remark. Sits
-  // closer to the base than operator code_prefixes so the final order ends
-  // up `[TEST_][operator-prefixes_]FT_<TIER_><base>`.
-  const onWs1Ws2 = Array.isArray(record.brands)
-    && record.brands.some((b) => /^WS[12]\b/i.test(String(b)));
-  if (onWs1Ws2 && !code.startsWith('FT_')) {
-    code = `FT_${code}`;
-  }
+  // FT_ is opt-in only as of 2026-07-09 (was: auto-added for every WS1/WS2
+  // promo regardless of remark). It's now handled entirely by the generic
+  // operator-named-prefix mechanism below — "Add FT to code" / "Include FT
+  // prefix" populates instr.code_prefixes = ['FT'], same as any other
+  // explicit prefix request. No dedicated WS1/WS2 brand check anymore.
+  //
   // Operator-named prefixes from remark/details (instruction L). Examples:
   //   "Add VIP to code"        → VIP_
   //   "Include FT prefix"      → FT_

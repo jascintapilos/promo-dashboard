@@ -4,8 +4,8 @@ description: >
   Promo Code QC and Naming Engine for iGaming/online casino promo setup.
   Use this skill whenever the user wants to: validate a promo code request,
   check if a promo row is complete, generate a standardized promo code name
-  (including the FT prefix, CRM/VM/TSM/AM/AFF owners, and ACQ_WELC/ACQ_REL/
-  RET/CHURN/ADHOC/GROOM/NODEP tokens), generate a Column M description, or process a
+  (including the FT prefix, ACQ/RET/VIP/WHA/BRA pillars, CRM/VM/TSM/AM/AFF
+  teams, and WELC/REL/CHURN/ADHOC/GROOM/PROBE/NODEP tokens), generate a Column M description, or process a
   batch of promo rows from a spreadsheet or pasted table. Trigger on any mention of promo code, promo request, QC
   promo, naming convention, Column M, bonus type, free spin, free credit,
   deposit bonus, no-deposit / NODEP, TO/turnover, VIP manager (VM), tele
@@ -39,13 +39,13 @@ Extract these fields for each promo row:
 | Remark | B | e.g. "Info Ready", special notes |
 | Banner Needed | C | Yes/No |
 | Request Number | D | e.g. P001 |
-| Requestor / Campaign Owner | E | New-convention rows hold an owner code (CRM/VM/TSM/AM/AFF); legacy rows hold a person name |
+| Requestor / Campaign Owner | E | New-convention rows hold a team code (CRM/VM/TSM/AM/AFF); legacy rows hold a person name |
 | Date | F | |
 | Priority | G | Urgent / High / Medium / Low |
 | Deadline | H | |
 | Brand | I | e.g. QP2A, WS1, QPRO8 |
 | Region | J | e.g. MY, SG, AUD |
-| Campaign Name/Objective | K | New-convention rows: ACQ - Welcome / Retention / Churn - Reactivation / Ad Hoc / Grooming |
+| Campaign Name/Objective | K | New-convention rows: ACQ - Welcome / ACQ - Reload / Retention / Churn - Reactivation / Ad Hoc / Grooming / VIP - Churn / Whale - Probe / Branding (Pillar×Objective combo — see 'Ref - Codes' D2:D10) |
 | Bonus Type | L | See types below |
 | Name/Details (internal ref) | M | The human description of the promo |
 | Inbox Message | N | TRUE/FALSE |
@@ -60,7 +60,7 @@ Extract these fields for each promo row:
 | Promotion Name ZH/ID | Y | Optional |
 | Stakeholder | Z | KN/CD/YH/JT — sheet-tracking only, NEVER goes into the promo code |
 | No Deposit? | AA | Yes/No — drives the NODEP token |
-| Suggested Prefix | AB | Auto-formula (OWNER_OBJECTIVE[_NODEP]) — cross-check generated code against it |
+| Suggested Prefix | AB | Auto-formula (PILLAR_TEAM_OBJECTIVE[_NODEP]) — cross-check generated code against it |
 
 ---
 
@@ -92,57 +92,79 @@ Once the user replies with all answers → proceed to Step 3.
 
 ## STEP 3 — NAMING LOGIC
 
-### Promo Code Format (approved 2026-07-07, effective 1 Aug 2026)
+### Promo Code Format (rebuilt 2026-07-09 — Pillar-based, replaces the
+2026-07-07 Owner/Objective version)
 ```
-[FT_]OWNER_OBJECTIVE[_NODEP]_[ECONOMICS]_[TO]
+[FT_]PILLAR_TEAM_OBJECTIVE[_NODEP]_[PROMO][_TO]
 ```
 
 The code is built by stacking pieces in this fixed order:
 
-1. `FT_` — Fast Track prefix (conditional, see below)
-2. `OWNER_` — owning team (`CRM`, `VM`, `TSM`, `AM`, `AFF`). **Required on
+1. `FT_` — Fast Track prefix. **Opt-in only** — include ONLY when explicitly
+   requested (e.g. Remark says "Add FT to code" or "Include FT prefix"). Do
+   NOT auto-add it just because WS1/WS2 is in the Brand list — that
+   auto-inference was retired 2026-07-09.
+2. `PILLAR` — budget/costing category (`ACQ`, `RET`, `VIP`, `WHA`, `BRA` —
+   fixed list of exactly 5, required). Read from the Campaign
+   Name/Objective dropdown (col K).
+3. `TEAM` — owning team (`CRM`, `VM`, `TSM`, `AM`, `AFF`). **Required on
    new-convention rows** — read it from the Requestor/Campaign Owner dropdown
    (col E). Optional only on legacy rows (person name in col E).
-3. `OBJECTIVE` — campaign objective (`ACQ_WELC`, `ACQ_REL`, `RET`, `CHURN`, `ADHOC`, `GROOM` — required)
-4. `_NODEP` — modifier when no deposit required (Free Credit / Free Spin only)
-5. `_ECONOMICS` — bonus-type details (e.g. `148FS_FOO`, `40PCT`, `FC50`)
-6. `_TO` — turnover (e.g. `12X`, `3TO`)
+4. `OBJECTIVE` — campaign objective (`WELC`, `REL`, `CHURN`, `ADHOC`, `GROOM`,
+   `PROBE` — required). Flexible: any Objective may in principle pair with
+   any Pillar.
+5. `_NODEP` — modifier when no deposit required (Free Credit / Free Spin only)
+6. `_PROMO` — bonus-type economics (e.g. `148FS_FOO`, `40PCT`, `FC50`)
+7. `_TO` — turnover, **optional** — include only if needed to keep the code
+   unique (e.g. `12X`, `3TO`)
 
-### Objective Codes (required — from the Campaign Name/Objective dropdown, col K)
+### Pillars (fixed list of exactly 5 — from the Campaign dropdown, col K)
 
-| Objective Code | Sheet dropdown label | Meaning |
+| Pillar Code | Name | Typical Objectives |
 |---|---|---|
-| `ACQ_WELC` | ACQ - Welcome | Welcome / first-deposit acquisition bonuses (new players) |
-| `ACQ_REL` | ACQ - Welcome | Reload / follow-up bonuses within the acquisition funnel (e.g. FTD ladder) — same campaign dropdown value as `ACQ_WELC`, distinguished by bonus mechanic not by campaign label |
-| `RET` | Retention | Active segment (active player reloads) |
-| `CHURN` | Churn - Reactivation | Churn segment (winback/reactivation) |
-| `ADHOC` | Ad Hoc | Ad-hoc campaigns (bday, holiday, monthly camps) |
-| `GROOM` | Grooming | VIP progression bonuses |
+| `ACQ` | CPA Acquisition | WELC, REL |
+| `RET` | Retention / Promo / Reactivation | REL, CHURN, ADHOC |
+| `VIP` | VIP Relationship & Brand Loyalty | CHURN |
+| `WHA` | Whale Detection & Grooming | GROOM, PROBE |
+| `BRA` | Branding | WELC |
 
-> **Convention updated 2026-07-09:** `RET` now always = active (Retention),
-> `CHURN` now always = churn/reactivation — this is a reversal of the prior
-> rule (previously `RET`=churn and `CHURN` was banned). `ACQ` alone is never
-> emitted bare; it always carries a `_WELC` or `_REL` sub-tag. "VIP Retention"
-> (active VIPs) is `VM_RET`, not `VM_CHURN`.
+### Objective Codes (flexible — any Objective may pair with any Pillar)
 
-### Owner Prefixes (one per code — sit BEFORE the objective)
+| Objective Code | Meaning |
+|---|---|
+| `WELC` | Welcome / first-deposit bonuses (new players) |
+| `REL` | Reload / plain retention play |
+| `CHURN` | Churn / Reactivation (winback) |
+| `ADHOC` | Ad-hoc campaigns (bday, holiday, monthly camps) |
+| `GROOM` | Grooming / VIP progression |
+| `PROBE` | Whale probing / detection |
 
-| Owner Code | Meaning | Example |
+> **Convention rebuilt 2026-07-09** (replaces the 2026-07-07 Owner/Objective
+> version, which itself had replaced the original WELC/REL/RET scheme).
+> Pillar is a new leading dimension aligning promo codes to budget
+> cost-centers. `ACQ` never appears without an Objective sub-tag (e.g.
+> `ACQ_CRM_WELC` or `ACQ_CRM_REL`, never bare `ACQ_CRM_...`). `RET` is now a
+> **Pillar**, not a standalone objective — the flat `RET`=Retention /
+> `CHURN`=banned scheme from the prior round is fully retired. Nothing is a
+> banned token under the current convention.
+
+### Team Codes (one per code — sits BETWEEN Pillar and Objective)
+
+| Team Code | Meaning | Example |
 |---|---|---|
-| `CRM` | CRM team | `CRM_RET_40PCT_12X` |
-| `VM` | VIP Manager | `VM_RET_40PCT_12X` |
-| `TSM` | Tele Sales Manager | `TSM_ACQ_WELC_FC50_5X` |
-| `AM` | Account Manager | `AM_RET_30PCT_8X` |
-| `AFF` | Affiliate | `AFF_ACQ_WELC_50PCT_10X` — AFF is an owner and pairs with an objective like any other team (never standalone) |
+| `CRM` | CRM team | `RET_CRM_CHURN_30FC` |
+| `VM` | VIP Manager | `ACQ_VM_WELC_150FS` |
+| `TSM` | Tele Sales Manager | `ACQ_TSM_WELC_FC50_5X` |
+| `AM` | Account Manager | `RET_AM_REL_30PCT_8X` |
+| `AFF` | Affiliate | `ACQ_AFF_WELC_50PCT_10X` — AFF is a team and pairs with any Pillar/Objective like any other team (never standalone) |
 
-`FT` is NOT an owner — it is a platform prefix: **only when the request
-includes WS1.** If WS1 is one of multiple brands in the same request, apply
-`FT_` to ALL brands in that request so codes stay aligned across brands. If
-the request has no WS1, no `FT_`.
+`FT` is NOT a team or a pillar — it's an **opt-in** platform prefix. Only add
+it when the request explicitly asks for it (e.g. Remark: "Add FT to code" /
+"Include FT prefix"). WS1/WS2 brand presence alone no longer triggers it.
 
-> **Owners are mutually exclusive:** exactly one owner code per promo code.
-> Any owner may pair with any objective (full 5×5 matrix is valid) — typical
-> pairings: TSM→ACQ_WELC, VM→RET/CHURN/GROOM, CRM→any.
+> **Teams are mutually exclusive:** exactly one team code per promo code.
+> Any team may pair with any Pillar/Objective combo — typical pairings:
+> TSM→ACQ_WELC, VM→RET_REL / RET_CHURN / WHA_GROOM, CRM→any.
 
 **Stakeholder tags (`KN`, `CD`, `YH`, `JT`) never go into the promo code** —
 they live in the Stakeholder column (Z) only.
@@ -155,9 +177,9 @@ says "No Deposit" or "ND"), insert `_NODEP` **immediately after the objective**
 and before the economics block.
 
 Examples:
-- `CRM_ACQ_WELC_NODEP_FC50_5X` — CRM welcome no-deposit free credit, $50, 5x TO
-- `VM_RET_NODEP_88FS_GOO_5X` — VIP manager active no-deposit free spin, 88 spins on GOO
-- `TSM_ACQ_WELC_NODEP_FC30_3X` — telesales welcome no-deposit FC30, 3x TO
+- `ACQ_CRM_WELC_NODEP_FC50_5X` — CRM acquisition welcome no-deposit free credit, $50, 5x TO
+- `RET_VM_REL_NODEP_88FS_GOO_5X` — VIP manager retention no-deposit free spin, 88 spins on GOO
+- `ACQ_TSM_WELC_NODEP_FC30_3X` — telesales acquisition welcome no-deposit FC30, 3x TO
 
 Do NOT add `_NODEP` to deposit bonuses (% bonuses always require a deposit by
 definition) or cashback. If unsure whether a Free Spin / Free Credit is
@@ -167,62 +189,63 @@ no-deposit, ask the user before generating the code.
 
 **Free Spin:**
 ```
-[FT_]OWNER_OBJ[_NODEP]_XXXFS_[GAME_ABBR]_[TO]X
+[FT_]PILLAR_TEAM_OBJ[_NODEP]_XXXFS_[GAME_ABBR][_TO]
 ```
 - Game abbreviations: FOO = Fortune of Olympus, GOO = Gates of Olympus, GOSS = Gates of Olympus Super Scatter, BBB = Big Bass Bonanza
 - For any other game: derive abbreviation from the game's initials (e.g. "Sweet Bonanza Xmas" → SBX)
 - Examples:
-  - `CRM_RET_148FS_FOO_3TO` (CRM active reload, 148 spins on FOO, 3x TO)
-  - `VM_RET_88FS_GOO_5X` (VIP manager reload, 88 spins on GOO)
-  - `TSM_ACQ_WELC_NODEP_50FS_BBB_10X` (telesales welcome no-deposit 50 spins on BBB)
-  - `FT_CRM_RET_148FS_FOO_3TO` (multi-brand request including WS1)
+  - `RET_CRM_REL_148FS_FOO_3TO` (CRM retention reload, 148 spins on FOO, 3x TO)
+  - `RET_VM_REL_88FS_GOO_5X` (VIP manager retention reload, 88 spins on GOO)
+  - `ACQ_TSM_WELC_NODEP_50FS_BBB_10X` (telesales acquisition welcome no-deposit 50 spins on BBB)
+  - `FT_ACQ_CRM_REL_148FS_FOO_3TO` (FT_ only present because explicitly requested)
 
 **Deposit (% bonus):**
 ```
-[FT_]OWNER_OBJ_XXPCT_[TO]X
+[FT_]PILLAR_TEAM_OBJ_XXPCT[_TO]
 ```
 - Examples:
-  - `CRM_CHURN_40PCT_12X` (CRM churn 40% reload, 12x TO)
-  - `VM_CHURN_40PCT_12X` (VIP manager churn 40%)
-  - `CRM_ACQ_WELC_120PCT_15X` (CRM welcome 120%)
-  - `TSM_ACQ_WELC_100PCT_10X` (telesales welcome 100%)
-  - `FT_VM_RET_50PCT_8X` (multi-brand including WS1, VIP manager active reload)
-  - `CRM_ACQ_REL_88PCT_10X` (CRM reload-within-acquisition, e.g. FTD ladder follow-up — distinct from `ACQ_WELC`)
+  - `RET_CRM_CHURN_40PCT_12X` (CRM churn 40% reload, 12x TO)
+  - `VIP_VM_CHURN_40PCT_12X` (VIP manager, VIP pillar, churn 40%)
+  - `ACQ_CRM_WELC_120PCT_15X` (CRM acquisition welcome 120%)
+  - `ACQ_TSM_WELC_100PCT_10X` (telesales acquisition welcome 100%)
+  - `RET_VM_REL_50PCT_8X` (VIP manager retention reload)
+  - `ACQ_CRM_REL_88PCT_100_FTD_LOSE_2` (CRM reload-within-acquisition, e.g. FTD ladder follow-up — distinct from `ACQ_..._WELC`)
 - NODEP does not apply to % bonuses.
 
 **Free Credit:**
 ```
-[FT_]OWNER_OBJ[_NODEP]_FCXX_[TO]X[_REMARK]
+[FT_]PILLAR_TEAM_OBJ[_NODEP]_FCXX[_TO][_REMARK]
 ```
 - Examples:
-  - `CRM_ACQ_WELC_NODEP_FC50_5X` (CRM welcome no-deposit FC50)
-  - `TSM_ACQ_WELC_NODEP_FC30_3X` (telesales welcome no-deposit FC30)
-  - `AM_RET_FC38_5X_DY2` (account manager active reload FC38, day-2 retention remark)
-  - `FT_VM_CHURN_FC100_10X` (multi-brand including WS1, VIP manager churn)
-- Use `VARIABLE` in place of the amount when the FC amount is variable: `CRM_ACQ_WELC_NODEP_FC_VARIABLE_2X`.
+  - `ACQ_CRM_WELC_NODEP_FC50_5X` (CRM acquisition welcome no-deposit FC50)
+  - `ACQ_TSM_WELC_NODEP_FC30_3X` (telesales acquisition welcome no-deposit FC30)
+  - `RET_AM_REL_FC38_5X_DY2` (account manager retention reload FC38, day-2 retention remark)
+  - `VIP_VM_CHURN_FC100_10X` (VIP manager, VIP pillar, churn)
+- Use `VARIABLE` in place of the amount when the FC amount is variable: `ACQ_CRM_WELC_NODEP_FC_VARIABLE_2X`.
 
 ### Special / new campaign types
 
-Most formerly "special" campaigns now map to `ADHOC` (bday, holiday, CNY,
-monthly camps) or `GROOM` (VIP progression) — use those, with the specific
-campaign identifier as a suffix tag after the economics block (e.g.
-`VM_ADHOC_FC88_5X_BDAY`, `CRM_ADHOC_50PCT_10X_CNY`). For campaign types that
-genuinely fit no objective (cashback, insurance, leaderboards), suggest an
-appropriate tag and flag it clearly:
+Whale-specific campaigns map to the `WHA` pillar (`GROOM` for grooming an
+existing whale, `PROBE` for detecting/probing a new one), e.g.
+`WHA_VM_GROOM_30PCT_1K`, `WHA_VM_PROBE_30PCT_2K` (the `_1K`/`_2K` suffix is
+the target deposit-tier cap, not a turnover multiplier). Branding-driven
+acquisition uses the `BRA` pillar, e.g. `BRA_VM_WELC_200FS`. For campaign
+types that genuinely fit no Pillar/Objective combo (cashback, insurance,
+leaderboards), suggest an appropriate tag and flag it clearly:
 
-> "I don't have a standard objective code for this campaign type. I'd suggest `[SUGGESTED_TAG]` — please confirm or provide your preferred code."
+> "I don't have a standard Pillar/Objective combo for this campaign type. I'd suggest `[SUGGESTED_TAG]` — please confirm or provide your preferred code."
 
 ### Rules
 - All caps, underscores only (no spaces, no hyphens)
-- Stack order is fixed: `[FT_]OWNER_OBJECTIVE[_NODEP]_[ECONOMICS]_[TO]`
-- `FT_` is conditional on WS1 being in the request — see the table above
-- Exactly ONE owner code per promo code (CRM / VM / TSM / AM / AFF)
-- Churn/Reactivation always uses `CHURN` (not `RET` — `RET` now means Retention as of the 2026-07-09 convention update)
+- Stack order is fixed: `[FT_]PILLAR_TEAM_OBJECTIVE[_NODEP]_[PROMO][_TO]`
+- `FT_` is opt-in only — never inferred from brand presence, only added when explicitly requested (e.g. Remark: "Add FT to code")
+- Exactly ONE team code per promo code (CRM / VM / TSM / AM / AFF)
+- Pillar must be one of the fixed 5 (`ACQ` / `RET` / `VIP` / `WHA` / `BRA`) — never invent a 6th without confirming with the operator
+- `TO` is optional — include only if needed to keep the code unique; nothing is a banned token under the current convention
 - If the Suggested Prefix column (AB) is filled, the generated code must start with it (after any `FT_`) — flag any mismatch
 - `NODEP` appears only on Free Credit / Free Spin when no deposit is required
-- Include extra remark/campaign tag if present (e.g. `_BR_`, `_DOUBLEDATE_`, `_REV_`, `_ACQ_`, `_DY2_`) — these slot in after the economics block
+- Include extra remark/campaign tag if present (e.g. `_BR_`, `_DOUBLEDATE_`, `_REV_`, `_DY2_`) — these slot in after the economics block
 - If requestor specifies exact code in Remark → use that code verbatim, but still validate against these rules and flag any deviation
-- Turnover expressed as `_XTO` or `_XX` — match the style of existing codes for that brand
 
 ---
 
@@ -555,7 +578,7 @@ For multiple rows, output one full block (QC + BO INPUT) per row, then a summary
 
 | RN | Brand | Platform | Bonus Type | Status | Promo Code | Promotion Name |
 |---|---|---|---|---|---|---|
-| P001 | QP2A | QP2 | Free Spin | ✅ READY | FT_TSM_ACQ_WELC_198FS_FOO_20TO | Slots - 198 Free Spins Welcome Bonus - Fortune of Olympus |
+| P001 | QP2A | QP2 | Free Spin | ✅ READY | ACQ_TSM_WELC_198FS_FOO_20TO | Slots - 198 Free Spins Welcome Bonus - Fortune of Olympus |
 
 ---
 
@@ -564,10 +587,10 @@ For multiple rows, output one full block (QC + BO INPUT) per row, then a summary
 - **Status already "QC Completed"**: Validate the existing code against naming rules and flag any issues.
 - **Requestor specifies code in Remark**: Use their code, but still validate it and note deviations.
 - **Multiple brands, same code**: One output row per brand variant if they differ; single row if identical.
-- **Multi-brand request including WS1**: Apply the `FT_` prefix to ALL brands in the request — not just to WS1 — so codes stay aligned across brands. Without WS1, no `FT_` on any brand.
-- **No-deposit Free Credit / Free Spin**: Insert `_NODEP` immediately after the objective (e.g. `CRM_ACQ_WELC_NODEP_FC50_5X`). Trigger when the No Deposit? column (AA) says Yes, min dep is 0, OR when Bonus Type / Name/Details says "No Deposit" or "ND". Does not apply to deposit bonuses or cashback.
-- **Owners are mutually exclusive**: exactly one of CRM / VM / TSM / AM / AFF per code — never two.
-- **Legacy rows** (person name in Requestor col E, free-text campaign in col K): the owner prefix may be absent and old-style codes are acceptable — validate leniently, but never generate new codes that use `RET` to mean churn — under the current convention `RET` is Retention and churn is always `CHURN`.
+- **Multi-brand request including WS1**: Do NOT auto-add `FT_` just because WS1 is in the brand list (retired 2026-07-09). Only add `FT_` — to ALL brands in the request, so codes stay aligned — if the requestor explicitly asked for it (e.g. Remark: "Add FT to code").
+- **No-deposit Free Credit / Free Spin**: Insert `_NODEP` immediately after the objective (e.g. `ACQ_CRM_WELC_NODEP_FC50_5X`). Trigger when the No Deposit? column (AA) says Yes, min dep is 0, OR when Bonus Type / Name/Details says "No Deposit" or "ND". Does not apply to deposit bonuses or cashback.
+- **Teams are mutually exclusive**: exactly one of CRM / VM / TSM / AM / AFF per code — never two.
+- **Legacy rows** (person name in Requestor col E, free-text campaign in col K): the team prefix may be absent and old-style codes are acceptable — validate leniently. `RET` is now a Pillar (Retention/Reactivation budget bucket), not the old flat Retention-objective token, and nothing is a banned token under the current convention.
 - **Suggested Prefix (col AB) filled**: generated code must start with it (after any `FT_`); flag mismatches instead of silently overriding.
 - **WS1 brand**: Note that Expiry In Minutes field applies; ask if not filled.
 - **Turnover shown as "x1", "1X", "TO 1"** → normalize to `_1X` in the code.
