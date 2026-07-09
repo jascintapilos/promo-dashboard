@@ -2,26 +2,32 @@
 // Banner upload CLI — reads Banner Schedule, discovers local image files,
 // and API-directly creates QPRO 3.3 Promotion Content + 14.2 Banner rows.
 //
+// SAFE BY DEFAULT: with no flags, this prints the plan and makes NO BO calls.
+// You must pass --commit to actually write anything live. (Fixed 2026-07-09 —
+// previously --commit was a no-op and the bare command wrote live; see
+// memory/project_banner_upload_handover.md for the incident context.)
+//
 // Usage (flags require = syntax):
-//   node bin/upload-promo.js --range=B01-B03
-//   node bin/upload-promo.js --b-ids=B01,B05,B09
-//   node bin/upload-promo.js --range=B16 --banner-dir=D:\Banners
-//   node bin/upload-promo.js --range=B16 --skip-content       (14.2 only, 3.3 already exists)
-//   node bin/upload-promo.js --range=B16 --promo-code=MYCODE  (link to existing 3.3 code)
-//   node bin/upload-promo.js --range=B16 --dry-run            (plan only, no BO calls)
-//   node bin/upload-promo.js --range=B23-B26 --image-dir=C:\path\to\ye55-min  (test images, bypass brand-prefix filter)
-//   node bin/upload-promo.js --b-ids=B16 --image-dir=... --promo-folder=<Drive-folder-id-or-url>
+//   node bin/upload-promo.js --range=B01-B03                  (dry-run — plan only, no BO calls)
+//   node bin/upload-promo.js --range=B01-B03 --commit         (live — actually writes)
+//   node bin/upload-promo.js --b-ids=B01,B05,B09 --commit
+//   node bin/upload-promo.js --range=B16 --banner-dir=D:\Banners --commit
+//   node bin/upload-promo.js --range=B16 --skip-content --commit       (14.2 only, 3.3 already exists)
+//   node bin/upload-promo.js --range=B16 --promo-code=MYCODE --commit  (link to existing 3.3 code)
+//   node bin/upload-promo.js --range=B23-B26 --image-dir=C:\path\to\ye55-min --commit  (test images, bypass brand-prefix filter)
+//   node bin/upload-promo.js --b-ids=B16 --image-dir=... --promo-folder=<Drive-folder-id-or-url> --commit
 //
 // Flags:
 //   --range=<B##-B##>          B-ID range (inclusive)
 //   --b-ids=<B##,…>            comma-list of B-IDs
+//   --commit                   REQUIRED to actually write to BO — omit for a safe dry-run
+//   --dry-run                  explicit no-op alias for the default (dry-run); mutually exclusive with --commit
 //   --banner-dir=<path>        root folder containing {brandCode}-min/ subfolders
 //                              (default: C:\Users\vdiuser\Downloads\promo-automation\Banner)
 //   --skip-content             skip 3.3 Promotion Content creation (banner-only run)
 //   --promo-code=<code>        link banner to an existing 3.3 code (implies skip-content)
 //   --promo-folder=<id|url>    Drive folder ID or URL containing promo draft Google Docs;
 //                              overrides column D lookup + campaign fallback for all B-IDs in run
-//   --dry-run                  print plan without hitting the BO
 //
 // Image discovery: looks for {loginMerchantCode.lower()}-up-*-{locale}.jpg (desktop)
 //   and {loginMerchantCode.lower()}-mup-*-{locale}.jpg (mobile) in any subfolder of
@@ -841,16 +847,22 @@ const bannerDir = flags['banner-dir']
 
 const skipContent         = !!flags['skip-content'];
 const promoCodeOverride   = flags['promo-code'] || null;
-const dryRun              = !!flags['dry-run'];
+const commit              = !!flags.commit;
+const dryRun              = !commit;   // safe default: dry-run unless --commit is explicitly passed
 const imageDirOverride    = flags['image-dir'] ? path.resolve(flags['image-dir']) : null;
 const promoFolderOverride = flags['promo-folder'] || null;  // Drive folder ID or URL
+
+if (flags['dry-run'] && commit) {
+  console.error('ERROR: --dry-run and --commit are mutually exclusive.');
+  process.exit(1);
+}
 
 if (!existsSync(bannerDir)) {
   console.error(`Banner dir not found: ${bannerDir}`);
   process.exit(1);
 }
 
-console.log(`[upload-promo] B-IDs: ${bIds.join(', ')}  banner-dir: ${bannerDir}  skip-content=${skipContent}  dry-run=${dryRun}`);
+console.log(`[upload-promo] B-IDs: ${bIds.join(', ')}  banner-dir: ${bannerDir}  skip-content=${skipContent}  mode=${commit ? 'COMMIT (live)' : 'DRY-RUN (add --commit for live)'}`);
 
 // Load schedule from Google Sheets
 const client = await getSheetsClient();

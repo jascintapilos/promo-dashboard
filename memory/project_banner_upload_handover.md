@@ -9,17 +9,19 @@ originSessionId: af5bbde1-a568-45f3-a8e7-ae00350c1a3b
 ### bin/upload-promo.js
 Full pipeline CLI: reads Banner Schedule from Sheets → discovers local images → API-direct QPRO 3.3 + 14.2.
 
-**Usage (all flags require `=` syntax):**
+**⚠ Fixed 2026-07-09 — flag polarity flipped.** Before this date, `--commit` was a no-op and the *bare* command below actually wrote live to BO (the "dry-run" label was wrong). As of 2026-07-09, the script is safe-by-default: no flags = dry-run, `--commit` is required to write live. The commands below (from the original 2026-05-19 handover) are kept for historical reference, but read them as **pre-fix** semantics — at the time they were run, the bare form *was* the live write. Under current behavior, add `--commit` to any of these to actually write.
+
+**Usage (all flags require `=` syntax) — current (post-2026-07-09-fix) semantics:**
 ```
-node bin/upload-promo.js --range=B16
-node bin/upload-promo.js --range=B13-B25
-node bin/upload-promo.js --range=B16 --skip-content          # 14.2 only (3.3 already exists)
-node bin/upload-promo.js --range=B16 --promo-code=MYCODE     # link banner to existing code
-node bin/upload-promo.js --range=B16 --dry-run               # plan only, no BO calls
-node bin/upload-promo.js --range=B16 --banner-dir=D:\Banners # custom image root
+node bin/upload-promo.js --range=B16                          # dry-run — plan only, no BO calls
+node bin/upload-promo.js --range=B16 --commit                 # live write
+node bin/upload-promo.js --range=B13-B25 --commit
+node bin/upload-promo.js --range=B16 --skip-content --commit          # 14.2 only (3.3 already exists)
+node bin/upload-promo.js --range=B16 --promo-code=MYCODE --commit     # link banner to existing code
+node bin/upload-promo.js --range=B16 --banner-dir=D:\Banners --commit # custom image root
 ```
 
-**Verified end-to-end:** B16 (QPRO16) and B17 (QPRO17) — Microgaming Road to Glory, 3.3 content + 14.2 banners fully complete (see session_2026-05-19_b16_b17_fetchdochtml_fixes.md).
+**Verified end-to-end:** B16 (QPRO16) and B17 (QPRO17) — Microgaming Road to Glory, 3.3 content + 14.2 banners fully complete (see session_2026-05-19_b16_b17_fetchdochtml_fixes.md). Note: these were run under the pre-fix script, so the actual command used was the bare (no-flag) form.
 Earlier smoke-test note: QPRO4/YE55 test banner id=43 was a TEST record (not a real B-task).
 
 ### Confirmed QPRO 14.2 Banner POST body
@@ -102,7 +104,7 @@ Fix scripts (all already run, all idempotent/re-runnable):
 
 1. **Run remaining B-IDs** — B13–B15, B18+ still pending. Need image folders + correct site mapping from sheet.
    - Check Banner Schedule sheet for B-ID → site mapping before running
-   - `node bin/upload-promo.js --range=B13` etc.
+   - `node bin/upload-promo.js --range=B13 --commit` (post-2026-07-09-fix: `--commit` is required for a live write; bare command is a safe dry-run)
 
 2. **QP2 banner** — ✅ DONE for QP2A (IBC22). Shape confirmed: `site_id`, `promotion_type:0`, `promotion_amount:0` in details. Script: `bin/create-qp2a-rtg.mjs`. QP2B/C/D can be adapted from same script if needed.
 
