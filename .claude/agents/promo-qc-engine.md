@@ -207,9 +207,9 @@ When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code 
 If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `FT_OWNER_OBJECTIVE_[NODEP]_MECHANIC`. Check as `_`-separated segments, NOT substrings:
 
 * promo_code must contain the `campaign_owner` value as a segment
-* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `ACQ`; starts with `Churn` → `RET`; equals `Retention` → `REL`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
+* promo_code must contain the objective token mapped from `campaign`: starts with `ACQ` → `ACQ` (as a segment prefix — either `ACQ_WELC` or `ACQ_REL` satisfies this); starts with `Churn` → `CHURN`; equals `Retention` → `RET`; starts with `Ad Hoc` → `ADHOC`; starts with `Grooming` → `GROOM`
 * if `no_deposit` is `true`, promo_code must contain `NODEP` as a segment
-* `CHURN` as a segment is a **banned token** under the new convention — emit NOTE if present (churn is always `RET`)
+* Churn must use `CHURN` as a segment, not `RET` — emit NOTE if `RET` appears where the campaign is Churn (as of 2026-07-09, `RET` means Retention and `CHURN` is no longer banned; this is a reversal of the prior rule)
 
 Skip the legacy table entirely for new-convention rows. Do not require `ACQ_`, `VIP_`, or `CHURN_` on them.
 
