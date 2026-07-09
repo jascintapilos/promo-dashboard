@@ -45,7 +45,7 @@ Extract these fields for each promo row:
 | Deadline | H | |
 | Brand | I | e.g. QP2A, WS1, QPRO8 |
 | Region | J | e.g. MY, SG, AUD |
-| Campaign Name/Objective | K | New-convention rows: ACQ - Welcome / ACQ - Reload / Retention / Churn - Reactivation / Ad Hoc / Grooming / VIP - Churn / Whale - Probe / Branding (Pillar×Objective combo — see 'Ref - Codes' D2:D10) |
+| Campaign Name/Objective | K | New-convention rows: ACQ - Welcome / ACQ - Reload / Retention / Churn - Reactivation / Ad Hoc / Grooming / VIP - Churn / Whale - Probe / Branding (Pillar×Objective combo — see 'Ref - Codes' D2:F10) |
 | Bonus Type | L | See types below |
 | Name/Details (internal ref) | M | The human description of the promo |
 | Inbox Message | N | TRUE/FALSE |
