@@ -214,7 +214,7 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   for (const r of (rec.locale_contents || [])) {
     explicit[r.locale] = {
       Locale: r.locale,
-      PromotionRewardName: r.name || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name,
+      PromotionRewardName: r.name || splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name,
       Content: r.content || '',
     };
   }
@@ -233,8 +233,14 @@ function buildAddBonus(rec) {
   const { startDate, endDate } = resolvePromoDateRange(rec, { endOfYearDefault: true });
   const startMin = timeStringToMinutes(rec.redeemable_start_time || '00:00');
   const endMin = timeStringToMinutes(rec.redeemable_end_time || '23:59');
-  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
-  const displayName = baseName + buildMechanicsTag(rec);
+  const { generic: genericName, ws1Unique } = splitDualPromoName(rec.promotion_name_en);
+  const baseName = genericName || rec.promotion_name;
+  // Operator-supplied explicit WS1-unique name (column X "WS1/WS2:" line) is
+  // already the chosen disambiguator — use it verbatim. The auto mechanics
+  // tag only applies when falling back to the generic name.
+  const displayName = ws1Unique && ws1Unique !== genericName
+    ? ws1Unique
+    : baseName + buildMechanicsTag(rec);
 
   const reward = {
     RewardName: baseName,  // T&C heading stays clean
@@ -291,10 +297,14 @@ function buildAddFreeCredit(rec) {
   const rawRewardType = Number(rec.reward_type ?? 1);
   const isManualInput = rawRewardType === 2;
   const wireRewardType = isManualInput ? 1 : rawRewardType;
-  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
+  const { generic: genericName, ws1Unique } = splitDualPromoName(rec.promotion_name_en);
+  const baseName = genericName || rec.promotion_name;
   const mechanicsTagFc = buildMechanicsTag(rec);
-  // Auto-namer may have already appended the mechanics tag — don't double-add.
-  const displayName = mechanicsTagFc && baseName.includes(mechanicsTagFc.trim()) ? baseName : baseName + mechanicsTagFc;
+  // Operator-supplied explicit WS1-unique name wins verbatim; otherwise
+  // append the auto tag (unless the auto-namer already embedded it).
+  const displayName = ws1Unique && ws1Unique !== genericName
+    ? ws1Unique
+    : (mechanicsTagFc && baseName.includes(mechanicsTagFc.trim()) ? baseName : baseName + mechanicsTagFc);
 
   const reward = {
     RewardName: baseName,  // T&C heading stays clean
@@ -365,8 +375,11 @@ const SITE_SUFFIX = {
 
 function buildAddFreeSpin(rec, { siteId } = {}) {
   const { startDate, endDate } = resolvePromoDateRange(rec, { endOfYearDefault: true });
-  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
-  const displayName = baseName + buildMechanicsTag(rec);
+  const { generic: genericName, ws1Unique } = splitDualPromoName(rec.promotion_name_en);
+  const baseName = genericName || rec.promotion_name;
+  const displayName = ws1Unique && ws1Unique !== genericName
+    ? ws1Unique
+    : baseName + buildMechanicsTag(rec);
   const shellBody = {
     PromotionCode: rec.promo_code,
     PromotionName: displayName,
