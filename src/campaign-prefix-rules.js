@@ -43,9 +43,9 @@ const PILLAR_OBJECTIVE_LABELS = [
   { pattern: /^Retention$/i,               pillar: 'RET', objective: 'REL' },
   { pattern: /^Churn\s*-?\s*Reactivation/i, pillar: 'RET', objective: 'CHURN' },
   { pattern: /^Ad\s*Hoc\b/i,               pillar: 'RET', objective: 'ADHOC' },
-  { pattern: /^Grooming\b/i,               pillar: 'WHA', objective: 'GROOM' },
+  { pattern: /^Grooming\b/i,               pillar: 'WHALE', objective: 'GROOM' },
   { pattern: /^VIP\s*-\s*Churn/i,          pillar: 'VIP', objective: 'CHURN' },
-  { pattern: /^Whale\s*-\s*Probe/i,        pillar: 'WHA', objective: 'PROBE' },
+  { pattern: /^Whale\s*-\s*Probe/i,        pillar: 'WHALE', objective: 'PROBE' },
   { pattern: /^Branding\b/i,               pillar: 'BRA', objective: 'WELC' },
 ];
 

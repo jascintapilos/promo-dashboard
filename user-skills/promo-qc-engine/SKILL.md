@@ -4,7 +4,7 @@ description: >
   Promo Code QC and Naming Engine for iGaming/online casino promo setup.
   Use this skill whenever the user wants to: validate a promo code request,
   check if a promo row is complete, generate a standardized promo code name
-  (including the FT prefix, ACQ/RET/VIP/WHA/BRA pillars, CRM/VM/TSM/AM/AFF
+  (including the FT prefix, ACQ/RET/VIP/WHALE/BRA pillars, CRM/VM/TSM/AM/AFF
   teams, and WELC/REL/CHURN/ADHOC/GROOM/PROBE/NODEP tokens), generate a Column M description, or process a
   batch of promo rows from a spreadsheet or pasted table. Trigger on any mention of promo code, promo request, QC
   promo, naming convention, Column M, bonus type, free spin, free credit,
@@ -104,7 +104,7 @@ The code is built by stacking pieces in this fixed order:
    requested (e.g. Remark says "Add FT to code" or "Include FT prefix"). Do
    NOT auto-add it just because WS1/WS2 is in the Brand list — that
    auto-inference was retired 2026-07-09.
-2. `PILLAR` — budget/costing category (`ACQ`, `RET`, `VIP`, `WHA`, `BRA` —
+2. `PILLAR` — budget/costing category (`ACQ`, `RET`, `VIP`, `WHALE`, `BRA` —
    fixed list of exactly 5, required). Read from the Campaign
    Name/Objective dropdown (col K).
 3. `TEAM` — owning team (`CRM`, `VM`, `TSM`, `AM`, `AFF`). **Required on
@@ -125,7 +125,7 @@ The code is built by stacking pieces in this fixed order:
 | `ACQ` | CPA Acquisition | WELC, REL |
 | `RET` | Retention / Promo / Reactivation | REL, CHURN, ADHOC |
 | `VIP` | VIP Relationship & Brand Loyalty | CHURN |
-| `WHA` | Whale Detection & Grooming | GROOM, PROBE |
+| `WHALE` | Whale Detection & Grooming | GROOM, PROBE |
 | `BRA` | Branding | WELC |
 
 ### Objective Codes (flexible — any Objective may pair with any Pillar)
@@ -164,7 +164,7 @@ it when the request explicitly asks for it (e.g. Remark: "Add FT to code" /
 
 > **Teams are mutually exclusive:** exactly one team code per promo code.
 > Any team may pair with any Pillar/Objective combo — typical pairings:
-> TSM→ACQ_WELC, VM→RET_REL / RET_CHURN / WHA_GROOM, CRM→any.
+> TSM→ACQ_WELC, VM→RET_REL / RET_CHURN / WHALE_GROOM, CRM→any.
 
 **Stakeholder tags (`KN`, `CD`, `YH`, `JT`) never go into the promo code** —
 they live in the Stakeholder column (Z) only.
@@ -225,9 +225,9 @@ no-deposit, ask the user before generating the code.
 
 ### Special / new campaign types
 
-Whale-specific campaigns map to the `WHA` pillar (`GROOM` for grooming an
+Whale-specific campaigns map to the `WHALE` pillar (`GROOM` for grooming an
 existing whale, `PROBE` for detecting/probing a new one), e.g.
-`WHA_VM_GROOM_30PCT_1K`, `WHA_VM_PROBE_30PCT_2K` (the `_1K`/`_2K` suffix is
+`WHALE_VM_GROOM_30PCT_1K`, `WHALE_VM_PROBE_30PCT_2K` (the `_1K`/`_2K` suffix is
 the target deposit-tier cap, not a turnover multiplier). Branding-driven
 acquisition uses the `BRA` pillar, e.g. `BRA_VM_WELC_200FS`. For campaign
 types that genuinely fit no Pillar/Objective combo (cashback, insurance,
@@ -240,7 +240,7 @@ leaderboards), suggest an appropriate tag and flag it clearly:
 - Stack order is fixed: `[FT_]PILLAR_TEAM_OBJECTIVE[_NODEP]_[PROMO][_TO]`
 - `FT_` is opt-in only — never inferred from brand presence, only added when explicitly requested (e.g. Remark: "Add FT to code")
 - Exactly ONE team code per promo code (CRM / VM / TSM / AM / AFF)
-- Pillar must be one of the fixed 5 (`ACQ` / `RET` / `VIP` / `WHA` / `BRA`) — never invent a 6th without confirming with the operator
+- Pillar must be one of the fixed 5 (`ACQ` / `RET` / `VIP` / `WHALE` / `BRA`) — never invent a 6th without confirming with the operator
 - `TO` is optional — include only if needed to keep the code unique; nothing is a banned token under the current convention
 - If the Suggested Prefix column (AB) is filled, the generated code must start with it (after any `FT_`) — flag any mismatch
 - `NODEP` appears only on Free Credit / Free Spin when no deposit is required

@@ -208,7 +208,7 @@ When `campaign` is set on the request, emit **NOTE** (not RETURN) if promo_code 
 If `campaign_owner` is set on the request (one of `CRM` / `VM` / `TSM` / `AM` / `AFF`), the code format is `[FT_]PILLAR_TEAM_OBJECTIVE_[NODEP]_PROMO[_TO]`. Check as `_`-separated segments, NOT substrings:
 
 * promo_code must contain the `campaign_owner` value as a segment (this is the TEAM segment; position among segments doesn't matter for this NOTE-level check, only presence)
-* promo_code must contain the Pillar token mapped from `campaign` (per 'Ref - Codes' D2:F10 — keep this list in sync with that range): `ACQ - Welcome` / `ACQ - Reload` → `ACQ`; `Retention` / `Churn - Reactivation` / `Ad Hoc` → `RET`; `VIP - Churn` → `VIP`; `Grooming` / `Whale - Probe` → `WHA`; `Branding` → `BRA`
+* promo_code must contain the Pillar token mapped from `campaign` (per 'Ref - Codes' D2:F10 — keep this list in sync with that range): `ACQ - Welcome` / `ACQ - Reload` → `ACQ`; `Retention` / `Churn - Reactivation` / `Ad Hoc` → `RET`; `VIP - Churn` → `VIP`; `Grooming` / `Whale - Probe` → `WHALE`; `Branding` → `BRA`
 * promo_code must contain the Objective token mapped from `campaign`: `ACQ - Welcome` / `Branding` → `WELC`; `ACQ - Reload` / `Retention` → `REL`; `Churn - Reactivation` / `VIP - Churn` → `CHURN`; `Ad Hoc` → `ADHOC`; `Grooming` → `GROOM`; `Whale - Probe` → `PROBE`
 * if `no_deposit` is `true`, promo_code must contain `NODEP` as a segment
 * `FT_` is opt-in only as of 2026-07-09 (no longer inferred from WS1/WS2 brand presence) — its presence or absence is NOT checked here. Nothing is a banned token under the current convention.
