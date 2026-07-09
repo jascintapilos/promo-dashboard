@@ -5,7 +5,7 @@ description: Run a batch of banner uploads from the Banner Schedule spreadsheet 
 
 # Banner Batch Uploader
 
-Range-based uploader for the iGaming promo team's **Banner Schedule** workflow. One trigger, many B-IDs — the skill reads the schedule, routes each row to the right BO, and fills the per-banner form in draft mode.
+Range-based uploader for the iGaming promo team's **Banner Schedule** workflow. One trigger, many B-IDs — the skill reads the schedule, routes each row to the right BO API script, and creates the banner record in draft mode.
 
 ## Trigger
 
@@ -24,7 +24,7 @@ User says any of:
   | QPRO | Angular SPA (custom CMS) | QPRO1–19 | `qpro1`–`qpro19` |
   | QP2 | Angular SPA (custom CMS) | QP2A–D | `ibc22` |
   | **BIA** (Best-in-Asia) | **Directus** | WS1 (MB8), WS1 (Classic MB8), WS2 (RWS77) | `ws1`, `ws1-classic-my`, `ws2` |
-- **This skill is the orchestrator.** For QPRO/QP2 brands, it runs `bin/upload-promo.js` API-direct (see [Routing](#routing) — never the Chrome-driven marketplace skills). For BIA brands (the WS1/WS2 family), it runs `bin/upload-ws1-banners-api.mjs`, driving Directus directly via REST API using the field map below (used only as reference for what the script does — the agent does not fill the drawer by hand).
+- **This skill is the orchestrator.** For QPRO/QP2 brands, it runs `bin/upload-promo.js` API-direct (see [Routing](#routing) — never the Chrome-driven marketplace skills). For BIA brands (the WS1/WS2 family), it runs `bin/upload-ws1-banners-api.mjs`, which drives Directus directly via REST API — no Chrome, no manual drawer-filling.
 - **Pilot scope (May 2026):** B01-B30 covers WS1 (MB8), WS1 (Classic MB8), WS2 (RWS77), QPRO1–17, QP2A–D. Classic MB8 is **out of scope** until its kiosk BO is probed.
 
 ## Pre-flight
@@ -127,34 +127,7 @@ If only one file per locale, it's used for both desktop (`image` field) and mobi
 
 For QPRO/QP2, jump to [Routing](#routing).
 
-### Field map — UICarousel record (top level)
-
-This is the carousel container; one record per (brand × country × placement). The agent does **not** edit these — they're pre-existing. The agent navigates to the right one.
-
-| Field | Type | Notes |
-|---|---|---|
-| Component Name | text | `<BRAND> <ISO3> Homepage` — naming convention |
-| Status | dropdown | top-level on/off; leave alone |
-| Mobile Desktop Display | toggle | usually `both` |
-| Images | M2M repeater | **agent adds new items here** |
-
-### Field map — Images sub-form (the drawer the agent fills)
-
-Drawer opens on clicking `Create New` under Images. Heading: **"Creating Item in UI Carousel Images"**.
-
-| Field | Type | Source | Agent / User |
-|---|---|---|---|
-| Start Date | datetime | Schedule col K | **Agent** types `YYYY-MM-DD HH:mm:ss` |
-| End Date | datetime | Schedule col L | **Agent** types |
-| Display Condition | rule select | leave blank (default) | **Agent** skips |
-| Translations → Link URL (per locale) | text | promo doc | **Agent** types `/promotion/info/<region>-<kebab-slug>` |
-| Translations → CTA Button Text | text | promo doc, often empty | **Agent** types if specified |
-| Translations → Image | file upload | from zip | **Agent** `file_upload` MCP |
-| Translations → Files | file upload | **same file as Image** | **Agent** `file_upload` MCP (confirmed same) |
-| Open New Tab | toggle | usually off | **Agent** leaves off |
-| **Enabled** | toggle | **off** | **Agent leaves OFF — this is the draft / Ready for QC state** |
-
-The agent does NOT click Submit on the parent carousel record — that's the user's QC gate.
+> **Removed (2026-07-09): "Field map — UICarousel record" and "Field map — Images sub-form" sections.** Those documented filling the UICarousel drawer by hand via Chrome MCP — the workflow `bin/upload-ws1-banners.mjs` generated a runbook for, back when `/items/UICarousel` returned 403 for Jascinta's Directus role. That permission issue was resolved (see `upload-ws1-banners-api.mjs` header: "Verified permissions... 2026-06-25... No 403"), and the API-direct script now does the equivalent POST calls directly — no drawer, no Chrome, for every regular upload. `bin/upload-ws1-banners.mjs` (no `-api` suffix) still exists in `bin/` but is dead for this flow; do not use it or follow drawer-filling instructions for a routine banner upload.
 
 ### Carousel ID lookup
 
@@ -231,60 +204,7 @@ Step 5 — Post-upload verification
   Tell user to activate the carousel item in Directus admin (toggle Enabled ON) when ready for production.
 ```
 
-## Tech notes (snippets that work)
-
-### Set Directus / Vue input
-
-```js
-const setNativeValue = (el, value) => {
-  const proto = Object.getPrototypeOf(el);
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-  setter.call(el, value);
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-  el.dispatchEvent(new Event('blur', { bubbles: true }));
-};
-```
-
-### Find input by adjacent label (inside the active drawer)
-
-```js
-const drawers = [...document.querySelectorAll('[class*="drawer" i]')];
-const widest = drawers.sort((a,b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
-const findField = (labelText) => {
-  const fields = [...widest.querySelectorAll('.field, .v-form-row')];
-  const f = fields.find(x => (x.querySelector('.field-label, label')?.textContent || '').trim().includes(labelText));
-  return f ? f.querySelector('input, textarea') : null;
-};
-// Use: findField('Start Date'), findField('Link URL'), findField('CTA Button Text')
-```
-
-### Switch translation locale tab
-
-Translations is a repeater per locale (e.g. `English`). Click the locale's tab in the drawer's translation section.
-
-```js
-const localeTabs = [...widest.querySelectorAll('[role="tab"], .nav-link, .v-tab')];
-const target = localeTabs.find(t => (t.textContent||'').trim() === 'English');
-target?.scrollIntoView({ block: 'center' });
-target?.click();
-```
-
-For MB8 MYS the locale set is English only — no tab switching needed. Other regions may have more.
-
-### File upload to Files / Image slot
-
-Directus uses a "Drag & Drop a File Here" dropzone backed by a hidden `<input type="file">`. Use MCP `find` to get a ref, then `file_upload` with the absolute Windows path. **Both Image and Files take the SAME image** (confirmed live; uploading to only one is fine but Files is the slot actually consumed by the carousel renderer — populate it; Image is sometimes left null in live records).
-
-### Drawer-close (without saving)
-
-Directus drawers have no Cancel button visible by default. Press Escape:
-
-```js
-document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
-```
-
-This dismisses the topmost drawer.
+> **Removed (2026-07-09): "Tech notes (snippets that work)" section** — Chrome-MCP DOM snippets (`setNativeValue`, `findField`, locale-tab switching, drawer file-upload, drawer-close-via-Escape) for filling the UICarousel drawer by hand. Dead for the same reason as the field-map sections above: `upload-ws1-banners-api.mjs` now does the equivalent work via REST API `POST` calls, no Chrome/DOM interaction needed for a routine upload.
 
 ## Routing
 
@@ -301,9 +221,9 @@ This dismisses the topmost drawer.
 
 ## Status writeback
 
-After each B-ID's drawer is filled and the user has clicked Submit on the parent carousel record:
+After each B-ID's `--commit` run succeeds (banner/carousel record created, `status`/`Enabled` left off):
 - Tell the user to set Banner Schedule col E for that b_id to **`Ready for QC`** (manual edit — the Drive MCP doesn't support cell writes).
-- Don't set it to `Uploaded`. `Uploaded` is Jascinta's term for AFTER QC has passed and the banner is published. The skill leaves Enabled OFF so the banner is staged-not-published.
+- Don't set it to `Uploaded`. `Uploaded` is Jascinta's term for AFTER QC has passed and the banner is published. The script leaves it inactive (QPRO/QP2: `status: 0`; WS1/WS2: `Enabled` off) so the banner is staged-not-published.
 
 ## Division of labor
 
