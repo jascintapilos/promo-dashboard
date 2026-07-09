@@ -2,8 +2,10 @@
 // One-off read-only check (2026-07-09): verify P026's QPRO saves are
 // Slots-only with the provider selection acting as an INCLUDE list.
 // Per brand: category ids == [that site's SLOTS id], top-level
-// game_provider_ids == the site's SLOTS-category provider set, target[0]
-// mirrors the same list with type=1 (Included — "exclusion unticked").
+// game_provider_ids == the site's SLOTS-category provider set MINUS the
+// Layer-1 exclusion names (operator correction 2026-07-09 — 918KAYA etc.
+// stay excluded even on category-restricted promos), target[0] mirrors
+// the same list with type=1 (Included — "exclusion unticked").
 
 import fs from 'node:fs';
 import { getSite } from '../src/sites.js';
@@ -30,7 +32,11 @@ for (const brand of BRANDS) {
     const row = det.data.rows;
     const catRows = Array.isArray(cats) ? cats : (cats.rows || []);
     const slotsCat = catRows.find((c) => String(c.category || c.name || '').toUpperCase() === 'SLOTS');
-    const slotsGpIds = (gps.rows || []).filter((g) => (g.categories || []).some((c) => String(c.category || '').toUpperCase() === 'SLOTS')).map((g) => g.id);
+    const EXCL = new Set(['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABANERO', 'KINGMIDAS', 'MEGA888', 'DG', 'SSG']);
+    const slotsGpIds = (gps.rows || [])
+      .filter((g) => (g.categories || []).some((c) => String(c.category || '').toUpperCase() === 'SLOTS'))
+      .filter((g) => !EXCL.has(String(g.name || '').toUpperCase()) && !EXCL.has(String(g.code || '').toUpperCase()))
+      .map((g) => g.id);
 
     const promoCatIds = (row.promotion_category || []).map((c) => c.category_id);
     const gpIds = row.game_provider_ids || [];

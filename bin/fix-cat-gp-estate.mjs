@@ -72,6 +72,11 @@ async function catById(site) {
   return catByIdCache[site.id];
 }
 
+// Layer-1 exclusion names apply on top of the category filter — a Slots-only
+// promo must not include 918KAYA/Habanero/etc. just because they carry slots
+// games (operator correction 2026-07-09, P026). Mirrors LAYER1_GP_EXCLUSION_NAMES
+// in src/api-mapper-qpro.js; match by name OR code (catalog shape drifts).
+const LAYER1_GP_EXCLUSION_NAMES = ['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABANERO', 'KINGMIDAS', 'MEGA888', 'DG', 'SSG'];
 const gpCatalogCache = {}; // siteId → provider rows (QPRO only)
 async function qproProvidersForCats(site, catNames) {
   if (!gpCatalogCache[site.id]) {
@@ -79,8 +84,10 @@ async function qproProvidersForCats(site, catNames) {
     gpCatalogCache[site.id] = objVals(r.data?.rows);
   }
   const catSet = new Set(catNames.map((n) => String(n).toUpperCase()));
+  const excl = new Set(LAYER1_GP_EXCLUSION_NAMES.map((n) => n.toUpperCase()));
   return gpCatalogCache[site.id]
     .filter((g) => (g.categories || []).some((c) => catSet.has(String(c.category || '').toUpperCase())))
+    .filter((g) => !excl.has(String(g.name || '').toUpperCase()) && !excl.has(String(g.code || '').toUpperCase()))
     .map((g) => g.id)
     .sort((a, b) => a - b);
 }

@@ -98,11 +98,16 @@ async function resolveLayer1GpIds(site) {
 // We filter to providers tagged with at least one of the wallet category names
 // in `categoryNames` (matches categoriesOnly tokens from the request).
 // Called instead of resolveLayer1GpIds when categoriesOnly is set.
+// The Layer-1 exclusion names still apply on top of the category filter —
+// a Slots-only promo must not include 918KAYA/Habanero/etc. just because
+// they carry slots games (operator correction 2026-07-09, P026).
 async function resolveCategoryGpIds(site, categoryNames) {
   const catSet = new Set(categoryNames.map((n) => n.toUpperCase()));
+  const excl = new Set(LAYER1_GP_EXCLUSION_NAMES.map((n) => n.toUpperCase()));
   const { rows } = await getAllGameProviders(site);
   return rows
     .filter((r) => (r.categories || []).some((c) => catSet.has(String(c.category || '').toUpperCase())))
+    .filter((r) => !excl.has(String(r.name || '').toUpperCase()) && !excl.has(String(r.code || '').toUpperCase()))
     .map((r) => r.id);
 }
 
