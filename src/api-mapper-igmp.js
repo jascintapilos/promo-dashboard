@@ -443,10 +443,12 @@ function buildAddFreeSpin(rec, { siteId } = {}) {
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────
-export function buildIgmpPlan(rec, { siteId, ftPrefix = true } = {}) {
-  // iGMP (WS1/WS2) normally requires FT_ prefix on all codes. `ftPrefix:false`
-  // suppresses it for runs where the operator wants the bare code (e.g. when
-  // the campaign code is shared verbatim across platforms).
+export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
+  // FT_ is opt-in only as of 2026-07-09 (was: auto-added for every WS1/WS2
+  // promo regardless of remark). Callers should derive `ftPrefix` from
+  // whether the source row explicitly requested it (rec.instructions
+  // .code_prefixes includes 'FT') — see bin/canary-api-igmp.js. The default
+  // here is `false` as a safety net for any caller that omits the option.
   // Sheet stores multiple platform codes in one cell separated by newlines OR slashes.
   // e.g. "VIP_100PCT_30MX_3X/FT_VIP_100PCT_30MX_3X" or "CODE1\nFT_CODE1"
   const normalizedRec = { ...rec };

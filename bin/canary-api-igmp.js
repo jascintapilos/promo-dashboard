@@ -126,7 +126,12 @@ await (async () => {
 
   let plan;
   try {
-    plan = buildIgmpPlan(rec, { siteId, ftPrefix: flags['no-ft-prefix'] !== true });
+    // FT_ is opt-in only as of 2026-07-09 — default to whatever the source
+    // row's instructions actually requested ("Add FT to code"), not always-on.
+    // --no-ft-prefix still force-suppresses it even if requested.
+    const requestedFT = Array.isArray(rec.instructions?.code_prefixes) && rec.instructions.code_prefixes.includes('FT');
+    const ftPrefix = flags['no-ft-prefix'] === true ? false : requestedFT;
+    plan = buildIgmpPlan(rec, { siteId, ftPrefix });
   } catch (e) {
     console.error(`mapper error: ${e.message}`);
     return bail(4);
