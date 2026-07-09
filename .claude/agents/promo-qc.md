@@ -247,6 +247,8 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 - `blacklist_id` check skipped on IGMP — WS1/WS2 does not use the blacklist template system.
 - Missing `FS_` prefix in `promo_code` when code starts with `REFEREE_` or `REFERRER_` (strip `FT_` first) — WS1 referral program uses its own naming convention; standard `FS_` prefix is not required.
 - WARNING for `validity`/`reward_validity` appearing swapped is expected — reflects a known code bug where validity=expiry-after-claim and reward_validity=claim-window are set inversely; do NOT escalate to FAIL.
+- **A provider code that LOOKS like a category name is not evidence of that category.** `game_provider_ids`/`game_provider_codes` lists contain codes like `LIVE` (= "Live22", a Slots+Fishing game studio — not Live Casino), `SG` (= SA Gaming/Spadegaming, not "Singapore"), `MGP`, `MAHA`, `KA` etc. Do not flag a category/provider mismatch based on a provider code's name alone — verify via the actual category tag (`/api/bo/gameprovider`'s `categories[]`) before asserting a provider is out-of-category. Confirmed 2026-07-09: every one of these flagged on a P027 batch was a false positive.
+- **A single, correctly-encoded `&amp;` is not `&amp;amp;`.** Count the literal characters before flagging: `&amp;` (5 chars) is correct; `&amp;amp;` (9 chars) is the actual defect. Confirmed 2026-07-09: a full batch of agents hallucinated the double-encoded form when the stored string only ever contained a single, correct `&amp;`. Re-read the raw string character-by-character before flagging.
 
 ---
 
