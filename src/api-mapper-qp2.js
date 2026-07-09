@@ -21,6 +21,7 @@
 import { renderBody, renderDialogBody, localeDocKey } from './message-template-renderer.js';
 import { getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups, getAllMerchantBankIds } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
+import { splitDualPromoName } from './promo-namer.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
 // operator-verified selection 2026-05-15 (26 of 31 QP2A groups). Excluded:
@@ -583,7 +584,7 @@ function buildPromotionBody(resolved, brand, catIdsForBrand = null, fsGameCodeFo
 
   const body = {
     code: resolved.promo_code,
-    name: resolved.promotion_name_en || resolved.promo_code,
+    name: splitDualPromoName(resolved.promotion_name_en).generic || resolved.promo_code,
     free_spin_game_provider_id: fsProviderId,
     promotion_category_ids: catIdsForBrand
       ? catIdsForBrand
@@ -717,7 +718,7 @@ export async function buildDialogPopupBody(resolved, brand) {
       resolved,
     });
     if (rendered.skipped) continue;
-    const titleText = dk === 'ZH' ? (resolved.promotion_name_zh_id || resolved.promotion_name_en) : resolved.promotion_name_en;
+    const titleText = dk === 'ZH' ? (resolved.promotion_name_zh_id || splitDualPromoName(resolved.promotion_name_en).generic) : splitDualPromoName(resolved.promotion_name_en).generic;
     const cta = CTA_TEXT_BY_DOCKEY[dk] || CTA_TEXT_BY_DOCKEY.EN;
     contents[String(settingsId)] = {
       locale_id: settingsId,
@@ -749,7 +750,7 @@ export async function buildDialogPopupBody(resolved, brand) {
     affiliates_visibility: 0,
     always_pop: 0,
     do_not_show_again: 0,
-    label: resolved.promotion_name_en,
+    label: splitDualPromoName(resolved.promotion_name_en).generic,
   };
 }
 
@@ -759,11 +760,12 @@ function buildNameBodies(resolved, promotionId) {
   return (resolved.locales || []).map((locale) => {
     const isEn = locale.endsWith('_EN');
     const isZh = locale.endsWith('_ZH') || locale.endsWith('_ID');
+    const genericNameEn = splitDualPromoName(resolved.promotion_name_en).generic;
     const name = isEn
-      ? (resolved.promotion_name_en || resolved.promo_code)
+      ? (genericNameEn || resolved.promo_code)
       : isZh
-        ? (resolved.promotion_name_zh_id || resolved.promotion_name_en || resolved.promo_code)
-        : (resolved.promotion_name_en || resolved.promo_code);
+        ? (resolved.promotion_name_zh_id || genericNameEn || resolved.promo_code)
+        : (genericNameEn || resolved.promo_code);
     // Per-locale currency: each MY/SG/ID name row attaches to the matching
     // currency_id (MYR/SGD/IDR) so members see the right currency-scoped
     // copy. Earlier code used resolved.currencies[0] for ALL locales, so
@@ -816,7 +818,7 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
   return {
     id: promotionId,
     code: resolved.promo_code,
-    name: resolved.promotion_name_en || resolved.promo_code,
+    name: splitDualPromoName(resolved.promotion_name_en).generic || resolved.promo_code,
     free_spin_game_provider_id: fsProviderId,
     ...(isFs && fsGameCode ? { free_spin_game_code: fsGameCode } : {}),
     promotion_category_ids: catIdsForBrand

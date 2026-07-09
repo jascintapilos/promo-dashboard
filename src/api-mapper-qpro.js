@@ -22,6 +22,7 @@
 import { renderBody, renderDialogBody, localeDocKey } from './message-template-renderer.js';
 import { getAllGameProviders, getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
+import { splitDualPromoName } from './promo-namer.js';
 
 // Per-brand QPRO group naming varies — QPRO1 has bare names ("BRONZE",
 // "SILVER", "DIAMOND") while QPRO2/6/11/17 use numbered names ("Bronze 1/2/3",
@@ -422,14 +423,14 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
 // collapsed to a single line with " | " separators.
 function qproInternalName(resolved) {
   const raw = String(resolved.name_details_raw || '').trim();
-  if (!raw) return resolved.promotion_name_en || resolved.promo_code;
+  if (!raw) return splitDualPromoName(resolved.promotion_name_en).generic || resolved.promo_code;
   const cleaned = raw
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .filter((line) => !/^(normal|bronze|silver|gold|platinum|diamond)\s+(and\s+)?(above|below|only)\b/i.test(line))
     .join(' | ');
-  return cleaned || resolved.promotion_name_en || resolved.promo_code;
+  return cleaned || splitDualPromoName(resolved.promotion_name_en).generic || resolved.promo_code;
 }
 
 function buildPromotionBody(resolved, gpIdsForBrand = null, catIdsForBrand = null, fsProviderIdForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrand = null, blacklistTemplateId = null) {
@@ -567,11 +568,12 @@ function buildNameBodies(resolved, promotionId) {
   return (resolved.locales || []).map((locale) => {
     const isEn = locale.endsWith('_EN');
     const isZh = locale.endsWith('_ZH') || locale.endsWith('_ID');
+    const genericNameEn = splitDualPromoName(resolved.promotion_name_en).generic;
     const name = isEn
-      ? (resolved.promotion_name_en || resolved.promo_code)
+      ? (genericNameEn || resolved.promo_code)
       : isZh
-        ? (resolved.promotion_name_zh_id || resolved.promotion_name_en || resolved.promo_code)
-        : (resolved.promotion_name_en || resolved.promo_code);
+        ? (resolved.promotion_name_zh_id || genericNameEn || resolved.promo_code)
+        : (genericNameEn || resolved.promo_code);
     // Per-locale currency mapping (see api-mapper-qp2 buildNameBodies for
     // the parallel fix). Earlier code used resolved.currencies[0] for ALL
     // locales, so every name row landed on MYR.
@@ -682,7 +684,7 @@ export async function buildDialogPopupBody(resolved, brand) {
       resolved,
     });
     if (rendered.skipped) continue;
-    const titleText = dk === 'ZH' ? (resolved.promotion_name_zh_id || resolved.promotion_name_en) : resolved.promotion_name_en;
+    const titleText = dk === 'ZH' ? (resolved.promotion_name_zh_id || splitDualPromoName(resolved.promotion_name_en).generic) : splitDualPromoName(resolved.promotion_name_en).generic;
     const cta = CTA_TEXT_BY_DOCKEY[dk] || CTA_TEXT_BY_DOCKEY.EN;
     contents[String(settingsId)] = {
       locale_id: settingsId,
@@ -712,7 +714,7 @@ export async function buildDialogPopupBody(resolved, brand) {
     location: 1,
     affiliates_visibility: 0,
     always_pop: 0,
-    label: resolved.promotion_name_en,
+    label: splitDualPromoName(resolved.promotion_name_en).generic,
   };
 }
 

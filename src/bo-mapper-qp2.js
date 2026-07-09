@@ -14,6 +14,8 @@
 //   limit_transfer_in     <none — seamless wallet>
 //   limit_transfer_out    <none>
 //   bonus_rate            <NOT in main form — assumed in Currency popup>
+import { splitDualPromoName } from './promo-namer.js';
+
 //   restrict_claim_rou…   freespin_check
 //   kyc_type / KYC Status <none — replaced by requires_email/mobile/dob/fullname>
 //   last_deposit          <none — replaced by allow_deposit>
@@ -78,7 +80,7 @@ export function buildActions(resolved, { brand } = {}) {
 
   // ── Basic Info ──────────────────────────────────────────────────────
   push({ kind: 'text', selector: 'input[formcontrolname="code"]', value: effectivePromoCode,         label: 'Code' });
-  push({ kind: 'text', selector: 'input[formcontrolname="name"]', value: resolved.promotion_name_en, label: 'Name (display)' });
+  push({ kind: 'text', selector: 'input[formcontrolname="name"]', value: splitDualPromoName(resolved.promotion_name_en).generic, label: 'Name (display)' });
 
   // ── Type / Sub-Type ─────────────────────────────────────────────────
   const topLabel = PROMO_TYPE_LABEL[resolved.bonus_type];
@@ -437,7 +439,7 @@ export function buildActions(resolved, { brand } = {}) {
     push({
       kind: 'dialog_popup_create',
       label: '15.1.2 Dialog Popup (Create New Content + per-locale fill + link)',
-      promotion_name_en: resolved.promotion_name_en,
+      promotion_name_en: splitDualPromoName(resolved.promotion_name_en).generic,
       promotion_name_zh_id: resolved.promotion_name_zh_id,
       bonus_type: resolved.bonus_type,
       bonus_sub_type: resolved.bonus_sub_type,

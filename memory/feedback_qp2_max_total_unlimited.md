@@ -30,3 +30,9 @@ Required field alias on standalone PUT: `currency_id` (POST/PUT body field) ↔ 
 - **QPRO** — has different field names + schema. This rule is QP2-only. QPRO FS rows currently store `max_total_applications=0` and `max_total_bonus=0` from the mapper; no operator instruction to change those.
 
 **Why:** P074 saves on QP2B initially landed with the 999999999 sentinel — operator flagged it should be blank (= Unlimited in BO). Investigation showed null works on standalone PUT once `bonus_type` is also set; on inline PUT the validator rejects null but doesn't actually update the rows anyway.
+
+## deposit_status mapping (corrected 2026-07-09)
+
+The old rule "min_dep 0 → None(1), else Last Deposit(2)" is WRONG about the integer for Last Deposit. Verified live on ibc22 (P026, promo 1345 + 5 healthy CRM_ADHOC siblings): the mapper's plan value **`"4"` persists and renders as "Last Deposit"** — the semantically correct setting for min_deposit > 0. Also: the QP2 **detail** endpoint does not return `deposit_status` at all; only the **list** endpoint carries it, as a human label ("None" / "Last Deposit").
+
+**How to apply:** QC gates must judge deposit_status by the `list_row.deposit_status` label, never by expecting a literal integer `2`, and never FAIL on the field being absent from detail. A Pre-QC "deposit_status=4 should be 2" finding is a false positive.

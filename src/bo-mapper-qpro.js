@@ -13,6 +13,8 @@
 // Map BO promo_type integer codes to the option labels shown in the
 // Create form's dropdown. Verified from the form spy + the
 // /api/bo/promotion/<id> detail endpoint.
+import { splitDualPromoName } from './promo-namer.js';
+
 const PROMO_TYPE_LABEL = {
   'Deposit':     'Deposit',
   'Cashback':    'Deposit',      // Cashback is configured as a Deposit variant on QPRO
@@ -53,7 +55,7 @@ export function buildActions(resolved, { brand } = {}) {
 
   // ── Basic Info: text fields ─────────────────────────────────────────
   push({ kind: 'text',   selector: 'input[formcontrolname="code"]',  value: effectivePromoCode,             label: 'Code' });
-  push({ kind: 'text',   selector: 'input[formcontrolname="name"]',  value: resolved.promotion_name_en,     label: 'Name (display)' });
+  push({ kind: 'text',   selector: 'input[formcontrolname="name"]',  value: splitDualPromoName(resolved.promotion_name_en).generic,     label: 'Name (display)' });
 
   // ── Basic Info: dropdowns (Type top + Sub) ──────────────────────────
   const topLabel = PROMO_TYPE_LABEL[resolved.bonus_type];
@@ -427,7 +429,7 @@ export function buildActions(resolved, { brand } = {}) {
     push({
       kind: 'dialog_popup_create',
       label: '14.1.2 Dialog Popup (Create New Content + per-locale fill + link)',
-      promotion_name_en: resolved.promotion_name_en,
+      promotion_name_en: splitDualPromoName(resolved.promotion_name_en).generic,
       promotion_name_zh_id: resolved.promotion_name_zh_id,
       bonus_type: resolved.bonus_type,
       bonus_sub_type: resolved.bonus_sub_type,

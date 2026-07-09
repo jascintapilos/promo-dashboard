@@ -1,4 +1,5 @@
 import { buildTncRow, needsZh } from './igmp-tnc.js';
+import { splitDualPromoName } from './promo-namer.js';
 
 // API mapper for iGMP (WS1 V3 / WS2 — best-in-asia.com kiosk Back Office).
 //
@@ -213,7 +214,7 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   for (const r of (rec.locale_contents || [])) {
     explicit[r.locale] = {
       Locale: r.locale,
-      PromotionRewardName: r.name || rec.promotion_name_en || rec.promotion_name,
+      PromotionRewardName: r.name || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name,
       Content: r.content || '',
     };
   }
@@ -232,7 +233,7 @@ function buildAddBonus(rec) {
   const { startDate, endDate } = resolvePromoDateRange(rec, { endOfYearDefault: true });
   const startMin = timeStringToMinutes(rec.redeemable_start_time || '00:00');
   const endMin = timeStringToMinutes(rec.redeemable_end_time || '23:59');
-  const baseName = rec.promotion_name_en || rec.promotion_name;
+  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
   const displayName = baseName + buildMechanicsTag(rec);
 
   const reward = {
@@ -290,7 +291,7 @@ function buildAddFreeCredit(rec) {
   const rawRewardType = Number(rec.reward_type ?? 1);
   const isManualInput = rawRewardType === 2;
   const wireRewardType = isManualInput ? 1 : rawRewardType;
-  const baseName = rec.promotion_name_en || rec.promotion_name;
+  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
   const mechanicsTagFc = buildMechanicsTag(rec);
   // Auto-namer may have already appended the mechanics tag — don't double-add.
   const displayName = mechanicsTagFc && baseName.includes(mechanicsTagFc.trim()) ? baseName : baseName + mechanicsTagFc;
@@ -364,7 +365,7 @@ const SITE_SUFFIX = {
 
 function buildAddFreeSpin(rec, { siteId } = {}) {
   const { startDate, endDate } = resolvePromoDateRange(rec, { endOfYearDefault: true });
-  const baseName = rec.promotion_name_en || rec.promotion_name;
+  const baseName = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name;
   const displayName = baseName + buildMechanicsTag(rec);
   const shellBody = {
     PromotionCode: rec.promo_code,

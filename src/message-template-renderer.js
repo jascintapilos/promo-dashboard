@@ -26,6 +26,7 @@ import path from 'node:path';
 import { BRAND_TO_SITE } from './ingest.js';
 import { fileURLToPath } from 'node:url';
 import { generateCopy } from './copy-generator.js';
+import { splitDualPromoName } from './promo-namer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -496,7 +497,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   // use the ZH/ID name (matches api-mapper-qpro buildNameBodies: isZh covers
   // both _ZH and _ID). This is the name the player actually sees on the
   // [Reward] page and in dialog body references — NOT the email subject.
-  const promotionNameEn = r.promotion_name_en || r.promo_code || '';
+  // This renderer is only invoked for QPRO/QP2 (never IGMP), so it always
+  // wants the generic half of the dual-name convention (see
+  // splitDualPromoName in promo-namer.js), never the WS1/WS2-unique half.
+  const promotionNameEn = splitDualPromoName(r.promotion_name_en).generic || r.promo_code || '';
   const promotionNameLocalized = (docKey === 'ZH' || docKey === 'ID')
     ? (r.promotion_name_zh_id || r.promotion_name_zh || promotionNameEn)
     : promotionNameEn;
@@ -569,7 +573,7 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
     subject = campaignCopy.mt.subject;
   } else {
     const subjectSlug = (slug === 'free-credit' && isVip) ? 'free-credit-vip' : slug;
-    subject = SUBJECT_TEMPLATES[subjectSlug]?.[docKey] || r.promotion_name_en || r.promo_code || '';
+    subject = SUBJECT_TEMPLATES[subjectSlug]?.[docKey] || promotionNameEn || r.promo_code || '';
     subject = applyScalars(subject, vars);
   }
   // The FC body's `[{{reward_name}}]` is the name the player searches for on
@@ -669,7 +673,10 @@ export async function renderDialogBody({ bonusType, locale, resolved }) {
   const currency = LOCALE_TO_CURRENCY[dialogLocaleRegion] || r.currencies?.[0] || 'MYR';
 
   // Per-locale promo name (ZH dialogs reference the configured ZH name, not EN).
-  const promotionNameEn = r.promotion_name_en || r.promo_code || '';
+  // This renderer is only invoked for QPRO/QP2 (never IGMP), so it always
+  // wants the generic half of the dual-name convention (see
+  // splitDualPromoName in promo-namer.js), never the WS1/WS2-unique half.
+  const promotionNameEn = splitDualPromoName(r.promotion_name_en).generic || r.promo_code || '';
   const promotionNameLocalized = docKey === 'ZH'
     ? (r.promotion_name_zh_id || r.promotion_name_zh || promotionNameEn)
     : promotionNameEn;

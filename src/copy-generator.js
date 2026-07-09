@@ -600,8 +600,15 @@ function inferTone(record) {
   // 3. VIP / tier
   if (VIP_TIER_PATTERN.test(hay)) return { tone: 'vip', source: 'tier' };
 
-  // 4. Welcome / FTD
-  if (WELCOME_PATTERN.test(hay)) return { tone: 'welcome', source: 'subtype' };
+  // 4. Welcome / FTD — bonus_sub_type is authoritative when populated. The
+  // free-text fields folded into `hay` (name_details_raw, promo_code) can
+  // legitimately contain "FTD" as an audience-segment token (e.g. an
+  // "FTD Ladder" retention sequence keyed on First-Time-Deposit cohort)
+  // rather than meaning the bonus itself is a Welcome/FTD offer, so the
+  // free-text pattern only runs as a fallback when bonus_sub_type is blank.
+  const subType = String(record.bonus_sub_type || '').trim().toLowerCase();
+  if (subType === 'welcome') return { tone: 'welcome', source: 'subtype' };
+  if (!subType && WELCOME_PATTERN.test(hay)) return { tone: 'welcome', source: 'subtype' };
 
   // 4. Inferred — rotate across general tones based on bonus type
   const bt = String(record.bonus_type || '').toLowerCase();

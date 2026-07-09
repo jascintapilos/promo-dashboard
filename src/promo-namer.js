@@ -32,6 +32,28 @@
 
 import { findCampaignRule, resolveConvention } from './campaign-prefix-rules.js';
 
+// Splits the dual-name convention used when a request's Brand list includes
+// WS1/WS2 (see memory feedback_column_x_dual_promo_name_ws1.md): column X
+// holds "<generic name>\nWS1/WS2: <unique name>" so QP2/QPRO (which
+// identify promos by code, not name) get a clean generic name, while
+// WS1/WS2 (which pick promos by name in the Manual Reward Assignment
+// dropdown, so names must be unique) get the disambiguated one. Every
+// mapper that writes promotion_name_en into a BO field must call this and
+// use the half meant for its own platform — using the raw value verbatim
+// leaks a literal newline and the other platform's text into player-facing
+// fields. Falls back to the raw value unchanged when there's no dual-name
+// marker (single-line names, i.e. non-WS1-inclusive requests), so requests
+// that never had WS1 in scope are unaffected.
+export function splitDualPromoName(raw) {
+  const str = String(raw ?? '');
+  const marker = /\n\s*WS1\/WS2:\s*/;
+  const idx = str.search(marker);
+  if (idx === -1) return { generic: str, ws1Unique: str };
+  const generic = str.slice(0, idx).trim();
+  const ws1Unique = str.slice(idx).replace(marker, '').trim();
+  return { generic, ws1Unique: ws1Unique || generic };
+}
+
 const CATEGORY_SUFFIX = {
   'Slots':       '_SLT',
   'Live Casino': '_LC',

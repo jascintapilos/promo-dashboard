@@ -14,6 +14,8 @@
 // Auto-generates for the regions present in rec.regions / rec.locales.
 // Explicit rec.locale_contents entries always win over auto-generated ones.
 
+import { splitDualPromoName } from './promo-namer.js';
+
 import { BRAND_TO_SITE } from './ingest.js';
 
 // ── Shared constants ─────────────────────────────────────────────────────────
@@ -386,7 +388,7 @@ function buildDepEn(rec) {
   const maxB  = Number(rec.cap_bonus_amount ?? rec.parsed?.max_bonus ?? 0);
   const to    = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name  = rec.promotion_name_en || rec.promotion_name || '';
+  const name  = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand = brandName(rec);
   const url   = tncUrl(rec, 'en');
   const cats  = categoriesFor(rec);
@@ -419,7 +421,7 @@ function buildDepZh(rec) {
   const maxB  = Number(rec.cap_bonus_amount ?? rec.parsed?.max_bonus ?? 0);
   const to    = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name  = rec.promotion_name_zh_id || rec.promotion_name_en || rec.promotion_name || '';
+  const name  = rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand = brandName(rec);
   const url   = tncUrl(rec, 'zh');
   const cats  = categoriesFor(rec);
@@ -454,7 +456,7 @@ function buildFcEn(rec) {
   const maxXfer  = Number(rec.max_transfer_out ?? rec.parsed?.max_transfer_out ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name     = rec.promotion_name_en || rec.promotion_name || '';
+  const name     = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'en');
   const cats     = categoriesFor(rec);
@@ -503,7 +505,7 @@ function buildFcZh(rec) {
   const maxXfer  = Number(rec.max_transfer_out ?? rec.parsed?.max_transfer_out ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name     = rec.promotion_name_zh_id || rec.promotion_name_en || rec.promotion_name || '';
+  const name     = rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'zh');
   const cats     = categoriesFor(rec);
@@ -592,7 +594,7 @@ function buildFsEn(rec) {
   const minD     = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name     = rec.promotion_name_en || rec.promotion_name || '';
+  const name     = splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'en');
   const link     = tncLinkPhrase(url, false);
@@ -639,7 +641,7 @@ function buildFsZh(rec) {
   const minD     = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
   const { validityDays } = validityFor(rec);
-  const name     = rec.promotion_name_zh_id || rec.promotion_name_en || rec.promotion_name || '';
+  const name     = rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'zh');
   const link     = tncLinkPhrase(url, true);
@@ -696,8 +698,8 @@ export function buildTncRow(rec, locale, bonusTypeLower) {
   }
 
   const rewardName = isZh
-    ? (rec.promotion_name_zh_id || rec.promotion_name_en || rec.promotion_name || '')
-    : (rec.promotion_name_en || rec.promotion_name || '');
+    ? (rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '')
+    : (splitDualPromoName(rec.promotion_name_en).ws1Unique || rec.promotion_name || '');
 
   return { Locale: locale, PromotionRewardName: rewardName, Content: content };
 }
