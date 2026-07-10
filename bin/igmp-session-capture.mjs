@@ -69,7 +69,7 @@ if (autoMode) {
 
   // Wait until we're past the login page (URL changes away from /Login).
   console.error(`[session-capture] credentials submitted — waiting for redirect…`);
-  await page.waitForURL((url) => !url.href.includes('/Login'), { timeout: 20000 });
+  await page.waitForURL((url) => !url.href.includes('/Login'), { timeout: 35000 });
   console.error(`[session-capture] login successful — current URL: ${page.url()}`);
 
   // Brief pause so any auth cookies finish being set.

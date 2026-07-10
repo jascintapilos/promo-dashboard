@@ -405,7 +405,9 @@ function buildDepEn(rec) {
     `<p style="color: rgb(85, 85, 85);"><br></p>` +
     p(bold('Terms and Conditions:')) +
     p(`1. Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`) +
-    p('2. Each member can claim this promotion only once.') +
+    p(rec.recurring
+      ? '2. Each member can claim this promotion once per day.'
+      : '2. Each member can claim this promotion only once.') +
     p(`3. ${fcCatClause(cats, false)}`) +
     p('4. Promotion codes are time-limited and cannot be extended once expired.') +
     p(`5. General ${brand} ${link} apply.`),
@@ -436,7 +438,9 @@ function buildDepZh(rec) {
     `<p><br></p>` +
     p(bold('条款与条件：')) +
     p(`1. 红利自发放之日起 ${validityDays} 天内有效，除非另有说明。`) +
-    p('2. 每位会员仅限领取一次此优惠。') +
+    p(rec.recurring
+      ? '2. 每位会员每日限领取一次此优惠。'
+      : '2. 每位会员仅限领取一次此优惠。') +
     p(`3. ${fcCatClause(cats, true)}`) +
     p('4. 优惠码有时间限制，一旦过期将无法延长。') +
     p(`5. 适用 ${brand} 一般${link}。`),
@@ -618,7 +622,7 @@ function buildFsEn(rec) {
   const fsItemsEn = [
     c1,
     `Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`,
-    'Each member can claim this promotion only once.',
+    rec.recurring ? 'Each member can claim this promotion once per day.' : 'Each member can claim this promotion only once.',
     `Turnover Requirement for this promotion is ${to}x. Example as follows (Deposit × ${to}) + (Free Spin Winning Amount × ${to}).`,
     ...(capW > 0 ? [`The maximum withdrawal amount from this promotion is capped at ${pref} ${capW}.`] : []),
     'Promotion codes are time-limited and cannot be extended once expired.',
@@ -662,7 +666,7 @@ function buildFsZh(rec) {
   const fsItemsZh = [
     c1,
     `红利自发放之日起 ${validityDays} 天内有效，除非另有说明。`,
-    '每位会员仅限领取一次此优惠。',
+    rec.recurring ? '每位会员每日限领取一次此优惠。' : '每位会员仅限领取一次此优惠。',
     `本优惠的流水要求为 ${to} 倍。计算方式如下：（存款金额 × ${to}）+（免费旋转奖金 × ${to}）。`,
     ...(capW > 0 ? [`此优惠的最高可提款金额为 ${pref} ${capW}。`] : []),
     '优惠码有时间限制，一旦过期将无法延长。',
