@@ -308,9 +308,14 @@ function buildAddFreeCredit(rec) {
 
   const reward = {
     RewardName: baseName,  // T&C heading stays clean
-    RedemptionType: 1,                     // hardcoded — claim
+    // RedemptionType: 0=Deposit, 1=Claim. Was hardcoded to Claim(1)/0 with no
+    // regard for min_deposit — fine for every FC promo seen until P030
+    // (2026-07-10), which is the first FC request with a real min_deposit
+    // gate (30). Left as-is, the BO would have let players claim without
+    // making the required deposit. Mirror the FS builder's derivation below.
+    RedemptionType: String(rec.fc_redemption_type ?? (Number(rec.min_deposit ?? 0) > 0 ? 0 : 1)),
     RewardType: wireRewardType,
-    MinimumActionAmount: 0,                // hardcoded
+    MinimumActionAmount: Number(rec.min_deposit ?? 0),
     BonusPercentage: Number(rec.bonus_pct ?? 0),
     RolloverMultiplier: Number(rec.turnover_multiplier ?? rec.rollover_multiplier ?? 0),
     FixedBonusAmount: Number(rec.fixed_bonus_amount ?? rec.free_credit_amount ?? 0),
