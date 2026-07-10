@@ -419,9 +419,13 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   // /20), fixed here too since it's now provably wrong either way for a
   // second provider.
   const isPlaytech    = /playtech/i.test(r.game_provider || '');
+  // Playtech FS mechanic (operator rule 2026-07-10, confirmed after the
+  // Pragmatic-Play-shaped defaults broke a live commit): coins=0, lines=0,
+  // amount_per_line=the direct bet-per-spin amount. Pragmatic Play keeps
+  // coins=1, lines=10 (unchanged).
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
-    coins:           1,
+    coins:           isPlaytech ? 0 : 1,
     // If sheet stated amount_per_line directly, use it.
     // Playtech: use value_per_spin as-is (no division — see comment above).
     // Else (Pragmatic Play/default): divide value_per_spin by 20, floor 2dp.
@@ -431,7 +435,7 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
         ? +Number(valuePerSpin).toFixed(2)
         : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds:          spinCount,
-    lines:           lines,
+    lines:           isPlaytech ? 0 : lines,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,
     max_total_applications: 0,
     max_total_bonus:        0,
