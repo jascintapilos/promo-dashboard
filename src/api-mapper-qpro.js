@@ -406,14 +406,30 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
   const lines         = o.lines           ?? r.lines           ?? 10;
+  // Playtech games take amount_per_line as a direct currency bet amount
+  // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
+  // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green
+  // Wizard"): dividing 0.20 by anything (10 or the documented /20 PP
+  // convention) landed on 0.02/0.01, neither of which the BO accepted;
+  // sending 0.20 (the raw value_per_spin) as-is was the only value in its
+  // accepted list. Pragmatic Play keeps the historical /20-then-floor
+  // conversion (feedback_qp2_fs_value_per_spin_vs_amount_per_line.md) — this
+  // file's divisor was `lines` (10) instead of the documented fixed 20,
+  // itself a latent bug (bo-mapper-qpro.js and api-mapper-qp2.js both use
+  // /20), fixed here too since it's now provably wrong either way for a
+  // second provider.
+  const isPlaytech    = /playtech/i.test(r.game_provider || '');
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     coins:           1,
     // If sheet stated amount_per_line directly, use it.
-    // Else: divide value_per_spin by lines (default 10), floor to 2dp.
+    // Playtech: use value_per_spin as-is (no division — see comment above).
+    // Else (Pragmatic Play/default): divide value_per_spin by 20, floor 2dp.
     amount_per_line: aplRaw != null
       ? +Number(aplRaw).toFixed(4)
-      : Math.floor(valuePerSpin / lines * 100) / 100,
+      : isPlaytech
+        ? +Number(valuePerSpin).toFixed(2)
+        : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds:          spinCount,
     lines:           lines,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,
