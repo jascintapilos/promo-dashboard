@@ -219,14 +219,40 @@ function runCanary(job) {
   });
 }
 
+// QP2 brands (QP2A-D) share ONE physical promotion row on the IBC22 BO —
+// each EXTEND does a read-current-merchant_ids → compute-new-list → PUT
+// cycle with no locking. Running them concurrently races that read-modify-
+// write: every individual PUT can return success, yet whichever lands last
+// silently overwrites the others' merchant_id addition (confirmed root
+// cause of the 2026-07-10 P029 incident, where canary-multi-brand.js's
+// summary reported QP2A/B/D as "✅ OK" despite only 1 of 4 merchants ever
+// actually attaching). Force QP2 jobs onto a strict one-at-a-time chain
+// REGARDLESS of --parallel — this fully removes the race at the scheduling
+// level instead of relying on operators to notice and manually re-run
+// sequentially after the fact. Non-QP2 jobs are unaffected and still honor
+// --parallel; the QP2 chain runs concurrently alongside them for speed.
+const isQp2Job = (j) => (BRAND_TO_SITE[j.brand]?.platform || '').toLowerCase() === 'qp2';
+const qp2Jobs = jobs.filter(isQp2Job);
+const otherJobs = jobs.filter((j) => !isQp2Job(j));
+
+async function runSequential(jobList) {
+  const out = [];
+  for (const j of jobList) out.push(await runCanary(j));
+  return out;
+}
+
 let results;
 if (parallel) {
-  results = await Promise.all(jobs.map((j) => runCanary(j)));
-} else {
-  results = [];
-  for (const j of jobs) {
-    results.push(await runCanary(j));
+  if (qp2Jobs.length > 1) {
+    console.log(`  Note:     ${qp2Jobs.length} QP2 brand(s) forced sequential (shared-promotion race guard) despite --parallel`);
   }
+  const [qp2Results, otherResults] = await Promise.all([
+    runSequential(qp2Jobs),
+    Promise.all(otherJobs.map((j) => runCanary(j))),
+  ]);
+  results = [...otherResults, ...qp2Results];
+} else {
+  results = await runSequential(jobs);
 }
 
 // Summary table

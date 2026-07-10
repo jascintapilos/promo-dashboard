@@ -19,7 +19,25 @@ export function encryptReqSign(plaintext, reqSignKey) {
   return Buffer.concat([iv, ct]).toString('base64');
 }
 
-class AuthError extends Error { constructor(m) { super(m); this.name = 'AuthError'; } }
+class AuthError extends Error {
+  constructor(m, data) { super(m); this.name = 'AuthError'; this.data = data; }
+}
+
+// Confirmed 2026-07-10: the login endpoint returns HTTP 401 with this exact
+// message when it's throttling — NOT a credentials failure. Reproduced
+// directly: 3 logins for the same username within ~3s reliably trips it
+// (5.5s spacing did not). All ~18 QPRO/QP2 sites share one login username
+// (promo_testbot per bo-sites.json), so canary-multi-brand.js --parallel's
+// ~20-way concurrent login burst hits this on a random subset every run.
+// Distinguishing on this message (rather than treating every login 401 as
+// retriable) keeps a genuine wrong-password/locked-account 401 fatal.
+const RATE_LIMIT_MESSAGE_RE = /high traffic|try again later/i;
+
+function isRateLimitAuthError(e) {
+  if (!(e instanceof AuthError)) return false;
+  const msg = JSON.stringify(e.data?.message ?? '');
+  return RATE_LIMIT_MESSAGE_RE.test(msg);
+}
 
 async function rawFetchJson(url, opts = {}) {
   const headers = { accept: 'application/json, text/plain, */*', ...(opts.headers || {}) };
@@ -33,15 +51,37 @@ async function rawFetchJson(url, opts = {}) {
   let data;
   try { data = JSON.parse(text); } catch { data = text; }
 
-  if (res.status === 401 || res.status === 419) throw new AuthError(`auth required (${res.status})`);
+  if (res.status === 401 || res.status === 419) throw new AuthError(`auth required (${res.status})`, data);
   if (data && data.success === false && /unauth|token|expired/i.test(JSON.stringify(data.message || ''))) {
-    throw new AuthError(`auth rejected: ${JSON.stringify(data.message)}`);
+    throw new AuthError(`auth rejected: ${JSON.stringify(data.message)}`, data);
   }
   if (!res.ok || (data && data.success === false)) {
     const msg = data?.message?.join?.(' | ') || data?.message || text.slice(0, 300);
     throw new Error(`HTTP ${res.status} ${url}\n  ${msg}`);
   }
   return data;
+}
+
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// Retry a rate-limited login with exponential backoff + jitter. Only
+// RATE_LIMIT_MESSAGE_RE-matching AuthErrors are retried — any other error
+// (wrong password, missing config, network failure) fails immediately on
+// the first attempt, same as before this fix.
+async function withLoginRetry(fn, { attempts = 7, baseMs = 2000, maxMs = 25000 } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isRateLimitAuthError(e) || i === attempts - 1) throw e;
+      const backoff = Math.min(maxMs, baseMs * 2 ** i);
+      const jitter = Math.random() * backoff * 0.5;
+      await sleep(backoff + jitter);
+    }
+  }
+  throw lastErr;
 }
 
 // Direct login (no cache). Returns a session object.
@@ -67,14 +107,19 @@ async function rawLoginStandard(site) {
       `  Add the discovered values to the site's entry in bo-sites.json.`,
     );
   }
-  const data = await rawFetchJson(`${site.apiHost}/api/bo/login`, {
+  // Small upfront jitter (not just retry backoff) so a canary-multi-brand.js
+  // --parallel burst of ~20 processes doesn't all hit the login endpoint in
+  // the same instant — reduces how often the retry path below even needs to
+  // fire. Harmless for a single/manual login (adds at most 1.2s once).
+  await sleep(Math.random() * 1200);
+  const data = await withLoginRetry(() => rawFetchJson(`${site.apiHost}/api/bo/login`, {
     method: 'POST',
     body: {
       merchant_code: site.loginMerchantCode,
       username: site.username,
       password: encryptReqSign(site.password, site.reqSignKey),
     },
-  });
+  }));
   const tok = data.data.token;
   const user = data.data.user;
   // QP2 returns merchant_dropdown listing every merchant the account can act

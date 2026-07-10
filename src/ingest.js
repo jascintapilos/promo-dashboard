@@ -476,6 +476,28 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   }
   if (Object.keys(brandGames).length > 0) parsed.game_by_brand = brandGames;
 
+  // FS game provider — operators annotate the game name with its provider
+  // in parens, e.g. "Fire Blaze: Green Wizard (Playtech)" or "Gates of
+  // Olympus (Pragmatic Play)". The game-name regexes above deliberately stop
+  // BEFORE the "(" so this suffix never bleeds into parsed.game — but until
+  // 2026-07-10 nothing captured it either, so every FS mapper silently
+  // defaulted to Pragmatic Play regardless of the operator's note (caught on
+  // P053: "Fire Blaze: Green Wizard" is a real Playtech-only title, not
+  // Pragmatic Play — confirmed against the live BO catalog). Currently
+  // recognizes the two providers operators have actually used for FS;
+  // extend this map if a third shows up.
+  const PROVIDER_ALIASES = {
+    playtech: 'Playtech',
+    'pragmatic play': 'Pragmatic Play',
+    pragmatic: 'Pragmatic Play',
+    pp: 'Pragmatic Play',
+  };
+  const providerMatch = text.match(/\(\s*([A-Za-z][A-Za-z\s]*?)\s*\)/);
+  if (providerMatch) {
+    const norm = PROVIDER_ALIASES[providerMatch[1].toLowerCase().trim()];
+    if (norm) parsed.game_provider = norm;
+  }
+
   // Category hints — "Slots only", "(LC, Sports)", "(Slot, Live Casino)", etc.
   const slotsOnly = /slots?\s+only/i.test(text);
   if (slotsOnly) {

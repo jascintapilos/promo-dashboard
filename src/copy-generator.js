@@ -624,6 +624,56 @@ function bonusTypeKey(bonusType) {
   return 'deposit';
 }
 
+// ── Deposit-requirement copy correction (FC only) ────────────────────────
+// Every free_credit variant above was written assuming NODEP (no min_deposit)
+// and hardcodes some form of "no deposit needed" in the dialog hook and/or
+// MT intro. Confirmed wrong 2026-07-10 (P030, code
+// WHALE_CRM_PROBE_FC88_FTD_LOSE_3) — the first FC request this project has
+// processed with a real min_deposit gate (30 MYR/SGD). Left as-is, players
+// read "no deposit needed" in the intro while the same message's T&C clause
+// 1 (built separately by igmp-tnc.js / the QPRO/QP2 MT renderer) correctly
+// states "A minimum deposit of ... is required to claim this promotion" —
+// a direct contradiction. Post-process the selected copy so the phrase only
+// survives when the record genuinely has no deposit requirement. The
+// specific amount/currency isn't embedded here (copy-generator has no
+// currency context — that's rendered separately in the Min Deposit table
+// column); this only removes the false "no deposit" claim.
+function capLike(matched, replacement) {
+  return /^[A-Z]/.test(matched) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
+}
+
+const EN_NO_DEPOSIT_PATTERNS = [
+  [/no deposit,?\s*no catch/gi, (m) => capLike(m, 'a deposit is required, no catch')],
+  [/no deposit,?\s*reserved just for you/gi, (m) => capLike(m, 'deposit required, reserved just for you')],
+  [/no deposit\s+(?:is\s+)?needed/gi, (m) => capLike(m, 'a deposit is required')],
+  [/no deposit\s+(?:is\s+)?required/gi, (m) => capLike(m, 'a deposit is required')],
+  [/no deposit\b/gi, (m) => capLike(m, 'a deposit is required')], // safety net for any phrasing not matched above
+];
+
+function stripNoDepositEN(text) {
+  let out = text;
+  for (const [re, fn] of EN_NO_DEPOSIT_PATTERNS) out = out.replace(re, fn);
+  return out;
+}
+function stripNoDepositZH(text) {
+  return text.replace(/无需存款/g, '需先存款');
+}
+function stripNoDepositID(text) {
+  return text.replace(/tanpa deposit/gi, (m) => capLike(m, 'deposit diperlukan'));
+}
+const STRIP_NO_DEPOSIT = { EN: stripNoDepositEN, ZH: stripNoDepositZH, ID: stripNoDepositID };
+
+function applyDepositRequirement(copy, btKey, loc, parsed) {
+  if (btKey !== 'free_credit') return copy;
+  if (!(Number(parsed?.min_deposit) > 0)) return copy;
+  const strip = STRIP_NO_DEPOSIT[loc];
+  if (!strip) return copy;
+  return {
+    dialog: { title: copy.dialog.title, hook: strip(copy.dialog.hook) },
+    mt: { subject: copy.mt.subject, intro: strip(copy.mt.intro) },
+  };
+}
+
 // ── Public API ────────────────────────────────────────────────────────────
 
 /**
@@ -639,8 +689,9 @@ export function generateCopy(record, locale = 'EN', { enrich = false } = {}) {
   const btKey = bonusTypeKey(record.bonus_type);
   const loc   = ['EN', 'ZH', 'ID'].includes(locale) ? locale : 'EN';
 
-  const copy = COPY[tone]?.[btKey]?.[loc];
-  if (!copy) return null;
+  const rawCopy = COPY[tone]?.[btKey]?.[loc];
+  if (!rawCopy) return null;
+  const copy = applyDepositRequirement(rawCopy, btKey, loc, record.parsed);
 
   const out = enrich ? enrichCopy(copy, btKey, loc, record.parsed, tone) : { dialog: { ...copy.dialog }, mt: { ...copy.mt } };
   return { tone, toneSource, ...out };
@@ -659,7 +710,8 @@ export function generateCopyAll(record, { enrich = false } = {}) {
 
   const result = { tone, toneSource };
   for (const loc of ['EN', 'ZH', 'ID']) {
-    const copy = COPY[tone]?.[btKey]?.[loc];
+    const rawCopy = COPY[tone]?.[btKey]?.[loc];
+    const copy = rawCopy ? applyDepositRequirement(rawCopy, btKey, loc, record.parsed) : null;
     result[loc] = copy
       ? (enrich ? enrichCopy(copy, btKey, loc, record.parsed, tone) : { dialog: { ...copy.dialog }, mt: { ...copy.mt } })
       : null;

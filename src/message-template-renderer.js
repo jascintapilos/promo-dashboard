@@ -38,6 +38,11 @@ const LOCALE_TO_CURRENCY = {
   MY: 'MYR', SG: 'SGD', ID: 'IDR', TH: 'THB', KH: 'KHR', AU: 'AUD',
 };
 
+// Platform-enforced minimum deposit floors per currency (from data/deposit-withdrawal-limits.json).
+// Applied to MT body rendering so no locale shows a below-floor amount even when the source
+// request only carries the MYR base value (e.g. MYR 30 → SGD locale must show SGD 50).
+const CURRENCY_DEPOSIT_FLOOR = { MYR: 30, SGD: 50, IDR: 25000, THB: 50, USD: 5 };
+
 // Brand directory loaded once (small JSON). Resolves at module load time.
 const BRAND_DIRECTORY_PATH = path.join(REPO_ROOT, 'data', 'brand-directory.json');
 const BRAND_DIRECTORY = existsSync(BRAND_DIRECTORY_PATH)
@@ -393,7 +398,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   // Per-currency override must be resolved before minDeposit so SG/ID/TH locales
   // use their own min_deposit (e.g. SGD 150) rather than the base MYR value (500).
   const ccyOverride = r.per_currency_overrides?.[currency] || {};
-  const minDeposit = Number(ccyOverride.min_deposit || r2.min_deposit || 0);
+  const rawMinDeposit = Number(ccyOverride.min_deposit || r2.min_deposit || 0);
+  const minDeposit = rawMinDeposit > 0
+    ? Math.max(rawMinDeposit, CURRENCY_DEPOSIT_FLOOR[currency] ?? 0)
+    : 0;
   const bonusPct = Number(r2.bonus_rate_pct || 0);
   const maxBonus = Number(r2.max_bonus || 0);
   const turnover = Number(r2.to_multiplier || 1);

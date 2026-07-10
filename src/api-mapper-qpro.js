@@ -167,14 +167,25 @@ const QPRO11_FS_PROVIDER_ID_BY_PREFIX = {
 // in the sheet use PP2 (Pragmatic Play). Mirrors the namer's default.
 const DEFAULT_FS_PROVIDER_LABEL = 'PP2 - Pragmatic Play';
 
-// Resolve the brand's PP2 (or other) FS provider id via /api/bo/gameprovider.
-// Matches by `code` field — uniform across brands (e.g. PP2, PP, JILI).
-async function resolveFsProviderId(site, label) {
-  const prefix = String(label || DEFAULT_FS_PROVIDER_LABEL).split(/[\s-]+/)[0].trim().toUpperCase();
-  if (!prefix) return 0;
+// Resolve the brand's FS provider id + BO code via /api/bo/gameprovider.
+// Matches by `code` field first — uniform across brands (e.g. PP2, PP,
+// JILI) — for the legacy "<CODE> - <Name>" operator convention. Falls back
+// to matching the provider NAME so a plain-English label like "Playtech"
+// (src/ingest.js now parses this from an operator's "(Playtech)" annotation
+// — operators don't know/write BO codes) still resolves. Returns {id, code}
+// so callers can reuse the resolved BO code for the freespingame lookup
+// instead of re-deriving a prefix from the input label — deriving a prefix
+// from a bare name breaks (caught on P053: "Playtech" derived to prefix
+// "PLAYTECH", which matches no provider code — the real BO code is "PTI").
+async function resolveFsProvider(site, label) {
+  const raw = String(label || DEFAULT_FS_PROVIDER_LABEL).trim();
+  const prefix = raw.split(/[\s-]+/)[0].trim().toUpperCase();
   const { rows } = await getAllGameProviders(site);
-  const row = rows.find((r) => String(r.code || '').trim().toUpperCase() === prefix);
-  return row ? row.id : 0;
+  const byCode = prefix ? rows.find((r) => String(r.code || '').trim().toUpperCase() === prefix) : null;
+  if (byCode) return { id: byCode.id, code: byCode.code };
+  const nameNorm = raw.replace(/^[A-Za-z0-9]+\s*-\s*/, '').trim().toLowerCase();
+  const byName = nameNorm ? rows.find((r) => String(r.name || '').trim().toLowerCase() === nameNorm) : null;
+  return byName ? { id: byName.id, code: byName.code } : { id: 0, code: null };
 }
 
 // Tokenize a game name to a set of word-stems for fuzzy matching:
@@ -375,6 +386,7 @@ function buildCurrencyBlockFC(resolved, currencyLabel) {
   const r = resolved.parsed || {};
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
+    min_transfer:           o.min_deposit ?? r.min_deposit ?? 0,
     max_balance_claim:      0,
     max_total_applications: 0,
     max_total_bonus:        0,
@@ -395,16 +407,36 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
   const lines         = o.lines           ?? r.lines           ?? 10;
+  // Playtech games take amount_per_line as a direct currency bet amount
+  // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
+  // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green
+  // Wizard"): dividing 0.20 by anything (10 or the documented /20 PP
+  // convention) landed on 0.02/0.01, neither of which the BO accepted;
+  // sending 0.20 (the raw value_per_spin) as-is was the only value in its
+  // accepted list. Pragmatic Play keeps the historical /20-then-floor
+  // conversion (feedback_qp2_fs_value_per_spin_vs_amount_per_line.md) — this
+  // file's divisor was `lines` (10) instead of the documented fixed 20,
+  // itself a latent bug (bo-mapper-qpro.js and api-mapper-qp2.js both use
+  // /20), fixed here too since it's now provably wrong either way for a
+  // second provider.
+  const isPlaytech    = /playtech/i.test(r.game_provider || '');
+  // Playtech FS mechanic (operator rule 2026-07-10, confirmed after the
+  // Pragmatic-Play-shaped defaults broke a live commit): coins=0, lines=0,
+  // amount_per_line=the direct bet-per-spin amount. Pragmatic Play keeps
+  // coins=1, lines=10 (unchanged).
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
-    coins:           1,
+    coins:           isPlaytech ? 0 : 1,
     // If sheet stated amount_per_line directly, use it.
-    // Else: divide value_per_spin by lines (default 10), floor to 2dp.
+    // Playtech: use value_per_spin as-is (no division — see comment above).
+    // Else (Pragmatic Play/default): divide value_per_spin by 20, floor 2dp.
     amount_per_line: aplRaw != null
       ? +Number(aplRaw).toFixed(4)
-      : Math.floor(valuePerSpin / lines * 100) / 100,
+      : isPlaytech
+        ? +Number(valuePerSpin).toFixed(2)
+        : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds:          spinCount,
-    lines:           lines,
+    lines:           isPlaytech ? 0 : lines,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,
     max_total_applications: 0,
     max_total_bonus:        0,
@@ -841,20 +873,21 @@ export async function buildApiPlan(resolved, { brand, site } = {}) {
   let effectiveResolved = resolved;
   if (site) {
     const fsLabel = resolved.parsed?.game_provider || DEFAULT_FS_PROVIDER_LABEL;
-    const fsProviderPrefix = fsLabel.split(/[\s-]+/)[0].trim().toUpperCase();
     let catRes;
-    [gpIdsForBrand, catRes, fsProviderIdForBrand] = await Promise.all([
+    let fsProviderResolved = null;
+    [gpIdsForBrand, catRes, fsProviderResolved] = await Promise.all([
       isFs ? Promise.resolve(null)
            : (Array.isArray(categoriesOnly) && categoriesOnly.length
                ? resolveCategoryGpIds(site, categoriesOnly)
                : resolveLayer1GpIds(site)),
       resolveCategoryIds(site, { isFs, categoriesOnly }),
-      isFs ? resolveFsProviderId(site, fsLabel) : Promise.resolve(null),
+      isFs ? resolveFsProvider(site, fsLabel) : Promise.resolve(null),
     ]);
+    fsProviderIdForBrand = fsProviderResolved?.id || null;
     catIdsForBrand = catRes.ids;
     catNamesForBrand = catRes.names;
-    if (isFs && fsProviderPrefix) {
-      fsGameCodeForBrand = await resolveFsGameCode(site, fsProviderPrefix, resolved.parsed?.game);
+    if (isFs && fsProviderResolved?.code) {
+      fsGameCodeForBrand = await resolveFsGameCode(site, fsProviderResolved.code, resolved.parsed?.game);
       if (fsProviderIdForBrand) {
         const detail = await getGameProviderDetail(site, fsProviderIdForBrand);
         const supportedIds = detail?.currency || [];

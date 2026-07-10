@@ -93,7 +93,15 @@ await (async () => {
     || rec.parsed?.game_by_brand?.WS2
     || rec.parsed?.game
     || null;
-  const fsProviderHint = rec.fs_provider || null;
+  // rec.fs_provider is a legacy/manual override field, never populated by
+  // ingest — the real source is rec.parsed.game_provider (src/ingest.js
+  // parses this from the operator's "(Provider)" annotation, e.g.
+  // "(Playtech)"). Falling through to null here meant every WS1/WS2 FS
+  // catalog resolve searched "all providers" instead of the intended one,
+  // which is how P053's "Fire Blaze: Green Wizard" (Playtech-only) missed
+  // its game entirely — mirrors src/igmp-tnc.js:172, which already read
+  // parsed.game_provider correctly.
+  const fsProviderHint = rec.fs_provider || rec.parsed?.game_provider || null;
   const needsCatalogResolve = isFreeSpin && (!rec.fs_provider_id || !rec.fs_game_id) && fsGameHint;
   if (needsCatalogResolve) {
     // Try to read a stored cookie for this site so dry-run can still resolve.
