@@ -275,9 +275,28 @@ export const QP2_BRAND_TO_IDS = {
 // FS game provider name prefix → provider id (QP2-specific table, distinct
 // from QPRO's). Confirmed 2026-05-15:
 //   PP2 = 345 (Pragmatic Play 2)
-// Extend as new providers' games get used.
+// PTI = 308 (Playtech) confirmed 2026-07-10 via /api/bo/gameprovider/308 on
+// ibc22 (P053: "Fire Blaze: Green Wizard" is Playtech-only, not PP2 — see
+// feedback_fs_provider_can_be_playtech_or_pp.md). QP2's /api/bo/gameprovider
+// LIST endpoint 500s on this platform (unlike QPRO), so this table can't be
+// resolved dynamically — extend by hand via the per-id detail endpoint when
+// a new provider's games get used.
 const QP2_FS_PROVIDER_ID_BY_PREFIX = {
   PP2: 345,
+  PTI: 308,
+};
+
+// Plain-English provider name (as written by an operator, e.g. "Playtech"
+// in a sheet cell — no BO code involved) → BO code prefix. src/ingest.js
+// parses this from a "(Provider)" annotation into parsed.game_provider;
+// fsProviderIdFromLabel/fsProviderCodeFromLabel below only understood the
+// legacy "<CODE> - Name" convention (e.g. "PP2 - Pragmatic Play"), so a bare
+// name like "Playtech" derived a bogus prefix and silently resolved to 0/
+// nothing. This map lets a bare name resolve to the real code too.
+const QP2_PROVIDER_NAME_TO_PREFIX = {
+  'pragmatic play': 'PP2',
+  pragmatic: 'PP2',
+  playtech: 'PTI',
 };
 
 const LOCALE_TO_SETTINGS_ID = {
@@ -522,16 +541,26 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
 // and the QPRO mapper.
 const QP2_DEFAULT_FS_PROVIDER_LABEL = 'PP2 - Pragmatic Play';
 
+// Resolves either convention to the BO code prefix: "<CODE> - Name" (legacy,
+// e.g. "PP2 - Pragmatic Play" → "PP2") or a bare provider name (e.g.
+// "Playtech" → "PTI", via QP2_PROVIDER_NAME_TO_PREFIX).
+function fsProviderPrefixFromLabel(label) {
+  const raw = String(label || QP2_DEFAULT_FS_PROVIDER_LABEL).trim();
+  const firstToken = raw.split(/[\s-]+/)[0].trim();
+  if (QP2_FS_PROVIDER_ID_BY_PREFIX[firstToken] != null) return firstToken;
+  const byName = QP2_PROVIDER_NAME_TO_PREFIX[raw.toLowerCase()];
+  return byName || firstToken || 'PP2';
+}
+
 function fsProviderIdFromLabel(label) {
-  const prefix = String(label || QP2_DEFAULT_FS_PROVIDER_LABEL).split(/[\s-]+/)[0].trim();
-  if (!prefix) return 0;
+  const prefix = fsProviderPrefixFromLabel(label);
   return QP2_FS_PROVIDER_ID_BY_PREFIX[prefix] ?? 0;
 }
 
 // Returns the SHORT CODE used in QP2A_TARGET_GAME_PROVIDER_CODES values.
 // Mirrors the namer's extractProviderPrefix. "PP2 - Pragmatic Play" → "PP2".
 function fsProviderCodeFromLabel(label) {
-  return String(label || QP2_DEFAULT_FS_PROVIDER_LABEL).split(/[\s-]+/)[0].trim() || 'PP2';
+  return fsProviderPrefixFromLabel(label);
 }
 
 function fsGameCodeFromLabel(label) {
@@ -931,7 +960,7 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   let effectiveResolved = resolved;
   if (site && isFs) {
     const fsLabel = resolved.parsed?.game_provider || QP2_DEFAULT_FS_PROVIDER_LABEL;
-    const fsProviderPrefix = fsLabel.split(/[\s-]+/)[0].trim().toUpperCase();
+    const fsProviderPrefix = fsProviderPrefixFromLabel(fsLabel);
     if (fsProviderPrefix) {
       fsGameCodeForBrand = await resolveFsGameCodeQp2(site, fsProviderPrefix, resolved.parsed?.game);
     }

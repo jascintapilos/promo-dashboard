@@ -73,6 +73,7 @@
 - [Category + Game Providers must both be restricted](feedback_category_and_provider_must_match.md) — Category-restricted promos need BOTH fields set; provider empty = all providers allowed. QPRO/QP2 only.
 - [Sports T&C — Virtual Sports exclusion](feedback_sports_virtual_sports_exclusion.md) — Sports deposit T&C clause 2 must exclude Virtual Sports.
 - [FS general rules — all brands](project_fs_general_rules.md) — 88 spins max, 0.50/spin min, min dep 100+, TO 10-15x by wallet type. REL_/RET_ only.
+- [FS provider: Playtech or Pragmatic Play](project_fs_provider_playtech_or_pragmatic.md) — never default to PP2; ingest.js parses "(Provider)" annotation end-to-end; WS1/WS2 only have PP installed.
 - [Deposit/withdrawal thresholds](feedback_promo_deposit_withdrawal_thresholds.md) — min_deposit + max caps within platform limits. Data in data/deposit-withdrawal-limits.json.
 
 ## IGMP / WS1

@@ -167,14 +167,25 @@ const QPRO11_FS_PROVIDER_ID_BY_PREFIX = {
 // in the sheet use PP2 (Pragmatic Play). Mirrors the namer's default.
 const DEFAULT_FS_PROVIDER_LABEL = 'PP2 - Pragmatic Play';
 
-// Resolve the brand's PP2 (or other) FS provider id via /api/bo/gameprovider.
-// Matches by `code` field — uniform across brands (e.g. PP2, PP, JILI).
-async function resolveFsProviderId(site, label) {
-  const prefix = String(label || DEFAULT_FS_PROVIDER_LABEL).split(/[\s-]+/)[0].trim().toUpperCase();
-  if (!prefix) return 0;
+// Resolve the brand's FS provider id + BO code via /api/bo/gameprovider.
+// Matches by `code` field first — uniform across brands (e.g. PP2, PP,
+// JILI) — for the legacy "<CODE> - <Name>" operator convention. Falls back
+// to matching the provider NAME so a plain-English label like "Playtech"
+// (src/ingest.js now parses this from an operator's "(Playtech)" annotation
+// — operators don't know/write BO codes) still resolves. Returns {id, code}
+// so callers can reuse the resolved BO code for the freespingame lookup
+// instead of re-deriving a prefix from the input label — deriving a prefix
+// from a bare name breaks (caught on P053: "Playtech" derived to prefix
+// "PLAYTECH", which matches no provider code — the real BO code is "PTI").
+async function resolveFsProvider(site, label) {
+  const raw = String(label || DEFAULT_FS_PROVIDER_LABEL).trim();
+  const prefix = raw.split(/[\s-]+/)[0].trim().toUpperCase();
   const { rows } = await getAllGameProviders(site);
-  const row = rows.find((r) => String(r.code || '').trim().toUpperCase() === prefix);
-  return row ? row.id : 0;
+  const byCode = prefix ? rows.find((r) => String(r.code || '').trim().toUpperCase() === prefix) : null;
+  if (byCode) return { id: byCode.id, code: byCode.code };
+  const nameNorm = raw.replace(/^[A-Za-z0-9]+\s*-\s*/, '').trim().toLowerCase();
+  const byName = nameNorm ? rows.find((r) => String(r.name || '').trim().toLowerCase() === nameNorm) : null;
+  return byName ? { id: byName.id, code: byName.code } : { id: 0, code: null };
 }
 
 // Tokenize a game name to a set of word-stems for fuzzy matching:
@@ -841,20 +852,21 @@ export async function buildApiPlan(resolved, { brand, site } = {}) {
   let effectiveResolved = resolved;
   if (site) {
     const fsLabel = resolved.parsed?.game_provider || DEFAULT_FS_PROVIDER_LABEL;
-    const fsProviderPrefix = fsLabel.split(/[\s-]+/)[0].trim().toUpperCase();
     let catRes;
-    [gpIdsForBrand, catRes, fsProviderIdForBrand] = await Promise.all([
+    let fsProviderResolved = null;
+    [gpIdsForBrand, catRes, fsProviderResolved] = await Promise.all([
       isFs ? Promise.resolve(null)
            : (Array.isArray(categoriesOnly) && categoriesOnly.length
                ? resolveCategoryGpIds(site, categoriesOnly)
                : resolveLayer1GpIds(site)),
       resolveCategoryIds(site, { isFs, categoriesOnly }),
-      isFs ? resolveFsProviderId(site, fsLabel) : Promise.resolve(null),
+      isFs ? resolveFsProvider(site, fsLabel) : Promise.resolve(null),
     ]);
+    fsProviderIdForBrand = fsProviderResolved?.id || null;
     catIdsForBrand = catRes.ids;
     catNamesForBrand = catRes.names;
-    if (isFs && fsProviderPrefix) {
-      fsGameCodeForBrand = await resolveFsGameCode(site, fsProviderPrefix, resolved.parsed?.game);
+    if (isFs && fsProviderResolved?.code) {
+      fsGameCodeForBrand = await resolveFsGameCode(site, fsProviderResolved.code, resolved.parsed?.game);
       if (fsProviderIdForBrand) {
         const detail = await getGameProviderDetail(site, fsProviderIdForBrand);
         const supportedIds = detail?.currency || [];
