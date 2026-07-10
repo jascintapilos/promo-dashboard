@@ -229,7 +229,25 @@ try {
       try {
         console.log(`  → PUT /api/bo/promotion/${existing.id} (extend merchant_ids${clonedPopup ? ' + link popup' : ''})…`);
         await updatePromotion(site, existing.id, putBody);
-        console.log(`✓ Extended. merchant_ids now: ${allIds.join(', ')}${clonedPopup ? `; popup id=${clonedPopup.id} attached` : ''}`);
+        // Read-after-write verification (added 2026-07-10 after P029): when
+        // multiple QP2 brands EXTEND the same shared promotion concurrently
+        // (e.g. canary-multi-brand.js --parallel), each process reads
+        // `currentIds` from a snapshot BEFORE any of the others have written
+        // — a classic lost-update race. The PUT itself can succeed (no HTTP
+        // error) while a later concurrent PUT from a sibling brand overwrites
+        // this one's merchant_ids addition. Re-fetch and confirm THIS
+        // brand's merchant_id actually survived before declaring success —
+        // otherwise this silently reports bail(0) while the merchant was
+        // never really attached (confirmed root cause of the P029 QP2A/B/D
+        // false-"OK" incident).
+        const verify = await authedFetch(site, `/api/bo/promotion/${existing.id}`);
+        const verifyIds = (verify.data.rows.merchant_ids || []).map((m) => (typeof m === 'object' ? m.id : m));
+        if (!verifyIds.includes(myMerchantId)) {
+          console.error(`✖ VERIFICATION FAILED: merchant_ids after PUT = [${verifyIds.join(', ')}] does not include ${targetBrand} (merchant_id=${myMerchantId}).`);
+          console.error(`  Likely lost to a concurrent EXTEND from a sibling QP2 brand — re-run this brand alone (not under --parallel) once siblings have finished.`);
+          return bail(9);
+        }
+        console.log(`✓ Extended. merchant_ids now: ${verifyIds.join(', ')}${clonedPopup ? `; popup id=${clonedPopup.id} attached` : ''}`);
         if (expandedPlan.memberGroupIds) {
           console.log(`  member_group_ids expanded: ${expandedPlan.memberGroupIds.length} groups across merchants [${allIds.join(',')}]`);
         }
