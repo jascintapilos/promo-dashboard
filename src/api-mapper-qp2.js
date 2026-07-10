@@ -402,6 +402,8 @@ function buildCurrencyBlockFC(resolved, currencyLabel) {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     bonus_amount: o.free_credit_amount ?? r.free_credit_amount ?? 0,
     bypass_min_deposit: 0,
+    min_transfer: o.min_deposit ?? r.min_deposit ?? 0,
+    min_deposit:  o.min_deposit ?? r.min_deposit ?? 0,
     max_balance_claim: null,
     status: '1',
     reset: 0,
