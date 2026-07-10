@@ -26,6 +26,7 @@
 - [QPRO never sets member_group_ids](feedback_qpro_no_member_groups.md) — member_group_ids stays [] on all QPRO BOs.
 - [QPRO PUT wipes promotion_currency](project_qpro_put_currency_wipe.md) — Never re-send promotion_currency. Archive leaves code reserved — bump suffix.
 - [QPRO promo_type/sub_type to Bonus Type label](project_qpro_promo_type_subtype_map.md) — (2,1)=Dep-Reload, (2,2)=Dep-Welcome, (3,1)=FC, (4,1)=FS-Welcome, (4,2)=FS-Reload.
+- [QPRO4-17 have no SG region](feedback_qpro5plus_no_sg_region.md) — missing SGD currency there is confirmed expected, not a bug; reconfirmed 2026-07-10 across 12 brands in one batch.
 
 ## QP2 Rules & Dialogs
 - [QP2 FS GOOSS = vs20olympgold](feedback_qp2_fs_gooss_vs20olympgold.md) — Gates of Olympus Super Scatter resolves to vs20olympgold on QP2.

@@ -83,10 +83,9 @@ Verify presence and basic shape only:
   * Deposit → `min_deposit`, `bonus_rate_pct`, `to_multiplier`, `max_bonus`
   * Free Credit → `free_credit_amount`, `to_multiplier`
   * Free Spin → `spin_count`, `value_per_spin`, `to_multiplier`; FS provider present or resolvable by the namer (absence is NOTE, not RETURN — the canary's game-code resolver can infer it; emit NOTE so it is visible downstream)
-* **WS1 Referral Program — FS limits do NOT apply.** Before checking any FS platform limit, inspect `promo_code`: strip any leading `FT_`, then check if the result starts with `REFEREE_` or `REFERRER_`. If YES → emit NOTE (not RETURN) for any spin_count or value_per_spin value, regardless of how far outside platform norms they are. Operator-confirmed override. Do not treat as a violation.
-* FS hard platform limits — apply ONLY when the promo_code check above is NO (i.e. not a referral code):
-  * `parsed.spin_count` must be ≤ 88 — RETURN if violated (save will fail on IGMP)
-  * `parsed.value_per_spin` must be ≥ 0.50 — RETURN if violated (save will fail on IGMP)
+* **FS spin-count ceiling applies to REL_/RET_ codes only.** Per `project_fs_general_rules` (memory, set 2026-06-18), the 88-spin ceiling is a REL_/RET_-only standard and explicitly does NOT apply to WELC_ (welcome/acquisition) codes. Before checking, inspect `promo_code`: strip any leading `FT_`, then check the objective token. If the code contains `_WELC_` (or otherwise reads as a welcome/acquisition code) → the spin-count ceiling does not apply, do not flag regardless of value. If the code contains `_REL_` or `_RET_` → apply the ceiling below. WS1 Referral Program codes (`REFEREE_`/`REFERRER_` after stripping `FT_`) are also exempt regardless of objective — operator-confirmed override.
+  * On REL_/RET_ codes only: `parsed.spin_count` should be ≤ 88 — this is a documented standard, not a hard API/technical constraint. If violated, emit **NOTE** (not RETURN) — flag it for visibility in the summary table, but do not gate the pipeline on operator sign-off. Per `follow_sheet_stop_asking_floors` (memory): the operator knows when they're intentionally overriding a documented floor; only RETURN for a value that would make the save physically impossible (currency mismatch, missing required field, or an actual BO API 422).
+* **No hard floor on `value_per_spin`.** Removed 2026-07-09 — inconsistent/confusing in practice. Do not flag any value_per_spin value.
 * `promotion_name_en` is set
 * Per-locale names exist for ZH/ID/TH locales when those regions are listed
 * `requestor` is set
@@ -162,7 +161,9 @@ These are intentional and well-understood:
 * `tier_constraint` absent on QPRO requests — only applies to QP2.
 * `instructions` block empty or absent — most requests don't have special instructions.
 * Empty `code_prefixes` — fine.
-* **`spin_count > 88` or `value_per_spin < 0.50` on referral codes** — strip leading `FT_` from promo_code, then if it starts with `REFEREE_` or `REFERRER_`, these are NOT violations. The WS1 referral program uses operator-confirmed non-standard FS parameters. Emit NOTE, not RETURN. Examples: `REFEREE_NODEP_200FS_GOO`, `FT_REFERRER_NODEP_88FS_GOO`.
+* **`spin_count > 88` on WELC_ codes** — not a violation. The 88-spin ceiling only applies to REL_/RET_ codes (see Responsibilities). Examples: `ACQ_TSM_WELC_208FS_FBGW_8X` is fine at 208 spins.
+* **`spin_count > 88` on referral codes** — strip leading `FT_` from promo_code, then if it starts with `REFEREE_` or `REFERRER_`, these are NOT violations regardless of objective. The WS1 referral program uses operator-confirmed non-standard FS parameters. Emit NOTE, not RETURN. Examples: `REFEREE_NODEP_200FS_GOO`, `FT_REFERRER_NODEP_88FS_GOO`.
+* **`value_per_spin` of any value** — no hard floor exists (removed 2026-07-09). Never flag.
 
 ---
 

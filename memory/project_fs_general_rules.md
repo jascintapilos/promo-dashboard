@@ -12,7 +12,7 @@ metadata:
 General standard for ALL REL_/RET_ Free Spin codes across all brands. Does NOT apply to WELC_ (welcome/acquisition) codes which follow separate logic.
 
 - Spin count: **≤ 88 spins max** (no more 100–288 spin codes for regular rotation)
-- Spin value: **≥ 0.50/spin** (raise from current 0.20–0.40 floor)
+- Spin value: ~~≥ 0.50/spin~~ — **floor removed 2026-07-09** (operator decision; caused inconsistent QC-engine enforcement). No hard minimum on value_per_spin.
 - Min deposit: **≥ 100 base / ≥ 200 booster** (raise from current 30–88 floor)
 - TO: **10–15x** (raise from current 3–8x dominant range)
 - Max withdrawal: **= total spin value** (hard anti-hunting ceiling)

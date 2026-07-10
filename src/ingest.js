@@ -431,9 +431,12 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
     'SD': 'Starlight Dusk',
     'SP': 'Starlight Princess',
   };
+  // Game-name class allows ":" (Playtech titles like "Fire Blaze: Green
+  // Wizard"); a "(" terminates the name so provider suffixes like
+  // "(Playtech)" stay out of it.
   const gameMatch =
-       text.match(/Free\s+Spins?\s*[-—–]\s*([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s+(?:Min|TO|min|to)|\s*$)/i)
-    || text.match(/Game\s*[:=]\s*([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s+(?:Same|Just|Min|TO|min|to)|\s*$)/i)
+       text.match(/Free\s+Spins?\s*[-—–]\s*([A-Za-z][A-Za-z0-9 ':&-]+?)(?:[,.]|\s*\(|\s+(?:Min|TO|min|to)|\s*$)/i)
+    || text.match(/Game\s*[:=]\s*([A-Za-z][A-Za-z0-9 ':&-]+?)(?:[,.]|\s*\(|\s+(?:Same|Just|Min|TO|min|to)|\s*$)/i)
     || text.match(/Others?\s*:\s+([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s*$)/i)
     || text.match(/(?:WS\d|QP2[A-D]|QPRO\d+)\s*:\s+(?:[A-Z][A-Z0-9]+\s+)?([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s*$)/i);
   if (gameMatch) {
