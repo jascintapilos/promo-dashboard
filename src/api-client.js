@@ -569,6 +569,49 @@ export async function getPopupDetail(site, popupId) {
   return rows.find((p) => p.id === popupId) ?? null;
 }
 
+// Update an existing dialog popup in place.
+// `popup` is the full GET row (from getPopupDetail / popups listing).
+// `contentsOverrides` is a plain object keyed by locale_id where each value
+// is applied on top of the existing content entry — so callers only pass the
+// fields that need changing (e.g. { title: "Fire Blaze - 168FS" }).
+// `topOverrides` lets callers change top-level fields (e.g. { label: "..." }).
+export async function updateDialogPopup(site, popup, { topOverrides = {}, contentsOverrides = {} } = {}) {
+  const contents = {};
+  for (const c of (popup.contents || [])) {
+    const lid = c.locale_id;
+    const ovr = contentsOverrides[lid] || {};
+    contents[String(lid)] = {
+      locale_id:         lid,
+      content:           c.content,
+      title:             c.title,
+      desktop_link:      c.desktop_link  ?? null,
+      mobile_link:       c.mobile_link   ?? null,
+      media_type:        c.media_type    ?? null,
+      cta_button_type:   c.cta_button_type,
+      cta_button_text_1: c.cta_button_text_1,
+      cta_button_link_1: c.cta_button_link_1,
+      cta_button_text_2: c.cta_button_text_2,
+      cta_button_link_2: c.cta_button_link_2,
+      ...ovr,
+    };
+  }
+  const iso2bo = (s) => String(s || '').slice(0, 19).replace('T', ' ');
+  const body = {
+    platform:               popup.platform,
+    start_date:             iso2bo(popup.start_date),
+    session:                popup.session,
+    position:               popup.position,
+    status:                 popup.status,
+    location:               popup.location,
+    affiliates_visibility:  popup.affiliates_visibility,
+    always_pop:             popup.always_pop,
+    label:                  popup.label,
+    contents,
+    ...topOverrides,
+  };
+  return authedFetch(site, `/api/bo/popups/${popup.id}`, { method: 'PUT', body });
+}
+
 // ── Promo Content + Banner (Section 3.3 + 14.2) ─────────────────────────
 // Endpoints confirmed live on QPRO4 (2026-05-18). Body shapes are inferred
 // from the form-control map captured at captures/qpro-3-3-form-schema.md

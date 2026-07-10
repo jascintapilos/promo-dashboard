@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// One-off fix: update promotionname records on QPRO BO for handles where
+// Fix promotionname + dialog popup label/title on QPRO BO for handles where
 // game_by_brand differs from the generic (QP2/WS) game in the promo name.
 //
 // Usage:
@@ -7,17 +7,22 @@
 //
 // What it does (per handle × QPRO brand):
 //   1. Load request → promo_code + game_by_brand[brand]
-//   2. Find promo on BO by code → promotionId
-//   3. GET promotionname records for that promoId
-//   4. Compute correct name via replaceGame logic (same as mapper)
-//   5. PUT each name record that needs updating
+//   2. Find promo on BO by code → promotionId + popup_id
+//   3. Fix promotionname records (promotion_name field)
+//   4. Fix dialog popup label (top-level) + contents[].title (per locale)
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
-import { getSite }                              from '../src/sites.js';
-import { BRAND_TO_SITE }                        from '../src/ingest.js';
-import { authedFetch, findPromotionByCode, updatePromotionName } from '../src/api-client.js';
+import { getSite }          from '../src/sites.js';
+import { BRAND_TO_SITE }    from '../src/ingest.js';
+import {
+  authedFetch,
+  findPromotionByCode,
+  updatePromotionName,
+  getPopupDetail,
+  updateDialogPopup,
+} from '../src/api-client.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -93,37 +98,25 @@ for (const handle of handles) {
   for (const [siteId, brandsOnSite] of bySite) {
     const site = getSite(siteId);
 
-    // Find promo by code (one per BO site; all brands on the same site share
-    // the same promotionId for a given code).
-    let promotionId;
+    // Find promo by code via the LISTING endpoint (detail GET lacks dialog_popup_list).
+    let promotionId, popupId;
     try {
-      const existing = await findPromotionByCode(site, promo_code);
-      if (!existing) {
-        console.log(`  [${siteId}] Code "${promo_code}" not found — not saved? skip.`);
+      const listResp = await authedFetch(site, `/api/bo/promotion?code=${encodeURIComponent(promo_code)}&perPage=5`);
+      const listRow  = (listResp?.data?.rows || []).find((r) => r.code === promo_code);
+      if (!listRow) {
+        console.log(`  [${siteId}] Code "${promo_code}" not found — skip.`);
         continue;
       }
-      promotionId = existing.id;
-      console.log(`  [${siteId}] Found promo id=${promotionId}`);
+      promotionId = listRow.id;
+      popupId = listRow.dialog_popup_list?.[0]?.popup_id ?? null;
+      console.log(`  [${siteId}] promo id=${promotionId}  popup id=${popupId ?? '(none)'}`);
     } catch (e) {
-      console.error(`  [${siteId}] ✗ findPromotionByCode: ${e.message}`);
+      console.error(`  [${siteId}] ✗ promotion lookup: ${e.message}`);
       totalErrors++;
       continue;
     }
 
-    // GET existing promotionname records.
-    let nameRows;
-    try {
-      const resp = await authedFetch(site, `/api/bo/promotionname?promotion_id=${promotionId}`);
-      nameRows = resp?.data?.rows || [];
-      console.log(`  [${siteId}]   ${nameRows.length} name record(s)`);
-    } catch (e) {
-      console.error(`  [${siteId}] ✗ GET promotionname: ${e.message}`);
-      totalErrors++;
-      continue;
-    }
-
-    // Use the representative brand's game to compute the correct name.
-    // All QPRO brands on the same BO site have the same game for these handles.
+    // Compute the correct short game name for this site's representative brand.
     const repBrand = brandsOnSite[0];
     const brandGame = game_by_brand[repBrand];
     if (!brandGame) {
@@ -133,29 +126,74 @@ for (const handle of handles) {
     const shortBrandGame = deriveShortGame(brandGame);
     console.log(`  [${siteId}]   game "${brandGame}" → short "${shortBrandGame}"`);
 
-    for (const row of nameRows) {
-      const currentName = row.promotion_name || '';
-      const correctedName = replaceGameInName(currentName, shortBrandGame);
-      if (correctedName === currentName) {
-        console.log(`  [${siteId}]   locale=${row.settings_locale_id} currency=${row.currency_id}: already correct ✓`);
-        totalSkipped++;
-        continue;
-      }
-      console.log(`  [${siteId}]   locale=${row.settings_locale_id} currency=${row.currency_id}: "${currentName}" → "${correctedName}"`);
-      try {
+    // ── 1. Fix promotionname records ──────────────────────────────────
+    try {
+      const resp = await authedFetch(site, `/api/bo/promotionname?promotion_id=${promotionId}`);
+      const nameRows = resp?.data?.rows || [];
+      console.log(`  [${siteId}]   promotionname: ${nameRows.length} record(s)`);
+      for (const row of nameRows) {
+        const cur = row.promotion_name || '';
+        const fix = replaceGameInName(cur, shortBrandGame);
+        if (fix === cur) { totalSkipped++; console.log(`    locale=${row.settings_locale_id}: already correct ✓`); continue; }
+        console.log(`    locale=${row.settings_locale_id}: "${cur}" → "${fix}"`);
         await updatePromotionName(site, row.promotion_name_id, {
           promotion_id:       promotionId,
           currency_id:        row.currency_id,
           settings_locale_id: row.settings_locale_id,
-          promotion_name:     correctedName,
-          rewards_name:       row.rewards_name || correctedName,
+          promotion_name:     fix,
+          rewards_name:       row.rewards_name || fix,
         });
-        console.log('    ✓ Updated');
+        console.log('      ✓ updated');
         totalUpdated++;
-      } catch (e) {
-        console.error(`    ✗ PUT failed: ${e.message}`);
-        totalErrors++;
       }
+    } catch (e) {
+      console.error(`  [${siteId}] ✗ promotionname fix: ${e.message}`);
+      totalErrors++;
+    }
+
+    // ── 2. Fix dialog popup label + contents[].title ──────────────────
+    if (!popupId) {
+      console.log(`  [${siteId}]   dialog: no popup linked — skip`);
+      continue;
+    }
+    try {
+      const popup = await getPopupDetail(site, popupId);
+      if (!popup) {
+        console.log(`  [${siteId}]   dialog: popup ${popupId} not found in listing — skip`);
+        continue;
+      }
+      console.log(`  [${siteId}]   dialog popup ${popupId}: label="${popup.label}" contents=${popup.contents?.length ?? 0}`);
+
+      const correctedLabel = replaceGameInName(popup.label || '', shortBrandGame);
+      const contentsOverrides = {};
+      let dialogNeedsUpdate = correctedLabel !== (popup.label || '');
+
+      for (const c of (popup.contents || [])) {
+        const corrTitle = replaceGameInName(c.title || '', shortBrandGame);
+        if (corrTitle !== (c.title || '')) {
+          contentsOverrides[c.locale_id] = { title: corrTitle };
+          dialogNeedsUpdate = true;
+          console.log(`    locale_id=${c.locale_id}: title "${c.title}" → "${corrTitle}"`);
+        } else {
+          console.log(`    locale_id=${c.locale_id}: title already correct ✓`);
+        }
+      }
+
+      if (!dialogNeedsUpdate) {
+        console.log(`  [${siteId}]   dialog: already correct ✓`);
+        totalSkipped++;
+        continue;
+      }
+
+      await updateDialogPopup(site, popup, {
+        topOverrides:     { label: correctedLabel },
+        contentsOverrides,
+      });
+      console.log(`  [${siteId}]   dialog: ✓ updated (label + ${Object.keys(contentsOverrides).length} title(s))`);
+      totalUpdated++;
+    } catch (e) {
+      console.error(`  [${siteId}] ✗ dialog fix: ${e.message}`);
+      totalErrors++;
     }
   }
 }
