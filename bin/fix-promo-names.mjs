@@ -132,16 +132,23 @@ for (const handle of handles) {
       const nameRows = resp?.data?.rows || [];
       console.log(`  [${siteId}]   promotionname: ${nameRows.length} record(s)`);
       for (const row of nameRows) {
-        const cur = row.promotion_name || '';
-        const fix = replaceGameInName(cur, shortBrandGame);
-        if (fix === cur) { totalSkipped++; console.log(`    locale=${row.settings_locale_id}: already correct ✓`); continue; }
-        console.log(`    locale=${row.settings_locale_id}: "${cur}" → "${fix}"`);
+        const cur        = row.promotion_name || '';
+        const curRewards = row.rewards_name   || '';
+        const fix        = replaceGameInName(cur, shortBrandGame);
+        const fixRewards = replaceGameInName(curRewards || fix, shortBrandGame);
+        if (fix === cur && fixRewards === curRewards) {
+          totalSkipped++;
+          console.log(`    locale=${row.settings_locale_id}: already correct ✓`);
+          continue;
+        }
+        if (fix !== cur)               console.log(`    locale=${row.settings_locale_id}: name    "${cur}" → "${fix}"`);
+        if (fixRewards !== curRewards) console.log(`    locale=${row.settings_locale_id}: rewards "${curRewards}" → "${fixRewards}"`);
         await updatePromotionName(site, row.promotion_name_id, {
           promotion_id:       promotionId,
           currency_id:        row.currency_id,
           settings_locale_id: row.settings_locale_id,
           promotion_name:     fix,
-          rewards_name:       row.rewards_name || fix,
+          rewards_name:       fixRewards,
         });
         console.log('      ✓ updated');
         totalUpdated++;
