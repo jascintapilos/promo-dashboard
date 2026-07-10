@@ -58,7 +58,16 @@ export function resolveLinesPerSpin(gameCode) {
     if (Number.isFinite(n) && n > 0 && n < 500) return n;
   }
 
-  // 4. Unknown — do not guess
+  // 4. Playtech convention (operator rule 2026-07-10): BO record uses
+  // coins=0, lines=0, amount_per_line=the direct bet-per-spin amount — no
+  // line multiplier, so lines_per_spin is always 1. Confirmed against all
+  // 12 installed Playtech FS games on this BO catalog, all sharing the
+  // `gpas_..._pop` code shape (e.g. "gpas_gwizard_pop" = Fire Blaze: Green
+  // Wizard). Extend this pattern if a differently-coded Playtech title
+  // shows up.
+  if (/^gpas_.*_pop$/.test(gameCode)) return 1;
+
+  // 5. Unknown — do not guess
   return null;
 }
 
