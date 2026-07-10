@@ -13,13 +13,17 @@
 // the Angular SPA uses).
 //
 // Usage:
-//   node bin/canary-api-qp2.js <handle> [--commit] [--brand=QP2A] [--site=<id>] [--parallel-qc]
+//   node bin/canary-api-qp2.js <handle> [--commit] [--brand=QP2A] [--site=<id>] [--parallel-qc] [--code=<override>]
 //
-//   --commit       actually hit the BO. Without it, prints the plan + would-be bodies.
-//   --brand=<B>    pick which QP2 brand to target when the request has multiple.
-//   --site=<id>    override the BO site (defaults to brand → site map).
-//   --parallel-qc  fire post-save QC Level 1/2/3 fetches concurrently (~3-5s → ~1-2s).
-//                  Output format identical to sequential mode; opt-in only.
+//   --commit          actually hit the BO. Without it, prints the plan + would-be bodies.
+//   --brand=<B>       pick which QP2 brand to target when the request has multiple.
+//   --site=<id>       override the BO site (defaults to brand → site map).
+//   --parallel-qc     fire post-save QC Level 1/2/3 fetches concurrently (~3-5s → ~1-2s).
+//                     Output format identical to sequential mode; opt-in only.
+//   --code=<override> use a different promo code than col W in the request file.
+//                     Use when re-creating a QP2 promo with a new code while other
+//                     platforms keep the original (e.g. drop _TO suffix after a
+//                     partial-create-on-422 incident). Does NOT update the sheet.
 //
 // Currently supports: QP2A FC. Deposit + Free Spin throw on body-build.
 // QP2B/C/D need their merchant_id captured before they can be enabled.
@@ -67,6 +71,7 @@ const commit = flags.commit === true;
 const brandOverride = flags.brand;
 const siteOverride = flags.site;
 const parallelQc = flags['parallel-qc'] === true;
+const codeOverride = flags.code || null;
 
 // ── Load + resolve ────────────────────────────────────────────────────
 const { byHandle, byId, byCode } = await loadAllRequests();
@@ -82,6 +87,15 @@ const request = byHandle.get(handle);
 if (!request) { console.error(`handle "${handle}" not found`); return bail(2); }
 const bo = await loadBoCodeIndex();
 const resolved = await resolveDuplicates(request, byCode, { boIndex: bo.byCode, boFetcher: fetchBoCodeAsRecord });
+
+// Apply code override (--code=<new_code>) — used when re-creating a QP2
+// promo with a different code than the one in col W (e.g. drop _TO suffix
+// after a partial-create-on-422 incident). Only affects this QP2 run;
+// does NOT modify the sheet or the request file.
+if (codeOverride) {
+  console.log(`⚠ CODE OVERRIDE: using "${codeOverride}" instead of sheet code "${resolved.promo_code}"`);
+  resolved.promo_code = codeOverride;
+}
 
 // ── Brand whitelist (QP2 only — QPRO uses canary-api.js) ──────────────
 const SAFE_BRANDS = new Set(['QP2A', 'QP2B', 'QP2C', 'QP2D']);
@@ -114,6 +128,30 @@ try {
 } catch (e) {
   console.error(`✖ build failed: ${e.message}`);
   return bail(7);
+}
+
+// ── Guard: FS plan must have a resolved game provider + game code ─────
+// A Free Spin promotion without free_spin_game_provider_id=<non-zero> and
+// free_spin_game_code is invalid — the BO will either reject it (422) or
+// create a gameless shell that can't award spins. Abort now rather than
+// posting a broken record. Common causes: the provider isn't in
+// QP2_FS_PROVIDER_ID_BY_PREFIX, or the game resolver returned no match.
+const isFsBonusType = (resolved.bonus_type || '').toLowerCase().includes('free spin');
+if (isFsBonusType) {
+  const planProviderId = plan.promotion.free_spin_game_provider_id;
+  const planGameCode   = plan.promotion.free_spin_game_code;
+  if (!planProviderId) {
+    console.error(`✖ ABORTED: Free Spin plan has unresolved game provider (free_spin_game_provider_id=${planProviderId}).`);
+    console.error(`  game_provider in sheet: "${resolved.parsed?.game_provider}"`);
+    console.error(`  Fix: add this provider to QP2_FS_PROVIDER_ID_BY_PREFIX in src/api-mapper-qp2.js.`);
+    return bail(4);
+  }
+  if (!planGameCode) {
+    console.error(`✖ ABORTED: Free Spin plan has no game code resolved (free_spin_game_code is empty).`);
+    console.error(`  game in sheet: "${resolved.parsed?.game}"`);
+    console.error(`  Fix: verify the game name matches an entry in the FS game resolver.`);
+    return bail(4);
+  }
 }
 
 // ── Preview ───────────────────────────────────────────────────────────
@@ -158,15 +196,37 @@ try {
   if (existing) {
     // Fetch the row's current merchant_ids to decide between extend vs true-skip.
     let currentMerchantObjs = [];
+    let existingDetailRow = null;
     try {
       const detail = await authedFetch(site, `/api/bo/promotion/${existing.id}`);
-      currentMerchantObjs = detail.data.rows.merchant_ids || [];
+      existingDetailRow = detail.data.rows;
+      currentMerchantObjs = existingDetailRow.merchant_ids || [];
     } catch (_) { /* fall through to skip if detail unavailable */ }
     const currentIds = currentMerchantObjs.map((m) => (typeof m === 'object' ? m.id : m));
     if (currentIds.includes(myMerchantId)) {
       console.error(`✖ IDEMPOTENCY: code "${resolved.promo_code}" already exists on ${siteId} with ${targetBrand} attached (id=${existing.id}).`);
       console.error('  Truly idempotent — skipping.');
       return bail(5);
+    }
+    // Guard: refuse to extend a gameless FS shell.
+    // When a QP2A POST returns 422 (e.g. BO rejects the provider), the BO can
+    // still create a partial promotion record with no game configured. Extending
+    // that shell (as QP2B/C/D would do) silently propagates the defect to all
+    // merchants. Abort here and require the operator to deactivate the shell
+    // and re-run with a clean code (P053 incident 2026-07-10).
+    if (isFsBonusType) {
+      const existingProviderId = existingDetailRow?.free_spin_game_provider_id;
+      const existingGameCode   = existingDetailRow?.free_spin_game_code;
+      if (!existingProviderId || !existingGameCode) {
+        console.error(`✖ ABORTED: Existing id=${existing.id} (code="${resolved.promo_code}") is a gameless Free Spin shell.`);
+        console.error(`  free_spin_game_provider_id=${existingProviderId}, free_spin_game_code="${existingGameCode}"`);
+        console.error(`  This record was likely created by a partial-create-on-422 BO bug:`);
+        console.error(`  the initial POST returned 422 but the BO created a partial record anyway.`);
+        console.error(`  Action required:`);
+        console.error(`    1. Deactivate id=${existing.id} on ${siteId} via BO admin (status → Inactive).`);
+        console.error(`    2. Run with a new promo code (drop _TO suffix or bump _V# to make it unique).`);
+        return bail(4);
+      }
     }
     if (commit && myMerchantId) {
       console.log(`↺ EXTEND: code "${resolved.promo_code}" exists on ${siteId} (id=${existing.id}) — adding ${targetBrand} (merchant_id=${myMerchantId}) to its merchant_ids.`);
