@@ -40,8 +40,22 @@ const handle = resolveHandle(userInput, { byHandle, byId });
 if (!handle) { console.error(`request "${userInput}" not found`); process.exit(2); }
 const request = byHandle.get(handle);
 const resolved = await resolveDuplicates(request, byCode, {});
-const code = resolved.promo_code;
-const titleEn = resolved.promotion_name_en;
+
+// When promo_code is a dual-format "QPRO, WS1, WS2: X\nQP2: Y", extract the QP2 code.
+// The dual-format is written to col W when QPRO/WS and QP2 have different codes.
+function extractQp2Code(raw) {
+  const m = String(raw || '').match(/^QP2:\s*(.+)$/m);
+  return m ? m[1].trim() : String(raw || '').trim();
+}
+const code = extractQp2Code(resolved.promo_code);
+// Stamp the extracted code so buildApiPlan / buildUpdate send the right code to BO.
+if (code !== resolved.promo_code) {
+  resolved.promo_code = code;
+  console.log(`(dual-format promo_code → using QP2 code: ${code})`);
+}
+// Strip WS1/WS2 dual-name suffix from promotion_name_en for heuristic matching.
+// The popup title is the single-line generic name; strip "\nWS1/WS2: ..." suffix.
+const titleEn = String(resolved.promotion_name_en || '').split('\n')[0].trim();
 
 const site = getSite('ibc22');
 
@@ -60,8 +74,18 @@ const registry = getPopups(code); // { siteId: popupId }
 const usingRegistry = Object.keys(registry).length > 0;
 
 const promoCreated = new Date(promo.created_at).getTime();
-const pr = await authedFetch(site, `/api/bo/popups?per_page=100&page=1`);
-const allRows = pr?.data?.rows || [];
+// Fetch enough pages to cover all popup IDs in the registry + recency window.
+// perPage=500 descending covers the ~500 most recent IDs; if registry IDs
+// fall outside that range, a second page is fetched.
+const pr1 = await authedFetch(site, `/api/bo/popups?perPage=500&sort_by=id&sort_order=desc&page=1`);
+const allRows = [...(pr1?.data?.rows || [])];
+// If registry IDs are older than the last 500, fetch page 2 as well.
+const regIds = Object.values(registry).map(Number);
+const minFetched = allRows.length ? Math.min(...allRows.map((p) => p.id)) : Infinity;
+if (regIds.length && Math.min(...regIds) < minFetched) {
+  const pr2 = await authedFetch(site, `/api/bo/popups?perPage=500&sort_by=id&sort_order=desc&page=2`);
+  allRows.push(...(pr2?.data?.rows || []));
+}
 const popupById = Object.fromEntries(allRows.map((p) => [p.id, p]));
 const titleOf = (p) => ((p.contents || []).find((c) => c.locale_id === 1) || (p.contents || [])[0])?.title;
 
