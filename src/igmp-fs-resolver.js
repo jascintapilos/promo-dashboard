@@ -84,6 +84,15 @@ export async function resolveGameId(siteId, gameHint, { providerId } = {}) {
   if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase() === hint);
   // Pass 3: Name contains hint
   if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(hint));
+  // Pass 4: strip a leading brand prefix (e.g. "MB8 Sugar Rush" → "Sugar Rush")
+  // so operator display names like "MB8 Sugar Rush" match catalog entry "Sugar Rush1".
+  if (!hit) {
+    const spaceIdx = hint.indexOf(' ');
+    if (spaceIdx > 0) {
+      const stripped = hint.slice(spaceIdx + 1);
+      hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(stripped));
+    }
+  }
 
   if (!hit) {
     const scope = providerId == null ? 'all providers' : `provider ${providerId}`;

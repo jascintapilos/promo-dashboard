@@ -101,7 +101,15 @@ await (async () => {
   // which is how P053's "Fire Blaze: Green Wizard" (Playtech-only) missed
   // its game entirely — mirrors src/igmp-tnc.js:172, which already read
   // parsed.game_provider correctly.
-  const fsProviderHint = rec.fs_provider || rec.parsed?.game_provider || null;
+  //
+  // Exception: when game_by_brand provides a per-brand game name (e.g. WS1
+  // gets "MB8 Sugar Rush" while QPRO gets "Fire Blaze: Green Wizard"),
+  // parsed.game_provider reflects the QPRO platform's provider ("Playtech")
+  // and is wrong for WS1/WS2 — those sites only support Pragmatic Play.
+  // Pass null so resolveFsCatalog does game-first search and derives the
+  // correct provider from whatever the site's BO catalog actually has.
+  const gameFromBrandMap = !!(rec.parsed?.game_by_brand?.WS1 || rec.parsed?.game_by_brand?.WS2);
+  const fsProviderHint = rec.fs_provider || (gameFromBrandMap ? null : rec.parsed?.game_provider) || null;
   const needsCatalogResolve = isFreeSpin && (!rec.fs_provider_id || !rec.fs_game_id) && fsGameHint;
   if (needsCatalogResolve) {
     // Try to read a stored cookie for this site so dry-run can still resolve.
