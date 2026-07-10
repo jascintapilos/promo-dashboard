@@ -949,6 +949,43 @@ export async function buildApiPlan(resolved, { brand, site } = {}) {
       };
     }
   }
+
+  // Auto-derive brand-specific game name in promo name when game_by_brand
+  // differs from the generic (QP2/WS) game embedded in promotion_name_en.
+  // Pattern: "Sugar Rush - 168FS" → replace game portion before " - NNfs"
+  // with the brand-specific short name (text before ":" e.g. "Fire Blaze").
+  // No-op when the brand game is the same family as the generic name
+  // (e.g. "Sugar Rush 1000" starts with "Sugar Rush" → no change for QP2).
+  {
+    const brandGameForName = resolved.parsed?.game_by_brand?.[brand];
+    if (brandGameForName) {
+      const shortBrandGame = brandGameForName.includes(':')
+        ? brandGameForName.split(':')[0].trim()
+        : brandGameForName;
+      const replaceGame = (name) => {
+        if (typeof name !== 'string' || !name) return name;
+        const m = name.match(/^(.+?)\s+-\s+(\d+FS.*)$/i);
+        if (!m) return name;
+        const currentGame = m[1].trim().toLowerCase();
+        const shortLower  = shortBrandGame.toLowerCase();
+        if (shortLower === currentGame
+            || shortLower.startsWith(currentGame)
+            || currentGame.startsWith(shortLower)) return name;
+        return `${shortBrandGame} - ${m[2]}`;
+      };
+      const newNameEn   = replaceGame(effectiveResolved.promotion_name_en);
+      const newNameZhId = replaceGame(effectiveResolved.promotion_name_zh_id);
+      if (newNameEn   !== effectiveResolved.promotion_name_en
+          || newNameZhId !== effectiveResolved.promotion_name_zh_id) {
+        effectiveResolved = {
+          ...effectiveResolved,
+          promotion_name_en:    newNameEn,
+          promotion_name_zh_id: newNameZhId,
+        };
+      }
+    }
+  }
+
   return {
     promotion: buildPromotionBody(effectiveResolved, gpIdsForBrand, catIdsForBrand, fsProviderIdForBrand, fsGameCodeForBrand, memberGroupIdsForBrand, blacklistTemplateIdForBrand),
     messageTemplate: await buildMessageTemplateBody(effectiveResolved, brand),

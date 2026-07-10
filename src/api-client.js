@@ -473,6 +473,14 @@ export async function addPromotionName(site, { promotion_id, currency_id, settin
   });
 }
 
+// Update an existing per-locale Promotion Name row by its id.
+export async function updatePromotionName(site, nameId, { promotion_id, currency_id, settings_locale_id, promotion_name, rewards_name }) {
+  return authedFetch(site, `/api/bo/promotionname/${nameId}`, {
+    method: 'PUT',
+    body: { promotion_id, currency_id, settings_locale_id, promotion_name, rewards_name },
+  });
+}
+
 // Create a Message Template (Section 6.6). `details` keys on settings_locale_id
 // (1=MY_EN, 3=MY_ZH, 6=SG_EN, 7=SG_ZH, 8=ID_EN, 9=ID_ID) and carries the
 // per-locale subject + message HTML.
