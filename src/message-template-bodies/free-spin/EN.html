@@ -21,12 +21,12 @@
   :brandname is left LITERAL.
 -->
 
-<p>Spin to win! Claim your <strong>{{spin_count}} Free Spins</strong> on <strong>{{game_name}}</strong> with just <strong>{{currency_symbol}} {{transfer_amount}}</strong> and chase those big wins!</p>
+{{#if_min_deposit}}<p>Spin to win! Claim your <strong>{{spin_count}} Free Spins</strong> on <strong>{{game_name}}</strong> with just <strong>{{currency_symbol}} {{transfer_amount}}</strong> and chase those big wins!</p>{{else}}<p>Spin to win! Claim your <strong>{{spin_count}} Free Spins</strong> on <strong>{{game_name}}</strong> for FREE — no deposit required!</p>{{/if}}
 
 <p><strong>How to Apply:</strong></p>
 <ol>
-  <li>Make a deposit and wait for it to be approved.</li>
-  <li>Once approved, head over to the <strong>Transfer</strong> page.</li>
+  {{#if_min_deposit}}<li>Make a deposit and wait for it to be approved.</li>
+  <li>Once approved, head over to the <strong>Transfer</strong> page.</li>{{else}}<li>Head over to the <strong>Transfer</strong> page.</li>{{/if}}
   <li>On the Transfer page, fill up and submit the form with the following details:
     <ul>
       <li><strong>From:</strong> MAIN WALLET</li>

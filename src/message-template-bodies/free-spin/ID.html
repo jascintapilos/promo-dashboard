@@ -5,12 +5,12 @@
   also kept in English.
 -->
 
-<p>Menangkan hadiah besar! Klaim <strong>{{spin_count}} Free Spin</strong> di <strong>{{game_name}}</strong> hanya dengan <strong>{{currency_symbol}} {{transfer_amount}}</strong> dan raih kemenangan besar!</p>
+{{#if_min_deposit}}<p>Menangkan hadiah besar! Klaim <strong>{{spin_count}} Free Spin</strong> di <strong>{{game_name}}</strong> hanya dengan <strong>{{currency_symbol}} {{transfer_amount}}</strong> dan raih kemenangan besar!</p>{{else}}<p>Menangkan hadiah besar! Klaim <strong>{{spin_count}} Free Spin</strong> di <strong>{{game_name}}</strong> GRATIS — tanpa deposit!</p>{{/if}}
 
 <p><strong>Cara Klaim:</strong></p>
 <ol>
-  <li>Lakukan deposit dan tunggu hingga disetujui.</li>
-  <li>Setelah disetujui, buka halaman <strong>Transfer</strong>.</li>
+  {{#if_min_deposit}}<li>Lakukan deposit dan tunggu hingga disetujui.</li>
+  <li>Setelah disetujui, buka halaman <strong>Transfer</strong>.</li>{{else}}<li>Buka halaman <strong>Transfer</strong>.</li>{{/if}}
   <li>Pada halaman Transfer, isi dan kirimkan formulir dengan detail berikut:
     <ul>
       <li><strong>Dari:</strong> MAIN WALLET</li>

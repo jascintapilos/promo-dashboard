@@ -474,7 +474,54 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
       brandGames[brand.toUpperCase()] = game;
     }
   }
+  // Line-by-line pass: handles complex brand prefixes not matched by brandGameRe —
+  // numeric ranges ("QPRO1-10,15-16:"), slash-combined ("QP2/WS2:"), and
+  // per-brand provider annotations ("(Pragmatic Play)" vs "(Playtech)").
+  // Runs after the simple-regex pass so basic matches are already covered;
+  // this supplements rather than replaces them.
+  function expandBrandSpec(spec) {
+    const out = [];
+    for (const slashPart of spec.split('/').map((s) => s.trim()).filter(Boolean)) {
+      const segs = slashPart.split(',').map((s) => s.trim()).filter(Boolean);
+      let basePfx = null;
+      for (const seg of segs) {
+        const full = seg.match(/^([A-Za-z]+)(\d+)-(\d+)$/);
+        if (full) { basePfx = full[1].toUpperCase(); for (let i = +full[2]; i <= +full[3]; i++) out.push(`${basePfx}${i}`); continue; }
+        const rel = basePfx && seg.match(/^(\d+)-(\d+)$/);
+        if (rel) { for (let i = +rel[1]; i <= +rel[2]; i++) out.push(`${basePfx}${i}`); continue; }
+        const relNum = basePfx && seg.match(/^(\d+)$/);
+        if (relNum) { out.push(`${basePfx}${seg}`); continue; }
+        if (/^QP2$/i.test(seg)) { out.push('QP2A', 'QP2B', 'QP2C', 'QP2D'); continue; }
+        const single = seg.match(/^([A-Za-z]+\d+)$/);
+        if (single) { basePfx = seg.replace(/\d+$/, '').toUpperCase(); out.push(seg.toUpperCase()); continue; }
+        out.push(seg.toUpperCase());
+      }
+    }
+    return out;
+  }
+  const gameProviderByBrand = {};
+  for (const line of raw.split('\n')) {
+    const m = line.trim().match(/^([A-Za-z0-9,\-\/]+)\s*:\s+(.+?)(?:\s+\(([^)]+)\))?\s*$/);
+    if (!m) continue;
+    const bSpec = m[1].trim();
+    if (!/^(WS|QP2|QPRO|Others?)/i.test(bSpec)) continue;
+    const gName = m[2].trim();
+    const pRaw = m[3]?.trim() || null;
+    const PA_INLINE = { playtech: 'Playtech', 'pragmatic play': 'Pragmatic Play', pragmatic: 'Pragmatic Play', pp: 'Pragmatic Play' };
+    const pNorm = pRaw ? (PA_INLINE[pRaw.toLowerCase().trim()] || pRaw) : null;
+    const expanded = /^Others?$/i.test(bSpec) ? ['Others'] : expandBrandSpec(bSpec);
+    for (const b of expanded) {
+      if (/^Others?$/i.test(b)) {
+        if (!parsed.game) parsed.game = gName;
+        if (pNorm && !parsed.game_provider) parsed.game_provider = pNorm;
+      } else {
+        if (!brandGames[b]) brandGames[b] = gName;
+        if (pNorm) gameProviderByBrand[b] = pNorm;
+      }
+    }
+  }
   if (Object.keys(brandGames).length > 0) parsed.game_by_brand = brandGames;
+  if (Object.keys(gameProviderByBrand).length > 0) parsed.game_provider_by_brand = gameProviderByBrand;
 
   // FS game provider — operators annotate the game name with its provider
   // in parens, e.g. "Fire Blaze: Green Wizard (Playtech)" or "Gates of
@@ -528,7 +575,7 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
       if (parsed.spin_count == null)     gaps.push('spin_count missing');
       if (parsed.value_per_spin == null && parsed.amount_per_line == null) gaps.push('value_per_spin or amount_per_line missing');
       if (parsed.to_multiplier == null)  gaps.push('to_multiplier missing');
-      if (parsed.game == null)           gaps.push('game name missing');
+      if (parsed.game == null && (!parsed.game_by_brand || Object.keys(parsed.game_by_brand).length === 0)) gaps.push('game name missing');
     } else if (bt.includes('free credit')) {
       if (parsed.free_credit_amount == null) gaps.push('free_credit_amount missing');
       if (parsed.to_multiplier == null)      gaps.push('to_multiplier missing');

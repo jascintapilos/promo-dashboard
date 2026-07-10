@@ -176,7 +176,7 @@ export function validatePlan(resolved) {
     if (r.spin_count == null)     gaps.push('spin_count');
     if (r.value_per_spin == null) gaps.push('value_per_spin');
     if (r.to_multiplier == null)  gaps.push('to_multiplier');
-    if (r.game == null)           gaps.push('game');
+    if (r.game == null && (!r.game_by_brand || Object.keys(r.game_by_brand).length === 0)) gaps.push('game');
   } else if (bt.includes('free credit')) {
     if (r.free_credit_amount == null) gaps.push('free_credit_amount');
     if (r.to_multiplier == null)      gaps.push('to_multiplier');

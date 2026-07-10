@@ -689,7 +689,9 @@ export async function renderDialogBody({ bonusType, locale, resolved }) {
     ? (r.promotion_name_zh_id || r.promotion_name_zh || promotionNameEn)
     : promotionNameEn;
 
-  const minDepNum = Number(r2.min_deposit || 0);
+  const ccyOverride = r.per_currency_overrides?.[currency] || {};
+  const rawMinDep = Number(ccyOverride.min_deposit || r2.min_deposit || 0);
+  const minDepNum = rawMinDep > 0 ? Math.max(rawMinDep, CURRENCY_DEPOSIT_FLOOR[currency] ?? 0) : 0;
   const vars = {
     currency_symbol:       getCurrencySymbol(currency),
     min_deposit:           minDepNum,

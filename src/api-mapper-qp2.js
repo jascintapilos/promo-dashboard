@@ -970,10 +970,10 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   let fsGameCodeForBrand = null;
   let effectiveResolved = resolved;
   if (site && isFs) {
-    const fsLabel = resolved.parsed?.game_provider || QP2_DEFAULT_FS_PROVIDER_LABEL;
+    const fsLabel = resolved.parsed?.game_provider_by_brand?.[brand] || resolved.parsed?.game_provider || QP2_DEFAULT_FS_PROVIDER_LABEL;
     const fsProviderPrefix = fsProviderPrefixFromLabel(fsLabel);
     if (fsProviderPrefix) {
-      fsGameCodeForBrand = await resolveFsGameCodeQp2(site, fsProviderPrefix, resolved.parsed?.game);
+      fsGameCodeForBrand = await resolveFsGameCodeQp2(site, fsProviderPrefix, resolved.parsed?.game_by_brand?.[brand] || resolved.parsed?.game);
     }
     const fsProviderId = fsProviderIdFromLabel(fsLabel);
     if (fsProviderId) {
@@ -983,6 +983,47 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
       effectiveResolved = filterResolvedToSupportedCurrenciesQp2(resolved, supportedLabels);
     }
   }
+  // Per-brand parsed overrides: stamp game + game_provider from game_by_brand /
+  // game_provider_by_brand onto effectiveResolved.parsed so every body builder
+  // sees the correct values for this brand instead of the global fallback
+  // (which defaults to the first provider annotation found in column M).
+  {
+    const brandGame     = resolved.parsed?.game_by_brand?.[brand];
+    const brandProvider = resolved.parsed?.game_provider_by_brand?.[brand];
+    if (brandGame || brandProvider) {
+      effectiveResolved = {
+        ...effectiveResolved,
+        parsed: {
+          ...effectiveResolved.parsed,
+          ...(brandGame     ? { game: brandGame }              : {}),
+          ...(brandProvider ? { game_provider: brandProvider } : {}),
+        },
+      };
+    }
+  }
+  // Strip WS1/WS2 dual-name suffix from EN/ZH/ID promotion names for non-WS
+  // brands. The sheet uses "Generic\nWS1/WS2: MB8 Name" format in col X/Y
+  // when WS1 is in the request. Non-WS BO fields must show only the first line.
+  if (!/^WS/i.test(brand || '')) {
+    const stripDual = (s) => (typeof s === 'string' && s.includes('\n') ? s.split('\n')[0].trim() : s);
+    const cleanEn   = stripDual(effectiveResolved.promotion_name_en);
+    const cleanZh   = stripDual(effectiveResolved.promotion_name_zh);
+    const cleanId   = stripDual(effectiveResolved.promotion_name_id);
+    const cleanZhId = stripDual(effectiveResolved.promotion_name_zh_id);
+    if (cleanEn   !== effectiveResolved.promotion_name_en
+        || cleanZh   !== effectiveResolved.promotion_name_zh
+        || cleanId   !== effectiveResolved.promotion_name_id
+        || cleanZhId !== effectiveResolved.promotion_name_zh_id) {
+      effectiveResolved = {
+        ...effectiveResolved,
+        promotion_name_en:    cleanEn,
+        promotion_name_zh:    cleanZh,
+        promotion_name_id:    cleanId,
+        promotion_name_zh_id: cleanZhId,
+      };
+    }
+  }
+
   // member_group_ids must span every merchant attached to the promo. Default
   // is just the current brand's merchant. Caller passes `merchantIds` (array
   // of merchant_ids) when extending a multi-merchant promo. A tier_constraint

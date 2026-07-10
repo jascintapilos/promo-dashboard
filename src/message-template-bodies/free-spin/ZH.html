@@ -3,12 +3,12 @@
   Authored from "ZH - Inbox T&C (QPRO/QPLY)" (Drive 1E8483fBEI2UT…), Section 3.
 -->
 
-<p>赢取大奖！仅需 <strong>{{currency_symbol}} {{transfer_amount}}</strong>，即可申领 <strong>{{spin_count}} 次免费旋转</strong>于 <strong>{{game_name}}</strong>，追逐丰厚奖励！</p>
+{{#if_min_deposit}}<p>赢取大奖！仅需 <strong>{{currency_symbol}} {{transfer_amount}}</strong>，即可申领 <strong>{{spin_count}} 次免费旋转</strong>于 <strong>{{game_name}}</strong>，追逐丰厚奖励！</p>{{else}}<p>赢取大奖！免费申领 <strong>{{spin_count}} 次免费旋转</strong>于 <strong>{{game_name}}</strong>，无需存款，追逐丰厚奖励！</p>{{/if}}
 
 <p><strong>申请方法：</strong></p>
 <ol>
-  <li>完成存款并等待审核通过。</li>
-  <li>审核通过后，前往 <strong>转账</strong> 页面。</li>
+  {{#if_min_deposit}}<li>完成存款并等待审核通过。</li>
+  <li>审核通过后，前往 <strong>转账</strong> 页面。</li>{{else}}<li>前往 <strong>转账</strong> 页面。</li>{{/if}}
   <li>在转账页面，填写并提交以下信息：
     <ul>
       <li><strong>从：</strong>主钱包</li>
