@@ -239,6 +239,8 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 - WS1/WS2 auto-prepended `FT_` — intentional.
 - ZH name with brand prefix like "BP9 ..." — correct.
 - Empty `instructions` block — fine.
+- **"Refresh button" clause on QPRO/QP2 — never flag as FAIL.** It is the native 8-clause template's own clause 7 on QPRO/QP2 (confirmed present verbatim on every passing QPRO/QP2 bundle checked to date). It is ONLY a leak concern when it appears on **WS1/WS2** (which use the 5-clause template and should never carry it) — see `feedback_ws1_qpro_template_leak.md`. Confirmed false positive 2026-07-09 (P028): an agent flagged it as a "banned WS1/QPRO-leak" FAIL on a QPRO bundle, when the identical clause appeared unflagged on a sibling QPRO bundle that PASSED.
+- **A single MY-only or SG-only IGMP site (WS1_MY, WS1_SG, WS2, etc.) showing only its own region's currency is not a gap.** IGMP is single-currency-per-site by design — do not flag "missing SGD" on a site whose `site` id/label has no SG counterpart (e.g. WS2 is RWS77 MY-only; there is no WS2_SG). Confirmed false positive 2026-07-09 (P028).
 - `tier_constraint` only applies to QP2 — never flag missing on QPRO.
 - `plan.dialogPopup` null on IGMP — intentional; WS1/WS2 has no dialog popups.
 - Missing `promotion_currency_list` on IGMP — intentional; single currency per site.
