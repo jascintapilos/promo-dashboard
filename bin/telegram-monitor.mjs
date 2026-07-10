@@ -40,11 +40,16 @@ function ok(msg)   { console.log(`  ✓  ${msg}`); }
 function warn(msg) { console.log(`  ⚠  ${msg}`); }
 function fail(msg) { console.error(`  ✗  ${msg}`); }
 
-// Parse "06 July - 27 September 2026" or "01 Juli 2026, 11.00 (GMT+8) - 08 Juli 2026, 10.59 (GMT+8)"
+// Parse a date range. Handles:
+//   "06 July - 27 September 2026"                         (full, EN)
+//   "01 Juli 2026, 11.00 (GMT+8) - 08 Juli 2026, ..."    (full + time/tz, ID)
+//   "12-31 JULY 2026"                                     (compressed day-day MONTH YEAR)
+// Month + year are inherited from whichever part carries them, so a bare
+// leading day (e.g. "12" in "12-31 JULY 2026") resolves correctly.
 function parsePeriod(periodStr) {
   const MONTHS = {
-    january:1, februari:2, february:2, march:3, april:4, may:5, mei:5, june:6, juni:6,
-    july:7, juli:7, august:8, agustus:8, september:9, october:10, oktober:10,
+    january:1, januari:1, februari:2, february:2, march:3, maret:3, april:4, may:5, mei:5,
+    june:6, juni:6, july:7, juli:7, august:8, agustus:8, september:9, october:10, oktober:10,
     november:11, december:12, desember:12,
   };
   const ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -52,22 +57,29 @@ function parsePeriod(periodStr) {
   // Strip time and timezone info e.g. ", 11.00 (GMT+8)"
   const clean = periodStr.replace(/,?\s*\d{1,2}[:.]\d{2}(\s*\(GMT[+-]\d+\))?/g, '').trim();
 
-  const parts = clean.split(/\s*[-–]\s*/);
+  const parts = clean.split(/\s*[-–—]\s*/);
   if (parts.length < 2) return null;
 
-  function toSheetDate(s, fallbackYear) {
-    const m = s.trim().match(/^(\d{1,2})\s+(\w+)(?:\s+(\d{4}))?$/);
-    if (!m) return null;
-    const day  = parseInt(m[1], 10);
-    const mon  = MONTHS[m[2].toLowerCase()];
-    const year = m[3] || fallbackYear;
-    if (!mon || !year) return null;
-    return `${day}-${ABBR[mon - 1]}-${year}`;
+  // Resolve a shared month + year from whichever part carries them (usually the last).
+  let sharedMon = null, sharedYear = null;
+  for (const p of parts) {
+    const mw = p.match(/[A-Za-z]+/);
+    if (mw && MONTHS[mw[0].toLowerCase()] && sharedMon == null) sharedMon = MONTHS[mw[0].toLowerCase()];
+    const yr = p.match(/\d{4}/);
+    if (yr && sharedYear == null) sharedYear = yr[0];
   }
 
-  const endYear = (parts[parts.length - 1].match(/\d{4}/) || [])[0];
-  const start   = toSheetDate(parts[0], endYear);
-  const end     = toSheetDate(parts[parts.length - 1], endYear);
+  function toSheetDate(s) {
+    const day = (s.match(/\d{1,2}/) || [])[0];
+    const mw  = s.match(/[A-Za-z]+/);
+    const mon = (mw && MONTHS[mw[0].toLowerCase()]) ? MONTHS[mw[0].toLowerCase()] : sharedMon;
+    const yr  = (s.match(/\d{4}/) || [])[0] || sharedYear;
+    if (!day || !mon || !yr) return null;
+    return `${parseInt(day, 10)}-${ABBR[mon - 1]}-${yr}`;
+  }
+
+  const start = toSheetDate(parts[0]);
+  const end   = toSheetDate(parts[parts.length - 1]);
   return (start && end) ? { start, end } : null;
 }
 
@@ -89,18 +101,21 @@ function parsePeriod(periodStr) {
 //
 // Returns { provider, event_name, start_date, end_date, banner_link, tnc_link } or null.
 function parseAnnouncement(text) {
-  // Must contain at least one recognisable event keyword
-  const hasKeyword = /Event\s*name|Nama\s*Event|Event\s*Period|Periode\s*[:\-]|Date\s*:/i.test(text);
+  // Must contain at least one recognisable event keyword.
+  // "promosi baru" / "Periode" cover the newer ID template
+  // ("Kami informasikan promosi baru : X" / "Periode Promosi : …").
+  const hasKeyword = /Event\s*name|Nama\s*Event|Event\s*Period|Periode|Date\s*:|promosi\s*baru/i.test(text);
   if (!hasKeyword) return null;
 
-  // Period — English "Event Period: …", Indonesian "Periode : …", or "Date: …"
+  // Period — EN "Event Period: …", ID "Periode : …" / "Periode Promosi : …", or "Date: …"
   const periodMatch = text.match(/Event\s*Period\s*[:\-]\s*(.+)/i)
-                   ?? text.match(/Periode\s*[:\-]\s*(.+)/i)
+                   ?? text.match(/Periode(?:\s*Promosi)?\s*[:\-]\s*(.+)/i)
                    ?? text.match(/Date\s*[:\-]\s*(.+)/i);
   if (!periodMatch) return null;
 
-  // Event name — labeled ("Nama Event: X") or standalone ALL-CAPS line after provider
-  const labeledName = text.match(/(?:Event\s*name|Nama\s*Event)\s*[:\-]\s*(.+)/i);
+  // Event name — labeled ("Nama Event: X", "…promosi baru : X") or standalone
+  // ALL-CAPS line after provider.
+  const labeledName = text.match(/(?:Event\s*name|Nama\s*Event|Nama\s*Promosi|promosi\s*baru)\s*[:\-]\s*(.+)/i);
   const standaloneMatch = !labeledName
     ? text.match(/(?:Provider[^\n]*\n+)([A-Z0-9&' ]{3,})\n/i)  // ALL-CAPS line after provider
     : null;
@@ -110,12 +125,16 @@ function parseAnnouncement(text) {
   // Provider (optional)
   const provMatch = text.match(/Provider\s*[:\-]\s*(.+)/i);
 
-  // Banner link — "Banner link:", "Banner :", "Banner:"
-  const bannerMatch = text.match(/Banner\s*(?:link|url|image)?\s*[:\-]\s*(\S+)/i);
+  // Banner link — EN "Banner link:" / "Banner :" OR ID "…banner…disini : URL".
+  // Anchored to the URL so ID free-text between label and link is tolerated.
+  const bannerMatch = text.match(/Banner\s*(?:link|url|image)?\s*[:\-]\s*(https?:\/\/\S+)/i)
+                   ?? text.match(/banner[^\n:]*[:\-]\s*(https?:\/\/\S+)/i);
 
-  // TnC link — "TnC link:", "TnC :", "T&C link:", "Terms & Conditions link:"
-  const tncMatch = text.match(/T(?:n|&|and)C\s*(?:link|url)?\s*[:\-]\s*(\S+)/i)
-                ?? text.match(/Terms?\s*(?:&|and)?\s*Conditions?\s*(?:link|url)?\s*[:\-]\s*(\S+)/i);
+  // TnC link — EN "TnC link:" / "Terms & Conditions link:" OR
+  // ID "syarat dan ketentuan … : URL".
+  const tncMatch = text.match(/T(?:n|&|and)C\s*(?:link|url)?\s*[:\-]\s*(https?:\/\/\S+)/i)
+                ?? text.match(/Terms?\s*(?:&|and)?\s*Conditions?\s*(?:link|url)?\s*[:\-]\s*(https?:\/\/\S+)/i)
+                ?? text.match(/syarat\s*dan\s*ketentuan[^\n:]*[:\-]\s*(https?:\/\/\S+)/i);
 
   const dates = parsePeriod(periodMatch[1].trim());
   if (!dates) return null;
