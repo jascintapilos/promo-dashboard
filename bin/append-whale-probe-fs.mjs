@@ -1,8 +1,8 @@
-// Append 4 Whale Probe FC rows (P176-P179) to the July 2026 sheet tab.
-// Promo ladder: RM88 / RM118 / RM138 / RM148 Free Credit, 20X TO, no max transfer,
-// No deposit, MY+SG, all brands, Validity 1d, Rewards 3d, One Time.
+// Append 4 Whale Probe Free Spin rows (P180-P183) to the July 2026 sheet tab.
+// Gates of Olympus (Pragmatic Play): 50/60/75/100 spins, MY+SG, all brands, One Time.
+// Dep 6000→50FS VPS60 10X | Dep 3000→60FS VPS25 12X | Dep 1500→75FS VPS10 12X | Dep 1000→100FS VPS5 12X
 //
-// Run: node bin/append-whale-probe-fc.mjs [--dry-run]
+// Run: node bin/append-whale-probe-fs.mjs [--dry-run]
 import { parseArgs } from './_args.js';
 import { getSheetsClient, getSpreadsheetId, listTabs } from '../src/sheets-client.js';
 
@@ -19,48 +19,48 @@ const DATE      = '11 Jul 2026';
 //  P validity, Q rewards_validity, R expiry_minutes, S recurring, T max_per_player,
 //  U change_type, V change_details, W promo_code, X promo_name_en, Y promo_name_zhid,
 //  Z stakeholder, AA no_deposit, AB suggested_prefix]
-function row(pid, fcAmt, code) {
+function row(pid, dep, spins, vps, maxWd, to, code) {
   return [
     '',                                           // A status
     'Info Ready',                                 // B remark
     'No',                                         // C banner needed
     pid,                                          // D request_id
-    'VM',                                         // E requestor
+    'JT',                                         // E requestor
     DATE,                                         // F date
     'Urgent',                                     // G priority
     'Urgent',                                     // H deadline
     ALL_BRANDS,                                   // I brands
     REGIONS,                                      // J regions
     'Whale - Probe',                              // K campaign
-    'Free Credit',                                // L bonus_type
-    `Free Credit ${fcAmt} - 20X TO, no max transfer`,  // M name_details
+    'Free Spin',                                  // L bonus_type
+    `${spins} Free Spins - Gates of Olympus (Pragmatic Play), Min Dep ${dep}, Spin value: ${vps}, ${to}X TO, Max Withdraw ${maxWd}, Slots only`,  // M name_details
     'TRUE',                                       // N inbox_message
     'TRUE',                                       // O popup_dialog
-    '1',                                          // P validity
-    '3',                                          // Q rewards_validity
+    '7',                                          // P validity (days)
+    '3',                                          // Q rewards_validity (days)
     '',                                           // R expiry_minutes (WS1 only)
     'One Time',                                   // S recurring
     '1',                                          // T max_per_player
     '',                                           // U change_type
     '',                                           // V change_details
     code,                                         // W promo_code
-    `Free Credit ${fcAmt}`,                       // X promo_name_en
+    `${spins} Free Spins (Gates of Olympus)\nWS1/WS2: Whale Probe ${spins}FS GOO`,  // X promo_name_en
     '',                                           // Y promo_name_zhid
     'JT',                                         // Z stakeholder
-    'Yes',                                        // AA no_deposit
-    'WHALE_VM_PROBE_NODEP',                       // AB suggested_prefix
+    'No',                                         // AA no_deposit
+    'WHALE_CRM_PROBE',                            // AB suggested_prefix
   ];
 }
 
 const ROWS = [
-  row('P176', '88',  'WHALE_VM_PROBE_NODEP_FC88_20X'),
-  row('P177', '118', 'WHALE_VM_PROBE_NODEP_FC118_20X'),
-  row('P178', '138', 'WHALE_VM_PROBE_NODEP_FC138_20X'),
-  row('P179', '148', 'WHALE_VM_PROBE_NODEP_FC148_20X'),
+  row('P180', 6000,  50,  60, 30000, 10, 'WHALE_CRM_PROBE_GOO50FS_10X'),
+  row('P181', 3000,  60,  25, 15000, 12, 'WHALE_CRM_PROBE_GOO60FS_12X'),
+  row('P182', 1500,  75,  10,  7500, 12, 'WHALE_CRM_PROBE_GOO75FS_12X'),
+  row('P183', 1000, 100,   5,  5000, 12, 'WHALE_CRM_PROBE_GOO100FS_12X'),
 ];
 
 console.log(`Appending ${ROWS.length} rows to July 2026 tab`);
-ROWS.forEach((r) => console.log(`  ${r[3]} | ${r[22]} | FC ${r[23]}`));
+ROWS.forEach((r) => console.log(`  ${r[3]} | ${r[22]} | ${r[23].split('\n')[0]}`));
 
 if (dryRun) {
   console.log('\nDRY-RUN — pass no args to append for real');
@@ -85,4 +85,4 @@ const res = await sheets.spreadsheets.values.append({
 
 console.log(`\n✓ Appended ${res.data.updates?.updatedRows ?? ROWS.length} row(s)`);
 console.log(`  Range written: ${res.data.updates?.updatedRange}`);
-console.log('\nNext: node bin/ingest-requests.js → verify P176-P179 parsed correctly');
+console.log('\nNext: node bin/ingest-requests.js → verify P180-P183 parsed correctly');
