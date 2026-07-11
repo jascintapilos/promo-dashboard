@@ -1739,13 +1739,14 @@ function renderBanner(){
   rows=applySort(rows,bSort);
   const shown=bShowAll?rows:rows.slice(0,PAGE);
   document.getElementById('b-th').innerHTML='<tr>'
-    +thHtml('Campaign','Banner Title',bSort,'sortBanner','34%')
-    +thHtml('Brand','Brand',bSort,'sortBanner','11%')
-    +thHtml('Region','Region',bSort,'sortBanner','9%')
-    +thHtml('Uploaded By','Uploaded By',bSort,'sortBanner','17%')
-    +thHtml('Status','Status',bSort,'sortBanner','29%',true)+'</tr>';
+    +thHtml('Start','Start',bSort,'sortBanner','11%')
+    +thHtml('Campaign','Banner Title',bSort,'sortBanner','28%')
+    +thHtml('Brand','Brand',bSort,'sortBanner','10%')
+    +thHtml('Region','Region',bSort,'sortBanner','8%')
+    +thHtml('Uploaded By','Uploaded By',bSort,'sortBanner','15%')
+    +thHtml('Status','Status',bSort,'sortBanner','28%',true)+'</tr>';
   document.getElementById('bt').innerHTML=shown.map(r=>
-    `<tr><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td style="color:var(--ink2);">${r.Start||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
