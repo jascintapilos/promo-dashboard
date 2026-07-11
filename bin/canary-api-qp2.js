@@ -304,7 +304,7 @@ try {
         const verifyIds = (verify.data.rows.merchant_ids || []).map((m) => (typeof m === 'object' ? m.id : m));
         if (!verifyIds.includes(myMerchantId)) {
           console.error(`✖ VERIFICATION FAILED: merchant_ids after PUT = [${verifyIds.join(', ')}] does not include ${targetBrand} (merchant_id=${myMerchantId}).`);
-          console.error(`  Likely lost to a concurrent EXTEND from a sibling QP2 brand — re-run this brand alone (not under --parallel) once siblings have finished.`);
+          console.error(`  QP2 brands are serialised by canary-multi-brand.js so this is not a scheduling race — investigate a BO-side issue (stale session, server error) and re-run this brand alone.`);
           return bail(9);
         }
         console.log(`✓ Extended. merchant_ids now: ${verifyIds.join(', ')}${clonedPopup ? `; popup id=${clonedPopup.id} attached` : ''}`);
