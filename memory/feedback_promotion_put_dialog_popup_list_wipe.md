@@ -29,9 +29,23 @@ fallback `|| []` lost the link. Took a re-link pass + QC to catch.
 - If you only need to UPDATE non-popup fields, OMIT
   `dialog_popup_list` from the PUT body entirely — don't send `|| []`.
 - To restore a wiped link, rebuild the dialog_popup_list entry as
-  `{ '0': { id: popupId, start_date, end_date: null, promotion_id, labelKey, code } }`.
+  `{ '0': { id: popupId, popup_id: popupId, start_date, end_date: null, promotion_id, labelKey, code } }`.
   See [[feedback_popups_get_405_use_listing]] for how to fetch popup
   metadata since the by-id endpoint 405s.
+
+**Separate bug — stale popup ID (not wipe): confirmed root cause 2026-07-11**
+The QPRO canary linking PUT (`buildUpdateBody`) sent `dialog_popup_list` with `id`
+but **without `popup_id`**. QPRO junction records require both fields to equal
+the same popup ID (`id == popup_id`). Without `popup_id`, the BO silently fails
+to resolve the FK and falls back to a label/code-based lookup, surfacing the
+PREVIOUS campaign's popup with the same label — resulting in a stale popup ID
+instead of the freshly-created one. This caused all 48 QPRO brands to mismatch
+on P061–P064 and again on P176–P179.
+
+**Fix applied 2026-07-11:** `src/api-mapper-qpro.js` `buildUpdateBody` line ~832 —
+added `popup_id: dialogPopup.id` alongside the existing `id: dialogPopup.id`.
+The fix script `bin/fix-dialog-popup-link.mjs` had the correct shape (`id + popup_id`)
+all along; the canary mapper was missing one field.
 
 Same trap likely applies to other "list-shaped" relationships not
 returned by the detail endpoint (currencies are documented separately in

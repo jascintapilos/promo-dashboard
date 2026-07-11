@@ -830,6 +830,7 @@ function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsFo
     dialog_popup_list: (dialogPopup && dialogPopup.id) ? {
       '0': {
         id: dialogPopup.id,
+        popup_id: dialogPopup.id,
         start_date: dialogPopup.start_date || nowYmdHms(),
         end_date: null,
         promotion_id: promotionId,
