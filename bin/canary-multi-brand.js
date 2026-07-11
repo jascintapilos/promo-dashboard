@@ -268,16 +268,22 @@ for (const r of results) {
 
 const worst = results.reduce((acc, r) => Math.max(acc, r.code || 0), 0);
 
-// ── QP2 dialog relink (self-heal) ──────────────────────────────────────
-// On the shared IBC22 BO the incremental per-merchant dialog_popup_list PUTs
-// mis-link non-last merchants to stale popups sharing a site_id (see
-// bin/relink-qp2-dialogs.mjs header). After all QP2 brands for this promo are
-// attached, re-PUT the complete, correct dialog_popup_list in one shot.
+// ── QP2 dialog relink (rescue only) ────────────────────────────────────
+// Sequential QP2 saves (enforced above) mean each EXTEND reads the
+// previously-committed dialog_popup_list and accumulates correctly —
+// empirically verified 2026-07-11 (P061-P064: 16/16 merchants linked
+// correctly without relink correction). The relink is now a rescue step:
+// fire only when the QP2 chain was PARTIALLY successful (some brands saved,
+// some failed) — that is the only case where dialog_popup_list may be
+// incomplete. A fully successful chain needs no relink. A fully failed
+// chain has nothing to relink.
 const hadQp2 = brands.some((b) => (BRAND_TO_SITE[b]?.platform || '').toLowerCase() === 'qp2');
-if (commit && hadQp2 && results.some((r) => r.code === 0)) {
+const qp2Results = results.filter((r) => qp2Jobs.some((j) => j.brand === r.brand));
+const qp2PartialSuccess = qp2Results.some((r) => r.code === 0) && qp2Results.some((r) => r.code !== 0);
+if (commit && hadQp2 && qp2PartialSuccess) {
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('QP2 DIALOG RELINK');
+  console.log('QP2 DIALOG RELINK (rescue — partial QP2 failure)');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   await new Promise((resolve) => {
     const child = spawn(process.execPath,
