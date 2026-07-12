@@ -1,6 +1,7 @@
-// Append 4 Whale Probe FC rows (P176-P179) to the July 2026 sheet tab.
+// Write 4 Whale Probe FC rows (P188-P191) to the July 2026 sheet tab.
 // Promo ladder: RM88 / RM118 / RM138 / RM148 Free Credit, 20X TO, no max transfer,
 // No deposit, MY+SG, all brands, Validity 1d, Rewards 3d, One Time.
+// Uses values.update (not append) to write directly to A188:AB191.
 //
 // Run: node bin/append-whale-probe-fc.mjs [--dry-run]
 import { parseArgs } from './_args.js';
@@ -53,10 +54,10 @@ function row(pid, fcAmt, code) {
 }
 
 const ROWS = [
-  row('P176', '88',  'WHALE_VM_PROBE_NODEP_FC88_20X'),
-  row('P177', '118', 'WHALE_VM_PROBE_NODEP_FC118_20X'),
-  row('P178', '138', 'WHALE_VM_PROBE_NODEP_FC138_20X'),
-  row('P179', '148', 'WHALE_VM_PROBE_NODEP_FC148_20X'),
+  row('P188', '88',  'WHALE_VM_PROBE_NODEP_FC88_20X'),
+  row('P189', '118', 'WHALE_VM_PROBE_NODEP_FC118_20X'),
+  row('P190', '138', 'WHALE_VM_PROBE_NODEP_FC138_20X'),
+  row('P191', '148', 'WHALE_VM_PROBE_NODEP_FC148_20X'),
 ];
 
 console.log(`Appending ${ROWS.length} rows to July 2026 tab`);

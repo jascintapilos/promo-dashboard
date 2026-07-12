@@ -261,6 +261,7 @@ function buildAddBonus(rec) {
     PromotionRewardContents: buildPromotionRewardContents(rec, 'deposit'),
     WithdrawalCap: Number(rec.withdrawal_cap ?? 0),
     MaximumBalance: Number(rec.maximum_balance ?? 0),
+    ExpiryMinutes: Number(rec.rewards_validity_days ?? 0) * 1440,
   };
 
   return {

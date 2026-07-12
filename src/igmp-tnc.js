@@ -387,7 +387,7 @@ function buildDepEn(rec) {
   const minD  = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const maxB  = Number(rec.cap_bonus_amount ?? rec.parsed?.max_bonus ?? 0);
   const to    = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
-  const { validityDays } = validityFor(rec);
+  const { rewardsValidityDays } = validityFor(rec);
   const name  = splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name || '';
   const brand = brandName(rec);
   const url   = tncUrl(rec, 'en');
@@ -399,12 +399,12 @@ function buildDepEn(rec) {
     [`${pref} ${minD}`, maxB ? `${pref} ${maxB}` : '–', `${to}x`],
   );
 
-  const vWords = digitToWords(validityDays);
+  const vWords = digitToWords(rewardsValidityDays);
 
   const clauses = clauseTable(
     `<p style="color: rgb(85, 85, 85);"><br></p>` +
     p(bold('Terms and Conditions:')) +
-    p(`1. Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`) +
+    p(`1. Bonuses are valid for ${vWords} (${rewardsValidityDays}) ${rewardsValidityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`) +
     p(rec.recurring
       ? '2. Each member can claim this promotion once per day.'
       : '2. Each member can claim this promotion only once.') +
@@ -422,7 +422,7 @@ function buildDepZh(rec) {
   const minD  = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const maxB  = Number(rec.cap_bonus_amount ?? rec.parsed?.max_bonus ?? 0);
   const to    = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
-  const { validityDays } = validityFor(rec);
+  const { rewardsValidityDays } = validityFor(rec);
   const name  = rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name || '';
   const brand = brandName(rec);
   const url   = tncUrl(rec, 'zh');
@@ -437,7 +437,7 @@ function buildDepZh(rec) {
   const clauses = clauseTable(
     `<p><br></p>` +
     p(bold('条款与条件：')) +
-    p(`1. 红利自发放之日起 ${validityDays} 天内有效，除非另有说明。`) +
+    p(`1. 红利自发放之日起 ${rewardsValidityDays} 天内有效，除非另有说明。`) +
     p(rec.recurring
       ? '2. 每位会员每日限领取一次此优惠。'
       : '2. 每位会员仅限领取一次此优惠。') +
@@ -459,7 +459,7 @@ function buildFcEn(rec) {
   const minD     = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const maxXfer  = Number(rec.max_transfer_out ?? rec.parsed?.max_transfer_out ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
-  const { validityDays } = validityFor(rec);
+  const { rewardsValidityDays } = validityFor(rec);
   const name     = splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'en');
@@ -480,11 +480,11 @@ function buildFcEn(rec) {
   // Clause 1: only present when an explicit cap is set (maxXfer > 0).
   // When absent, renumber 2→5 so total clause count drops to 5.
   const wcAmount = maxXfer > 0 ? maxXfer : 0;
-  const vWords = digitToWords(validityDays);
+  const vWords = digitToWords(rewardsValidityDays);
 
   const fcClausesEn = [];
   if (wcAmount > 0) fcClausesEn.push(`Maximum withdrawal is ${pref} ${wcAmount} only.`);
-  fcClausesEn.push(`Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`);
+  fcClausesEn.push(`Bonuses are valid for ${vWords} (${rewardsValidityDays}) ${rewardsValidityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`);
   fcClausesEn.push(rec.recurring
     ? `This promotion can be claimed multiple times unless stated otherwise.`
     : `Each member can claim this promotion only once.`);
@@ -508,7 +508,7 @@ function buildFcZh(rec) {
   const minD     = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const maxXfer  = Number(rec.max_transfer_out ?? rec.parsed?.max_transfer_out ?? 0);
   const to       = Number(rec.turnover_multiplier ?? rec.parsed?.to_multiplier ?? 0);
-  const { validityDays } = validityFor(rec);
+  const { rewardsValidityDays } = validityFor(rec);
   const name     = rec.promotion_name_zh_id || splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name || '';
   const brand    = brandName(rec);
   const url      = tncUrl(rec, 'zh');
@@ -529,7 +529,7 @@ function buildFcZh(rec) {
 
   const fcClausesZh = [];
   if (wcAmountZh > 0) fcClausesZh.push(`最高提款金额仅为 ${pref} ${wcAmountZh}。`);
-  fcClausesZh.push(`红利自发放之日起 ${validityDays} 天内有效，除非另有说明。`);
+  fcClausesZh.push(`红利自发放之日起 ${rewardsValidityDays} 天内有效，除非另有说明。`);
   fcClausesZh.push(rec.recurring
     ? `此优惠可多次领取，除非另有说明。`
     : `每位会员仅限领取一次此优惠。`);
