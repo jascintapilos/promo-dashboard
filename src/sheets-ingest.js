@@ -95,6 +95,15 @@ export async function ingestCurrentMonthFromSheet({
       }
     } else {
       namerStats.already_named++;
+      // Code is operator-set but names may still be empty (column M blank).
+      // Fill them via deriveNames so popup label / PromotionName are never "".
+      if (!rec.promotion_name_en || !rec.promotion_name_zh_id) {
+        const named = deriveNames(rec);
+        if (named.source === 'derived' || named.source === 'override') {
+          if (!rec.promotion_name_en && named.promotion_name_en) rec.promotion_name_en = named.promotion_name_en;
+          if (!rec.promotion_name_zh_id && named.promotion_name_zh_id) rec.promotion_name_zh_id = named.promotion_name_zh_id;
+        }
+      }
     }
     records.push(rec);
   }
