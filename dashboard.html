@@ -1401,7 +1401,7 @@ function applyDateFilter(data){
   }
   return{...data,
     promos:(data.promos||[]).filter(r=>keep(r,'Date')),
-    banners:(data.banners||[]).filter(r=>keep(r,r['Date']?'Date':'Start')),
+    banners:(data.banners||[]).filter(r=>keep(r,r['Date']?'Date':r['Uploaded Date']?'Uploaded Date':'Start')),
     crm:(data.crm||[]).filter(r=>keep(r,'Date')),
     games:(data.games||[]).filter(r=>keep(r,'Date')),
     adhoc:(data.adhoc||[]).filter(r=>keep(r,'Date')),
@@ -2357,7 +2357,7 @@ function renderBanner(){
     +thHtml('Uploaded By','Uploaded By',bSort,'sortBanner','17%')
     +thHtml('Status','Status',bSort,'sortBanner','25%',true)+'</tr>';
   document.getElementById('bt').innerHTML=shown.map(r=>
-    `<tr><td style="color:var(--ink2);">${r['Date']||r['Start']||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
+    `<tr><td style="color:var(--ink2);">${r['Date']||r['Uploaded Date']||r['Start']||''}</td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;">${r['Banner Title']||''}</td><td style="color:var(--ink2);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td>${r['Uploaded By']||''}</td><td style="text-align:right;">${statusBadge(r.Status)}</td></tr>`).join('');
   const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
