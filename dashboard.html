@@ -2656,10 +2656,11 @@ loadData();
     },
     setup(p){
       p.on('selected',(d1,d2)=>{
-        const f=new Date(d1.dateInstance);f.setHours(0,0,0,0);_filterFrom=f;
-        const t=new Date(d2.dateInstance);t.setHours(23,59,59,999);_filterTo=t;
-        const fmt=d=>fmtDate(d);
-        document.getElementById('date-label').textContent=fmt(_filterFrom)+' – '+fmt(d2.dateInstance);
+        // Litepicker stores dates as UTC midnight; extract UTC y/m/d to get the intended local date
+        const toLocal=di=>{const d=di.dateInstance;return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());};
+        const f=toLocal(d1);f.setHours(0,0,0,0);_filterFrom=f;
+        const t=toLocal(d2);t.setHours(23,59,59,999);_filterTo=t;
+        document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
       });
       p.on('clear:selection',()=>{
@@ -2672,6 +2673,7 @@ loadData();
   picker.setDateRange(weekStart(),today);
   const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
   const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
+  document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
 })();
 
 /* ── PAGE VIEW SWITCHER ── */
