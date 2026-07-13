@@ -895,25 +895,52 @@ export function parseInstructions(remark, nameDetails, changeDetails) {
   if (/Claimable\s*x?1\b/i.test(all)) { oneTimeClaim = true; signals.push('G:one_time_claim'); }
   if (/multiple claims allowed/i.test(all)) { multipleClaimsAllowed = true; signals.push('H:multiple_claims_allowed'); }
 
-  // I. Tier constraint — "<Tier> and below/above". Operator restricts the
-  // promo to a contiguous tier range. Order (low→high):
-  //   Normal < Bronze < Silver < Gold < Platinum < Diamond.
-  // "Silver and below" → ['Normal','Bronze','Silver']
-  // "Gold and above"   → ['Gold','Platinum','Diamond']
-  // Numbered sub-tiers (Silver 1/2/3) all roll up to the bare tier name.
-  // Trial variants and PRO-GOLDVIP / PRO-PLATINUM-VIP are mapped at mapper
-  // time based on the eligible-tier set.
+  // I. Tier constraint — operator restricts the promo to a membership-tier range.
+  // Order (low→high): Normal < Bronze < Silver < Gold < Platinum < Diamond.
+  // Three pattern forms (tried in priority order):
+  //   A. "X and above/below" → contiguous range from X upward or downward.
+  //      "Silver and below" → ['Normal','Bronze','Silver']
+  //      "Gold and above"   → ['Gold','Platinum','Diamond']
+  //   B. "X and Classic/Normal" → Classic=Normal tier, so X+Normal = X and below.
+  //      "[Bronze and Classic]" → ['Normal','Bronze']
+  //   C. "[X]" bracket-only, single tier, no direction → exact tier only.
+  //      "[Silver]" → ['Silver']
+  // Numbered sub-tiers (Silver 1/2/3) roll up to bare tier name at mapper time.
   let tierConstraint = null;
   const TIER_ORDER = ['Normal', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+  const normTier = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  // A. "X and above/below"
   const tierRe = /\b(Normal|Bronze|Silver|Gold|Platinum|Diamond)\s+and\s+(below|above)\b/i;
   m = tierRe.exec(all);
   if (m) {
-    const tier = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+    const tier = normTier(m[1]);
     const direction = m[2].toLowerCase();
     const idx = TIER_ORDER.indexOf(tier);
     const eligible = direction === 'below' ? TIER_ORDER.slice(0, idx + 1) : TIER_ORDER.slice(idx);
     tierConstraint = { tier, direction, eligible_tiers: eligible };
     signals.push('I:tier_constraint');
+  }
+  // B. "X and Classic/Normal" — Classic == Normal tier
+  if (!tierConstraint) {
+    const classicRe = /\b(Bronze|Silver|Gold|Platinum|Diamond)\s+and\s+(?:Classic|Normal)\b/i;
+    const cm = classicRe.exec(all);
+    if (cm) {
+      const tier = normTier(cm[1]);
+      const idx = TIER_ORDER.indexOf(tier);
+      const eligible = TIER_ORDER.slice(0, idx + 1);
+      tierConstraint = { tier, direction: 'below', eligible_tiers: eligible };
+      signals.push('I:tier_constraint');
+    }
+  }
+  // C. "[X]" bracket-enclosed single tier with no direction = exact tier only
+  if (!tierConstraint) {
+    const bracketRe = /\[(Normal|Bronze|Silver|Gold|Platinum|Diamond)\]/i;
+    const bm = bracketRe.exec(all);
+    if (bm) {
+      const tier = normTier(bm[1]);
+      tierConstraint = { tier, direction: 'only', eligible_tiers: [tier] };
+      signals.push('I:tier_constraint');
+    }
   }
 
   // J. Categories-only constraint — operator restricts the promo to a subset
