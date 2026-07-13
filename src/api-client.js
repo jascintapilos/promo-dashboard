@@ -597,6 +597,7 @@ export async function updateDialogPopup(site, popup, { topOverrides = {}, conten
   }
   const iso2bo = (s) => String(s || '').slice(0, 19).replace('T', ' ');
   const body = {
+    site_id:                popup.site_id,   // required by QP2 BO (returns 422 without it)
     platform:               popup.platform,
     start_date:             iso2bo(popup.start_date),
     session:                popup.session,
