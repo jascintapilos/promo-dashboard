@@ -78,8 +78,8 @@ function inferCampaignSuffix(record) {
   return null;
 }
 
-// Tier identifier goes at position 2 — immediately after the primary pillar
-// token (ACQ/RET/VIP/WHALE/BRA). E.g. `RET_GLD_CRM_ADHOC_REL_20PCT_12X`.
+// Tier identifier goes at the END of the code — after all other tokens.
+// E.g. `RET_CRM_ADHOC_20PCT_12X_GLD`.
 // Names are not tier-modified. "Normal" is included for membership-tier-
 // explicit promos targeting the default group.
 const TIER_PREFIX = {
@@ -215,16 +215,10 @@ export function deriveNames(record) {
       }
     }
   }
-  // Tier token goes at position 2 — after the first primary pillar token
-  // (ACQ/RET/VIP/WHALE/BRA). Code always reads <PILLAR>_<TIER>_...
+  // Tier token goes at the END of the code — e.g. RET_CRM_ADHOC_20PCT_12X_GLD.
   // Code stays out of the promo names.
   if (tier && TIER_PREFIX[tier]) {
-    const tierTok = TIER_PREFIX[tier];
-    const PRIMARY_FIRST = new Set(['ACQ', 'RET', 'VIP', 'WHALE', 'BRA']);
-    const parts = code.split('_');
-    const insertIdx = parts.length > 0 && PRIMARY_FIRST.has(parts[0]) ? 1 : 0;
-    parts.splice(insertIdx, 0, tierTok);
-    code = parts.join('_');
+    code = `${code}_${TIER_PREFIX[tier]}`;
   }
   // FT_ is opt-in only as of 2026-07-09 (was: auto-added for every WS1/WS2
   // promo regardless of remark). It's now handled entirely by the generic
