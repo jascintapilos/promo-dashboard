@@ -751,7 +751,7 @@ export async function buildDialogPopupBody(resolved, brand) {
     location: 1,
     affiliates_visibility: 0,
     always_pop: 0,
-    label: splitDualPromoName(resolved.promotion_name_en).generic,
+    label: splitDualPromoName(resolved.promotion_name_en).generic || resolved.promo_code,
   };
 }
 
