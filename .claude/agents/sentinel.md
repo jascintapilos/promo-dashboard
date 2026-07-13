@@ -215,7 +215,7 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 |---|---|---|
 | promo_code | `source.parsed.promo_code` or top-level `promo_code` | `live_state.list_row.code` |
 | promotion_currency / currency_id | `source.regions` → currency map (MY=MYR, SG=SGD, ID=IDR, TH=THB) | `live_state.detail.promotion_currency_list[].currency_id` |
-| bonus_type | `source.bonus_type` | **QPRO:** `live_state.list_row.bonus_type` — the detail endpoint always returns "Cashback" for promo_type=2 regardless of sub_type (API quirk); `list_row.bonus_type` is authoritative. **QP2/IGMP:** `live_state.detail.bonus_type` |
+| bonus_type | `source.bonus_type` | **QPRO/QP2:** `live_state.list_row.bonus_type` — the detail endpoint always returns "Cashback" for promo_type=2 regardless of sub_type (API quirk on both QPRO and QP2); `list_row.bonus_type` is authoritative for both platforms. **IGMP:** `live_state.list_row.PromotionType` (as per IGMP overrides table). |
 | reward_type | derived from bonus_type + bonus_sub_type | `live_state.detail.reward_type` |
 | auto_reward_activation | implicit ON unless source.instructions says otherwise | `live_state.detail.auto_reward_activation` (must be true). **QPRO platform: if this field is null or absent in `live_state.detail`, return INCONCLUSIVE — not FAIL.** The QPRO GET endpoint never returns this field. Null = unverifiable, not disabled. See Suppressions. |
 | dialog linkage | `dialog_popup_id` in bundle | `live_state.list_row.dialog_popup_list[].popup_id` (must include the saved id) |

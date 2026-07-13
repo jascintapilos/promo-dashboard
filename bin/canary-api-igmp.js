@@ -84,13 +84,19 @@ await (async () => {
   // instead of pre-resolved IDs, fetch the per-BO catalog and resolve.
   // Requires a valid cookie. Skipped in dry-run when IGMP_COOKIE is absent.
   const isFreeSpin = /free\s*spin|^fs$/i.test(String(rec.bonus_type || ''));
-  // fs_game fallback: for IGMP (WS1/WS2), prefer the per-brand game name
-  // when the operator specified one (e.g. "WS1: MB8 Gates Of Olympus")
-  // because MB8 Gates Of Olympus is a DISTINCT FS catalog entry on the
-  // WS1 BO, separate from the generic "Gates Of Olympus" used on QP2.
+  // fs_game fallback: use the per-brand game name ONLY for the matching site.
+  // game_by_brand.WS1 = "MB8 Gates of Olympus" is WS1-specific and must NOT
+  // leak into WS2 runs — the WS2 catalog doesn't have MB8-prefixed games, so
+  // the resolver falls back to Pass 4 (strip "MB8 ") and picks the first
+  // "includes gates of olympus" hit, which is "Gates of Olympus 1000" (1096)
+  // instead of the correct "Gates of Olympus" (352). Fix: check the current
+  // siteId to select only the matching brand override. (Bug found 2026-07-13
+  // via P065 WS2 Sentinel FAIL: GameId 1096 instead of 352.)
+  const isWs2 = siteId === 'ws2';
+  const isWs1 = !isWs2 && String(siteId || '').startsWith('ws1');
   const fsGameHint = rec.fs_game
-    || rec.parsed?.game_by_brand?.WS1
-    || rec.parsed?.game_by_brand?.WS2
+    || (isWs2 ? rec.parsed?.game_by_brand?.WS2 : null)
+    || (isWs1 ? rec.parsed?.game_by_brand?.WS1 : null)
     || rec.parsed?.game
     || null;
   // rec.fs_provider is a legacy/manual override field, never populated by
@@ -108,7 +114,10 @@ await (async () => {
   // and is wrong for WS1/WS2 — those sites only support Pragmatic Play.
   // Pass null so resolveFsCatalog does game-first search and derives the
   // correct provider from whatever the site's BO catalog actually has.
-  const gameFromBrandMap = !!(rec.parsed?.game_by_brand?.WS1 || rec.parsed?.game_by_brand?.WS2);
+  const gameFromBrandMap = !!(
+    (isWs1 && rec.parsed?.game_by_brand?.WS1) ||
+    (isWs2 && rec.parsed?.game_by_brand?.WS2)
+  );
   const fsProviderHint = rec.fs_provider || (gameFromBrandMap ? null : rec.parsed?.game_provider) || null;
   const needsCatalogResolve = isFreeSpin && (!rec.fs_provider_id || !rec.fs_game_id) && fsGameHint;
   if (needsCatalogResolve) {

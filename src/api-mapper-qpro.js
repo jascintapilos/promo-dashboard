@@ -406,7 +406,7 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const spinCount     = o.spin_count      ?? r.spin_count      ?? 0;
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
-  const lines         = o.lines           ?? r.lines           ?? 10;
+  const lines         = o.lines           ?? r.lines           ?? 20;
   // Playtech games take amount_per_line as a direct currency bet amount
   // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
   // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green
@@ -414,16 +414,16 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   // convention) landed on 0.02/0.01, neither of which the BO accepted;
   // sending 0.20 (the raw value_per_spin) as-is was the only value in its
   // accepted list. Pragmatic Play keeps the historical /20-then-floor
-  // conversion (feedback_qp2_fs_value_per_spin_vs_amount_per_line.md) — this
-  // file's divisor was `lines` (10) instead of the documented fixed 20,
-  // itself a latent bug (bo-mapper-qpro.js and api-mapper-qp2.js both use
-  // /20), fixed here too since it's now provably wrong either way for a
-  // second provider.
+  // conversion (feedback_qp2_fs_value_per_spin_vs_amount_per_line.md) —
+  // amount_per_line = value_per_spin / 20, lines = 20 → BO computes
+  // amount_per_line × lines = value_per_spin (correct). Default was 10
+  // until 2026-07-13: the /20 divisor was introduced but lines was left
+  // at 10, halving the effective spin value (3×10=30 instead of 3×20=60).
   const isPlaytech    = /playtech/i.test(r.game_provider || '');
   // Playtech FS mechanic (operator rule 2026-07-10, confirmed after the
   // Pragmatic-Play-shaped defaults broke a live commit): coins=0, lines=0,
   // amount_per_line=the direct bet-per-spin amount. Pragmatic Play keeps
-  // coins=1, lines=10 (unchanged).
+  // coins=1, lines=20 (default above).
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     coins:           isPlaytech ? 0 : 1,

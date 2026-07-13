@@ -495,6 +495,7 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
   if (normalizedRec.turnover_multiplier == null && p.to_multiplier != null) normalizedRec.turnover_multiplier = p.to_multiplier;
   if (normalizedRec.cap_bonus_amount == null && p.max_bonus != null) normalizedRec.cap_bonus_amount = p.max_bonus;
   if (normalizedRec.free_credit_amount == null && p.free_credit_amount != null) normalizedRec.free_credit_amount = p.free_credit_amount;
+  if (normalizedRec.withdrawal_cap == null && p.max_transfer_out != null) normalizedRec.withdrawal_cap = p.max_transfer_out;
   if (normalizedRec.fs_rounds == null && p.spin_count != null) normalizedRec.fs_rounds = p.spin_count;
   // value_per_spin (operator field) → fs_amount_per_bet (BO field) when not
   // explicitly overridden. Without this fall-through the BO's required
