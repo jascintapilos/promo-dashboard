@@ -90,6 +90,7 @@
 - [IGMP Deposit T&C: rewards_validity + provider exclusions](feedback_igmp_tnc_dep_validity_and_provider_exclusions.md) — Point 1 reads rewards_validity_days; point 3 appends provider exclusion list.
 - [IGMP edit + status: WS1 ONLY never publish](project_igmp_edit_status_endpoints.md) — Final step = activate only. Run from live BO tab; stale cookie 500s.
 - [WS1 deposit min-deposit is CREATE-ONLY](feedback_igmp_min_deposit_create_only.md) — no edit endpoint for min/%/TO on deposit bonuses; fix = deactivate + recreate with suffix bump.
+- [IGMP deposit ExpiryMinutes=0 in GetBonusInfo is a dead field](feedback_igmp_deposit_expiry_minutes_dead_field.md) — Always 0 in read response regardless of AddBonus value; suppress in QC, do NOT attempt to patch.
 - [WS1 SG legacy name dedupe done](project_ws1_sg_legacy_name_dedupe.md) — 2026-07-07: 54 renamed player-neutral; MIN18 anomaly + WS2 8 findings + MY rework flagged.
 - [WS1 MY legacy name dedupe (active-only) + open FS/FC bucket](project_ws1_legacy_name_dedupe.md) — 2026-07-06: 57 Bonus-type renamed unique; 99 active dup groups remain in FS/FC space (mostly campaign prize pools), bucket-2 plan on hold.
 - [WS1 MY TLEO T&C backfilled from SG](project_ws1_my_tleo_tnc_missing.md) — 2026-07-06: 42/42 Bonus TLEO cloned (SGD→RM, mb8sg→mb8mys); CLOSED: 458MX cap corrected 450→458 + TOPEN: FT_REL_TLEO_45PCT_458MX skipped — MY cap=450 vs code/SG 458, fix cap then rerun fix-ws1-my-tleo-tnc.mjs.C backfilled; final probe 54/54 both sites.
