@@ -73,7 +73,7 @@ for (const { siteId, brand, expectedRewardId, promotionId } of SITES) {
     IsActive: liveReward.IsActive ?? true,
     RolloverType: liveReward.RolloverType ?? '0',
     CapBonusAmount: liveReward.CapBonusAmount ?? 0,
-    RedeemableKYCStatus: liveReward.RedeemableKYCStatus ?? 0,
+    RedeemableKYCStatus: 0,  // WS1 and WS2 both accept integer 0; sending the live array causes HTTP 500
     WithdrawalCap: 30000,   // ← THE FIX
     MaximumBalance: liveReward.MaximumBalance ?? 0,
     ExpiryMinutes: liveReward.ExpiryMinutes ?? 0,

@@ -55,6 +55,7 @@ await (async () => {
   }
   const commit = flags.commit === true;
   const allowDupName = flags['allow-dup-name'] === true; // operator override: save even if PromotionName already exists on the BO
+  const allowRecreate = flags['allow-recreate'] === true; // operator override: proceed even if code exists but is inactive (deactivated promo)
   const testMode = flags.test === true; // prepend TEST_ to the resolved FT_ code
   // Resolution order: --site explicit → --brand → default ws1-v3-my.
   const brand = flags.brand;
@@ -300,10 +301,16 @@ await (async () => {
       const existing = await igmpPost(siteId, '/PM/GetPromotionInfoByCode', { PromotionCode: plan.body.PromotionCode });
       const ex = existing?.data;
       if (ex?.PromotionId) {
-        console.error(`✗ Code "${plan.body.PromotionCode}" already exists on ${siteId}:`);
-        console.error(`    id=${ex.PromotionId}  type=${ex.PromotionType}  active=${ex.IsActive}  published=${ex.IsPublished}  name="${ex.PromotionName}"`);
-        console.error('  Nothing saved. Amend the existing promo via the /PM/Update* endpoints instead.');
-        return bail(10);
+        const inactive = ex.IsActive === false;
+        if (inactive && allowRecreate) {
+          console.log(`⚠ Code "${plan.body.PromotionCode}" exists but is inactive (id=${ex.PromotionId}) — proceeding with --allow-recreate`);
+        } else {
+          console.error(`✗ Code "${plan.body.PromotionCode}" already exists on ${siteId}:`);
+          console.error(`    id=${ex.PromotionId}  type=${ex.PromotionType}  active=${ex.IsActive}  published=${ex.IsPublished}  name="${ex.PromotionName}"`);
+          if (inactive) console.error('  Promo is inactive — re-run with --allow-recreate to proceed.');
+          else console.error('  Nothing saved. Amend the existing promo via the /PM/Update* endpoints instead.');
+          return bail(10);
+        }
       }
       console.log(`✓ "${plan.body.PromotionCode}" not yet on ${siteId}`);
     } catch (e) {
