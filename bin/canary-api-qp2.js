@@ -37,7 +37,7 @@ import { getSite } from '../src/sites.js';
 import { BRAND_TO_SITE } from '../src/ingest.js';
 import {
   createPromotion, addPromotionName, createMessageTemplate,
-  createDialogPopup, updatePromotion, findPromotionByCode,
+  createDialogPopup, updateDialogPopup, updatePromotion, findPromotionByCode,
   getPromotionDetail, authedFetch,
 } from '../src/api-client.js';
 import { buildApiPlan, QP2_BRAND_TO_IDS } from '../src/api-mapper-qp2.js';
@@ -471,6 +471,33 @@ try {
         fullRow: popupRows,  // QP2's dialog_popup_list PUT shape needs the whole row
       };
       console.log(`    ✓ dialog popup id=${dialogPopup.id} code=${dialogPopup.code}`);
+
+      // Guard: QP2 BO sometimes returns wrong content in the POST response —
+      // the server substitutes the promo_code instead of promotion_name in the
+      // popup body (observed 2026-07-13 on P076 QP2A popup 1885). Detect and
+      // fix immediately so fullRow doesn't propagate the bad content into the
+      // promotion PUT's dialog_popup_list.
+      const codeInBody = (popupRows.contents || []).some((c) => c.content?.includes(resolved.promo_code));
+      if (codeInBody) {
+        console.log(`    ⚠ popup body contains promo code instead of name — correcting via PUT…`);
+        const planContents = plan.dialogPopup.contents || {};
+        const contentsOverrides = Object.fromEntries(
+          Object.entries(planContents).map(([locId, c]) => [Number(locId), { content: c.content, title: c.title }])
+        );
+        try {
+          await updateDialogPopup(site, popupRows, { contentsOverrides });
+          // Patch fullRow so the promotion PUT carries correct content.
+          const correctedContents = (popupRows.contents || []).map((c) => {
+            const fix = contentsOverrides[c.locale_id];
+            return fix ? { ...c, ...fix } : c;
+          });
+          dialogPopup.fullRow = { ...popupRows, contents: correctedContents };
+          console.log(`    ✓ popup body corrected (${Object.keys(contentsOverrides).length} locales)`);
+        } catch (e) {
+          console.log(`    ⚠ popup correction failed (non-fatal): ${e.message.split('\n')[0]}`);
+        }
+      }
+
       // Record for deterministic relink (site_id = this brand's merchant id).
       recordPopup(resolved.promo_code, QP2_BRAND_TO_IDS[targetBrand]?.merchantId, dialogPopup.id, popupRows.created_at);
     } else {
