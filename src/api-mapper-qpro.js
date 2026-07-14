@@ -406,35 +406,29 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const spinCount     = o.spin_count      ?? r.spin_count      ?? 0;
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
-  const lines         = o.lines           ?? r.lines           ?? 20;
+  const lines         = o.lines           ?? r.lines           ?? 10;
   // Playtech games take amount_per_line as a direct currency bet amount
   // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
   // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green
-  // Wizard"): dividing 0.20 by anything (10 or the documented /20 PP
-  // convention) landed on 0.02/0.01, neither of which the BO accepted;
-  // sending 0.20 (the raw value_per_spin) as-is was the only value in its
-  // accepted list. Pragmatic Play keeps the historical /20-then-floor
-  // conversion (feedback_qp2_fs_value_per_spin_vs_amount_per_line.md) —
-  // amount_per_line = value_per_spin / 20, lines = 20 → BO computes
-  // amount_per_line × lines = value_per_spin (correct). Default was 10
-  // until 2026-07-13: the /20 divisor was introduced but lines was left
-  // at 10, halving the effective spin value (3×10=30 instead of 3×20=60).
+  // Wizard"): dividing 0.20 by anything landed on 0.02/0.01, neither of
+  // which the BO accepted; sending 0.20 as-is was the only accepted value.
+  // Pragmatic Play operator standard: coins=1, lines=10 (hardcoded like
+  // coins — confirmed 2026-07-13). amount_per_line = value_per_spin / 10,
+  // BO computes amount_per_line × lines = value_per_spin.
   const isPlaytech    = /playtech/i.test(r.game_provider || '');
-  // Playtech FS mechanic (operator rule 2026-07-10, confirmed after the
-  // Pragmatic-Play-shaped defaults broke a live commit): coins=0, lines=0,
-  // amount_per_line=the direct bet-per-spin amount. Pragmatic Play keeps
-  // coins=1, lines=20 (default above).
+  // Playtech FS mechanic (operator rule 2026-07-10): coins=0, lines=0,
+  // amount_per_line=the direct bet-per-spin amount.
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     coins:           isPlaytech ? 0 : 1,
     // If sheet stated amount_per_line directly, use it.
     // Playtech: use value_per_spin as-is (no division — see comment above).
-    // Else (Pragmatic Play/default): divide value_per_spin by 20, floor 2dp.
+    // Else (Pragmatic Play/default): divide value_per_spin by 10, floor 2dp.
     amount_per_line: aplRaw != null
       ? +Number(aplRaw).toFixed(4)
       : isPlaytech
         ? +Number(valuePerSpin).toFixed(2)
-        : Math.floor(valuePerSpin / 20 * 100) / 100,
+        : Math.floor(valuePerSpin / 10 * 100) / 100,
     rounds:          spinCount,
     lines:           isPlaytech ? 0 : lines,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,
@@ -844,6 +838,11 @@ function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsFo
 // ── Public API ───────────────────────────────────────────────────────────
 
 export async function buildApiPlan(resolved, { brand, site } = {}) {
+  // Col W can hold multi-line codes (e.g. "CODE\nWS2: CODE_V2") for platforms
+  // that need a separate code variant. QPRO/QP2 always use line 1.
+  if (resolved.promo_code && resolved.promo_code.includes('\n')) {
+    resolved = { ...resolved, promo_code: resolved.promo_code.split('\n')[0].trim() };
+  }
   // Per-brand catalog resolution (when `site` is supplied):
   //   - game_provider_ids: GET /api/bo/gameprovider, filter by Layer-1
   //     exclusion NAMES → per-brand IDs.

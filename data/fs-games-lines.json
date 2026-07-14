@@ -1,14 +1,10 @@
 {
   "_comment": "Free Spin games lines-per-spin catalog. Used by src/fs-lines-resolver.js to compute value_per_spin = amount_per_line × lines_per_spin. Prefer inferring from game code prefix (vs<N> → N lines for Pragmatic Play). This file is the fallback override for non-PP2 providers or PP2 codes that don't follow the prefix pattern.",
-  "_convention_pp2": "Pragmatic Play encodes lines in the code: vs20*=20 lines, vs25*=25 lines, vs40*=40 lines. The resolver handles this automatically — do not enumerate every vs20* game here.",
+  "_convention_pp2": "Pragmatic Play encodes actual paylines in the code: vs20*=20 lines, vs25*=25 lines, vs40*=40 lines. The resolver uses this for QP2 verification (QP2 stores lines=0, so value_per_spin = amount_per_line × resolved-lines). QPRO does NOT use this resolver — api-client reads the stored `lines` field directly (operator standard = 10).",
   "_variable_lines": "Megaways / 6x reels / cluster-pays games have no fixed line count. Mark them as null to force Sentinel INCONCLUSIVE (correct — cannot compare without runtime data).",
   "_source": "Populated 2026-07-02 during api-mapper-qp2 20x-overpayment recovery. Extend as new games appear.",
 
-  "overrides": {
-    "vs20olympgate": 20,
-    "vs20olympgold": 20,
-    "vs20olympgateext": 20
-  },
+  "overrides": {},
 
   "variable_lines_prefixes": ["vswaysm_", "vswaysx_", "vswm_", "vs20ways_"],
 

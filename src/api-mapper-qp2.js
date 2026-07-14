@@ -952,6 +952,10 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
 // ── Public API ───────────────────────────────────────────────────────────
 
 export async function buildApiPlan(resolved, { brand, site, merchantIds = null } = {}) {
+  // Col W can hold multi-line codes (e.g. "CODE\nWS2: CODE_V2"). QP2 always uses line 1.
+  if (resolved.promo_code && resolved.promo_code.includes('\n')) {
+    resolved = { ...resolved, promo_code: resolved.promo_code.split('\n')[0].trim() };
+  }
   // Per-brand category resolution when `site` is supplied — fetches the
   // BO's installed categories and intersects with the allow-list (same set
   // as QPRO so cross-platform promos surface in the same wallets).

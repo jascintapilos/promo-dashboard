@@ -107,7 +107,7 @@ for (const { brand, siteId } of QPRO_BRANDS) {
   await sleep(SLEEP_MS);
 }
 
-// ── QP2 (dedupe by label+brand across 4 merchants) ───────────────────────
+// ── QP2 (one row per brand — QP2A/B/C/D each get their own Banner Log entry) ──
 process.stdout.write(`  QP2      `);
 try {
   const seen = new Map();
@@ -115,7 +115,7 @@ try {
     const { rows } = await getAllBanners(siteId, { extra: { merchant_id: String(merchantId) } });
     for (const r of rows) {
       if (!ALL_DATES && !inWindow(r.created_at || r.start_datetime)) continue;
-      const key = `${r.label}|||QP2`;
+      const key = `${r.label}|||${brand}`;
       if (!seen.has(key)) seen.set(key, { row: r, brand });
       else if (r.created_at && (!seen.get(key).row.created_at || r.created_at > seen.get(key).row.created_at))
         seen.set(key, { row: r, brand });
