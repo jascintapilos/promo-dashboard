@@ -383,8 +383,13 @@ export async function getPromotionDetail(site, promotionId) {
     // stay hidden for six weeks. Now we expose BOTH:
     //   - `amount_per_line`  — raw wire, trust always
     //   - `value_per_spin`   — computed, null when lines resolver can't decide
-    // Lines resolver reads game code (from main.free_spin_game_code).
-    const derived = computeValuePerSpin(rawApl, main.free_spin_game_code);
+    // QPRO stores `lines` explicitly (operator standard = 10); use it directly.
+    // QP2 stores lines=0 — fall back to the resolver (vs<N> convention gives 20
+    // for PP games, which matches QP2's /20 amount_per_line calculation).
+    const storedLines = cc.lines != null ? Number(cc.lines) : 0;
+    const derived = storedLines > 0
+      ? { value_per_spin: rawApl != null ? +(rawApl * storedLines).toFixed(4) : null, lines_per_spin: storedLines, inconclusive: rawApl == null }
+      : computeValuePerSpin(rawApl, main.free_spin_game_code);
     perCurrency[cc.currency] = {
       min_deposit: nz(cc.min_transfer) ?? nz(cc.min_deposit),
       max_bonus: nz(cc.max_bonus),
@@ -607,6 +612,8 @@ export async function updateDialogPopup(site, popup, { topOverrides = {}, conten
     affiliates_visibility:  popup.affiliates_visibility,
     always_pop:             popup.always_pop,
     label:                  popup.label,
+    ...(popup.site_id           !== undefined ? { site_id:           popup.site_id }           : {}),
+    ...(popup.do_not_show_again !== undefined ? { do_not_show_again: popup.do_not_show_again } : {}),
     contents,
     ...topOverrides,
   };

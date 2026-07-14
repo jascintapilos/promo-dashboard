@@ -203,10 +203,17 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   const recWithSite = siteIdOverride
     ? { ...rec, __site_override: siteIdOverride }
     : rec;
+  // For WS1/WS2 sites, resolve promotion_name_en to the WS-specific half before
+  // passing to buildTncRow — the raw value may be "generic\nWS1/WS2: unique" and
+  // buildTncRow would otherwise return the generic (non-WS) name as PromotionRewardName.
+  const isWsSite = Boolean(recWithSite.__site_override);
+  const resolvedRec = (isWsSite && typeof recWithSite.promotion_name_en === 'string')
+    ? { ...recWithSite, promotion_name_en: splitDualPromoName(recWithSite.promotion_name_en).ws1Unique }
+    : recWithSite;
   const locales = ['en'];
-  if (needsZh(recWithSite)) locales.push('zh');
+  if (needsZh(resolvedRec)) locales.push('zh');
   const auto = Object.fromEntries(
-    locales.map((loc) => [loc, buildTncRow(recWithSite, loc, bt)]),
+    locales.map((loc) => [loc, buildTncRow(resolvedRec, loc, bt)]),
   );
 
   // Explicit locale_contents overrides — map to API shape.
@@ -214,7 +221,7 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   for (const r of (rec.locale_contents || [])) {
     explicit[r.locale] = {
       Locale: r.locale,
-      PromotionRewardName: r.name || splitDualPromoName(rec.promotion_name_en).generic || rec.promotion_name,
+      PromotionRewardName: r.name || splitDualPromoName(resolvedRec.promotion_name_en).generic || resolvedRec.promotion_name,
       Content: r.content || '',
     };
   }
@@ -476,10 +483,15 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
     const raw = normalizedRec.promo_code;
     if (raw.includes('\n') || raw.includes('/')) {
       const codes = raw.split(/[\n/]/).map((s) => s.trim()).filter(Boolean);
+      // WS2-specific code: a line prefixed "WS2: <code>" overrides for ws2 site only.
+      const ws2Line = siteId === 'ws2'
+        ? codes.find((c) => c.startsWith('WS2:'))
+        : null;
+      const ws2Code = ws2Line ? ws2Line.replace(/^WS2:\s*/i, '').trim() : null;
       // With FT prefix: prefer the FT_ code. Without: prefer the non-FT_ code.
-      const primary = ftPrefix
+      const primary = ws2Code || (ftPrefix
         ? (codes.find((c) => c.startsWith('FT_')) || codes[0])
-        : (codes.find((c) => !c.startsWith('FT_')) || codes[0]);
+        : (codes.find((c) => !c.startsWith('FT_')) || codes[0]));
       normalizedRec.promo_code = primary;
     }
   }

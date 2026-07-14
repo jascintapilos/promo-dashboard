@@ -53,6 +53,7 @@ const commit = flags.commit === true;
 const brandOverride = flags.brand;
 const siteOverride = flags.site;
 const parallelQc = flags['parallel-qc'] === true;
+const allowRecreate = flags['allow-recreate'] === true; // skip idempotency bail when code exists but inactive
 
 // ── Load + resolve ────────────────────────────────────────────────────
 const { byHandle, byId, byCode } = await loadAllRequests();
@@ -67,7 +68,11 @@ if (handle !== userInput) console.log(`(auto-resolved "${userInput}" → "${hand
 const request = byHandle.get(handle);
 if (!request) { console.error(`handle "${handle}" not found`); return bail(2); }
 const bo = await loadBoCodeIndex();
-const resolved = await resolveDuplicates(request, byCode, { boIndex: bo.byCode, boFetcher: fetchBoCodeAsRecord });
+let resolved = await resolveDuplicates(request, byCode, { boIndex: bo.byCode, boFetcher: fetchBoCodeAsRecord });
+// Col W can hold multi-line codes (e.g. "CODE\nWS2: CODE_V2"). QPRO always uses line 1.
+if (resolved.promo_code && resolved.promo_code.includes('\n')) {
+  resolved = { ...resolved, promo_code: resolved.promo_code.split('\n')[0].trim() };
+}
 
 // ── Brand whitelist (QPRO only — QP2 routes through canary-api-qp2) ───
 // QPRO18 (Pokies Palace, AUD) + QPRO19 (OzPokies77, AUD) dropped 2026-05-16
@@ -140,11 +145,18 @@ const merchantKey = (BRAND_TO_SITE[targetBrand]?.merchantName || targetBrand).to
 try {
   const existing = await findPromotionByCode(site, resolved.promo_code);
   if (existing) {
-    console.error(`✖ IDEMPOTENCY: code "${resolved.promo_code}" already exists on ${siteId}/${merchantKey} (id=${existing.id}, status=${existing.status}).`);
-    console.error('  Skipping. Change the promo_code (sheet col W) and re-ingest if you need a fresh save.');
-    return bail(5);
+    const inactive = existing.status === 0 || existing.status === '0';
+    if (inactive && allowRecreate) {
+      console.log(`⚠ Code "${resolved.promo_code}" exists but is inactive (id=${existing.id}) — proceeding with --allow-recreate`);
+    } else {
+      console.error(`✖ IDEMPOTENCY: code "${resolved.promo_code}" already exists on ${siteId}/${merchantKey} (id=${existing.id}, status=${existing.status}).`);
+      if (inactive) console.error('  Promo is inactive — re-run with --allow-recreate to proceed.');
+      else console.error('  Skipping. Change the promo_code (sheet col W) and re-ingest if you need a fresh save.');
+      return bail(5);
+    }
+  } else {
+    console.log(`✓ Idempotency (live): no existing "${resolved.promo_code}" on ${siteId}/${merchantKey}`);
   }
-  console.log(`✓ Idempotency (live): no existing "${resolved.promo_code}" on ${siteId}/${merchantKey}`);
 } catch (e) {
   console.log(`⚠ Idempotency check skipped (live lookup failed): ${e.message.split('\n')[0]}`);
   // Don't abort — the BO will still reject duplicates server-side with 422.

@@ -191,6 +191,8 @@ function runCanary(job) {
     if (flags['no-ft-prefix']) args.push('--no-ft-prefix');
     // Forward parallel-qc to per-brand runners (QPRO + QP2 honor it; IGMP ignores).
     if (flags['parallel-qc']) args.push('--parallel-qc');
+    // Forward allow-recreate so inactive promos can be recreated (QPRO honors it).
+    if (flags['allow-recreate']) args.push('--allow-recreate');
     const siteTag = site ? `@${site.replace(/^ws1-v3-/, '')}` : '';
     const label = `${brand}${siteTag}${suffix || ''}`;
     const startedAt = Date.now();
