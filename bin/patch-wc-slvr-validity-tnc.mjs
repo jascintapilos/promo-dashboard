@@ -13,87 +13,68 @@ const COMMIT = process.argv.includes('--commit');
 const delay  = ms => new Promise(r => setTimeout(r, ms));
 
 const JOBS = [
-  { siteId: 'ibc22',  mtId: 1229, label: 'QP2C',   isQp2: true  },
-  { siteId: 'qpro3',  mtId: 512,  label: 'QPRO3'               },
-  { siteId: 'qpro4',  mtId: 444,  label: 'QPRO4'               },
-  { siteId: 'qpro5',  mtId: 346,  label: 'QPRO5'               },
-  { siteId: 'qpro7',  mtId: 539,  label: 'QPRO7'               },
-  { siteId: 'qpro10', mtId: 530,  label: 'QPRO10'              },
-  { siteId: 'qpro15', mtId: 353,  label: 'QPRO15'              },
-  { siteId: 'qpro16', mtId: 330,  label: 'QPRO16'              },
+  { siteId: 'ibc22',  mtId: 1229, label: 'QP2C'   },
+  { siteId: 'qpro3',  mtId: 512,  label: 'QPRO3'  },
+  { siteId: 'qpro4',  mtId: 444,  label: 'QPRO4'  },
+  { siteId: 'qpro5',  mtId: 346,  label: 'QPRO5'  },
+  { siteId: 'qpro7',  mtId: 539,  label: 'QPRO7'  },
+  { siteId: 'qpro10', mtId: 530,  label: 'QPRO10' },
+  { siteId: 'qpro15', mtId: 353,  label: 'QPRO15' },
+  { siteId: 'qpro16', mtId: 330,  label: 'QPRO16' },
 ];
 
-function patchEn(msg) {
-  const re = /thirty \(30\) days(, and the bonus will expire)/;
-  if (!re.test(msg)) return { msg, skipped: 'anchor-not-found (thirty (30) days)' };
-  return { msg: msg.replace(re, 'seven (7) days$1'), skipped: null };
-}
+// EN: "thirty (30) days" → "seven (7) days"
+const EN_RE = /thirty \(30\) days(, and the bonus will expire)/;
+// ZH: "30 天内领取" → "7 天内领取"
+const ZH_RE = /30 天内领取/;
 
-function patchZh(msg) {
-  const re = /30 天内领取/;
-  if (!re.test(msg)) return { msg, skipped: 'anchor-not-found (30 天内领取)' };
-  return { msg: msg.replace(re, '7 天内领取'), skipped: null };
+function patchMessage(msg, localeCode) {
+  const isZh = /zh/i.test(localeCode);
+  if (isZh) {
+    if (!ZH_RE.test(msg)) return { msg, skipped: 'anchor not found (30 天内领取)' };
+    return { msg: msg.replace(ZH_RE, '7 天内领取'), skipped: null };
+  }
+  if (!EN_RE.test(msg)) return { msg, skipped: 'anchor not found (thirty (30) days)' };
+  return { msg: msg.replace(EN_RE, 'seven (7) days$1'), skipped: null };
 }
-
-const SERVER_FIELDS = new Set(['id', 'created_at', 'updated_at', 'settings_locale_code']);
 
 async function run(job) {
   const site = getSite(job.siteId);
   console.log(`── ${job.label.padEnd(7)} mt_id=${job.mtId} ──`);
 
-  let detail;
-  try {
-    detail = await authedFetch(site, `/api/bo/messagetemplate/${job.mtId}`);
-  } catch (e) {
-    console.log(`  ✗ GET failed: ${e.message.slice(0, 120)}\n`); return;
-  }
+  const res = await authedFetch(site, `/api/bo/messagetemplate/${job.mtId}`);
+  const raw = res?.data?.rows || res?.data;
+  const tmpl = raw?.message_template || res?.data?.message_template;
+  const msgDetails = raw?.message_details || res?.data?.message_details || {};
 
-  const mt = detail?.data;
-  if (!mt) { console.log('  ✗ no data\n'); return; }
+  if (!tmpl) { console.log('  ✗ could not fetch template\n'); return; }
 
-  const details = JSON.parse(JSON.stringify(mt.details || {}));
+  const details = {};
   let patched = false;
 
-  for (const [locId, d] of Object.entries(details)) {
+  for (const [locId, d] of Object.entries(msgDetails)) {
     if (!d?.message) continue;
-    const locCode = d.settings_locale_code || locId;
-    const isZh = /zh/i.test(locCode);
-    const { msg: newMsg, skipped } = isZh ? patchZh(d.message) : patchEn(d.message);
+    const locCode = d.settings_locales_code || d.settings_locale_code || '';
+    const { msg: newMsg, skipped } = patchMessage(d.message, locCode);
+    details[locId] = { settings_locale_id: d.settings_locale_id, subject: d.subject || '', message: newMsg };
     if (skipped) {
       console.log(`  loc=${locId} (${locCode}) — skipped: ${skipped}`);
-      continue;
+    } else {
+      console.log(`  loc=${locId} (${locCode}) — patched`);
+      patched = true;
     }
-    details[locId].message = newMsg;
-    patched = true;
-    console.log(`  loc=${locId} (${locCode}) — ${isZh ? 'ZH' : 'EN'} patched`);
   }
 
   if (!patched) { console.log('  → nothing to update\n'); return; }
   if (!COMMIT)  { console.log(`  [DRY-RUN] would PUT /api/bo/messagetemplate/${job.mtId}\n`); return; }
 
-  const cleanDetails = {};
-  for (const [k, d] of Object.entries(details)) {
-    if (!d) { cleanDetails[k] = d; continue; }
-    cleanDetails[k] = Object.fromEntries(Object.entries(d).filter(([f]) => !SERVER_FIELDS.has(f)));
-  }
-
-  const body = {
-    name:    mt.name,
-    section: mt.section,
-    type:    mt.type,
-    status:  mt.status,
-    details: cleanDetails,
-    ...(job.isQp2 ? { site_id: 3 } : {}),
-  };
+  const putBody = { name: tmpl.name, section: tmpl.section, type: tmpl.type, status: tmpl.status, details };
+  if (job.siteId.startsWith('qpro')) putBody.code = tmpl.code;
 
   await delay(600);
-  try {
-    const res = await authedFetch(site, `/api/bo/messagetemplate/${job.mtId}`, { method: 'PUT', body });
-    const ok = res?.success !== false;
-    console.log(`  PUT ${ok ? '✅ OK' : '❌ FAILED — ' + JSON.stringify(res?.message || '')}\n`);
-  } catch (e) {
-    console.log(`  PUT ✗ ${e.message.slice(0, 200)}\n`);
-  }
+  const putRes = await authedFetch(site, `/api/bo/messagetemplate/${job.mtId}`, { method: 'PUT', body: putBody });
+  const ok = putRes?.success === true || putRes?.data != null;
+  console.log(`  PUT ${ok ? '✅ OK' : '❌ FAILED — ' + JSON.stringify(putRes?.message || '')}\n`);
 }
 
 console.log(`WC_SLVR_28FC_10X MT validity patch — ${COMMIT ? 'LIVE' : 'DRY-RUN'}\n`);
