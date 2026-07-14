@@ -130,11 +130,10 @@ if (Object.keys(dl).length === 0) { console.error('  no popups to link — abort
 if (!commit) { console.log('DRY-RUN — add --commit to PUT'); process.exit(0); }
 
 const plan = await buildApiPlan(resolved, { brand: 'QP2A', site, merchantIds });
-const putBody = plan.buildUpdate(promo.id, templateId, null);
+const putBody = plan.buildUpdate(promo.id, templateId, null, smsMtId);
 const mObj = {}; merchantIds.forEach((id, idx) => { mObj[String(idx)] = id; });
 putBody.merchant_ids = mObj;
 putBody.dialog_popup_list = dl;
-if (smsMtId) putBody.message_template_sms_id = smsMtId;
 
 await updatePromotion(site, promo.id, putBody);
 

@@ -825,7 +825,7 @@ function buildNameBodies(resolved, promotionId) {
 
 // ── PUT /promotion/<id> builder (with optional dialog popup link) ────────
 
-function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null, categoryProviders = null) {
+function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrands = null, depositOptionsByCurrency = null, blacklistTemplateId = null, categoryProviders = null, smsMtId = 0) {
   const ids = QP2_BRAND_TO_IDS[brand];
   if (!ids || !ids.merchantId) throw new Error(`api-mapper-qp2: brand "${brand}" merchant_id not configured`);
   const r = resolved.parsed || {};
@@ -912,7 +912,7 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
         : (categoryProviders?.targetCodes ?? QP2A_TARGET_GAME_PROVIDER_CODES),
     },
     message_template_id: templateId || 0,
-    message_template_sms_id: 0,
+    message_template_sms_id: smsMtId || 0,
     deposit_count: 0,
     active_period: 0,
     merchant_ids: { '0': ids.merchantId },
@@ -1114,8 +1114,8 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
     messageTemplate: await buildMessageTemplateBody(effectiveResolved, brand),
     dialogPopup: await buildDialogPopupBody(effectiveResolved, brand),
     buildNames: (promotionId) => buildNameBodies(effectiveResolved, promotionId),
-    buildUpdate: (promotionId, templateId, dialogPopup) =>
-      buildUpdateBody(effectiveResolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand, categoryProviders),
+    buildUpdate: (promotionId, templateId, dialogPopup, smsMtId = 0) =>
+      buildUpdateBody(effectiveResolved, brand, promotionId, templateId, dialogPopup, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand, categoryProviders, smsMtId),
     currencyFilter: effectiveResolved !== resolved
       ? { kept: effectiveResolved.currencies, dropped: resolved.currencies.filter((c) => !effectiveResolved.currencies.includes(c)) }
       : null,
