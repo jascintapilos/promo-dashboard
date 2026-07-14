@@ -47,6 +47,27 @@ function regionFromName(name) {
 function baseTitle(name) {
   return String(name || '').replace(/\b(mobile|desktop)\b/gi, '').replace(/\s+/g, ' ').trim();
 }
+// Derive a human-readable title from a slide's linkUrl slug, e.g.
+// "/promotion/info/mb8-playtech-golden-chip-challenge" + "mb8-" → "Playtech Golden Chip Challenge"
+function slugToTitle(linkUrl, brandPrefix) {
+  if (!linkUrl) return '';
+  const slug = String(linkUrl).split('/').pop();
+  const s = (brandPrefix && slug.startsWith(brandPrefix)) ? slug.slice(brandPrefix.length) : slug;
+  return s.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// Fetch imageId → linkUrl (EN preferred) from all slide translations.
+async function fetchTranslationMap(cms) {
+  try {
+    const r = await cms.get('/items/UICarousel_images_translations?limit=-1&fields=UICarousel_images_id,languages_code,linkUrl');
+    const map = new Map();
+    for (const row of (r.data || [])) {
+      const id = String(row.UICarousel_images_id);
+      if (!map.has(id) || row.languages_code === 'en') map.set(id, row.linkUrl || '');
+    }
+    return map;
+  } catch { return new Map(); }
+}
 const isoDate = (s) => String(s || '').slice(0, 10);
 
 // Normalise CMS display names → canonical team names.
@@ -86,8 +107,8 @@ async function fetchCreatorMap(cms, fromDate) {
 
 const creds = loadCmsCreds();
 const HOSTS = [
-  { brand: 'WS1', host: creds.hosts?.MB8   || 'https://cms.best-in-asia.com' },
-  { brand: 'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com' },
+  { brand: 'WS1', host: creds.hosts?.MB8   || 'https://cms.best-in-asia.com',        slugPrefix: 'mb8-' },
+  { brand: 'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com',    slugPrefix: 'rws77-' },
 ];
 
 const collected = [];
@@ -95,25 +116,27 @@ const errors = [];
 
 console.log(`\nPulling WS1/WS2 CMS banners with startDate >= ${FROM}  (${WRITE ? 'WRITE' : 'DRY RUN'})\n`);
 
-for (const { brand, host } of HOSTS) {
+for (const { brand, host, slugPrefix } of HOSTS) {
   process.stdout.write(`  ${brand.padEnd(6)} `);
   try {
     const cms = await cmsClient(host, creds);
-    const [cars, imgs, creatorMap] = await Promise.all([
+    const [cars, imgs, creatorMap, transMap] = await Promise.all([
       cms.get('/items/UICarousel?limit=-1&fields=id,component_name,status').then((r) => r.data || []),
       cms.get('/items/UICarousel_images?limit=-1&fields=id,startDate,endDate,UICarousel_id').then((r) => r.data || []),
       fetchCreatorMap(cms, FROM),
+      fetchTranslationMap(cms),
     ]);
     const carById = new Map(cars.map((c) => [c.id, c]));
 
-    const merged = new Map(); // baseTitle|||region|||start → row
+    const merged = new Map(); // title|||region|||start → row
     let slides = 0;
     for (const im of imgs) {
       if (isoDate(im.startDate) < FROM) continue;
       const car = carById.get(im.UICarousel_id);
       if (!car) continue;
       slides++;
-      const title = baseTitle(car.component_name);
+      const carouselTitle = baseTitle(car.component_name);
+      const title = slugToTitle(transMap.get(String(im.id)), slugPrefix) || carouselTitle;
       const region = regionFromName(car.component_name);
       const start = isoDate(im.startDate);
       const key = `${title}|||${region}|||${start}`;
@@ -122,7 +145,7 @@ for (const { brand, host } of HOSTS) {
       const uploaded = act.uploaded || '';
       if (!merged.has(key)) {
         merged.set(key, {
-          uploaded, start, brand, region, title,
+          uploaded, start, brand, region, title, carouselTitle,
           end: isoDate(im.endDate),
           status: car.status === 'published' ? 'Active' : 'Draft',
           creator,
@@ -160,7 +183,12 @@ async function existingKeys() {
   } catch { return new Set(); }
 }
 const known = await existingKeys();
-const fresh = collected.filter((r) => !known.has(`${r.title}|||${r.brand}|||${r.start}`));
+// A row is already logged if either its creative title OR its legacy carousel title matches.
+// The legacy check handles rows written before this patch used generic "MB8 MYS Homepage" titles.
+const fresh = collected.filter((r) =>
+  !known.has(`${r.title}|||${r.brand}|||${r.start}`) &&
+  !known.has(`${r.carouselTitle}|||${r.brand}|||${r.start}`)
+);
 
 console.log(`\n${'─'.repeat(72)}`);
 console.log(`Collected ${collected.length} CMS banners · ${fresh.length} NEW for Banner Log · ${collected.length - fresh.length} already logged`);
