@@ -311,7 +311,19 @@ try {
           console.error(`  QP2 brands are serialised by canary-multi-brand.js so this is not a scheduling race — investigate a BO-side issue (stale session, server error) and re-run this brand alone.`);
           return bail(9);
         }
-        console.log(`✓ Extended. merchant_ids now: ${verifyIds.join(', ')}${clonedPopup ? `; popup id=${clonedPopup.id} attached` : ''}`);
+        // Verify the newly-cloned popup was actually linked (not silently dropped by BO).
+        let dlCount = 0;
+        if (clonedPopup) {
+          const dlVerifResp = await authedFetch(site, `/api/bo/promotion?code=${encodeURIComponent(resolved.promo_code)}&perPage=10`);
+          const dlVerifRow  = (dlVerifResp?.data?.rows || []).find((r) => r.id === existing.id);
+          const dlList = dlVerifRow?.dialog_popup_list || [];
+          dlCount = dlList.length;
+          const dlLinked = dlList.some((p) => p.popup_id === clonedPopup.id);
+          if (!dlLinked) {
+            console.warn(`  ⚠ dialog popup ${clonedPopup.id} NOT found in dialog_popup_list after PUT (${dlCount} linked) — run: node bin/relink-qp2-dialogs.mjs ${handle} --commit`);
+          }
+        }
+        console.log(`✓ Extended. merchant_ids now: ${verifyIds.join(', ')}${clonedPopup ? `; popup id=${clonedPopup.id} attached (${dlCount} total dialogs)` : ''}`);
         if (expandedPlan.memberGroupIds) {
           console.log(`  member_group_ids expanded: ${expandedPlan.memberGroupIds.length} groups across merchants [${allIds.join(',')}]`);
         }
@@ -629,7 +641,7 @@ try {
     const boPopups = listRow?.dialog_popup_list || [];
     const linked = boPopups.some((p) => p.popup_id === dialogPopup.id);
     l3['Dialog_linked'] = linked;
-    console.log(`  Dialog linked:    id=${dialogPopup.id}  ${linked ? '✓' : '✗'}`);
+    console.log(`  Dialog linked:    id=${dialogPopup.id}  count=${boPopups.length}  ${linked ? '✓' : '✗ (not in dialog_popup_list — run relink-qp2-dialogs.mjs)'}`);
   } else {
     console.log('  Dialog:           (none expected)');
   }
