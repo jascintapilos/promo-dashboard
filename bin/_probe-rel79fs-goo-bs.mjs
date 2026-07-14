@@ -1,0 +1,11 @@
+import { authedFetch } from '../src/api-client.js';
+import { getSite } from '../src/sites.js';
+const site = getSite('ibc22');
+const det = await authedFetch(site, `/api/bo/promotion/360`);
+const p = det?.data?.rows || det?.data;
+console.log('validity:', p.validity, 'reward_validity:', p.reward_validity);
+console.log('free_spin_game_provider_id:', p.free_spin_game_provider_id, 'free_spin_game_code:', p.free_spin_game_code);
+console.log('game_provider_codes:', JSON.stringify(p.game_provider_codes));
+console.log('promotion_category_ids:', JSON.stringify(p.promotion_category_ids));
+console.log('\n=== bonus_settings ===');
+console.log(JSON.stringify(p.bonus_settings, null, 2));
