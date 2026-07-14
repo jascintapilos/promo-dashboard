@@ -86,7 +86,11 @@ if (handle !== userInput) console.log(`(auto-resolved "${userInput}" → "${hand
 const request = byHandle.get(handle);
 if (!request) { console.error(`handle "${handle}" not found`); return bail(2); }
 const bo = await loadBoCodeIndex();
-const resolved = await resolveDuplicates(request, byCode, { boIndex: bo.byCode, boFetcher: fetchBoCodeAsRecord });
+let resolved = await resolveDuplicates(request, byCode, { boIndex: bo.byCode, boFetcher: fetchBoCodeAsRecord });
+// Col W can hold multi-line codes (e.g. "CODE\nWS2: CODE_V2"). QP2 always uses line 1.
+if (resolved.promo_code && resolved.promo_code.includes('\n')) {
+  resolved = { ...resolved, promo_code: resolved.promo_code.split('\n')[0].trim() };
+}
 
 // Apply code override (--code=<new_code>) — used when re-creating a QP2
 // promo with a different code than the one in col W (e.g. drop _TO suffix
