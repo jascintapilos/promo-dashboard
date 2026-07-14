@@ -45,7 +45,9 @@ const resolved = await resolveDuplicates(request, byCode, {});
 // The dual-format is written to col W when QPRO/WS and QP2 have different codes.
 function extractQp2Code(raw) {
   const m = String(raw || '').match(/^QP2:\s*(.+)$/m);
-  return m ? m[1].trim() : String(raw || '').trim();
+  if (m) return m[1].trim();
+  // Multi-line without QP2: prefix (e.g. "CODE\nCODE_V2 (QPRO1)") — QP2 always uses line 1.
+  return String(raw || '').split('\n')[0].trim();
 }
 const code = extractQp2Code(resolved.promo_code);
 // Stamp the extracted code so buildApiPlan / buildUpdate send the right code to BO.
