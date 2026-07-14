@@ -68,6 +68,10 @@ if (!promo) { console.error(`promo "${code}" not found on ibc22`); process.exit(
 const detail = (await authedFetch(site, `/api/bo/promotion/${promo.id}`)).data.rows;
 const merchantIds = (detail.merchant_ids || []).map((m) => (typeof m === 'object' ? m.id : m));
 const templateId = detail.message_template_id || 0;
+// Preserve existing SMS MT link from listing (detail endpoint omits this field)
+const listCheck = await authedFetch(site, `/api/bo/promotion?code=${encodeURIComponent(code)}&perPage=10`);
+const listRow = (listCheck?.data?.rows || []).find((r) => r.id === promo.id);
+const smsMtId = listRow?.message_template_sms_id || 0;
 
 // Primary source: the deterministic registry written by canary-api-qp2.js at
 // popup-create time ({ site -> popup_id }). Fallback (older promos created
@@ -130,6 +134,7 @@ const putBody = plan.buildUpdate(promo.id, templateId, null);
 const mObj = {}; merchantIds.forEach((id, idx) => { mObj[String(idx)] = id; });
 putBody.merchant_ids = mObj;
 putBody.dialog_popup_list = dl;
+if (smsMtId) putBody.message_template_sms_id = smsMtId;
 
 await updatePromotion(site, promo.id, putBody);
 
