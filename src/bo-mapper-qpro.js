@@ -334,8 +334,8 @@ export function buildActions(resolved, { brand } = {}) {
       row.max_transfer_out   = override.max_transfer_out ?? r2.max_transfer_out ?? 0;
       row.min_transfer       = override.min_deposit      ?? r2.min_deposit      ?? 0;
     } else if (isFs) {
-      // House convention (operator rule 2026-05-13):
-      //   • lines = 10, coins = 1 (form constants, NOT changed by request)
+      // House convention:
+      //   • lines = 0, coins = 0 (form constants, NOT changed by request)
       //   • amount_per_line = floor(value_per_spin / 20, 2dp)
       //     BO rejects sub-cent amounts: 0.50/20=0.025 → floor → 0.02.
       // Emit BOTH `rounds` and `total_rounds` as the popup's spin-count
@@ -357,8 +357,8 @@ export function buildActions(resolved, { brand } = {}) {
       row.amount_per_line  = apl != null
         ? +Number(apl).toFixed(4)
         : Math.floor(valuePerSpinRaw / 20 * 100) / 100;
-      row.lines            = 10;
-      row.coins            = 1;
+      row.lines            = 0;
+      row.coins            = 0;
       row.bonus_amount     = 0;
       row.bonus_rate       = 0;
       row.max_transfer_out = override.max_transfer_out  ?? r2.max_transfer_out  ?? 0;

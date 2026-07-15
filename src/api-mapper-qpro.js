@@ -406,31 +406,29 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const spinCount     = o.spin_count      ?? r.spin_count      ?? 0;
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? 0;
-  const lines         = o.lines           ?? r.lines           ?? 10;
   // Playtech games take amount_per_line as a direct currency bet amount
   // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
   // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green
   // Wizard"): dividing 0.20 by anything landed on 0.02/0.01, neither of
   // which the BO accepted; sending 0.20 as-is was the only accepted value.
-  // Pragmatic Play operator standard: coins=1, lines=10 (hardcoded like
-  // coins — confirmed 2026-07-13). amount_per_line = value_per_spin / 10,
-  // BO computes amount_per_line × lines = value_per_spin.
+  // Current operator standard: coins=0, lines=0, and Pragmatic Play/default
+  // amount_per_line = value_per_spin / 20.
   const isPlaytech    = /playtech/i.test(r.game_provider || '');
   // Playtech FS mechanic (operator rule 2026-07-10): coins=0, lines=0,
   // amount_per_line=the direct bet-per-spin amount.
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
-    coins:           isPlaytech ? 0 : 1,
+    coins:           0,
     // If sheet stated amount_per_line directly, use it.
     // Playtech: use value_per_spin as-is (no division — see comment above).
-    // Else (Pragmatic Play/default): divide value_per_spin by 10, floor 2dp.
+    // Else (Pragmatic Play/default): divide value_per_spin by 20, floor 2dp.
     amount_per_line: aplRaw != null
       ? +Number(aplRaw).toFixed(4)
       : isPlaytech
         ? +Number(valuePerSpin).toFixed(2)
-        : Math.floor(valuePerSpin / 10 * 100) / 100,
+        : Math.floor(valuePerSpin / 20 * 100) / 100,
     rounds:          spinCount,
-    lines:           isPlaytech ? 0 : lines,
+    lines:           0,
     min_transfer:    o.min_deposit  ?? r.min_deposit  ?? 0,
     max_total_applications: 0,
     max_total_bonus:        0,
