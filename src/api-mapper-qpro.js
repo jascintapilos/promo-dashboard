@@ -713,6 +713,25 @@ function smsGameToken(resolved) {
   return gameAcronym(label) || null;
 }
 
+function buildSmsGenericSubject(resolved) {
+  const parsed = resolved.parsed || {};
+  const vipHay = `${resolved.promo_code || ''} ${resolved.campaign || ''} ${resolved.remark || ''} ${resolved.name_details_raw || ''}`;
+  const prefix = /\bvip\b/i.test(vipHay) ? 'VIP Exclusive' : 'Exclusive Offer';
+  const bt = String(resolved.bonus_type || '').toLowerCase();
+  if (bt.includes('free spin') && parsed.spin_count != null) {
+    return `${prefix} — ${parsed.spin_count} Free Spins`;
+  }
+  const freeCredit = Object.values(resolved.per_currency_overrides || {}).find((v) => v?.free_credit_amount != null)?.free_credit_amount
+    ?? parsed.free_credit_amount;
+  if (bt.includes('free credit') && freeCredit != null) {
+    return `${prefix} — ${freeCredit} Free Credit`;
+  }
+  if ((bt.includes('deposit') || bt.includes('reload') || bt.includes('welcome')) && parsed.bonus_rate_pct != null) {
+    return `${prefix} — ${parsed.bonus_rate_pct}% Reload Bonus`;
+  }
+  return prefix;
+}
+
 function buildSmsLocaleCopy(resolved, locale) {
   const dk = localeDocKey(locale);
   const isZh = dk === 'ZH';
@@ -730,43 +749,34 @@ function buildSmsLocaleCopy(resolved, locale) {
   const bt = String(resolved.bonus_type || '').toLowerCase();
 
   if (bt.includes('free spin') && spinCount != null && to != null) {
-    const subject = `${spinCount}FS${gameToken ? ` ${gameToken}` : ''}`.trim();
     if (isZh) {
       return {
-        subject,
         message: `${prefix}:username ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
       };
     }
     return {
-      subject,
       message: `${prefix}:brandname: :username, last call for ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}.${minDepToken ? ` ${minDepToken}/` : ' '}TO${to}x. Claim now: :url`.replace(' .', '.'),
     };
   }
 
   if (bt.includes('free credit') && freeCredit != null && to != null) {
-    const subject = `${freeCredit}FC`;
     if (isZh) {
       return {
-        subject,
         message: `${prefix}:username ${freeCredit}FC。TO${to}x。:url`,
       };
     }
     return {
-      subject,
       message: `${prefix}:brandname: :username, last call for ${freeCredit}FC. TO${to}x. Claim now: :url`,
     };
   }
 
   if ((bt.includes('deposit') || bt.includes('reload') || bt.includes('welcome')) && bonusPct != null && to != null) {
-    const subject = `${bonusPct}% dep BNS`;
     if (isZh) {
       return {
-        subject,
         message: `${prefix}:username ${bonusPct}% dep BNS。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
       };
     }
     return {
-      subject,
       message: `${prefix}:brandname: :username, ${bonusPct}% dep BNS is on.${minDepToken ? ` Min ${minDepToken}/` : ' '}TO${to}x. Act now: :url`.replace(' .', '.'),
     };
   }
@@ -779,6 +789,7 @@ async function buildSmsTemplateBody(resolved, brand) {
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   void brand;
 
+  const subject = buildSmsGenericSubject(resolved);
   const details = {};
   for (const locale of resolved.locales || []) {
     const settingsId = LOCALE_TO_SETTINGS_ID[locale];
@@ -787,7 +798,7 @@ async function buildSmsTemplateBody(resolved, brand) {
     if (!copy) continue;
     details[String(settingsId)] = {
       settings_locale_id: settingsId,
-      subject: copy.subject,
+      subject,
       message: copy.message,
     };
   }
