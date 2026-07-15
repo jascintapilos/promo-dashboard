@@ -6,10 +6,11 @@
 //
 // WHAT IT CHECKS (not exhaustive — MT content analysis stays with Sentinel):
 //   Triage : required fields, currency/region alignment, parsed keys,
-//            FS spin ceiling (REL_/RET_), campaign prefix tokens (NOTE)
+//            TEST intent, FS game presence, campaign prefix tokens (NOTE)
 //   Plan   : blacklist_template, merchant_ids, promotion_currency coverage,
 //            reward-value vs source match, QP2 deposit_status, IGMP game
-//            resolution, campaign prefix tokens (FAIL severity)
+//            resolution, FS amount_per_line/coins/lines, stale bundles,
+//            campaign prefix tokens (FAIL severity)
 //
 // WHAT IT DOES NOT CHECK (deferred to Sentinel post-save):
 //   MT body content/vocabulary, HTML entity encoding, dialog body vocabulary,
@@ -20,7 +21,7 @@
 //   node bin/canary-validate.js <handle> --plan   # plan check only (after dry-run)
 //   node bin/canary-validate.js <handle> --all    # triage + plan check
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
@@ -35,6 +36,12 @@ if (!userInput) {
 
 const doPlan   = flags.plan === true || flags.all === true;
 const doTriage = flags.plan !== true || flags.all === true; // omit = triage; --plan = plan only; --all = both
+const brandFilter = flags.brands
+  ? new Set(String(flags.brands).split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
+  : null;
+const excludeFilter = flags.exclude
+  ? new Set(String(flags.exclude).split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
+  : null;
 
 const { byHandle, byId } = await loadAllRequests();
 const handle = resolveHandle(userInput, { byHandle, byId });
@@ -113,6 +120,30 @@ function checkCampaignPrefix(code, campaign, campaignOwner, noDeposit) {
   return findings;
 }
 
+function hasStandaloneTestIntent(record) {
+  const hay = [
+    record?.remark,
+    record?.name_details_raw,
+    record?.change_details,
+  ].filter(Boolean).join('\n');
+  return record?.instructions?.add_test_prefix === true
+    || /(?:^|\n)\s*(?:test|testing|for\s+testing|test\s+purpose|testing\s+purpose|training\s+purpose\s+only)\s*\.?\s*(?:\n|$)/i.test(hay);
+}
+
+function firstCodeLine(code) {
+  return String(code || '').split('\n')[0].trim();
+}
+
+function expectedFsAmountPerLine(valuePerSpin, { isPlaytech = false } = {}) {
+  const n = Number(valuePerSpin);
+  if (!Number.isFinite(n)) return null;
+  return isPlaytech ? +n.toFixed(2) : Math.floor(n / 20 * 100) / 100;
+}
+
+function nearlyEqual(a, b) {
+  return Math.abs(Number(a) - Number(b)) < 0.00001;
+}
+
 // ── TRIAGE ─────────────────────────────────────────────────────────────────
 
 let triageVerdict = 'READY';
@@ -135,6 +166,14 @@ if (doTriage) {
   if (!request.promotion_name_en) reject('promotion_name_en', 'promotion_name_en missing', 'Set promo name in col X');
   if (!request.requestor)       note('requestor', 'requestor not set', 'Set requestor field');
 
+  if (hasStandaloneTestIntent(request) && !/^TEST_/i.test(firstCodeLine(request.promo_code))) {
+    reject(
+      'promo_code',
+      'Remark/details indicate TEST intent, but promo_code does not start with TEST_',
+      'Re-ingest after fixing auto-name, or set col W to a TEST_ code before dry-run'
+    );
+  }
+
   // Currency / region alignment
   for (const region of (request.regions || [])) {
     const expected = CURRENCY_FOR_REGION[region];
@@ -155,14 +194,12 @@ if (doTriage) {
     if (p[field] == null) reject(`parsed.${field}`, `parsed.${field} missing for ${request.bonus_type}`, 'Fill in the relevant source sheet column');
   }
 
-  // FS spin ceiling on REL_/RET_ (NOTE only — operator may intentionally override)
-  if (bt === 'free spin' && p.spin_count != null) {
-    const code       = (request.promo_code || '').replace(/^(TEST_|FT_)/, '');
-    const isRelRet   = code.includes('_REL_') || code.includes('_RET_');
-    const isWelc     = code.includes('_WELC_');
-    const isReferral = code.startsWith('REFEREE_') || code.startsWith('REFERRER_');
-    if (isRelRet && !isWelc && !isReferral && p.spin_count > 88) {
-      note('parsed.spin_count', `spin_count=${p.spin_count} exceeds 88-spin ceiling for REL_/RET_ codes`, 'Confirm with operator or reduce spin count');
+  if (bt === 'free spin') {
+    if (!p.game && !p.game_by_brand) {
+      reject('parsed.game', 'Free Spin game missing', 'Add the game name/code in source details and re-ingest');
+    }
+    if (!p.game_provider && !p.game_provider_by_brand) {
+      note('parsed.game_provider', 'Free Spin provider not explicit; mapper will use its default/provider resolver', 'Confirm provider only if game is not under the default resolver');
     }
   }
 
@@ -228,10 +265,16 @@ if (doPlan) {
 
   let anyFail = false;
   let anyWarn = false;
+  let checked = 0;
 
   for (const filename of bundles) {
-    const bundle   = JSON.parse(await readFile(path.join(planDir, filename), 'utf8'));
+    const planPath = path.join(planDir, filename);
+    const bundle   = JSON.parse(await readFile(planPath, 'utf8'));
     const brand    = bundle.brand;
+    const brandKey = String(brand || '').toUpperCase();
+    if (brandFilter && !brandFilter.has(brandKey)) continue;
+    if (excludeFilter && excludeFilter.has(brandKey)) continue;
+    checked++;
     const platform = (bundle.platform || '').toLowerCase();
     const src      = bundle.source || {};
     const plan     = bundle.plan   || {};
@@ -243,6 +286,19 @@ if (doPlan) {
     const pFail = (field, msg) => findings.push({ sev: 'FAIL', field, msg });
     const pWarn = (field, msg) => findings.push({ sev: 'WARN', field, msg });
     const findings = [];
+
+    try {
+      const [reqStat, planStat] = await Promise.all([stat(requestPath), stat(planPath)]);
+      if (reqStat.mtimeMs > planStat.mtimeMs + 1000) {
+        pFail('plan_bundle', 'Plan bundle is older than the source request snapshot; re-run dry-run before commit');
+      }
+    } catch {
+      pFail('plan_bundle', 'Could not compare request and plan timestamps');
+    }
+
+    if (hasStandaloneTestIntent({ ...request, ...src }) && !/^TEST_/i.test(firstCodeLine(bundle.promo_code))) {
+      pFail('promo_code', 'Remark/details indicate TEST intent, but planned promo_code does not start with TEST_');
+    }
 
     // ── Structural ──────────────────────────────────────────────────────────
     if (!plan.promotion) {
@@ -314,16 +370,25 @@ if (doPlan) {
         if (planSpins != null && p.spin_count != null && Number(planSpins) !== Number(p.spin_count)) {
           pFail('spin_count', `Plan=${planSpins} vs source=${p.spin_count}`);
         }
-        // Spin ceiling (FAIL here — code already in the plan)
-        const code       = (bundle.promo_code || '').replace(/^(TEST_|FT_)/, '');
-        const isWelc     = code.includes('_WELC_');
-        const isReferral = code.startsWith('REFEREE_') || code.startsWith('REFERRER_');
-        if (!isWelc && !isReferral && p.spin_count > 88) {
-          pFail('spin_count', `spin_count=${p.spin_count} exceeds 88-spin ceiling`);
-        }
         // FS game code resolved
         if (!prom.free_spin_game_code && !prom.fs_game_code) {
           pFail('free_spin_game_code', 'FS game code not resolved — commit will fail');
+        }
+        if (!prom.free_spin_game_provider_id && !prom.fs_game_provider_id && !prom.game_provider_codes) {
+          pFail('free_spin_game_provider_id', 'FS provider not resolved — commit will fail');
+        }
+        if (promCur) {
+          const rows = Object.values(promCur);
+          const isPlaytech = /playtech/i.test(src.parsed?.game_provider || '');
+          const expectedApl = expectedFsAmountPerLine(p.value_per_spin, { isPlaytech });
+          for (const row of rows) {
+            const label = row.currency || row.currency_id || '?';
+            if (Number(row.coins) !== 0) pFail('coins', `${brand} ${label}: coins=${row.coins}; expected 0`);
+            if (Number(row.lines) !== 0) pFail('lines', `${brand} ${label}: lines=${row.lines}; expected 0`);
+            if (expectedApl != null && !nearlyEqual(row.amount_per_line, expectedApl)) {
+              pFail('amount_per_line', `${brand} ${label}: amount_per_line=${row.amount_per_line}; expected ${expectedApl} from value_per_spin=${p.value_per_spin}`);
+            }
+          }
         }
       }
     }
@@ -397,7 +462,10 @@ if (doPlan) {
   }
 
   console.log('');
-  if (anyFail) {
+  if (checked === 0) {
+    console.log('✗ Plan check FAIL — no plan bundles matched the requested brand filter.');
+    process.exitCode = 1;
+  } else if (anyFail) {
     console.log('✗ Plan check FAIL — fix issues above, re-ingest, and re-run dry-run before committing.');
     process.exitCode = 1;
   } else if (anyWarn) {
