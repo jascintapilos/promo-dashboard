@@ -29,7 +29,7 @@
 //
 // Exit code = max of all child exits (non-zero if any brand failed).
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
@@ -60,6 +60,25 @@ if (!request) {
   console.error(`handle "${handle}" not found in byHandle map (race condition?)`);
   process.exit(2);
 }
+
+function runValidator(args, label) {
+  console.log('');
+  console.log(`VALIDATION — ${label}`);
+  const forwarded = [...args];
+  if (flags.brands) forwarded.push(`--brands=${flags.brands}`);
+  if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
+  const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
+    stdio: 'inherit',
+    shell: false,
+  });
+  const code = res.status ?? 1;
+  if (code !== 0) {
+    console.error(`Validation failed (${label}); stopping before ${commit ? 'live commit' : 'continuing'}.`);
+    process.exit(code);
+  }
+}
+
+runValidator(commit ? ['--all'] : [], commit ? 'source + existing plan' : 'source');
 
 let brands = request.brands || [];
 if (brands.length === 0) {
@@ -268,7 +287,21 @@ for (const r of results) {
   console.log(`  ${pad(r.label || r.brand, 12)} ${pad(status, 16)} ${(r.ms / 1000).toFixed(1)}s`);
 }
 
-const worst = results.reduce((acc, r) => Math.max(acc, r.code || 0), 0);
+let worst = results.reduce((acc, r) => Math.max(acc, r.code || 0), 0);
+
+if (!commit && worst === 0) {
+  console.log('');
+  console.log('VALIDATION — generated plan');
+  const forwarded = ['--plan'];
+  if (flags.brands) forwarded.push(`--brands=${flags.brands}`);
+  if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
+  const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
+    stdio: 'inherit',
+    shell: false,
+  });
+  const code = res.status ?? 1;
+  if (code !== 0) worst = Math.max(worst, code);
+}
 
 // ── QP2 dialog relink (rescue only) ────────────────────────────────────
 // Sequential QP2 saves (enforced above) mean each EXTEND reads the
