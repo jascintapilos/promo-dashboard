@@ -825,6 +825,8 @@ export function parseInstructions(remark, nameDetails, changeDetails) {
     /\b(?:add|append|include|use|tag|mark)\s+(?:as\s+)?(?:the\s+)?['"]?TEST['"]?(?:\s+(?:to|on|in|as)\s+(?:the\s+)?(?:code|prefix))?\b/i,
     // "prefix TEST" / "TEST prefix" / "TEST code"
     /\b(?:prefix\s+['"]?TEST['"]?|['"]?TEST['"]?\s+(?:prefix|code))\b/i,
+    // Standalone operator marker in the remark, e.g. "Info Ready\n\nTest".
+    /(?:^|\n)\s*(?:test|testing|for\s+testing|test\s+purpose|testing\s+purpose|training\s+purpose\s+only)\s*\.?\s*(?:\n|$)/i,
   ];
   if (TEST_PREFIX_PATTERNS.some((re) => re.test(all))) {
     addTestPrefix = true;
