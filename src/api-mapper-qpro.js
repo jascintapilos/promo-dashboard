@@ -539,10 +539,12 @@ function buildPromotionBody(resolved, gpIdsForBrand = null, catIdsForBrand = nul
     visible_by_affiliate: 0,
     recurring: resolved.recurring === true ? '1' : '0',
     // Operator-supplied caps from sheet col T (parsed in src/ingest-xlsx.js).
-    // Fallback: max_per_player=99999 (effectively unlimited), daily_max=1
-    // (one claim per day) — matches the legacy hardcoded defaults.
+    // Fallback:
+    //   - max_per_player=99999 (effectively unlimited)
+    //   - daily_max=99999 for recurring promos
+    //   - daily_max=1 for one-time promos
     max_per_player: resolved.max_per_player ?? 99999,
-    daily_max: resolved.daily_max ?? 1,
+    daily_max: resolved.daily_max ?? (resolved.recurring === true ? 99999 : 1),
     limit_transfer_in: true,
     limit_transfer_out: true,
     // FS captures show `restrict_claim_round_active: true` (not 1); others 0.

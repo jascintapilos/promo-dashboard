@@ -280,9 +280,10 @@ export function buildActions(resolved, { brand } = {}) {
     });
   }
 
-  // Max Per Player Lifetime + Daily Max — defaults per skill
+  // Max Per Player Lifetime + Daily Max — recurring promos use 99999 daily max,
+  // one-time promos keep daily max at 1.
   push({ kind: 'number', selector: 'input[formcontrolname="max_per_player"]', value: 99999, label: 'Max Per Player (Lifetime)' });
-  push({ kind: 'number', selector: 'input[formcontrolname="daily_max"]',      value: 1,     label: 'Daily Max' });
+  push({ kind: 'number', selector: 'input[formcontrolname="daily_max"]',      value: effectiveRecurring === true ? 99999 : 1, label: 'Daily Max' });
 
   // ── Status (within the form, last dropdown) ─────────────────────────
   // QPRO11's Status defaults to "Active" and the select is rendered disabled
