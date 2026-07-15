@@ -565,6 +565,7 @@ try {
   console.log('');
   console.log('── QC (Level 1: Record exists) ─────────────────────────────');
   const listRow = qcR1.ok ? qcR1.value : null;
+  let l1Pass = false;
   if (!listRow) {
     console.error(`✗ QC L1 FAIL — code not found on BO after save${qcR1.ok ? '' : ` (${qcR1.error})`}`);
   } else {
@@ -577,7 +578,8 @@ try {
     console.log(`  Code:          ${listRow.code}  ${l1.codeMatch ? '✓' : '✗'}`);
     console.log(`  Name:          ${listRow.name}  ${l1.nameSet ? '✓' : '✗'}`);
     console.log(`  Status:        ${listRow.status}`);
-    if (Object.values(l1).every(Boolean)) {
+    l1Pass = Object.values(l1).every(Boolean);
+    if (l1Pass) {
       console.log('✓ QC Level 1 PASS');
     } else {
       const failing = Object.entries(l1).filter(([,v]) => !v).map(([k]) => k).join(', ');
@@ -587,6 +589,7 @@ try {
 
   console.log('');
   console.log('── QC (Level 2: Mechanics) ─────────────────────────────────');
+  let l2Pass = false;
   if (!qcR2.ok) {
     console.warn(`⚠ QC Level 2 skipped: ${qcR2.error}`);
   } else {
@@ -614,7 +617,9 @@ try {
     for (const line of mechLog) console.log(line);
     if (Object.keys(mechChecks).length === 0) {
       console.log('  (no numeric fields to verify for this bonus type)');
+      l2Pass = true;
     } else if (Object.values(mechChecks).every(Boolean)) {
+      l2Pass = true;
       console.log('✓ QC Level 2 PASS');
     } else {
       const failing = Object.entries(mechChecks).filter(([,v]) => !v).map(([k]) => k).join(', ');
@@ -625,6 +630,7 @@ try {
   console.log('');
   console.log('── QC (Level 3: Message Template + Dialog Popup) ────────────');
   const l3 = {};
+  let l3Pass = false;
   if (templateId) {
     l3['MT_linked'] = listRow && listRow.message_template_id === templateId;
     console.log(`  MT linked:        id=${templateId}  ${l3['MT_linked'] ? '✓' : `✗ (BO has ${listRow?.message_template_id})`}`);
@@ -646,11 +652,13 @@ try {
     console.log('  Dialog:           (none expected)');
   }
   if (Object.keys(l3).length > 0 && Object.values(l3).every(Boolean)) {
+    l3Pass = true;
     console.log('✓ QC Level 3 PASS');
   } else if (Object.keys(l3).length > 0) {
     const failing = Object.entries(l3).filter(([,v]) => !v).map(([k]) => k).join(', ');
     console.error(`✗ QC L3 FAIL — ${failing}`);
   } else {
+    l3Pass = true;
     console.log('✓ QC Level 3 PASS (nothing to link)');
   }
 
@@ -703,6 +711,18 @@ try {
   } catch (e) {
     console.log(`  ⚠ Deep-QC bundle write failed (non-fatal): ${e.message.split('\n')[0]}`);
   }
+
+  if (!(l1Pass && l2Pass && l3Pass)) {
+    const failedLevels = [
+      l1Pass ? null : 'L1',
+      l2Pass ? null : 'L2',
+      l3Pass ? null : 'L3',
+    ].filter(Boolean).join(', ');
+    console.error(`✗ Deterministic post-save QC failed — ${failedLevels}`);
+    return bail(8);
+  }
+
+  console.log('✓ Deterministic post-save QC passed');
 
 } catch (e) {
   log.success = false;
