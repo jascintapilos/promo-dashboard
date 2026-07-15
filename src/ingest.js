@@ -436,6 +436,7 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   // "(Playtech)" stay out of it.
   const gameMatch =
        text.match(/Free\s+Spins?\s*[-—–]\s*([A-Za-z][A-Za-z0-9 ':&-]+?)(?:[,.]|\s*\(|\s+(?:Min|TO|min|to)|\s*$)/i)
+    || text.match(/Free\s+Spins?\s*,\s*T[.\/]?\s*O\.?\s*[:=]?\s*x?\s*\d+(?:\.\d+)?\s*,\s*(?:(?:RM|S\$|AUD?|Rp|[A-Z]{2,3}\$?)\s*)?\d+(?:\.\d+)?\s+per\s*spin\s*,\s*([A-Za-z][A-Za-z0-9 ':&-]+?)(?:[,.]|\s*\(|\s+(?:(?:MY|SG|ID|TH|KH|AU)\s+)?(?:Min|TO)\b|\s*$)/i)
     || text.match(/Game\s*[:=]\s*([A-Za-z][A-Za-z0-9 ':&-]+?)(?:[,.]|\s*\(|\s+(?:Same|Just|Min|TO|min|to)|\s*$)/i)
     || text.match(/Others?\s*:\s+([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s*$)/i)
     || text.match(/(?:WS\d|QP2[A-D]|QPRO\d+)\s*:\s+(?:[A-Z][A-Z0-9]+\s+)?([A-Za-z][A-Za-z0-9 '&-]+?)(?:[,.]|\s*$)/i);
