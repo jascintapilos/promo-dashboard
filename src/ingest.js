@@ -676,7 +676,7 @@ export function parseRow(line) {
     platforms,
     parsed: detailsParsed.parsed,
     per_currency_overrides: detailsParsed.perCurrencyOverrides,
-    instructions: parseInstructions(remark, detailsRaw, get('change_details') || ''),
+    instructions: parseInstructions(remark, detailsRaw, get('change_details') || '', String(get('inbox_message') || '')),
     gaps: [
       ...(unknownBrands.length ? [`unknown_brand: ${unknownBrands.join(', ')}`] : []),
       ...(unknownRegions.length ? [`unknown_region: ${unknownRegions.join(', ')}`] : []),
@@ -705,7 +705,7 @@ export function parseRow(line) {
 // Best-effort — return null/empty for un-matched patterns. Never throws.
 // See memory/project_request_instructions_parser.md for the full design.
 
-export function parseInstructions(remark, nameDetails, changeDetails) {
+export function parseInstructions(remark, nameDetails, changeDetails, inboxMessageRaw = '') {
   // The sheet escapes special markdown characters (_, [, ], !, *, etc.)
   // with backslashes. Strip backslashes from before those characters so
   // the regexes below can match the user-visible content directly.
@@ -714,7 +714,8 @@ export function parseInstructions(remark, nameDetails, changeDetails) {
   const n = unescape(nameDetails);
   const c = unescape(changeDetails);
   // Combined haystack — most patterns can appear in either column.
-  const all = `${r}\n${n}\n${c}`;
+  const i = unescape(inboxMessageRaw);
+  const all = `${r}\n${n}\n${c}\n${i}`;
   const signals = [];
 
   // A. Code name override — look in remark first.
@@ -1053,6 +1054,21 @@ export function parseInstructions(remark, nameDetails, changeDetails) {
     }
   }
 
+  // M. SMS required — operator explicitly says the promo also needs an SMS
+  // template/channel. Seen in remarks and inbox-message notes like:
+  //   "SMS is required"
+  //   "Required: SMS"
+  //   "Need SMS"
+  let sms_required = false;
+  if (
+    /\bSMS\s+(?:is\s+)?required\b/i.test(all)
+    || /\brequired\s*:?\s*SMS\b/i.test(all)
+    || /\bneed(?:s)?\s+SMS\b/i.test(all)
+  ) {
+    sms_required = true;
+    signals.push('M:sms_required');
+  }
+
   return {
     code_name_override:   codeNameOverride,
     duplicate_source:     duplicateSource,
@@ -1072,6 +1088,7 @@ export function parseInstructions(remark, nameDetails, changeDetails) {
     multiple_claims_allowed: multipleClaimsAllowed,
     day_split:            daySplit,
     code_context_tag:     codeContextTag,
+    sms_required,
     raw_signals:          signals,
   };
 }

@@ -22,7 +22,7 @@
 import { renderBody, renderDialogBody, localeDocKey } from './message-template-renderer.js';
 import { getAllGameProviders, getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
-import { splitDualPromoName } from './promo-namer.js';
+import { splitDualPromoName, gameAcronym } from './promo-namer.js';
 
 // Per-brand QPRO group naming varies — QPRO1 has bare names ("BRONZE",
 // "SILVER", "DIAMOND") while QPRO2/6/11/17 use numbered names ("Bronze 1/2/3",
@@ -306,6 +306,7 @@ function filterResolvedToSupportedCurrencies(resolved, supportedCurrencies) {
 // (captured: section=8, type=1 for promo inbox messages).
 const MSG_TEMPLATE_SECTION_PROMOTIONS = '8';
 const MSG_TEMPLATE_TYPE_MESSAGE       = '1';
+const MSG_TEMPLATE_TYPE_SMS           = '2';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -676,6 +677,129 @@ async function buildMessageTemplateBody(resolved, brand) {
   };
 }
 
+function hasSmsRequirement(resolved) {
+  if (resolved?.instructions?.sms_required === true) return true;
+  const all = [
+    resolved?.remark,
+    resolved?.inbox_message_raw,
+    resolved?.change_details,
+    resolved?.name_details_raw,
+  ].filter(Boolean).join('\n');
+  return (
+    /\bSMS\s+(?:is\s+)?required\b/i.test(all)
+    || /\brequired\s*:?\s*SMS\b/i.test(all)
+    || /\bneed(?:s)?\s+SMS\b/i.test(all)
+  );
+}
+
+function smsMoneyToken(amount, currency) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const rounded = Number.isInteger(n) ? String(n) : String(+n.toFixed(2));
+  if (currency === 'MYR') return `RM${rounded}`;
+  return `${currency}${rounded}`;
+}
+
+function smsRegionPrefix(locale) {
+  return /^MY_/i.test(String(locale || '')) ? 'RM0 ' : '';
+}
+
+function smsGameToken(resolved) {
+  const raw = resolved?.parsed?.game;
+  if (!raw) return null;
+  const label = String(raw).includes(' - ') ? String(raw).split(' - ').slice(1).join(' - ').trim() : String(raw).trim();
+  return gameAcronym(label) || null;
+}
+
+function buildSmsLocaleCopy(resolved, locale) {
+  const dk = localeDocKey(locale);
+  const isZh = dk === 'ZH';
+  const currency = localeCurrency(locale) || (resolved.currencies || [])[0] || 'MYR';
+  const perCurrency = resolved.per_currency_overrides?.[currency] || {};
+  const parsed = resolved.parsed || {};
+  const minDeposit = perCurrency.min_deposit ?? parsed.min_deposit ?? null;
+  const to = parsed.to_multiplier ?? null;
+  const spinCount = parsed.spin_count ?? null;
+  const freeCredit = perCurrency.free_credit_amount ?? parsed.free_credit_amount ?? null;
+  const bonusPct = parsed.bonus_rate_pct ?? null;
+  const minDepToken = smsMoneyToken(minDeposit, currency);
+  const gameToken = smsGameToken(resolved);
+  const prefix = smsRegionPrefix(locale);
+  const bt = String(resolved.bonus_type || '').toLowerCase();
+
+  if (bt.includes('free spin') && spinCount != null && to != null) {
+    const subject = `${spinCount}FS${gameToken ? ` ${gameToken}` : ''}`.trim();
+    if (isZh) {
+      return {
+        subject,
+        message: `${prefix}:username ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
+      };
+    }
+    return {
+      subject,
+      message: `${prefix}:brandname: :username, last call for ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}.${minDepToken ? ` ${minDepToken}/` : ' '}TO${to}x. Claim now: :url`.replace(' .', '.'),
+    };
+  }
+
+  if (bt.includes('free credit') && freeCredit != null && to != null) {
+    const subject = `${freeCredit}FC`;
+    if (isZh) {
+      return {
+        subject,
+        message: `${prefix}:username ${freeCredit}FC。TO${to}x。:url`,
+      };
+    }
+    return {
+      subject,
+      message: `${prefix}:brandname: :username, last call for ${freeCredit}FC. TO${to}x. Claim now: :url`,
+    };
+  }
+
+  if ((bt.includes('deposit') || bt.includes('reload') || bt.includes('welcome')) && bonusPct != null && to != null) {
+    const subject = `${bonusPct}% dep BNS`;
+    if (isZh) {
+      return {
+        subject,
+        message: `${prefix}:username ${bonusPct}% dep BNS。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
+      };
+    }
+    return {
+      subject,
+      message: `${prefix}:brandname: :username, ${bonusPct}% dep BNS is on.${minDepToken ? ` Min ${minDepToken}/` : ' '}TO${to}x. Act now: :url`.replace(' .', '.'),
+    };
+  }
+
+  return null;
+}
+
+async function buildSmsTemplateBody(resolved, brand) {
+  if (!hasSmsRequirement(resolved)) return null;
+  if (/cashback/i.test(resolved.bonus_type || '')) return null;
+  void brand;
+
+  const details = {};
+  for (const locale of resolved.locales || []) {
+    const settingsId = LOCALE_TO_SETTINGS_ID[locale];
+    if (settingsId == null) continue;
+    const copy = buildSmsLocaleCopy(resolved, locale);
+    if (!copy) continue;
+    details[String(settingsId)] = {
+      settings_locale_id: settingsId,
+      subject: copy.subject,
+      message: copy.message,
+    };
+  }
+  if (Object.keys(details).length === 0) return null;
+  return {
+    name: `SMS ${resolved.promo_code}`,
+    section: Number(MSG_TEMPLATE_SECTION_PROMOTIONS),
+    type: Number(MSG_TEMPLATE_TYPE_SMS),
+    status: 1,
+    details,
+    code: `PROMOTIONS.SMS.${resolved.promo_code}`,
+  };
+}
+
 // ── Dialog Popup POST body (QPRO shape) ──────────────────────────────────
 // QPRO POST /api/bo/popups body — 10 top-level fields. NO `site_id` (QPRO
 // is single-merchant). NO `do_not_show_again`. Includes `label` (operator
@@ -750,7 +874,7 @@ export async function buildDialogPopupBody(resolved, brand) {
 // ── Update (PUT) builder ─────────────────────────────────────────────────
 // Re-emits POST body with strict type normalization (booleans as 0/1, ints
 // as ints) and the linked template ID. Matches PUT capture shape.
-function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsForBrand = null, catIdsForBrand = null, fsProviderIdForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrand = null, blacklistTemplateId = null) {
+function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsForBrand = null, catIdsForBrand = null, fsProviderIdForBrand = null, fsGameCodeForBrand = null, memberGroupIdsForBrand = null, blacklistTemplateId = null, smsTemplateId = 0) {
   const promo = buildPromotionBody(resolved, gpIdsForBrand, catIdsForBrand, fsProviderIdForBrand, fsGameCodeForBrand, memberGroupIdsForBrand, blacklistTemplateId);
   const b01 = (v) => (v === true ? 1 : v === false ? 0 : v);
   return {
@@ -795,7 +919,7 @@ function buildUpdateBody(resolved, promotionId, templateId, dialogPopup, gpIdsFo
     game_provider_ids: promo.game_provider_ids,
     target: promo.target,
     message_template_id: templateId || 0,
-    message_template_sms_id: 0,
+    message_template_sms_id: smsTemplateId || 0,
     eligible_types: Number(promo.eligible_types),
     affiliate_group_ids: [],
     telemarketer_ids: [],
@@ -987,10 +1111,11 @@ export async function buildApiPlan(resolved, { brand, site } = {}) {
   return {
     promotion: buildPromotionBody(effectiveResolved, gpIdsForBrand, catIdsForBrand, fsProviderIdForBrand, fsGameCodeForBrand, memberGroupIdsForBrand, blacklistTemplateIdForBrand),
     messageTemplate: await buildMessageTemplateBody(effectiveResolved, brand),
+    smsTemplate: await buildSmsTemplateBody(effectiveResolved, brand),
     dialogPopup: await buildDialogPopupBody(effectiveResolved, brand),
     buildNames: (promotionId) => buildNameBodies(effectiveResolved, promotionId),
-    buildUpdate: (promotionId, templateId, dialogPopup) =>
-      buildUpdateBody(effectiveResolved, promotionId, templateId, dialogPopup, gpIdsForBrand, catIdsForBrand, fsProviderIdForBrand, fsGameCodeForBrand, memberGroupIdsForBrand, blacklistTemplateIdForBrand),
+    buildUpdate: (promotionId, templateId, dialogPopup, smsTemplateId = 0) =>
+      buildUpdateBody(effectiveResolved, promotionId, templateId, dialogPopup, gpIdsForBrand, catIdsForBrand, fsProviderIdForBrand, fsGameCodeForBrand, memberGroupIdsForBrand, blacklistTemplateIdForBrand, smsTemplateId),
     currencyFilter: effectiveResolved !== resolved
       ? { kept: effectiveResolved.currencies, dropped: resolved.currencies.filter((c) => !effectiveResolved.currencies.includes(c)) }
       : null,

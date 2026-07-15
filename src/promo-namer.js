@@ -295,7 +295,7 @@ function trimGameLabel(label) {
 // "Gate Of Olympus" → "GOO".  "Sweet Bonanza Xmas" → "SBX".
 // First alpha char of each whitespace-separated token. Numbers / punctuation
 // in tokens are skipped (e.g. "Sugar Rush 1000" → "SR").
-function gameAcronym(label) {
+export function gameAcronym(label) {
   if (!label) return null;
   const tokens = String(label).trim().split(/\s+/).filter(Boolean);
   const letters = tokens.map((w) => {
