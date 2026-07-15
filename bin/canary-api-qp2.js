@@ -626,7 +626,16 @@ try {
       mechLog.push(`  ${label.padEnd(22)} BO=${boVal}  expected=${expected}  ${ok ? '✓' : '✗'}`);
     };
     const src = resolved.parsed || {};
-    if (src.min_deposit != null) mChk('MinDeposit', bo.min_deposit, src.min_deposit);
+    const srcPerCurrency = resolved.per_currency_overrides || {};
+    const boPerCurrency = det.per_currency_overrides || {};
+    const minDepositOverrides = Object.entries(srcPerCurrency).filter(([, v]) => v?.min_deposit != null);
+    if (minDepositOverrides.length) {
+      for (const [currency, override] of minDepositOverrides) {
+        mChk(`MinDeposit(${currency})`, boPerCurrency[currency]?.min_deposit, override.min_deposit);
+      }
+    } else if (src.min_deposit != null) {
+      mChk('MinDeposit', bo.min_deposit, src.min_deposit);
+    }
     if (src.bonus_rate_pct != null) mChk('BonusPct', bo.bonus_rate_pct, src.bonus_rate_pct);
     if (src.to_multiplier != null) mChk('Turnover', bo.to_multiplier, src.to_multiplier);
     if (src.max_bonus != null) mChk('MaxBonus', bo.max_bonus, src.max_bonus);
