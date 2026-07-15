@@ -30,10 +30,14 @@
 // Exit code = max of all child exits (non-zero if any brand failed).
 
 import { spawn, spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
 import { BRAND_TO_SITE } from '../src/ingest.js';
+import { getSheetsClient, resolveCurrentMonthTab, readHeader, detectColumnMapFromHeader, writeFields } from '../src/sheets-client.js';
+import { getOpsSheetId } from '../src/ops-sheet.js';
+import { upsertRows } from '../src/qc-results-log.js';
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
 const userInput = positional[0];
@@ -303,6 +307,26 @@ if (!commit && worst === 0) {
   if (code !== 0) worst = Math.max(worst, code);
 }
 
+function qcBundleBrand(job) {
+  const platform = (BRAND_TO_SITE[job.brand]?.platform || '').toLowerCase();
+  if (platform === 'igmp' || platform === 'bia') {
+    if (!job.site || job.site === 'ws2') return 'WS2';
+    const m = String(job.site).match(/^ws1-v3-(\w+)$/);
+    if (m) return `WS1_${m[1].toUpperCase()}`;
+  }
+  return job.brand;
+}
+
+async function tryReadQcBundle(job) {
+  const bundleBrand = qcBundleBrand(job);
+  const bundlePath = path.resolve('captures', 'qc-bundles', `${handle}__${bundleBrand}.json`);
+  try {
+    return JSON.parse(await readFile(bundlePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 // ── QP2 dialog relink (rescue only) ────────────────────────────────────
 // Sequential QP2 saves (enforced above) mean each EXTEND reads the
 // previously-committed dialog_popup_list and accumulates correctly —
@@ -332,6 +356,7 @@ if (commit && hadQp2 && qp2PartialSuccess) {
 // Conditions: live commit, at least one brand saved, fixture has values
 // (i.e. operator or auto-namer populated them), source_line known.
 const anySucceeded = results.some((r) => r.code === 0);
+const allSucceeded = results.length > 0 && results.every((r) => r.code === 0);
 const valuesByField = {};
 if (request.promo_code) {
   // Day-split write-back: when the request has instructions.day_split AND
@@ -363,11 +388,51 @@ if (request.promo_code) {
 }
 if (request.promotion_name_en) valuesByField.promotion_name_en = request.promotion_name_en;
 if (request.promotion_name_zh_id) valuesByField.promotion_name_zh_id = request.promotion_name_zh_id;
-// Mark the row "Created" so operators can see which requests the bot has
-// processed. Always paired with the value write-back below, so the status
-// flip only happens when at least one brand saved.
-if (anySucceeded) valuesByField.status = 'Created';
+// Normal fast-path: once every child save clears deterministic post-save QC,
+// the request is fully complete without waiting on the slower deep-QC layer.
+// If only some brands succeeded, keep the row at "Created" so operators can
+// see the BO work landed but the overall request still needs attention.
+if (anySucceeded) valuesByField.status = allSucceeded ? 'QC Completed' : 'Created';
 const hasValues = Object.keys(valuesByField).length > 0;
+
+if (commit && !(daySplit?.count > 1)) {
+  const qcEntries = [];
+  for (const result of results) {
+    const job = jobs.find((j) => `${j.brand}${j.site ? `@${j.site.replace(/^ws1-v3-/, '')}` : ''}${j.suffix || ''}` === result.label);
+    if (!job) continue;
+    const bundle = await tryReadQcBundle(job);
+    if (!bundle?.promo_code || !bundle?.brand) continue;
+    qcEntries.push({
+      code: bundle.promo_code,
+      brand: bundle.brand,
+      handle,
+      stage: 'sentinel',
+      verdict: result.code === 0 ? 'PASS' : 'FAIL',
+      trigger: 'post-creation',
+      depth: 'structural',
+      reason: result.code === 0
+        ? 'Deterministic post-save QC passed'
+        : `Canary exited ${result.code} after save / post-save QC`,
+    });
+  }
+
+  if (qcEntries.length) {
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('QC RESULTS LOG');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    try {
+      const { sheets } = await getSheetsClient();
+      const { committed } = await upsertRows(sheets, getOpsSheetId(), qcEntries, { commit: true });
+      console.log(`✓ Logged ${qcEntries.length} structural post-save verdict(s) (${committed.updateCount} update, ${committed.appendCount} append)`);
+    } catch (e) {
+      console.log(`⚠ QC Results Log write failed (non-fatal): ${e.message.split('\n')[0]}`);
+    }
+  }
+} else if (commit && daySplit?.count > 1) {
+  console.log('');
+  console.log('ℹ QC Results Log skipped for this run: day-split jobs currently share bundle filenames.');
+}
 
 if (commit && anySucceeded && hasValues && request.source_line) {
   console.log('');
@@ -375,8 +440,6 @@ if (commit && anySucceeded && hasValues && request.source_line) {
   console.log('SHEET WRITE-BACK');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   try {
-    const { getSheetsClient, resolveCurrentMonthTab, readHeader,
-            detectColumnMapFromHeader, writeFields } = await import('../src/sheets-client.js');
     const c = await getSheetsClient();
     // Use the tab the request was actually ingested from — NOT "current
     // month". Retroactively fixing a past-month request (e.g. re-canarying
