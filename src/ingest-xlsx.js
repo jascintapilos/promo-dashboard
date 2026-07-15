@@ -339,7 +339,7 @@ export function rowToRecord(cells, colMap, sourceLine) {
     platforms,
     parsed: detailsParsed.parsed,
     per_currency_overrides: detailsParsed.perCurrencyOverrides,
-    instructions: parseInstructions(remark, detailsRaw, String(get('change_details') ?? '')),
+    instructions: parseInstructions(remark, detailsRaw, String(get('change_details') ?? ''), String(get('inbox_message') ?? '')),
     gaps: [
       ...(unknownBrands.length ? [`unknown_brand: ${unknownBrands.join(', ')}`] : []),
       ...(unknownRegions.length ? [`unknown_region: ${unknownRegions.join(', ')}`] : []),
