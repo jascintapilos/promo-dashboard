@@ -21,7 +21,7 @@
 import { renderBody, renderDialogBody, localeDocKey } from './message-template-renderer.js';
 import { getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups, getAllMerchantBankIds } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
-import { splitDualPromoName } from './promo-namer.js';
+import { gameAcronym, splitDualPromoName } from './promo-namer.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
 // operator-verified selection 2026-05-15 (26 of 31 QP2A groups). Excluded:
@@ -338,6 +338,7 @@ function filterResolvedToSupportedCurrenciesQp2(resolved, supportedCurrencies) {
 
 const MSG_TEMPLATE_SECTION_PROMOTIONS = '8';
 const MSG_TEMPLATE_TYPE_MESSAGE       = '1';
+const MSG_TEMPLATE_TYPE_SMS           = '2';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -731,6 +732,141 @@ async function buildMessageTemplateBody(resolved, brand) {
   };
 }
 
+function hasSmsRequirement(resolved) {
+  if (resolved?.instructions?.sms_required === true) return true;
+  const all = [
+    resolved?.remark,
+    resolved?.inbox_message_raw,
+    resolved?.change_details,
+    resolved?.name_details_raw,
+  ].filter(Boolean).join('\n');
+  return (
+    /\bSMS\s+(?:is\s+)?required\b/i.test(all)
+    || /\brequired\s*:?\s*SMS\b/i.test(all)
+    || /\bneed(?:s)?\s+SMS\b/i.test(all)
+  );
+}
+
+function smsMoneyToken(amount, currency) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const rounded = Number.isInteger(n) ? String(n) : String(+n.toFixed(2));
+  if (currency === 'MYR') return `RM${rounded}`;
+  return `${currency}${rounded}`;
+}
+
+function smsRegionPrefix(locale) {
+  return /^MY_/i.test(String(locale || '')) ? 'RM0 ' : '';
+}
+
+function smsGameToken(resolved) {
+  const raw = resolved?.parsed?.game;
+  if (!raw) return null;
+  const label = String(raw).includes(' - ') ? String(raw).split(' - ').slice(1).join(' - ').trim() : String(raw).trim();
+  return gameAcronym(label) || null;
+}
+
+function buildSmsGenericSubject(resolved) {
+  const parsed = resolved.parsed || {};
+  const vipHay = `${resolved.promo_code || ''} ${resolved.campaign || ''} ${resolved.remark || ''} ${resolved.name_details_raw || ''}`;
+  const prefix = /\bvip\b/i.test(vipHay) ? 'VIP Exclusive' : 'Exclusive Offer';
+  const bt = String(resolved.bonus_type || '').toLowerCase();
+  if (bt.includes('free spin') && parsed.spin_count != null) {
+    return `${prefix} — ${parsed.spin_count} Free Spins`;
+  }
+  const freeCredit = Object.values(resolved.per_currency_overrides || {}).find((v) => v?.free_credit_amount != null)?.free_credit_amount
+    ?? parsed.free_credit_amount;
+  if (bt.includes('free credit') && freeCredit != null) {
+    return `${prefix} — ${freeCredit} Free Credit`;
+  }
+  if ((bt.includes('deposit') || bt.includes('reload') || bt.includes('welcome')) && parsed.bonus_rate_pct != null) {
+    return `${prefix} — ${parsed.bonus_rate_pct}% Reload Bonus`;
+  }
+  return prefix;
+}
+
+function buildSmsLocaleCopy(resolved, locale) {
+  const dk = localeDocKey(locale);
+  const isZh = dk === 'ZH';
+  const currency = localeCurrencyQp2(locale) || (resolved.currencies || [])[0] || 'MYR';
+  const perCurrency = resolved.per_currency_overrides?.[currency] || {};
+  const parsed = resolved.parsed || {};
+  const minDeposit = perCurrency.min_deposit ?? parsed.min_deposit ?? null;
+  const to = parsed.to_multiplier ?? null;
+  const spinCount = parsed.spin_count ?? null;
+  const freeCredit = perCurrency.free_credit_amount ?? parsed.free_credit_amount ?? null;
+  const bonusPct = parsed.bonus_rate_pct ?? null;
+  const minDepToken = smsMoneyToken(minDeposit, currency);
+  const gameToken = smsGameToken(resolved);
+  const prefix = smsRegionPrefix(locale);
+  const bt = String(resolved.bonus_type || '').toLowerCase();
+
+  if (bt.includes('free spin') && spinCount != null && to != null) {
+    if (isZh) {
+      return {
+        message: `${prefix}:username ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
+      };
+    }
+    return {
+      message: `${prefix}:merchantname: :username, last call for ${spinCount}FS${gameToken ? ` ${gameToken}` : ''}.${minDepToken ? ` ${minDepToken}/` : ' '}TO${to}x. Claim now: :url`.replace(' .', '.'),
+    };
+  }
+
+  if (bt.includes('free credit') && freeCredit != null && to != null) {
+    if (isZh) {
+      return {
+        message: `${prefix}:username ${freeCredit}FC。TO${to}x。:url`,
+      };
+    }
+    return {
+      message: `${prefix}:merchantname: :username, last call for ${freeCredit}FC. TO${to}x. Claim now: :url`,
+    };
+  }
+
+  if ((bt.includes('deposit') || bt.includes('reload') || bt.includes('welcome')) && bonusPct != null && to != null) {
+    if (isZh) {
+      return {
+        message: `${prefix}:username ${bonusPct}% dep BNS。${minDepToken ? `${minDepToken}/` : ''}TO${to}x。:url`,
+      };
+    }
+    return {
+      message: `${prefix}:merchantname: :username, ${bonusPct}% dep BNS is on.${minDepToken ? ` Min ${minDepToken}/` : ' '}TO${to}x. Act now: :url`.replace(' .', '.'),
+    };
+  }
+
+  return null;
+}
+
+async function buildSmsTemplateBody(resolved, brand) {
+  if (!hasSmsRequirement(resolved)) return null;
+  if (/cashback/i.test(resolved.bonus_type || '')) return null;
+  void brand;
+
+  const subject = buildSmsGenericSubject(resolved);
+  const details = {};
+  for (const locale of resolved.locales || []) {
+    const settingsId = LOCALE_TO_SETTINGS_ID[locale];
+    if (settingsId == null) continue;
+    const copy = buildSmsLocaleCopy(resolved, locale);
+    if (!copy) continue;
+    details[String(settingsId)] = {
+      settings_locale_id: settingsId,
+      subject,
+      message: copy.message,
+    };
+  }
+  if (Object.keys(details).length === 0) return null;
+  return {
+    name: resolved.promo_code,
+    section: Number(MSG_TEMPLATE_SECTION_PROMOTIONS),
+    type: Number(MSG_TEMPLATE_TYPE_SMS),
+    status: 1,
+    details,
+    code: `PROMOTIONS.SMS.${resolved.promo_code}`,
+  };
+}
+
+
 // ── Dialog Popup POST body builder ───────────────────────────────────────
 
 export async function buildDialogPopupBody(resolved, brand) {
@@ -1116,6 +1252,7 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   return {
     promotion: buildPromotionBody(effectiveResolved, brand, catIdsForBrand, fsGameCodeForBrand, memberGroupIdsForBrands, depositOptionsByCurrency, blacklistTemplateIdForBrand, categoryProviders),
     messageTemplate: await buildMessageTemplateBody(effectiveResolved, brand),
+    smsTemplate: await buildSmsTemplateBody(effectiveResolved, brand),
     dialogPopup: await buildDialogPopupBody(effectiveResolved, brand),
     buildNames: (promotionId) => buildNameBodies(effectiveResolved, promotionId),
     buildUpdate: (promotionId, templateId, dialogPopup, smsMtId = 0) =>

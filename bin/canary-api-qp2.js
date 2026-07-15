@@ -181,10 +181,11 @@ console.log('');
 console.log('Calls:');
 console.log(`  1. POST /api/bo/promotion           body=${JSON.stringify(plan.promotion).length} bytes`);
 if (plan.messageTemplate) console.log(`  2. POST /api/bo/messagetemplate     body=${JSON.stringify(plan.messageTemplate).length} bytes (locales: ${Object.keys(plan.messageTemplate.details).join(', ')})`);
-if (plan.dialogPopup) console.log(`  3. POST /api/bo/popups              body=${JSON.stringify(plan.dialogPopup).length} bytes (locales: ${Object.keys(plan.dialogPopup.contents).join(', ')})`);
+if (plan.smsTemplate) console.log(`  3. POST /api/bo/messagetemplate     body=${JSON.stringify(plan.smsTemplate).length} bytes (SMS locales: ${Object.keys(plan.smsTemplate.details).join(', ')})`);
+if (plan.dialogPopup) console.log(`  4. POST /api/bo/popups              body=${JSON.stringify(plan.dialogPopup).length} bytes (locales: ${Object.keys(plan.dialogPopup.contents).join(', ')})`);
 const namePreviews = plan.buildNames(0);
-console.log(`  4. POST /api/bo/promotionname × ${namePreviews.length} (locales: ${namePreviews.map((n) => n.settings_locale_id).join(', ')})`);
-console.log(`  5. PUT  /api/bo/promotion/{id}      (link message_template_id + dialog_popup_list)`);
+console.log(`  5. POST /api/bo/promotionname × ${namePreviews.length} (locales: ${namePreviews.map((n) => n.settings_locale_id).join(', ')})`);
+console.log(`  6. PUT  /api/bo/promotion/{id}      (link inbox MT + SMS MT + dialog_popup_list)`);
 console.log('');
 
 // ── Idempotency check (live via /api/bo/promotion?code=…) ─────────────
@@ -272,7 +273,18 @@ try {
       const allIds = [...currentIds, myMerchantId];
       const expandedPlan = await buildApiPlan(resolved, { brand: targetBrand, site, merchantIds: allIds });
       const detailRow = (await authedFetch(site, `/api/bo/promotion/${existing.id}`)).data.rows;
-      const putBody = expandedPlan.buildUpdate(existing.id, detailRow.message_template_id || 0, null);
+      let smsTemplateId = detailRow.message_template_sms_id || 0;
+      if (expandedPlan.smsTemplate && !smsTemplateId) {
+        try {
+          console.log(`  → POST /api/bo/messagetemplate (SMS for ${targetBrand})…`);
+          const smsResp = await createMessageTemplate(site, expandedPlan.smsTemplate);
+          smsTemplateId = smsResp?.data?.rows?.id || 0;
+          if (smsTemplateId) console.log(`    ✓ sms template id=${smsTemplateId}`);
+        } catch (e) {
+          console.log(`    ⚠ sms template create failed: ${e.message.split('\n')[0]} — proceeding without SMS for ${targetBrand}`);
+        }
+      }
+      const putBody = expandedPlan.buildUpdate(existing.id, detailRow.message_template_id || 0, null, smsTemplateId);
       const merchantIdsObj = {};
       allIds.forEach((id, i) => { merchantIdsObj[String(i)] = id; });
       putBody.merchant_ids = merchantIdsObj;
@@ -355,9 +367,10 @@ if (!commit) {
     handle, brand: targetBrand, site: siteId, code: resolved.promo_code,
     promotion: plan.promotion,
     messageTemplate: plan.messageTemplate,
+    smsTemplate: plan.smsTemplate,
     dialogPopup: plan.dialogPopup,
     names: plan.buildNames('<promotion_id>'),
-    update: plan.buildUpdate('<promotion_id>', '<template_id>', { id: '<popup_id>', code: '<popup_code>', start_date: '<popup_start>', label: resolved.promotion_name_en }),
+    update: plan.buildUpdate('<promotion_id>', '<template_id>', { id: '<popup_id>', code: '<popup_code>', start_date: '<popup_start>', label: resolved.promotion_name_en }, '<sms_template_id>'),
   }, null, 2));
   console.log(`Dry-run dump: ${dryPath}`);
 
@@ -395,9 +408,10 @@ if (!commit) {
       plan: {
         promotion: plan.promotion,
         messageTemplate: plan.messageTemplate,
+        smsTemplate: plan.smsTemplate,
         dialogPopup: plan.dialogPopup,
         names: plan.buildNames('<promotion_id>'),
-        update: plan.buildUpdate('<promotion_id>', '<template_id>', { id: '<popup_id>', code: '<popup_code>', start_date: '<popup_start>', label: resolved.promotion_name_en }),
+        update: plan.buildUpdate('<promotion_id>', '<template_id>', { id: '<popup_id>', code: '<popup_code>', start_date: '<popup_start>', label: resolved.promotion_name_en }, '<sms_template_id>'),
         tierConstraint: plan.tierConstraint || null,
         categoriesOnly: plan.categoriesOnly || null,
         currencyFilter: plan.currencyFilter || null,
@@ -435,6 +449,7 @@ async function call(label, fn) {
 
 let promotionId = null;
 let templateId  = null;
+let smsTemplateId = null;
 let dialogPopup = null; // { id, code, start_date }
 
 try {
@@ -472,7 +487,15 @@ try {
     console.log(`    ✓ template id = ${templateId}`);
   }
 
-  // 3. Dialog popup (if any). The full row from the response goes into
+  // 3. SMS template (if any)
+  if (plan.smsTemplate) {
+    const rSms = await call('POST /api/bo/messagetemplate (SMS)', () => createMessageTemplate(site, plan.smsTemplate));
+    smsTemplateId = rSms?.data?.rows?.id;
+    if (!smsTemplateId) throw new Error(`POST /messagetemplate (SMS) did not return an id (response: ${JSON.stringify(rSms).slice(0,300)})`);
+    console.log(`    ✓ sms template id = ${smsTemplateId}`);
+  }
+
+  // 4. Dialog popup (if any). The full row from the response goes into
   // the PUT's dialog_popup_list field (QP2 link requires the full popup
   // object — see api-mapper-qp2.js).
   if (plan.dialogPopup) {
@@ -521,20 +544,20 @@ try {
     }
   }
 
-  // 4. Per-locale Names
+  // 5. Per-locale Names
   for (const name of plan.buildNames(promotionId)) {
     await call(`POST /api/bo/promotionname (locale ${name.settings_locale_id})`, () => addPromotionName(site, name));
     console.log(`    ✓ added name for settings_locale_id=${name.settings_locale_id}`);
   }
 
-  // 5. PUT to link message template + dialog popup
-  const putBody = plan.buildUpdate(promotionId, templateId || 0, dialogPopup);
+  // 6. PUT to link inbox MT + SMS MT + dialog popup
+  const putBody = plan.buildUpdate(promotionId, templateId || 0, dialogPopup, smsTemplateId || 0);
   await call(`PUT /api/bo/promotion/${promotionId}`, () => updatePromotion(site, promotionId, putBody));
-  console.log(`    ✓ PUT completed (message_template_id=${templateId || 0}${dialogPopup ? `, dialog_popup_id=${dialogPopup.id}` : ''})`);
+  console.log(`    ✓ PUT completed (message_template_id=${templateId || 0}, message_template_sms_id=${smsTemplateId || 0}${dialogPopup ? `, dialog_popup_id=${dialogPopup.id}` : ''})`);
 
   log.success = true;
   console.log('');
-  console.log(`✓ API-direct save complete.   promo_code=${resolved.promo_code}   promotion_id=${promotionId}${templateId ? `   template_id=${templateId}` : ''}${dialogPopup ? `   dialog_popup_id=${dialogPopup.id}` : ''}`);
+  console.log(`✓ API-direct save complete.   promo_code=${resolved.promo_code}   promotion_id=${promotionId}${templateId ? `   template_id=${templateId}` : ''}${smsTemplateId ? `   sms_template_id=${smsTemplateId}` : ''}${dialogPopup ? `   dialog_popup_id=${dialogPopup.id}` : ''}`);
 
   // ── Sheet write-back ──────────────────────────────────────────────────
   try {
@@ -643,6 +666,12 @@ try {
   } else {
     console.log('  MT:               (none expected)');
   }
+  if (smsTemplateId) {
+    l3['SMS_linked'] = listRow && listRow.message_template_sms_id === smsTemplateId;
+    console.log(`  SMS linked:       id=${smsTemplateId}  ${l3['SMS_linked'] ? 'âœ“' : `âœ— (BO has ${listRow?.message_template_sms_id})`}`);
+  } else {
+    console.log('  SMS:              (none expected)');
+  }
   if (dialogPopup) {
     const boPopups = listRow?.dialog_popup_list || [];
     const linked = boPopups.some((p) => p.popup_id === dialogPopup.id);
@@ -673,6 +702,7 @@ try {
       handle, brand: targetBrand, platform: 'qp2', site: siteId,
       promo_code: resolved.promo_code,
       promotion_id: promotionId, template_id: templateId,
+      sms_template_id: smsTemplateId,
       dialog_popup_id: dialogPopup?.id || null,
       saved_at: new Date().toISOString(),
       source: {
@@ -696,6 +726,7 @@ try {
         detail:     `GET /api/bo/promotion/${promotionId}`,
         currencies: `GET /api/bo/promotion/${promotionId}/promotioncurrency`,
         template:   templateId ? `GET /api/bo/messagetemplate/${templateId}` : null,
+        sms_template: smsTemplateId ? `GET /api/bo/messagetemplate/${smsTemplateId}` : null,
         popup:      dialogPopup?.id ? `GET /api/bo/popups/${dialogPopup.id}` : null,
       },
       // Inline the BO state already fetched during QC so sub-agents need no auth.
@@ -729,7 +760,7 @@ try {
   log.error = e.message;
   console.error('');
   console.error(`✖ FAILED on ${log.calls.at(-1)?.label || 'unknown step'}: ${e.message}`);
-  console.error(`  Partial state may exist: promotion_id=${promotionId}, template_id=${templateId}, dialog_popup=${dialogPopup ? dialogPopup.id : 'null'}`);
+  console.error(`  Partial state may exist: promotion_id=${promotionId}, template_id=${templateId}, sms_template_id=${smsTemplateId}, dialog_popup=${dialogPopup ? dialogPopup.id : 'null'}`);
   process.exitCode = 6;
 } finally {
   await writeFile(runLog, JSON.stringify(log, null, 2));
