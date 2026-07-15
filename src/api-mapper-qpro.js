@@ -793,7 +793,7 @@ async function buildSmsTemplateBody(resolved, brand) {
   }
   if (Object.keys(details).length === 0) return null;
   return {
-    name: `SMS ${resolved.promo_code}`,
+    name: resolved.promo_code,
     section: Number(MSG_TEMPLATE_SECTION_PROMOTIONS),
     type: Number(MSG_TEMPLATE_TYPE_SMS),
     status: 1,
