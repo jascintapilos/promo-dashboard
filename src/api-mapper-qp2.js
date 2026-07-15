@@ -647,10 +647,12 @@ function buildPromotionBody(resolved, brand, catIdsForBrand = null, fsGameCodeFo
     auto_reward_activation: 1,
     recurring: resolved.recurring === true ? 1 : 0,
     reset_frequency: 1,
-    // Operator-supplied caps from sheet col T. Fallback to QP2A captured
-    // defaults (1/1 = single-claim ever) so legacy callers behave unchanged.
+    // Operator-supplied caps from sheet col T.
+    // Fallback:
+    //   - daily_max=99999 for recurring promos
+    //   - daily_max=1 for one-time promos
     max_per_player: resolved.max_per_player ?? 1,
-    daily_max: resolved.daily_max ?? 1,
+    daily_max: resolved.daily_max ?? (resolved.recurring === true ? 99999 : 1),
     limit_transfer_in: 0,
     limit_transfer_out: 0,
     bonus_rate: isDep ? (r.bonus_rate_pct ?? 0) : 0,
@@ -884,10 +886,12 @@ function buildUpdateBody(resolved, brand, promotionId, templateId, dialogPopup, 
     recurring: resolved.recurring === true ? 1 : 0,
     reset_frequency: 1,
     reset_month: 1,
-    // Operator-supplied caps from sheet col T. Fallback to QP2A captured
-    // defaults (1/1 = single-claim ever) so legacy callers behave unchanged.
+    // Operator-supplied caps from sheet col T.
+    // Fallback:
+    //   - daily_max=99999 for recurring promos
+    //   - daily_max=1 for one-time promos
     max_per_player: resolved.max_per_player ?? 1,
-    daily_max: resolved.daily_max ?? 1,
+    daily_max: resolved.daily_max ?? (resolved.recurring === true ? 99999 : 1),
     status: 1,
     limit_transfer_in: 0,
     limit_transfer_out: 0,
