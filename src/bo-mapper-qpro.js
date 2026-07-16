@@ -83,7 +83,7 @@ export function buildActions(resolved, { brand } = {}) {
   // If the request didn't specify a game, fall back to operator handoff
   // (no point auto-picking a placeholder).
   if (isFs) {
-    const gameProvider = r.game_provider || 'PP - Pragmatic Play';
+    const gameProvider = r.game_provider || 'PP2 - Pragmatic Play';
     const gameName     = r.game          || null;
     if (!gameName) {
       push({

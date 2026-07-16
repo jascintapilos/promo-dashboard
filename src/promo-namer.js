@@ -281,7 +281,11 @@ function isTestRequestor(requestor) {
 function extractProviderPrefix(label) {
   if (!label) return null;
   const m = String(label).match(/^\s*([A-Z][A-Z0-9]*)\s*[-—]\s*/);
-  return m ? m[1] : null;
+  if (m) return m[1];
+  const norm = String(label).trim().toLowerCase();
+  if (norm === 'playtech') return 'PTI';
+  if (norm === 'pragmatic play' || norm === 'pragmatic play 2' || norm === 'pragmatic' || norm === 'pp' || norm === 'pp2') return 'PP2';
+  return null;
 }
 
 // "vs20olympgold - Gates of Olympus Super Scatter" → "Gates of Olympus Super Scatter"
