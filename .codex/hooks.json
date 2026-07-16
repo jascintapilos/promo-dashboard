@@ -1,11 +1,4 @@
 {
-  "permissions": {
-    "deny": [
-      "Skill(anthropic-skills:promo-batch-runner)",
-      "anthropic-skills:promo-batch-runner",
-      "mcp__anthropic-skills__promo-batch-runner"
-    ]
-  },
   "hooks": {
     "UserPromptSubmit": [
       {
