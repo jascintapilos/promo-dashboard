@@ -23,6 +23,7 @@ import { getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMember
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { gameAcronym, splitDualPromoName } from './promo-namer.js';
 import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
+import { resolveFreeSpinBet } from './free-spin-bet.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
 // operator-verified selection 2026-05-15 (26 of 31 QP2A groups). Excluded:
@@ -524,13 +525,13 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const r = resolved.parsed || {};
   const spinCount = o.spin_count ?? r.spin_count ?? 0;
   const aplRaw = o.amount_per_line ?? r.amount_per_line ?? null;
-  const valuePerSpin = o.value_per_spin ?? r.value_per_spin ?? 0;
+  const valuePerSpin = o.value_per_spin ?? r.value_per_spin ?? null;
+  const bet = resolveFreeSpinBet({ provider: r.game_provider, valuePerSpin, amountPerLine: aplRaw });
   // Playtech games take amount_per_line as a direct currency bet amount
   // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
   // confirmed 2026-07-10 via a live HTTP 422 on P053 QPRO10 ("Fire Blaze:
   // Green Wizard"): the /20-then-floor PP2 convention below produces a
   // value the BO rejects for Playtech games. Mirrors the QPRO mapper fix.
-  const isPlaytech = /playtech/i.test(r.game_provider || '');
   return {
     currency_id: CURRENCY_TO_ID[currencyLabel] ?? '1',
     bypass_min_deposit: 0,
@@ -539,17 +540,13 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
     reset: 0,
     start_time: '00:00:00',
     end_time: '23:59:59',
-    coins: 0,
-    lines: 0,
+    coins: bet.coins,
+    lines: bet.lines,
     // If sheet stated amount_per_line directly, use it.
     // Playtech: use value_per_spin as-is (no division — see comment above).
     // Else (Pragmatic Play/default): divide value_per_spin by 20 (operator
     // house convention for PP2 20-line games), floor to 2dp (0.40 → 0.02).
-    amount_per_line: aplRaw != null
-      ? +Number(aplRaw).toFixed(4)
-      : isPlaytech
-        ? +Number(valuePerSpin).toFixed(2)
-        : Math.floor(valuePerSpin / 20 * 100) / 100,
+    amount_per_line: bet.amountPerLine,
     rounds: spinCount,
     min_deposit: o.min_deposit ?? r.min_deposit ?? 0,
     max_withdraw_type: '1',
