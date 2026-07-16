@@ -44,6 +44,7 @@ import { buildApiPlan, QP2_BRAND_TO_IDS } from '../src/api-mapper-qp2.js';
 import { qcMtTncHyperlink } from '../src/qc-mt-tnc.js';
 import { recordPopup } from '../src/qp2-popup-registry.js';
 import { writebackPromoFields } from '../src/sheet-writeback.js';
+import { validateFreeSpinPromotionPlan } from '../src/free-spin-preflight.js';
 
 // Clean-exit helper. `process.exit(N)` from top-level after async work
 // races libuv on still-closing keepalive sockets (Windows: STATUS_STACK_
@@ -142,6 +143,12 @@ try {
 // QP2_FS_PROVIDER_ID_BY_PREFIX, or the game resolver returned no match.
 const isFsBonusType = (resolved.bonus_type || '').toLowerCase().includes('free spin');
 if (isFsBonusType) {
+  const fsErrors = validateFreeSpinPromotionPlan(plan.promotion, { platform: 'qp2' });
+  if (fsErrors.length) {
+    console.error(`REFUSED: invalid QP2 Free Spin payload (${fsErrors.length} issue(s)):`);
+    fsErrors.forEach((error) => console.error(`  • ${error}`));
+    return bail(4);
+  }
   const planProviderId = plan.promotion.free_spin_game_provider_id;
   const planGameCode   = plan.promotion.free_spin_game_code;
   if (!planProviderId) {
@@ -467,6 +474,23 @@ try {
       console.log(`    ⚠ POST /promotion returned 500 — checking if row was created anyway…`);
       const existing = await findPromotionByCode(site, resolved.promo_code);
       if (existing?.id) {
+        if (isFsBonusType) {
+          const [detailResponse, currencyResponse] = await Promise.all([
+            authedFetch(site, `/api/bo/promotion/${existing.id}`),
+            authedFetch(site, `/api/bo/promotioncurrency?promotion_id=${existing.id}`),
+          ]);
+          const persisted = {
+            ...(detailResponse?.data?.rows || {}),
+            promotion_currency: currencyResponse?.data?.rows || [],
+          };
+          const persistedErrors = validateFreeSpinPromotionPlan(persisted, {
+            platform: 'qp2',
+            allowProviderEncodingDifference: true,
+          });
+          if (persistedErrors.length) {
+            throw new Error(`POST failed and left invalid Free Spin shell id=${existing.id}: ${persistedErrors.join('; ')}`);
+          }
+        }
         promotionId = existing.id;
         log.calls.at(-1).recovered = true;
         log.calls.at(-1).note = `BO returned 500 but row id=${promotionId} exists; continuing chain.`;
