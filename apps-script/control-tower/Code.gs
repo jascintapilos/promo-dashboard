@@ -6,6 +6,7 @@
  */
 
 const SS_ID = '16iI85GrAqldbBcGhpvAwJT3_3JJDqLemLaGhjPXMlQk';
+const BUSINESS_TIME_ZONE = 'Asia/Kuala_Lumpur';
 
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Dashboard')
@@ -51,17 +52,18 @@ function resolveRole_(email) {
 
 function serverGetKPIs() {
   try {
-    const tasks = getAllTasks_();
+    const snapshot = getTaskSnapshot_();
+    const tasks = snapshot.tasks;
     const counts = {};
     const byMonth = {};
     const byBrand = {};
     tasks.forEach(t => {
-      const s = normaliseStatus_(t.Status);
+      const s = t.Status;
       counts[s] = (counts[s] || 0) + 1;
       const b = t.Brand || t.Platform || '-';
       byBrand[b] = (byBrand[b] || 0) + 1;
-      // Month bucket for trend (use Created_At or Due_Date)
-      const raw = t.Created_At || t.Due_Date || '';
+      // Month bucket for trend from a verified canonical timestamp/date.
+      const raw = t.Submitted_At || t.Assigned_At || t.Status_Updated_At || t.Due_Date || '';
       if (raw) {
         const d = new Date(raw);
         if (!isNaN(d)) {
@@ -73,7 +75,15 @@ function serverGetKPIs() {
         }
       }
     });
+    const recentTasks = tasks.slice().sort((a, b) =>
+      String(b._Activity_At || '').localeCompare(String(a._Activity_At || ''))
+    ).slice(0, 8);
+    const today = Utilities.formatDate(new Date(), BUSINESS_TIME_ZONE, 'yyyy-MM-dd');
+    const upcomingTasks = tasks.filter(t =>
+      t.Due_Date && t.Due_Date >= today && !['Completed','Cancelled'].includes(t.Status)
+    ).sort((a, b) => String(a.Due_Date).localeCompare(String(b.Due_Date))).slice(0, 5);
     return {
+      ok:             true,
       total:          tasks.length,
       completed:      counts['Completed']  || 0,
       inProgress:     counts['In Progress'] || 0,
@@ -82,21 +92,36 @@ function serverGetKPIs() {
       counts,
       byBrand,
       byMonth,
-      recentTasks: tasks.slice(0, 8)
+      recentTasks,
+      upcomingTasks,
+      dataHealth: snapshot.health
     };
   } catch (e) {
-    return { total:0, completed:0, inProgress:0, pendingApproval:0, atRisk:0, counts:{}, byBrand:{}, byMonth:{}, recentTasks:[] };
+    return { ok:false, error:'Task data unavailable: ' + String(e && e.message || e) };
   }
 }
 
 function normaliseStatus_(raw) {
   const s = String(raw || '').trim();
-  if (/complete|done/i.test(s))       return 'Completed';
-  if (/progress|building|wip/i.test(s)) return 'In Progress';
-  if (/approv|waiting/i.test(s))      return 'Pending Approval';
-  if (/risk|escalat|fail|delay/i.test(s)) return 'At Risk';
-  if (/clarif/i.test(s))              return 'Needs Clarification';
-  return s || 'New';
+  const key = s.toLowerCase().replace(/[\s-]+/g, '_');
+  if (!key || key === 'new') return 'New';
+  if (['completed','complete','done'].includes(key)) return 'Completed';
+  if (['in_progress','progress','building','wip','validating','ready_to_execute','executing','qc_required'].includes(key)) return 'In Progress';
+  if (['pending_approval','waiting_approval','approval_required'].includes(key)) return 'Pending Approval';
+  if (['at_risk','failed','failed_escalated','delayed'].includes(key)) return 'At Risk';
+  if (['need_clarification','needs_clarification'].includes(key)) return 'Needs Clarification';
+  if (key === 'on_hold') return 'On Hold';
+  if (key === 'cancelled' || key === 'canceled') return 'Cancelled';
+  return 'Unmapped';
+}
+
+function normalisePriority_(raw) {
+  const key = String(raw || '').trim().toLowerCase();
+  if (key === 'p1' || key === 'urgent' || key === 'critical') return 'Urgent';
+  if (key === 'p2' || key === 'high') return 'High';
+  if (key === 'p3' || key === 'medium' || key === 'normal' || key === 'standard') return 'Normal';
+  if (key === 'p4' || key === 'low') return 'Low';
+  return key ? 'Unmapped' : 'Unspecified';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,8 +129,12 @@ function normaliseStatus_(raw) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function serverGetTasks() {
-  try { return getAllTasks_(); }
-  catch (e) { return []; }
+  try {
+    const snapshot = getTaskSnapshot_();
+    return { ok:true, tasks:snapshot.tasks, dataHealth:snapshot.health };
+  } catch (e) {
+    return { ok:false, error:'Task data unavailable: ' + String(e && e.message || e), tasks:[] };
+  }
 }
 
 function serverCreateTask(task) {
@@ -117,12 +146,16 @@ function serverCreateTask(task) {
       sheet.appendRow(['Task_ID','Title','Module','Brand','Owner','Due_Date','Priority','Status','Progress','Description','Created_At','Updated_At']);
     }
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-    const now = new Date().toISOString();
+    const now = malaysiaNowIso_();
     const id  = 'T-' + Date.now();
     const row = headers.map(h => {
       if (h === 'Task_ID')    return id;
       if (h === 'Created_At') return now;
       if (h === 'Updated_At') return now;
+      if (h === 'Submitted_At') return now;
+      if (h === 'Status_Updated_At') return now;
+      if (h === 'Assigned_At' && task.Owner) return now;
+      if (h === 'Notes' && task.Description && !task.Notes) return task.Description;
       if (h === 'Status' && !task[h]) return 'New';
       if (h === 'Progress' && !task[h]) return 0;
       return task[h] !== undefined ? task[h] : '';
@@ -143,7 +176,12 @@ function serverUpdateTask(taskId, updates) {
     if (idIdx < 0) return { success: false, error: 'No Task_ID column' };
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idIdx]) === String(taskId)) {
-        updates.Updated_At = new Date().toISOString();
+        const now = malaysiaNowIso_();
+        updates.Updated_At = now;
+        updates.Status_Updated_At = now;
+        if (updates.Description !== undefined && headers.indexOf('Description') < 0 && headers.indexOf('Notes') >= 0) {
+          updates.Notes = updates.Description;
+        }
         Object.entries(updates).forEach(([k, v]) => {
           const col = headers.indexOf(k);
           if (col >= 0) sheet.getRange(i + 1, col + 1).setValue(v);
@@ -670,9 +708,155 @@ function openSS_() {
 }
 
 function getAllTasks_() {
+  return getTaskSnapshot_().tasks;
+}
+
+function getTaskSnapshot_() {
   const sheet = openSS_().getSheetByName('Task_Master');
-  if (!sheet || sheet.getLastRow() < 2) return [];
-  return readSheetObjects_(sheet);
+  if (!sheet) throw new Error('Task_Master tab not found');
+  if (sheet.getLastRow() < 2) {
+    return { tasks:[], health:buildTaskHealth_([], [], sheet) };
+  }
+  const sourceRows = readSheetObjects_(sheet);
+  const tasks = sourceRows.map((row, i) => normaliseTaskForDashboard_(row, i + 2));
+  return { tasks, health:buildTaskHealth_(sourceRows, tasks, sheet) };
+}
+
+function normaliseTaskForDashboard_(source, sourceRow) {
+  const task = Object.assign({}, source);
+  const issues = [];
+  const rawStatus = String(source.Status || '').trim();
+  const rawPriority = String(source.Priority || '').trim();
+  const rawDueDate = source.Due_Date !== undefined ? source.Due_Date : source.Deadline;
+  const reference = source.Assigned_At || source.Submitted_At || source.Status_Updated_At || '';
+
+  task.Raw_Status = rawStatus;
+  task.Raw_Priority = rawPriority;
+  task.Raw_Due_Date = rawDueDate == null ? '' : String(rawDueDate);
+  task.Description = source.Description || source.Notes || '';
+  task.Status = normaliseStatus_(rawStatus);
+  task.Priority = normalisePriority_(rawPriority);
+  task.Due_Date = normaliseDueDate_(rawDueDate, reference);
+  task.Submitted_At = normaliseTimestamp_(source.Submitted_At);
+  task.Status_Updated_At = normaliseTimestamp_(source.Status_Updated_At || source.Updated_At);
+  task.Assigned_At = normaliseTimestamp_(source.Assigned_At);
+  task.Approved_At = normaliseTimestamp_(source.Approved_At);
+  task.Executed_At = normaliseTimestamp_(source.Executed_At);
+  task._Activity_At = task.Status_Updated_At || task.Assigned_At || task.Submitted_At || '';
+  task._Source_Row = sourceRow;
+
+  if (task.Status === 'Unmapped') issues.push('unmapped_status');
+  if (task.Priority === 'Unmapped') issues.push('unmapped_priority');
+  if (!task.Due_Date && task.Raw_Due_Date && task.Raw_Due_Date !== '-') issues.push('invalid_due_date');
+  if (!task.Due_Date) issues.push('missing_due_date');
+  if (!String(task.Owner || '').trim() || String(task.Owner).trim() === '-') issues.push('missing_owner');
+  if (!task.Submitted_At) issues.push('missing_submitted_at');
+  if (!task.Status_Updated_At) issues.push('missing_status_updated_at');
+
+  const rawProgress = source.Progress;
+  if ((rawProgress === '' || rawProgress == null) && task.Status === 'Completed') task.Progress = 100;
+  else if (rawProgress === '' || rawProgress == null) task.Progress = 0;
+  else task.Progress = Math.min(100, Math.max(0, Number(rawProgress) || 0));
+
+  task._Data_Issues = issues;
+  return task;
+}
+
+function buildTaskHealth_(sourceRows, tasks, sheet) {
+  const issueCounts = {};
+  tasks.forEach(task => (task._Data_Issues || []).forEach(issue => {
+    issueCounts[issue] = (issueCounts[issue] || 0) + 1;
+  }));
+  const latestActivity = tasks.reduce((latest, task) => {
+    const value = String(task._Activity_At || '');
+    return value > latest ? value : latest;
+  }, '');
+  const sheetTimeZone = sheet && sheet.getParent ? sheet.getParent().getSpreadsheetTimeZone() : '';
+  const warnings = [];
+  if (sourceRows.length !== tasks.length) warnings.push('Not every source task was returned.');
+  if (sheetTimeZone && sheetTimeZone !== BUSINESS_TIME_ZONE) {
+    warnings.push('Source sheet timezone is ' + sheetTimeZone + '; dashboard output is normalised to ' + BUSINESS_TIME_ZONE + '.');
+  }
+  if (issueCounts.unmapped_status) warnings.push(issueCounts.unmapped_status + ' task(s) have an unmapped status.');
+  if (issueCounts.unmapped_priority) warnings.push(issueCounts.unmapped_priority + ' task(s) have an unmapped priority.');
+  if (issueCounts.invalid_due_date) warnings.push(issueCounts.invalid_due_date + ' task(s) have an invalid due date.');
+  return {
+    status: warnings.length ? 'warning' : 'healthy',
+    source: 'PromoOps_Control_Layer / Task_Master',
+    sourceRecordCount: sourceRows.length,
+    returnedRecordCount: tasks.length,
+    generatedAt: malaysiaNowIso_(),
+    latestTaskActivityAt: latestActivity,
+    businessTimeZone: BUSINESS_TIME_ZONE,
+    sheetTimeZone: sheetTimeZone,
+    issueCounts: issueCounts,
+    warnings: warnings
+  };
+}
+
+function normaliseDueDate_(raw, reference) {
+  if (raw === '' || raw == null || String(raw).trim() === '-') return '';
+  if (raw instanceof Date) return Utilities.formatDate(raw, BUSINESS_TIME_ZONE, 'yyyy-MM-dd');
+  const text = String(raw).trim();
+  let m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return validYmd_(Number(m[1]), Number(m[2]), Number(m[3]));
+
+  const refYear = inferYear_(reference);
+  if (/\btoday\b/i.test(text)) {
+    const ref = String(reference || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (ref) return validYmd_(Number(ref[1]), Number(ref[2]), Number(ref[3]));
+  }
+
+  m = text.match(/(?:^|\D)(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (m) {
+    let year = m[3] ? Number(m[3]) : refYear;
+    if (year < 100) year += 2000;
+    return validYmd_(year, Number(m[2]), Number(m[1]));
+  }
+
+  const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  m = text.match(/(?:^|\D)(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})(?:\D|$)/);
+  if (m && months[m[2].slice(0,3).toLowerCase()]) {
+    return validYmd_(Number(m[3]), months[m[2].slice(0,3).toLowerCase()], Number(m[1]));
+  }
+  m = text.match(/(?:^|\D)([A-Za-z]{3,9})\s+(\d{1,2})(?:,)?\s+(\d{4})(?:\D|$)/);
+  if (m && months[m[1].slice(0,3).toLowerCase()]) {
+    return validYmd_(Number(m[3]), months[m[1].slice(0,3).toLowerCase()], Number(m[2]));
+  }
+  return '';
+}
+
+function validYmd_(year, month, day) {
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return '';
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return '';
+  return String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+
+function inferYear_(reference) {
+  const m = String(reference || '').match(/\b(20\d{2})\b/);
+  if (m) return Number(m[1]);
+  return Number(Utilities.formatDate(new Date(), BUSINESS_TIME_ZONE, 'yyyy'));
+}
+
+function normaliseTimestamp_(raw) {
+  if (raw === '' || raw == null) return '';
+  if (raw instanceof Date) return formatMalaysiaIso_(raw);
+  const text = String(raw).trim();
+  if (!text) return '';
+  const local = text.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (local) return local[1] + 'T' + local[2] + ':' + local[3] + ':' + (local[4] || '00') + '+08:00';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text + 'T00:00:00+08:00';
+  const parsed = new Date(text);
+  return isNaN(parsed.getTime()) ? '' : formatMalaysiaIso_(parsed);
+}
+
+function formatMalaysiaIso_(date) {
+  return Utilities.formatDate(date, BUSINESS_TIME_ZONE, "yyyy-MM-dd'T'HH:mm:ss") + '+08:00';
+}
+
+function malaysiaNowIso_() {
+  return formatMalaysiaIso_(new Date());
 }
 
 function readSheetObjects_(sheet) {
