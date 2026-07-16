@@ -66,6 +66,26 @@ Send all sub-agents for one skill in **a single Agent-tool message** so they run
 
 ---
 
+## Codex implementation handoff (team-standard workflow)
+
+Use this workflow when the user asks Claude to plan a development change and have Codex implement it. This workflow is repository-owned; do not rely on private Claude memory for it.
+
+1. **Plan** — Create a complete implementation plan at `docs/plans/<task-name>.md`. Include scope, affected files or components, acceptance criteria, verification commands, safety constraints, and any decisions made with the user.
+2. **Approval** — Show the plan to the user and wait for explicit approval before starting implementation.
+3. **Execute** — After approval, invoke Codex through the terminal from this repository root:
+
+   ```bash
+   codex exec --sandbox workspace-write "Implement the approved plan in docs/plans/<task-name>.md. Read and follow AGENTS.md and every file it instructs you to read, especially memory/MEMORY.md. Inspect the existing code before editing. Complete the implementation and run the relevant tests and checks. Report the files changed, verification performed, and any remaining risks. Do not commit, push, perform live promotion saves, or make other external writes unless the approved plan explicitly authorizes them."
+   ```
+
+4. **Wait** — Do not edit the same files or start another implementation agent while Codex is running.
+5. **Review** — When Codex finishes, inspect `git status` and `git diff`, compare the implementation with the approved plan and acceptance criteria, and report findings to the user.
+6. **Correct** — If changes are needed, either make a focused correction or invoke Codex again with the exact issue. Re-run relevant verification afterward.
+
+The plan file is the handoff contract. Write all task-specific context into it; Codex cannot access Claude's private memory. Shared durable promo rules belong under `memory/` and must be linked from `memory/MEMORY.md`.
+
+---
+
 ## Git workflow
 
 ### Branch strategy
