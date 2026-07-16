@@ -2,10 +2,21 @@
 // Banner upload CLI — reads Banner Schedule, discovers local image files,
 // and API-directly creates QPRO 3.3 Promotion Content + 14.2 Banner rows.
 //
-// SAFE BY DEFAULT: with no flags, this prints the plan and makes NO BO calls.
-// You must pass --commit to actually write anything live. (Fixed 2026-07-09 —
-// previously --commit was a no-op and the bare command wrote live; see
+// SAFE BY DEFAULT: with no flags, this makes NO writes to the gaming Back Office
+// (BO) — no banner, no 3.3 content, nothing created or modified there. You must
+// pass --commit to actually write anything live. (Fixed 2026-07-09 — previously
+// --commit was a no-op and the bare command wrote live; see
 // memory/project_banner_upload_handover.md for the incident context.)
+//
+// Dry-run is write-free, NOT network-free: it always makes a real, read-only
+// Google Sheets API call to load the Banner Schedule, and — if a promo-draft
+// Drive folder resolves for the campaign — a real, read-only Google Drive API
+// call to check whether that folder actually yields usable doc content. The
+// Drive check is what lets the plan bundle flag `contentIsStub` (the 3.3 page
+// would otherwise silently ship as a bare image with no title/description/T&C)
+// before any BO write happens — there's no way to know that without attempting
+// the fetch (a folder can exist but be empty, permission-blocked, or contain no
+// native Docs; a "does a URL exist" check alone would miss all of those).
 //
 // Usage (flags require = syntax):
 //   node bin/upload-promo.js --range=B01-B03                  (dry-run — plan only, no BO calls)
@@ -504,6 +515,17 @@ async function getDocContentMap(drive, folderUrl) {
 
 // ── Per-B-ID upload ──────────────────────────────────────────────────────────
 
+const docContentCache = new Map();
+
+async function getCachedDocContentMap(drive, folderUrl) {
+  const folderId = extractFolderIdFromUrl(folderUrl);
+  if (!folderId) return getDocContentMap(drive, folderUrl);
+  if (docContentCache.has(folderId)) return docContentCache.get(folderId);
+  const contentMap = await getDocContentMap(drive, folderUrl);
+  docContentCache.set(folderId, contentMap);
+  return contentMap;
+}
+
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── Creative-match guard ──────────────────────────────────────────────────────
@@ -528,9 +550,9 @@ function keywordsFromFilenames(names) {
   const sizeRe = /^\d+x\d+px?$/;
   const locale = new Set(['my', 'sg', 'id', 'th', 'km', 'en', 'zh', 'ms', 'us']);
   return [...new Set(
-    names.flatMap((n) => path.basename(n).toLowerCase().replace(/\.[a-z0-9]+$/, '').split(/[-_]+/))
-      // drop brand prefix (index 0 handled below), up/mup tags, sizes, locale codes, pure numbers
-      .filter((w, i) => w.length >= 3 && !['up', 'mup', 'px'].includes(w) && !sizeRe.test(w) && !locale.has(w) && !/^\d+$/.test(w)),
+    names.flatMap((n) => path.basename(n).toLowerCase().replace(/\.[a-z0-9]+$/, '').split(/[-_]+/).slice(1))
+      // drop brand prefix, up/mup tags, sizes, locale codes, pure numbers
+      .filter((w) => w.length >= 3 && !['up', 'mup', 'px'].includes(w) && !sizeRe.test(w) && !locale.has(w) && !/^\d+$/.test(w)),
   )];
 }
 function checkCreativeMatch(campaignText, imageLocales) {
@@ -540,7 +562,8 @@ function checkCreativeMatch(campaignText, imageLocales) {
   // "play" in "Pragmatic Play" would false-match "playboy" and let last month's
   // creative through.
   const overlap = campKw.filter((c) => fileKw.has(c));
-  return { ok: campKw.length === 0 || overlap.length > 0, overlap, campKw, fileKw: [...fileKw] };
+  const weak = campKw.length === 0;
+  return { ok: weak || overlap.length > 0, weak, overlap, campKw, fileKw: [...fileKw] };
 }
 
 async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, promoCodeOverride, dryRun, drive, campaignFolderMap, promoFolderOverride }) {
@@ -611,11 +634,37 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
         console.log(`  [${b_id}]   Stage the correct creative in the brand folder, or re-run with --allow-creative-mismatch to override.`);
         return { b_id, status: 'creative-mismatch', reason: msg };
       }
+    } else if (m.weak) {
+      console.warn(`  [${b_id}] WARNING: creative-match guard could not evaluate campaign "${label}" because it has no usable keywords after stopword filtering.`);
     }
   }
 
   // ── Locale ID map ────────────────────────────────────────────────────────
   const localeMap = await getLocaleMap(site);
+
+  // Resolve promo draft docs before dry-run returns so plan bundles can flag stubs.
+  const resolvedFolderUrl = promoFolderOverride
+    || folder_url
+    || (campaignFolderMap && campaignFolderMap.get((campaign || '').trim().toLowerCase()))
+    || null;
+
+  let docContentMap = {};
+  if (!skipContent && resolvedFolderUrl && drive) {
+    console.log(`  [${b_id}] fetching promo doc content from folder...`);
+    docContentMap = await getCachedDocContentMap(drive, resolvedFolderUrl);
+    const langs = Object.keys(docContentMap);
+    if (langs.length) {
+      console.log(`  [${b_id}] doc content loaded for: ${langs.join(', ')}`);
+    } else {
+      console.log(`  [${b_id}] no doc content found - will fall back to image-only content`);
+    }
+  } else if (!skipContent && !drive) {
+    console.log(`  [${b_id}] Drive API not available - using image-only content`);
+  } else if (!skipContent) {
+    console.log(`  [${b_id}] no Drive folder resolved for campaign "${campaign}" - using image-only content`);
+  }
+
+  let contentIsStub = !skipContent && Object.keys(docContentMap).length === 0;
 
   if (dryRun) {
     const cleanCampaignDry = (campaign || label).replace(/^(\s*\[[^\]]*\]\s*)+/, '').trim();
@@ -637,6 +686,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
     return {
       b_id, status: 'dry-run', promoCode: codeDry,
       site_id, label, campaign, startUtc, endUtc,
+      contentIsStub,
       stagedImages: imageLocales.map((il) => ({ localeSuffix: il.localeSuffix, desktop: il.desktopPath, mobile: il.mobilePath })),
     };
   }
@@ -679,34 +729,10 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
     contentImages.set(locId, { promoImageUrl, desktopBannerUrl: desktopUrl });
   }
 
-  // ── Fetch promo doc content from Drive (optional) ────────────────────────
-  // Resolve the Drive folder URL for this B-ID:
-  //   1. --promo-folder flag (explicit CLI override)
-  //   2. column D hyperlink from the schedule sheet
-  //   3. campaign-name fallback (another row in same sheet with same campaign has a link)
-  const resolvedFolderUrl = promoFolderOverride
-    || folder_url
-    || (campaignFolderMap && campaignFolderMap.get((campaign || '').trim().toLowerCase()))
-    || null;
-
-  let docContentMap = {};
-  if (resolvedFolderUrl && drive) {
-    console.log(`  [${b_id}] fetching promo doc content from folder…`);
-    docContentMap = await getDocContentMap(drive, resolvedFolderUrl);
-    const langs = Object.keys(docContentMap);
-    if (langs.length) {
-      console.log(`  [${b_id}] doc content loaded for: ${langs.join(', ')}`);
-    } else {
-      console.log(`  [${b_id}] no doc content found — will fall back to image-only content`);
-    }
-  } else if (!drive) {
-    console.log(`  [${b_id}] Drive API not available — using image-only content`);
-  } else {
-    console.log(`  [${b_id}] no Drive folder resolved for campaign "${campaign}" — using image-only content`);
-  }
 
   // ── 3.3 Promotion Content (optional) ────────────────────────────────────
   let promoCode = promoCodeOverride || null;
+  let contentDetails = null;
 
   if (!skipContent) {
     // Code = EVE + first-letter acronym of each campaign word (brackets stripped).
@@ -735,6 +761,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
                       || docContentMap['MY_EN']
                       || Object.values(docContentMap)[0]
                       || null;
+        if (!docEntry) contentIsStub = true;
         const content = docEntry?.content
           || (promoImageUrl ? `<p><img src="${promoImageUrl}" style="max-width:100%;height:auto;"></p>` : '<p>&nbsp;</p>');
         // description = tagline from the doc header (second line); fall back to label
@@ -750,6 +777,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
           expire_at: endUtc,
           image: promoImageUrl || null,
           content,
+          content_is_stub: !docEntry,
         };
       } else {
         detailsObj[String(locId)] = emptyPromoContentDetail();
@@ -761,6 +789,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
       if (firstLocId && detailsObj[String(firstLocId)]) {
         const { promoImageUrl } = contentImages.get(firstLocId) || {};
         const fallbackEntry = docContentMap['MY_EN'] || Object.values(docContentMap)[0] || null;
+        if (!fallbackEntry) contentIsStub = true;
         detailsObj[String(firstLocId)].title = label;
         detailsObj[String(firstLocId)].description = fallbackEntry?.description || label;
         detailsObj[String(firstLocId)].start = startUtc;
@@ -771,14 +800,17 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
         detailsObj[String(firstLocId)].content = fallbackEntry?.content
           || (promoImageUrl ? `<p><img src="${promoImageUrl}" style="max-width:100%;height:auto;"></p>` : '<p>&nbsp;</p>');
         detailsObj[String(firstLocId)].settings_locale_id = firstLocId;
+        detailsObj[String(firstLocId)].content_is_stub = !fallbackEntry;
       }
     }
 
     // Auto-suffix on code conflict: EVEMPUE → EVEMPUE2 → EVEMPUE3 …
+    contentDetails = detailsObj;
+
     let pcRes;
     for (let attempt = 1; attempt <= 5; attempt++) {
       const codeAttempt = attempt === 1 ? promoCode : `${promoCode.slice(0, 13)}${attempt}`;
-      await delay(1500);
+      if (attempt > 1) await delay(1500);
       console.log(`  [${b_id}] create 3.3 promo content (code=${codeAttempt})…`);
       try {
         pcRes = await createPromotionContent(site, {
@@ -827,6 +859,8 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
   return {
     b_id, status: 'ok', promoCode, bannerId, pcId,
     site_id, label, campaign, startUtc, endUtc,
+    contentDetails: skipContent ? null : contentDetails,
+    contentIsStub,
     imageRows, bannerPosition: bannerBody.position,
   };
 }
@@ -990,8 +1024,8 @@ for (const r of results) {
   mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${r.b_id}__${r.site_id}.json`);
   const bundle = isplan
-    ? { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, start_datetime: r.startUtc, end_datetime: r.endUtc, staged_images: r.stagedImages, website: getBrandWebsite(r.site_id), type: 'plan', created_at: new Date().toISOString() }
-    : { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, banner_id: r.bannerId, content_id: r.pcId, start_datetime: r.startUtc, end_datetime: r.endUtc, position: r.bannerPosition, image_rows: r.imageRows, website: getBrandWebsite(r.site_id), type: 'saved', created_at: new Date().toISOString() };
+    ? { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, start_datetime: r.startUtc, end_datetime: r.endUtc, contentIsStub: !!r.contentIsStub, staged_images: r.stagedImages, website: getBrandWebsite(r.site_id), type: 'plan', created_at: new Date().toISOString() }
+    : { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, banner_id: r.bannerId, content_id: r.pcId, start_datetime: r.startUtc, end_datetime: r.endUtc, position: r.bannerPosition, image_rows: r.imageRows, content_details: r.contentDetails || null, contentIsStub: !!r.contentIsStub, website: getBrandWebsite(r.site_id), type: 'saved', created_at: new Date().toISOString() };
   writeFileSync(file, JSON.stringify(bundle, null, 2));
   bundlesWritten.push(file);
 }
