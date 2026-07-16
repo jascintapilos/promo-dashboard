@@ -97,13 +97,15 @@ skill: update pre-qc to check FS spin count against 88-spin rule
 
 ### When to commit and push
 
-**After every session that modifies project files**, Codex must:
+**Codex must NEVER commit or push automatically.** Only commit and/or push when the user explicitly asks (e.g. "commit this", "push it") — never as a routine end-of-session or end-of-task step, and never as a side effect of an unrelated request.
+
+When the user does explicitly ask, Codex must:
 
 1. Check what changed — `git status` and `git diff --stat`
 2. Verify no secrets are staged — confirm no `*.local.json` appears in `git status`
-3. Stage only source files — never use `git add -A` blindly; prefer `git add bin/ src/ data/ docs/ .Codex/ user-skills/`
+3. Stage only the files relevant to the requested change — never use `git add -A` blindly, and never stage other, unrelated pre-existing modifications sitting in the working tree even if they're convenient to include; prefer `git add bin/ src/ data/ docs/ .Codex/ user-skills/` scoped to the actual changed files
 4. Commit with a clear message
-5. Push — `git push origin main`
+5. Push only if the user's request included pushing, or after confirming with the user — `git push origin main`
 
 **Do NOT commit:**
 - `captures/` — API run logs (gitignored, stays local)
@@ -111,14 +113,15 @@ skill: update pre-qc to check FS spin count against 88-spin rule
 - `logs/`, `tmp/`, `tmp-plans/`, `tmp-runs/` — runtime artifacts (gitignored)
 - `node_modules/` — dependencies (gitignored)
 
-### Auto-sync hooks (already configured)
-The project `.Codex/settings.json` has two hooks pre-wired — **do not tell the user to run these manually**:
-- **Auto-pull**: fires on every message → silently runs `git pull origin main --ff-only` so the user always has the latest code
-- **Auto-push**: fires when the session ends → auto-commits and pushes any changed files
+### Auto-sync hook (partially configured)
+The project `.codex/hooks.json` pre-wires ONE non-destructive hook — **do not tell the user to run this manually**:
+- **Auto-pull + memory sync**: fires on prompt submit → silently runs `git pull origin main --ff-only` and copies `memory/*.md` into the local memory directory, so the user always has the latest code and shared memory.
 
-Users never need to run `git pull` or `git push` manually. The hooks handle it.
+There is **no automatic commit or push**. Codex only commits/pushes when the user explicitly asks — see "When to commit and push" above.
 
-### Quick reference (for reference only — hooks handle pull/push automatically)
+**History (2026-07-16):** this file previously also documented an "Auto-push: fires when the session ends → auto-commits and pushes any changed files" hook, and `.codex/hooks.json` had a matching `Stop` hook that did exactly that. Both were removed after a review found this created a real risk of silently overriding an explicit user "do not commit/push yet" instruction the moment a session ended. Users still never need to run `git pull` manually — only `git push`/`git commit` now require an explicit ask.
+
+### Quick reference (pull is automatic; commit/push require an explicit user ask)
 ```bash
 # Manual pull if needed outside a Codex session
 git pull origin main

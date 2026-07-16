@@ -130,14 +130,16 @@ skill: update pre-qc to check FS spin count against 88-spin rule
 - `logs/`, `tmp/`, `tmp-plans/`, `tmp-runs/` — runtime artifacts (gitignored)
 - `node_modules/` — dependencies (gitignored)
 
-### Auto-sync hooks (already configured)
-The project `.claude/settings.json` has two hooks pre-wired — **do not tell the user to run these manually**:
-- **Auto-pull**: fires on every message → silently runs `git pull origin main --ff-only` so the user always has the latest code
-- **Auto-push**: fires when the session ends → auto-commits and pushes any changed files
+### Auto-sync hooks
 
-Users never need to run `git pull` or `git push` manually. The hooks handle it.
+**Policy: Claude must NEVER commit or push automatically — only when the user explicitly asks (e.g. "commit this", "push it"), never as a routine end-of-session step.** This matches the Codex policy in `AGENTS.md`.
 
-### Quick reference (for reference only — hooks handle pull/push automatically)
+The project `.claude/settings.json` has an **auto-pull** hook pre-wired — **do not tell the user to run this manually**:
+- **Auto-pull**: fires on every message → silently runs `git pull origin main --ff-only` so the user always has the latest code. This one is non-destructive and stays.
+
+**History (2026-07-16):** `.claude/settings.json` previously also had a `Stop` hook that auto-committed and pushed any changed files when a session ended — the same mechanism removed from `.codex/hooks.json` for Codex, and for the same reason (it could silently override an explicit "do not commit/push yet" instruction the moment a session ended). Both are now removed. The policy statement above is enforced by both the hook config and Claude's own behavior, not just intended.
+
+### Quick reference (pull is automatic; commit/push require an explicit user ask)
 ```bash
 # Manual pull if needed outside a Claude session
 git pull origin main
