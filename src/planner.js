@@ -343,7 +343,7 @@ export function renderQp2Plan(resolved, { brand } = {}) {
     `  27. Select Game Providers:`,
     isFs
       ? `      • Free Spin → Pragmatic Play ONLY`
-      : `      • all EXCEPT 918KISS/918KAYA, ALLBET, EKOR, HABANERO, KINGMIDAS, MEGA888, DG, SSG`,
+      : `      • all EXCEPT 918KAYA, ALLBET, DREAM GAMING, HABANERO, KINGMIDAS, PNG, PP, SBO, SSG, YL GAMING`,
     isFs ? `  28. Select Game          → ${fmt(r.game)}` : '',
     '',
     `▼ G. PROMOTION CURRENCY  [OPENS POPUP × ${resolved.currencies.length} currencies]`,

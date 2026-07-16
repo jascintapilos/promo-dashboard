@@ -23,6 +23,7 @@ import { renderBody, renderDialogBody, localeDocKey } from './message-template-r
 import { getAllGameProviders, getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { splitDualPromoName, gameAcronym } from './promo-namer.js';
+import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
 
 // Per-brand QPRO group naming varies — QPRO1 has bare names ("BRONZE",
 // "SILVER", "DIAMOND") while QPRO2/6/11/17 use numbered names ("Bronze 1/2/3",
@@ -66,14 +67,12 @@ async function resolveQproMemberGroupIds(site, tierConstraint) {
 // no `site` is passed to buildApiPlan (e.g. legacy callers). New callers
 // pass `site` and the mapper resolves the brand's actual installed-provider
 // list at runtime via `getAllGameProviders` + LAYER1_GP_EXCLUSION_NAMES.
-// 51 providers.
-const QPRO11_GP_LAYER1_EXCL = [66,68,4,45,49,64,55,5,6,62,10,12,58,11,63,14,15,60,16,17,18,19,22,53,61,25,52,26,27,28,29,3,59,30,69,31,70,32,23,48,71,33,35,34,36,38,65,42,43,57,44];
+// 52 providers after applying the current hard exclusion set.
+const QPRO11_GP_LAYER1_EXCL = [1,66,68,4,45,49,64,55,72,3,5,6,50,62,10,12,58,11,14,15,60,16,17,18,19,22,53,61,54,25,52,26,27,28,59,69,67,31,70,32,23,33,35,34,36,73,38,65,74,42,43,57];
 
 // Layer-1 exclusion NAMES — uniform across brands; provider IDs differ per
 // brand BO install. Per `project_promo_code_automation_flow.md`. We match
 // case-insensitively against the `name` field on /api/bo/gameprovider rows.
-const LAYER1_GP_EXCLUSION_NAMES = ['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABANERO', 'KINGMIDAS', 'MEGA888', 'DG', 'SSG'];
-
 // Fetch the target brand's installed game providers and return only the
 // IDs that AREN'T in the Layer-1 exclusion list — i.e. the same semantic
 // as the legacy QPRO11_GP_LAYER1_EXCL constant but resolved per-brand so
@@ -81,14 +80,13 @@ const LAYER1_GP_EXCLUSION_NAMES = ['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABA
 // "target.0.game_provider_ids.N is invalid").
 async function resolveLayer1GpIds(site) {
   const { rows } = await getAllGameProviders(site);
-  const excl = new Set(LAYER1_GP_EXCLUSION_NAMES.map((n) => n.toUpperCase()));
   // Match by NAME or CODE — per-brand catalogs may list "Dream Gaming"
   // (name) with code "DG", or vice versa. Operator's exclusion list uses
   // short codes; brand catalogs sometimes only have long names. Matching
   // either field catches both shapes (verified 2026-05-18 on QPRO7 where
   // DG=Dream Gaming and SSG=Super Spade Gaming weren't excluded by name).
   return rows
-    .filter((r) => !excl.has(String(r.name || '').toUpperCase()) && !excl.has(String(r.code || '').toUpperCase()))
+    .filter((r) => !isHardExcludedGameProvider(r))
     .map((r) => r.id);
 }
 
@@ -103,11 +101,10 @@ async function resolveLayer1GpIds(site) {
 // they carry slots games (operator correction 2026-07-09, P026).
 async function resolveCategoryGpIds(site, categoryNames) {
   const catSet = new Set(categoryNames.map((n) => n.toUpperCase()));
-  const excl = new Set(LAYER1_GP_EXCLUSION_NAMES.map((n) => n.toUpperCase()));
   const { rows } = await getAllGameProviders(site);
   return rows
     .filter((r) => (r.categories || []).some((c) => catSet.has(String(c.category || '').toUpperCase())))
-    .filter((r) => !excl.has(String(r.name || '').toUpperCase()) && !excl.has(String(r.code || '').toUpperCase()))
+    .filter((r) => !isHardExcludedGameProvider(r))
     .map((r) => r.id);
 }
 
