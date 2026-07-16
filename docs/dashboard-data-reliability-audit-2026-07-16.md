@@ -5,6 +5,8 @@
 **Scope:** Unified dashboard source code, the live `PromoOps_Control_Layer` spreadsheet, and the live `PromoOps Data` QC source.  
 **Mode:** Read-only. No live sheet or dashboard data was changed.
 
+**Source clarification:** The repository contains both `unified-dashboard` and `control-tower` implementations. The production deployment script uses `control-tower`. Findings about the latest-20 truncation apply to the older `unified-dashboard` copy, not the production `control-tower` task endpoint. Production-specific remediation is tracked in the sections below.
+
 ## Executive conclusion
 
 The dashboard is not ready for SLA, overdue, workload, or automation-health metrics yet. The live sources contain useful data, but the current pull and UI do not apply one consistent schema. A polished dashboard built on the current result would present incomplete and materially misleading figures.
@@ -22,9 +24,9 @@ The immediate objective should be to establish a canonical data contract, normal
 
 ## Confirmed critical findings
 
-### 1. The dashboard only returns the latest 20 tasks
+### 1. The older unified dashboard only returns the latest 20 tasks
 
-The server counts all task rows, then returns only `tasks.slice(-20).reverse()` to the browser. This means:
+The older `unified-dashboard` server counts all task rows, then returns only `tasks.slice(-20).reverse()` to the browser. The production `control-tower` implementation reads the complete task sheet and is not affected by this truncation. If the older implementation is reused, this means:
 
 - KPI totals use the full population.
 - Tables, boards, filters, exports, My Tasks, approvals, and the calendar use only the latest 20.
