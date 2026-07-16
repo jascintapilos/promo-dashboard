@@ -24,11 +24,12 @@ import { BRAND_TO_SITE } from '../src/ingest.js';
 import {
   createPromotion, addPromotionName, createMessageTemplate,
   createDialogPopup, updatePromotion, findPromotionByCode,
-  getPromotionDetail,
+  getPromotionDetail, authedFetch,
 } from '../src/api-client.js';
 import { buildApiPlan } from '../src/api-mapper-qpro.js';
 import { qcMtTncHyperlink } from '../src/qc-mt-tnc.js';
 import { writebackPromoFields } from '../src/sheet-writeback.js';
+import { validateFreeSpinPromotionPlan } from '../src/free-spin-preflight.js';
 
 // Clean-exit helper. `process.exit(N)` from top-level after async work
 // races libuv on still-closing keepalive sockets (Windows: STATUS_STACK_
@@ -108,6 +109,16 @@ if (gaps.length) {
 
 // ── Build the API plan ────────────────────────────────────────────────
 const plan = await buildApiPlan(resolved, { brand: targetBrand, site });
+
+const isFsBonusType = (resolved.bonus_type || '').toLowerCase().includes('free spin');
+if (isFsBonusType) {
+  const fsErrors = validateFreeSpinPromotionPlan(plan.promotion, { platform: 'qpro' });
+  if (fsErrors.length) {
+    console.error(`REFUSED: invalid QPRO Free Spin payload (${fsErrors.length} issue(s)):`);
+    fsErrors.forEach((error) => console.error(`  • ${error}`));
+    return bail(4);
+  }
+}
 
 // ── Preview ───────────────────────────────────────────────────────────
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -265,9 +276,33 @@ let dialogPopup = null; // { id, code, start_date, label }
 
 try {
   // 1. Create the promotion
-  const r1 = await call('POST /api/bo/promotion', () => createPromotion(site, plan.promotion));
-  promotionId = r1?.data?.rows?.id;
-  if (!promotionId) throw new Error(`POST /promotion did not return an id (response: ${JSON.stringify(r1).slice(0,300)})`);
+  try {
+    const r1 = await call('POST /api/bo/promotion', () => createPromotion(site, plan.promotion));
+    promotionId = r1?.data?.rows?.id;
+    if (!promotionId) throw new Error(`POST /promotion did not return an id (response: ${JSON.stringify(r1).slice(0,300)})`);
+  } catch (createError) {
+    // QPRO may persist a row even when POST reports 422/500. Recover a Free
+    // Spin row only when its saved provider, game, target, and currency rows
+    // pass the same preflight; fail closed on gameless/invalid shells.
+    if (!isFsBonusType) throw createError;
+    const existing = await findPromotionByCode(site, resolved.promo_code);
+    if (!existing?.id) throw createError;
+    const [detailResponse, currencyResponse] = await Promise.all([
+      authedFetch(site, `/api/bo/promotion/${existing.id}`),
+      authedFetch(site, `/api/bo/promotioncurrency?promotion_id=${existing.id}`),
+    ]);
+    const persisted = {
+      ...(detailResponse?.data?.rows || {}),
+      promotion_currency: currencyResponse?.data?.rows || [],
+    };
+    const persistedErrors = validateFreeSpinPromotionPlan(persisted, { platform: 'qpro' });
+    if (persistedErrors.length) {
+      throw new Error(`POST failed and left invalid Free Spin shell id=${existing.id}: ${persistedErrors.join('; ')}`);
+    }
+    promotionId = existing.id;
+    log.calls.at(-1).recovered = true;
+    log.calls.at(-1).note = `POST failed but valid row id=${promotionId} persisted; continuing chain.`;
+  }
   console.log(`    ✓ promotion id = ${promotionId}`);
 
   // 2. Create the message template (if any)

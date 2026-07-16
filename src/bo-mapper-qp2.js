@@ -16,6 +16,7 @@
 //   bonus_rate            <NOT in main form — assumed in Currency popup>
 import { splitDualPromoName } from './promo-namer.js';
 import { HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS } from './game-provider-exclusions.js';
+import { resolveFreeSpinBet } from './free-spin-bet.js';
 
 //   restrict_claim_rou…   freespin_check
 //   kyc_type / KYC Status <none — replaced by requires_email/mobile/dob/fullname>
@@ -389,13 +390,12 @@ export function buildActions(resolved, { brand } = {}) {
       // /20 + floor also preserves the known 0.20→0.01 mapping.
       // QPRO mapper already does this; QP2 was sending raw value_per_spin
       // (caught 2026-05-14 — TEST_QP2A_FS saved with 0.2 instead of 0.01).
-      const valPerSpin = Number(override.value_per_spin ?? r.value_per_spin ?? 0);
+      const valPerSpin = override.value_per_spin ?? r.value_per_spin ?? null;
       const aplRawQp2  = override.amount_per_line ?? r.amount_per_line ?? null;
-      row.amount_per_line = aplRawQp2 != null
-        ? +Number(aplRawQp2).toFixed(4)
-        : Math.floor(valPerSpin / 20 * 100) / 100;
-      row.lines           = 0;
-      row.coins           = 0;
+      const bet = resolveFreeSpinBet({ provider: r.game_provider, valuePerSpin: valPerSpin, amountPerLine: aplRawQp2 });
+      row.amount_per_line = bet.amountPerLine;
+      row.lines           = bet.lines;
+      row.coins           = bet.coins;
       row.bonus_rate      = 0;
     }
     return row;

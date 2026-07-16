@@ -15,6 +15,7 @@
 // /api/bo/promotion/<id> detail endpoint.
 import { splitDualPromoName } from './promo-namer.js';
 import { HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS } from './game-provider-exclusions.js';
+import { resolveFreeSpinBet } from './free-spin-bet.js';
 
 const PROMO_TYPE_LABEL = {
   'Deposit':     'Deposit',
@@ -348,19 +349,18 @@ export function buildActions(resolved, { brand } = {}) {
       // a *required* field — Submit stays disabled until it's filled.
       // Earlier runs missed this because the FC row had it but FS didn't.
       const apl             = override.amount_per_line ?? r2.amount_per_line ?? null;
-      const valuePerSpinRaw = override.value_per_spin  ?? r2.value_per_spin  ?? 0;
+      const valuePerSpinRaw = override.value_per_spin  ?? r2.value_per_spin  ?? null;
       const spinCount       = override.spin_count      ?? r2.spin_count      ?? 0;
+      const bet = resolveFreeSpinBet({ provider: r2.game_provider, valuePerSpin: valuePerSpinRaw, amountPerLine: apl });
       row.min_transfer     = override.min_deposit       ?? r2.min_deposit       ?? 0;
       row.rounds           = spinCount;
       row.total_rounds     = spinCount;
       // If sheet stated amount_per_line directly, use it as-is.
       // If sheet stated value_per_spin: divide by 20 then floor to 2dp
       // so 0.50 → 0.025 → 0.02 (BO rejects 0.025).
-      row.amount_per_line  = apl != null
-        ? +Number(apl).toFixed(4)
-        : Math.floor(valuePerSpinRaw / 20 * 100) / 100;
-      row.lines            = 0;
-      row.coins            = 0;
+      row.amount_per_line  = bet.amountPerLine;
+      row.lines            = bet.lines;
+      row.coins            = bet.coins;
       row.bonus_amount     = 0;
       row.bonus_rate       = 0;
       row.max_transfer_out = override.max_transfer_out  ?? r2.max_transfer_out  ?? 0;
