@@ -7,8 +7,8 @@
  *   - Inline YTD aggregation functions  (weekly-reports folder scanner)
  *   - Inline enhanced viewReports()     (Chart.js YTD analytics panel)
  *
- * Output files go to apps-script/unified-dashboard/
- * Run once, then deploy with:  node bin/deploy-dashboard.mjs
+ * Output files go to apps-script/unified-dashboard/ for historical reference.
+ * The Control Tower deployment path has been retired.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -446,6 +446,4 @@ writeFileSync(path.join(OUT_DIR, 'appsscript.json'), JSON.stringify(manifest, nu
 console.log('✓ appsscript.json written');
 
 console.log('\nAll files written to:', OUT_DIR);
-console.log('\nNext steps:');
-console.log('  1. If not done yet: node bin/sheets-oauth.mjs   (re-consent with script.projects scope)');
-console.log('  2. node bin/deploy-dashboard.mjs               (push to v14 script)');
+console.log('\nThe Control Tower deployment path has been retired; these files are not deployed.');

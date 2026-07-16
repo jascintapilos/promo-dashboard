@@ -17,8 +17,7 @@
     "promotions": "node bin/promotions.js",
     "sessions": "node bin/sessions.js",
     "browser": "node src/browser/phase1-browser.js",
-    "test:free-spin": "node bin/test-free-spin-conformance.mjs",
-    "test:dashboard-data": "node bin/test-dashboard-data-contract.mjs"
+    "test:free-spin": "node bin/test-free-spin-conformance.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
