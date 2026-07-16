@@ -14,12 +14,53 @@ import { getAllPromotions } from '../src/api-client.js';
 import { QP2_BRAND_TO_IDS } from '../src/api-mapper-qp2.js';
 import { parseArgs } from './_args.js';
 
-const { flags } = parseArgs(process.argv.slice(2));
+const { flags, positional } = parseArgs(process.argv.slice(2));
 const jsonMode    = flags.json  === true;
-const brandFilter = flags.brand ? String(flags.brand).toUpperCase() : null;
+const brandArg    = flags.brand === true ? positional[0] : flags.brand;
+const brandFilter = brandArg ? String(brandArg).toUpperCase() : null;
 const SLEEP_MS    = 400;
 const YEAR        = '2026';
 const EXCLUDE_TEST = flags['include-test'] !== true; // --include-test to count TEST_* codes
+
+const MONTH_NAMES = {
+  '01': 'Jan',
+  '02': 'Feb',
+  '03': 'Mar',
+  '04': 'Apr',
+  '05': 'May',
+  '06': 'Jun',
+  '07': 'Jul',
+  '08': 'Aug',
+  '09': 'Sep',
+  '10': 'Oct',
+  '11': 'Nov',
+  '12': 'Dec',
+};
+
+function generateRemainingWeeks(startDateStr, startWeekNum) {
+  const weeks = [];
+  const year = Number(YEAR);
+  const fmt = (s) => `${s.slice(8)}/${s.slice(5, 7)}`;
+  let d = new Date(`${startDateStr}T00:00:00Z`);
+  let weekNum = startWeekNum;
+
+  while (d.getUTCFullYear() === year) {
+    const from = d.toISOString().slice(0, 10);
+    const toDate = new Date(d);
+    toDate.setUTCDate(toDate.getUTCDate() + 4);
+    if (toDate.getUTCFullYear() > year) {
+      toDate.setUTCFullYear(year, 11, 31);
+    }
+    const to = toDate.toISOString().slice(0, 10);
+    const label = `W${String(weekNum).padStart(2, '0')} ${fmt(from)}–${fmt(to)}`;
+    weeks.push({ label, from, to });
+
+    d.setUTCDate(d.getUTCDate() + 7);
+    weekNum++;
+  }
+
+  return weeks;
+}
 
 // ── Weekly report date windows (Mon–Fri or Mon–Mon) ───────────────────────
 const WEEKS = [
@@ -42,6 +83,7 @@ const WEEKS = [
   { label: 'W17 27/04–01/05', from: '2026-04-27', to: '2026-05-01' },
   { label: 'W18 04/05–08/05', from: '2026-05-04', to: '2026-05-08' },
   { label: 'W19 11/05–18/05', from: '2026-05-11', to: '2026-05-18' },
+  ...generateRemainingWeeks('2026-05-18', 20),
 ];
 
 // Buckets: one per week + an "other" bucket for dates that fall in gaps
@@ -60,7 +102,7 @@ function assignWeek(createdAt) {
 // Month derived from created_at for monthly subtotals
 function createdMonth(createdAt) {
   const m = new Date(createdAt).toISOString().slice(5, 7);
-  return { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May' }[m] ?? m;
+  return MONTH_NAMES[m] ?? m;
 }
 
 // ── Brand list ────────────────────────────────────────────────────────────
@@ -170,15 +212,12 @@ if (jsonMode) {
 
 // ── Weekly table ──────────────────────────────────────────────────────────
 console.log('\n');
-const MONTH_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
 const weeksByMonth = {};
 for (const w of WEEKS) {
-  const d = new Date(w.from + 'T00:00:00Z');
-  const m = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May' }[
-    d.toISOString().slice(5, 7)
-  ] ?? '?';
+  const m = MONTH_NAMES[w.from.slice(5, 7)] ?? '?';
   (weeksByMonth[m] = weeksByMonth[m] || []).push(w.label);
 }
+const MONTH_ORDER = [...new Set(WEEKS.map(w => MONTH_NAMES[w.from.slice(5, 7)] ?? w.from.slice(5, 7)))];
 
 console.log('┌──────────────────────────────────┬──────────┐');
 console.log('│ Week                             │  Promos  │');
@@ -210,6 +249,8 @@ for (const [b, n] of Object.entries(brandTotals)) {
 if (testSkipped > 0) {
   console.log(`\n  (${testSkipped} TEST_* codes excluded — run with --include-test to count them)`);
 }
-console.log('\nDashboard YTD (authoritative, Jan 1 – May 18):  1,641');
+const firstWeek = WEEKS[0].from;
+const lastWeek = WEEKS[WEEKS.length - 1].to;
+console.log(`\nDate range covered: ${firstWeek} → ${lastWeek}`);
 console.log('Note: WS1 (MB8) and WS2 (RWS77) use BIA platform — not queried here.');
 console.log('      Remaining gap ≈ WS1 + WS2 promos created in 2026.');
