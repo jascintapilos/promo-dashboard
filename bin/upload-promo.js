@@ -777,7 +777,6 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
           expire_at: endUtc,
           image: promoImageUrl || null,
           content,
-          content_is_stub: !docEntry,
         };
       } else {
         detailsObj[String(locId)] = emptyPromoContentDetail();
@@ -800,7 +799,6 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
         detailsObj[String(firstLocId)].content = fallbackEntry?.content
           || (promoImageUrl ? `<p><img src="${promoImageUrl}" style="max-width:100%;height:auto;"></p>` : '<p>&nbsp;</p>');
         detailsObj[String(firstLocId)].settings_locale_id = firstLocId;
-        detailsObj[String(firstLocId)].content_is_stub = !fallbackEntry;
       }
     }
 
