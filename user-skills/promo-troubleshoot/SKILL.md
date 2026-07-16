@@ -1,6 +1,6 @@
 ---
 name: promo-troubleshoot
-description: Troubleshoot promo configuration issues by pulling BO data via API and cross-checking for mismatches between system config (min_transfer, rounds, free_credit_amount) and message template copy (inbox + SMS). Use whenever someone asks to check, troubleshoot, investigate, or verify a specific promo code on a BO site — phrasings like "check promo X on Y", "troubleshoot X", "what's wrong with promo X", "investigate this promo", "is this promo configured correctly", or when a Slack message reports a promo discrepancy and you need to look it up. Also trigger when comparing a promo across brands or investigating why a member sees different numbers than the system shows.
+description: Discover or troubleshoot QPRO/QP2 promotions from either a promo code or natural-language mechanics, then cross-check BO configuration against inbox/SMS copy. Use for promo verification, missing-code identification, cross-brand comparison, or reported discrepancies.
 ---
 
 # Promo Troubleshoot
@@ -9,16 +9,19 @@ Pull BO config + inbox/SMS templates for a promo code and cross-check for mismat
 
 ## Input
 
-Args format: `<promo_code> <site_id> [--cross-brand]`
+Exact-code format: `<promo_code> <site_id> [--cross-brand]`
+
+Discovery format: `--discover <site_id> "<request text>"`
 
 Examples:
 - `WELC_RND3_FS_FOO_260225 qpro5`
 - `REL_VIP_50PCT_3X qpro11 --cross-brand`
 - `FT_WEL_SLOTS_120PCT ws1`
+- `--discover ibc22 "QP2D MY welcome 120% depo 50 get 110, depo 300 get 660, sports"`
 
 If the user provides a Slack link instead of a promo code, read the Slack thread first (via `slack_read_thread` MCP tool) to extract the promo code and site, then proceed.
 
-If the user only gives a promo code without a site, ask which site. If they give a brand name (e.g. "U388", "BX99"), resolve it to the site ID using the brand ecosystem memory or `bo-sites.json`.
+If the user gives mechanics but no exact code, use discovery mode. Never manually choose a code from a broad search result. If the user only gives a promo code without a site, ask which site. If they give a brand name (e.g. "U388", "BX99"), resolve it to the site ID using the brand ecosystem memory or `bo-sites.json`.
 
 ## Workflow
 
@@ -39,6 +42,11 @@ The script handles:
 - Amount extraction from HTML bodies (MYR/SGD/IDR patterns)
 - Automated mismatch detection
 - Cross-brand comparison when `--cross-brand` is passed
+- Merchant-isolated natural-language discovery
+- Deterministic checks for rate, promo type, category, and deposit-to-total examples
+- Ranked candidates with evidence and explicit rejection reasons
+
+For discovery, show the top 2–3 candidates. Treat explicit categories and arithmetic as decisive: a Slots promo cannot satisfy a Sports request, and every `deposit X get Y` example must match `X + min(X × rate, max_bonus)`. If the result is `AMBIGUOUS`, do not assert a match.
 
 ### Step 2: Present findings
 
@@ -56,7 +64,7 @@ Always lead with a **summary table** showing the promo config at a glance:
 
 Then a **per-currency table**:
 
-| Currency | min_transfer | rounds | fc_amount | max_bonus |
+| Currency | min_deposit | rounds | fc_amount | max_bonus |
 |---|---|---|---|---|
 | MYR | 50 | 208 | - | - |
 | SGD | 100 | 308 | - | - |

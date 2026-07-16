@@ -9,17 +9,22 @@ import { resolve } from 'path';
 import { pathToFileURL } from 'url';
 
 const PROJ = 'C:/Users/vdiuser/Downloads/promo-automation/promo-automation';
-const { authedFetch, findPromotionByCode } = await import(pathToFileURL(resolve(PROJ, 'src/api-client.js')).href);
+const { authedFetch, findPromotionByCode, getAllCategories } = await import(pathToFileURL(resolve(PROJ, 'src/api-client.js')).href);
 const { getSite, loadConfig } = await import(pathToFileURL(resolve(PROJ, 'src/sites.js')).href);
+const { extractTemplateTerms, parseDiscoveryQuery, rankCandidates } = await import('./discovery-core.mjs');
 
 const args = process.argv.slice(2);
-const code = args.find(a => !a.startsWith('-'));
-const siteId = args.filter(a => !a.startsWith('-'))[1];
+const positional = args.filter(a => !a.startsWith('-'));
+const discoverMode = args.includes('--discover');
+const code = discoverMode ? null : positional[0];
+const siteId = discoverMode ? positional[0] : positional[1];
+const query = discoverMode ? positional.slice(1).join(' ') : null;
 const crossBrand = args.includes('--cross-brand');
 const jsonOut = args.includes('--json');
 
-if (!code || !siteId) {
+if ((!discoverMode && !code) || !siteId || (discoverMode && !query)) {
   console.error('Usage: troubleshoot.mjs <promo_code> <site_id> [--cross-brand] [--json]');
+  console.error('   or: troubleshoot.mjs --discover <site_id> "<request text>" [--json]');
   process.exit(1);
 }
 
@@ -83,7 +88,9 @@ async function fetchPromoData(targetSiteId, promoCode) {
   const cRes = await authedFetch(site, `/api/bo/promotioncurrency?promotion_id=${promo.id}`);
   const currencies = (cRes?.data?.rows || []).map(c => ({
     currency: c.currency,
+    min_deposit: nz(c.min_deposit) ?? nz(c.min_transfer),
     min_transfer: nz(c.min_transfer),
+    bonus_rate: nz(c.bonus_rate),
     max_bonus: nz(c.max_bonus),
     max_transfer_out: nz(c.max_transfer_out),
     free_credit_amount: nz(c.free_credit_amount),
@@ -136,6 +143,7 @@ async function fetchPromoData(targetSiteId, promoCode) {
     status: promo.status,
     bonus_type: promo.bonus_type || `type_${promo.promo_type}`,
     promo_type: promo.promo_type,
+    turnover: nz(promo.target?.[0]?.multiplier ?? promo.target?.multiplier),
     game_code: promo.free_spin_game_code || null,
     game_provider: promo.game_provider || null,
     message_template_id: promo.message_template_id,
@@ -144,6 +152,77 @@ async function fetchPromoData(targetSiteId, promoCode) {
     inbox,
     sms: smsTemplates,
   };
+}
+
+function valuesOf(value) {
+  return Array.isArray(value) ? value : Object.values(value || {});
+}
+
+function idsOf(value) {
+  return valuesOf(value).map(v => Number(typeof v === 'object' ? (v.id ?? v.category_id) : v)).filter(Number.isFinite);
+}
+
+async function fetchDiscoveryCandidate(site, row, categoryById) {
+  const [detailRes, currencyRes] = await Promise.all([
+    authedFetch(site, `/api/bo/promotion/${row.id}`),
+    authedFetch(site, `/api/bo/promotioncurrency?promotion_id=${row.id}`),
+  ]);
+  const detail = detailRes?.data?.rows || detailRes?.data || row;
+  const currencies = (currencyRes?.data?.rows || []).map(c => ({
+    currency: c.currency,
+    min_deposit: nz(c.min_deposit) ?? nz(c.min_transfer),
+    min_transfer: nz(c.min_transfer),
+    bonus_rate: nz(c.bonus_rate),
+    max_bonus: nz(c.max_bonus),
+  }));
+  const qp2CategoryIds = idsOf(detail.promotion_category_ids);
+  const categoryIds = qp2CategoryIds.length ? qp2CategoryIds
+    : valuesOf(detail.promotion_category).map(c => Number(c.category_id)).filter(Number.isFinite);
+  return {
+    id: row.id, code: detail.code || row.code, name: detail.name || row.name,
+    status: Number(detail.status ?? row.status), promo_type: Number(detail.promo_type ?? row.promo_type),
+    bonus_type: detail.bonus_type || row.bonus_type,
+    merchant_ids: idsOf(valuesOf(detail.merchant_ids).length ? detail.merchant_ids : row.merchant_ids),
+    categories: categoryIds.map(id => categoryById.get(id) || `id:${id}`), currencies,
+    message_template_id: detail.message_template_id || row.message_template_id || null,
+    turnover: nz(detail.target?.[0]?.multiplier ?? detail.target?.multiplier),
+  };
+}
+
+async function discoverPromos(targetSiteId, requestText) {
+  const site = getSite(targetSiteId);
+  const facts = parseDiscoveryQuery(requestText);
+  const [listRes, categories] = await Promise.all([
+    authedFetch(site, '/api/bo/promotion?perPage=999&page=1&status=1'), getAllCategories(site),
+  ]);
+  const categoryById = new Map(categories.map(c => [Number(c.id), c.name]));
+  const plausible = (listRes?.data?.rows || []).filter(row => {
+    const assigned = !facts.merchant_id || idsOf(row.merchant_ids).includes(facts.merchant_id);
+    const text = `${row.code || ''} ${row.name || ''} ${row.bonus_type || ''}`;
+    return assigned && Number(row.status) === 1 && (!facts.welcome || /welc|welcome/i.test(text));
+  });
+  const hydrated = [];
+  for (let i = 0; i < plausible.length; i += 8) {
+    hydrated.push(...await Promise.all(plausible.slice(i, i + 8).map(row => fetchDiscoveryCandidate(site, row, categoryById))));
+  }
+  const ranked = rankCandidates(hydrated, facts);
+  const top = ranked.candidates.slice(0, 3);
+  const winner = top[0];
+  if (winner?.message_template_id) {
+    const tmplRes = await authedFetch(site, `/api/bo/messagetemplate/${winner.message_template_id}`);
+    const details = Object.values(tmplRes?.data?.message_details || {});
+    const myTemplate = details.find(d => [1, 3].includes(Number(d.settings_locale_id))) || details[0];
+    const terms = extractTemplateTerms(myTemplate?.message || '', facts.currency || 'MYR');
+    winner.template_terms = terms;
+    winner.mismatches = [];
+    const cc = winner.matched_currency || {};
+    for (const [field, boValue] of Object.entries({ min_deposit: cc.min_deposit, bonus_rate: cc.bonus_rate, max_bonus: cc.max_bonus, turnover: winner.turnover })) {
+      if (boValue != null && terms[field] != null && Math.abs(boValue - terms[field]) >= 0.01) {
+        winner.mismatches.push({ severity: 'HIGH', type: field, bo_value: boValue, template_value: terms[field], detail: `BO ${field}=${boValue} but template says ${terms[field]}` });
+      }
+    }
+  }
+  return { mode: 'discover', site: targetSiteId, query: requestText, facts, confidence: ranked.confidence, margin: ranked.margin, candidates: top };
 }
 
 // ── Mismatch detection ─────────────────────────────────────────────────────
@@ -161,18 +240,17 @@ function detectMismatches(data) {
 
     const amounts = extractAmounts(tmpl.message, currency);
 
-    // min_transfer check
-    if (cc.min_transfer && amounts.length > 0) {
-      const minInMsg = Math.min(...amounts);
-      if (!amounts.includes(cc.min_transfer)) {
+    // QP2 stores this in min_deposit; older promos may use min_transfer.
+    if (cc.min_deposit && amounts.length > 0) {
+      if (!amounts.includes(cc.min_deposit)) {
         mismatches.push({
-          type: 'min_transfer',
+          type: 'min_deposit',
           severity: 'HIGH',
           locale: tmpl.locale,
           currency,
-          bo_value: cc.min_transfer,
+          bo_value: cc.min_deposit,
           template_values: amounts,
-          detail: `BO min_transfer=${cc.min_transfer} but template mentions ${currency} ${amounts.join(', ')}`,
+          detail: `BO min_deposit=${cc.min_deposit} but template mentions ${currency} ${amounts.join(', ')}`,
         });
       }
     }
@@ -265,6 +343,22 @@ async function crossBrandCheck(promoCode, sourceSiteId) {
 }
 
 // ── Run ────────────────────────────────────────────────────────────────────
+if (discoverMode) {
+  const result = await discoverPromos(siteId, query);
+  if (jsonOut) console.log(JSON.stringify(result, null, 2));
+  else {
+    console.log(`\n=== Promo discovery on ${result.site} ===`);
+    console.log(`Confidence: ${result.confidence} (top margin ${result.margin})`);
+    for (const [index, candidate] of result.candidates.entries()) {
+      console.log(`\n${index + 1}. ${candidate.code} — score ${candidate.score}`);
+      console.log(`   Evidence: ${candidate.evidence.join('; ') || 'none'}`);
+      if (candidate.contradictions.length) console.log(`   Rejected clues: ${candidate.contradictions.join('; ')}`);
+      for (const mismatch of candidate.mismatches || []) console.log(`   [${mismatch.severity}] ${mismatch.detail}`);
+    }
+  }
+  process.exit(0);
+}
+
 const data = await fetchPromoData(siteId, code);
 const mismatches = detectMismatches(data);
 
@@ -291,7 +385,8 @@ if (jsonOut) {
 
   console.log('\n--- Per-Currency Config ---');
   for (const c of data.currencies) {
-    const parts = [`${c.currency}: min_transfer=${c.min_transfer || '-'}`];
+    const parts = [`${c.currency}: min_deposit=${c.min_deposit || '-'}`];
+    if (c.bonus_rate) parts.push(`bonus_rate=${c.bonus_rate}%`);
     if (c.rounds) parts.push(`rounds=${c.rounds}`);
     if (c.free_credit_amount) parts.push(`fc_amount=${c.free_credit_amount}`);
     if (c.max_bonus) parts.push(`max_bonus=${c.max_bonus}`);
