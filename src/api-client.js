@@ -255,9 +255,14 @@ export async function findPromotionByCode(site, code, { merchantId } = {}) {
 // Per-brand IDs drift (e.g. QPRO1 has 18 cats with VIP/EVENT/LOTTERY2;
 // QPRO11 has 17 cats with no VIP/EVENT and an admin "Test" row), so
 // callers MUST resolve by name, not by hardcoded ID.
+const categoriesCache = new Map();
+
 export async function getAllCategories(site) {
+  if (categoriesCache.has(site.id)) return categoriesCache.get(site.id);
   const res = await authedFetch(site, '/api/bo/categories');
-  return res?.data?.rows || [];
+  const rows = res?.data?.rows || [];
+  categoriesCache.set(site.id, rows);
+  return rows;
 }
 
 // Installed game providers on this site/merchant. The endpoint is

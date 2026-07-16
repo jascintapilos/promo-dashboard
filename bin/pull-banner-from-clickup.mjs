@@ -24,7 +24,7 @@
 // WS1/WS2 files are always single-image — staged into {brand}-{campaign-slug}/ as-is.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { readBannerLinks, resolveScheduleTab } from '../src/banner-schedule.js';
@@ -245,6 +245,7 @@ console.log(`\nFetching task ${taskId} from ClickUp...`);
 const task = await getJson(`https://api.clickup.com/api/v2/task/${taskId}`);
 const campaignBase = campaignNameFromTask(task.name);
 const campaign = tag ? `${tag}_${campaignBase}` : campaignBase;
+const campaignSlug = tag ? `${slugify(tag)}-${slugify(campaignBase)}` : slugify(campaignBase);
 
 console.log(`Task     : ${task.name}`);
 console.log(`Campaign : ${campaign}${tag ? `  [tagged: ${tag}]` : ''}`);
@@ -343,7 +344,7 @@ for (const att of qproQp2Files) {
 
 for (const [, entry] of Object.entries(byBrandLocale)) {
   const { brandCode, locale, up, mup } = entry;
-  const destFolder = join(bannerDir, campaign, `${brandCode}-min`);
+  const destFolder = join(bannerDir, `${brandCode}-${campaignSlug}`);
 
   if (up && mup) {
     stagedFiles.push({ brandCode, locale, destFolder, type: 'up',  source: up,  copyOf: null });
@@ -367,7 +368,8 @@ for (const f of stagedFiles) {
 
 // ── Plan table ────────────────────────────────────────────────────────────────
 console.log('── Plan ─────────────────────────────────────────────────────────────');
-console.log(`Destination: Banner/${campaign}/\n`);
+const plannedFolders = [...new Set(stagedFiles.map((f) => relative(bannerDir, f.destFolder)))];
+console.log(`Destination: ${plannedFolders.map((f) => `Banner/${f}/`).join(', ')}\n`);
 
 // Group for display
 const displayBrands = {};
@@ -409,7 +411,7 @@ if (dryRun) {
   for (const f of stagedFiles) {
     const tag  = f.copyOf ? ` (copy of ${f.copyOf})` : ` (${Math.round(f.source.att.size / 1024)}KB)`;
     const type = f.type === 'up' ? '[desktop]' : '[mobile] ';
-    console.log(`  ${type} ${f.brandCode}-min/${f.destFile}${tag}`);
+    console.log(`  ${type} ${relative(bannerDir, f.destFolder)}/${f.destFile}${tag}`);
   }
 } else {
 
@@ -435,7 +437,7 @@ console.log(`\nStaging ${stagedFiles.length} file(s)...\n`);
 for (const f of stagedFiles) {
   const type = f.type === 'up' ? '[desktop]' : '[mobile] ';
   const tag  = f.copyOf ? ' (copy)' : '';
-  process.stdout.write(`  ${type} ${f.brandCode}-min/${f.destFile}${tag} ... `);
+  process.stdout.write(`  ${type} ${relative(bannerDir, f.destFolder)}/${f.destFile}${tag} ... `);
 
   const buf = downloadedBuffers.get(f.source.att.id);
   if (!buf) { console.log('SKIPPED (source download failed)'); failed++; continue; }
@@ -455,18 +457,19 @@ console.log(`\n── Result ─────────────────
 console.log(`Source files downloaded : ${downloadedBuffers.size}`);
 console.log(`Files staged            : ${ok}`);
 if (failed) console.log(`Failed                  : ${failed}`);
-console.log(`Staged to               : Banner/${campaign}/`);
+const stagedFolders = [...new Set(stagedFiles.map((f) => relative(bannerDir, f.destFolder)))];
+console.log(`Staged to               : ${stagedFolders.map((f) => `Banner/${f}/`).join(', ')}`);
 console.log('');
 const hasWs1 = stagedFiles.some(f => f.type === 'ws');
 const hasQpro = stagedFiles.some(f => f.type !== 'ws');
 console.log('Next step:');
 if (bid) {
   if (hasWs1)  console.log(`  node bin/upload-ws1-banners-api.mjs --range=${bid} --commit`);
-  if (hasQpro) console.log(`  node bin/upload-promo.js --range=${bid} --allow-creative-mismatch`);
+  if (hasQpro) console.log(`  node bin/upload-promo.js --range=${bid}`);
 } else {
   console.log('  Check Banner Schedule for B-IDs matching this campaign, then:');
   if (hasWs1)  console.log('  node bin/upload-ws1-banners-api.mjs --range=<B-IDs> --commit');
-  if (hasQpro) console.log('  node bin/upload-promo.js --range=<B-IDs> --allow-creative-mismatch');
+  if (hasQpro) console.log('  node bin/upload-promo.js --range=<B-IDs>');
 }
 
 } // end if (!dryRun)

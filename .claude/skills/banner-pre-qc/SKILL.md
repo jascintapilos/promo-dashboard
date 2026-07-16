@@ -122,7 +122,12 @@ For each bundle's `promo_code`:
    - Check if the promo code actually exists in BO by reading any available captures
    - Report: `⚠ no canary QC plan found for code {promo_code} — verify promo exists in BO before uploading`
 
-**E. Canary plan freshness check (only when D found a matching plan):**
+**E. 3.3 content stub check (QPRO/QP2 plan bundles):**
+
+If the plan bundle has `contentIsStub: true`, report WARNING:
+`no promo draft doc found - 3.3 content will be an image-only stub with no title/description/T&C. Confirm this is intended or supply --promo-folder.`
+
+**F. Canary plan freshness check (only when D found a matching plan):**
 
 A canary plan file is a snapshot from whenever `canary-multi-brand.js` was last dry-run for that handle. If the requester edited the source row afterward (e.g. changed the bonus %, dates, or brand list) and nobody re-ran the dry-run, this plan is stale — Pre-QC would confidently report "canary plan found — PASS" against numbers that no longer match the sheet.
 
@@ -152,11 +157,14 @@ For each WARNING/FAIL, expand with specific finding + recommended action.
 
 ### 4. Recommendation
 
-- **All PASS or WARNING-only** → proceed to upload:
-  ```
-  node bin/upload-promo.js --range=<B-IDs> --allow-creative-mismatch
-  ```
-  Remind: position must be set manually in BO after upload (14.2 Banner → Edit → Position field).
+- **All PASS or WARNING-only** → present the pre-QC verdict table to the user. **WAIT for explicit human approval before uploading live — do NOT auto-commit.** User says "upload it" / "commit it" / "fix X first".
+  - Once approved, run:
+    ```
+    node bin/upload-promo.js --range=<B-IDs> --commit
+    ```
+  - Remind: position must be set manually in BO after upload (14.2 Banner → Edit → Position field).
+
+  Use `--allow-creative-mismatch` only as an explicit human-approved override after upload-promo.js blocks on a creative mismatch and the mismatch is confirmed to be a false positive.
 
   **WS1/WS2**: use `node bin/upload-ws1-banners-api.mjs --range=<B-IDs> --commit` instead — position/carousel placement is fixed by the `CAROUSEL_IDS` mapping at upload time, no manual position step needed.
 
