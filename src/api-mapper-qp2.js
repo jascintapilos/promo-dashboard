@@ -22,6 +22,7 @@ import { renderBody, renderDialogBody, localeDocKey } from './message-template-r
 import { getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups, getAllMerchantBankIds } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { gameAcronym, splitDualPromoName } from './promo-namer.js';
+import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
 // operator-verified selection 2026-05-15 (26 of 31 QP2A groups). Excluded:
@@ -184,7 +185,7 @@ const QP2A_MEMBER_GROUP_IDS_PUT = {
 };
 
 // QP2A target.game_provider_codes — 53 entries, string codes ("AVI", "BG", etc.).
-const QP2A_TARGET_GAME_PROVIDER_CODES = {
+const QP2A_TARGET_GAME_PROVIDER_CODES_RAW = {
   '0': '365G', '1': '9W', '2': 'AP', '3': 'AVI', '4': 'BG', '5': 'BOOM',
   '6': 'BNG', '7': 'BTG', '8': 'CMD', '9': 'CQ9', '10': 'EVOK', '11': 'EZ',
   '12': 'FS', '13': 'FP', '14': 'FC', '15': 'GXW', '16': 'HSG', '17': 'IM',
@@ -199,7 +200,7 @@ const QP2A_TARGET_GAME_PROVIDER_CODES = {
 
 // PUT body's game_provider_codes (numeric IDs, NOT string codes — quirk).
 // Captured verbatim from V25 successful PUT body: 53 entries.
-const QP2A_PUT_GAME_PROVIDER_IDS = {
+const QP2A_PUT_GAME_PROVIDER_IDS_RAW = {
   '0': 178, '1': 139, '2': 341, '3': 196, '4': 15, '5': 268, '6': 328, '7': 292,
   '8': 18, '9': 14, '10': 320, '11': 25, '12': 122, '13': 304, '14': 184, '15': 324,
   '16': 197, '17': 23, '18': 312, '19': 110, '20': 111, '21': 7, '22': 190, '23': 21,
@@ -208,6 +209,25 @@ const QP2A_PUT_GAME_PROVIDER_IDS = {
   '40': 34, '41': 353, '42': 31, '43': 10, '44': 9, '45': 187, '46': 117, '47': 332,
   '48': 72, '49': 37, '50': 33, '51': 297, '52': 36,
 };
+
+function buildAllowedQp2ProviderSet() {
+  const putIds = {};
+  const targetCodes = {};
+  let idx = 0;
+  for (const k of Object.keys(QP2A_TARGET_GAME_PROVIDER_CODES_RAW)) {
+    const code = QP2A_TARGET_GAME_PROVIDER_CODES_RAW[k];
+    if (isHardExcludedGameProvider({ code })) continue;
+    putIds[String(idx)] = QP2A_PUT_GAME_PROVIDER_IDS_RAW[k];
+    targetCodes[String(idx)] = code;
+    idx++;
+  }
+  return { putIds, targetCodes };
+}
+
+const {
+  putIds: QP2A_PUT_GAME_PROVIDER_IDS,
+  targetCodes: QP2A_TARGET_GAME_PROVIDER_CODES,
+} = buildAllowedQp2ProviderSet();
 
 // Category membership for QP2's providers, derived from QPRO gameprovider
 // catalog (probed 2026-07-02 on QPRO1 /api/bo/gameprovider, intersected with

@@ -15,6 +15,7 @@
 //   limit_transfer_out    <none>
 //   bonus_rate            <NOT in main form — assumed in Currency popup>
 import { splitDualPromoName } from './promo-namer.js';
+import { HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS } from './game-provider-exclusions.js';
 
 //   restrict_claim_rou…   freespin_check
 //   kyc_type / KYC Status <none — replaced by requires_email/mobile/dob/fullname>
@@ -252,7 +253,7 @@ export function buildActions(resolved, { brand } = {}) {
   push({
     kind: 'multiselect_inverted',
     label: 'Game Providers',
-    exclusions: ['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABANERO', 'KINGMIDAS', 'MEGA888', 'DG', 'SSG'],
+    exclusions: HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS,
   });
 
   // ── Target (single-row) ─────────────────────────────────────────────

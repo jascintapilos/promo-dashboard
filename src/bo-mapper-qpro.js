@@ -14,6 +14,7 @@
 // Create form's dropdown. Verified from the form spy + the
 // /api/bo/promotion/<id> detail endpoint.
 import { splitDualPromoName } from './promo-namer.js';
+import { HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS } from './game-provider-exclusions.js';
 
 const PROMO_TYPE_LABEL = {
   'Deposit':     'Deposit',
@@ -213,7 +214,7 @@ export function buildActions(resolved, { brand } = {}) {
     push({
       kind: 'multiselect_inverted',
       label: 'Game Providers',
-      exclusions: ['918KISS', '918KAYA', 'ALLBET', 'EKOR', 'HABANERO', 'KINGMIDAS', 'MEGA888', 'DG', 'SSG'],
+      exclusions: HARD_EXCLUDED_GAME_PROVIDER_SELECTOR_LABELS,
     });
   }
 
