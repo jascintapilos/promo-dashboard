@@ -134,6 +134,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pri.urgent::before{background:var(--red)} .pri.urgent{color:var(--red)}
 .pri.high::before{background:var(--amber)} .pri.high{color:var(--amber)}
 .pri.normal::before{background:var(--green)} .pri.normal{color:var(--green)}
+.pri.low::before{background:var(--accent2)} .pri.low{color:var(--accent2)}
+.pri.unspecified::before,.pri.unmapped::before{background:var(--muted)} .pri.unspecified,.pri.unmapped{color:var(--muted)}
 
 /* ── Insight items ── */
 .insight-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -218,6 +220,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .filter-bar input,.filter-bar select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);width:auto}
 .filter-bar select{padding-right:28px}
+.data-health{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin-bottom:16px;border:1px solid var(--border);border-radius:9px;background:var(--card);font-size:12px}
+.data-health.healthy{border-color:rgba(16,185,129,.45)}
+.data-health.warning{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.06)}
+.data-health.error{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.06)}
+.data-health-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex-shrink:0;background:var(--green)}
+.data-health.warning .data-health-dot{background:var(--amber)}
+.data-health.error .data-health-dot{background:var(--red)}
+.data-health-title{font-weight:600;color:var(--text)}
+.data-health-meta{color:var(--muted);margin-top:2px;line-height:1.5}
 
 /* ── Coming soon ── */
 .coming-soon{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center}
@@ -411,6 +422,9 @@ const S = {
   charts:      {},
   notifs:      { unread: 0, items: [] },
   bannerTasks: [],
+  dataHealth:  null,
+  dataError:   '',
+  upcomingTasks: [],
   pollTimer:   null,
 };
 
@@ -450,8 +464,8 @@ function startApp() {
   }
 
   // Update date
-  document.getElementById('hdr-date').textContent = 'Jan 1 – ' + fmtDate(new Date()) + ', 2026';
-  document.getElementById('last-sync').textContent = fmtTime(new Date());
+  document.getElementById('hdr-date').textContent = 'Jan 1 – ' + new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kuala_Lumpur'});
+  document.getElementById('last-sync').textContent = 'Checking data...';
 
   // Load data + render overview
   loadKPIs();
@@ -511,21 +525,51 @@ function loadKPIs(cb) {
   if (typeof google === 'undefined') { S.kpis = mockKPIs(); renderView(S.view); if(cb)cb(); return; }
   google.script.run
     .withSuccessHandler(data => {
+      if (!data || data.ok === false) {
+        S.kpis = null;
+        S.dataError = (data && data.error) || 'Task data unavailable';
+        renderDataError_();
+        if (cb) cb();
+        return;
+      }
       S.kpis = data;
+      S.dataHealth = data.dataHealth || null;
+      S.dataError = '';
       S.tasks = data.recentTasks || [];
+      S.upcomingTasks = data.upcomingTasks || [];
       updateBadges();
+      updateLastSync_(S.dataHealth && S.dataHealth.generatedAt);
       renderView(S.view);
       if (cb) cb();
     })
-    .withFailureHandler(() => { S.kpis = mockKPIs(); renderView(S.view); if(cb)cb(); })
+    .withFailureHandler(err => {
+      S.kpis = null;
+      S.dataError = (err && err.message) || 'Task data unavailable';
+      renderDataError_();
+      if (cb) cb();
+    })
     .serverGetKPIs();
 }
 
 function loadAllTasks(cb) {
   if (typeof google === 'undefined') { cb(S.tasks); return; }
   google.script.run
-    .withSuccessHandler(tasks => { S.tasks = tasks; cb(tasks); })
-    .withFailureHandler(() => cb([]))
+    .withSuccessHandler(result => {
+      if (!result || result.ok === false) {
+        S.dataError = (result && result.error) || 'Task data unavailable';
+        cb(null);
+        return;
+      }
+      S.tasks = result.tasks || [];
+      S.dataHealth = result.dataHealth || S.dataHealth;
+      S.dataError = '';
+      updateLastSync_(S.dataHealth && S.dataHealth.generatedAt);
+      cb(S.tasks);
+    })
+    .withFailureHandler(err => {
+      S.dataError = (err && err.message) || 'Task data unavailable';
+      cb(null);
+    })
     .serverGetTasks();
 }
 
@@ -549,19 +593,30 @@ function startPolling_() {
   // Show live indicator
   const syncEl = document.getElementById('last-sync');
   if (syncEl) {
-    syncEl.innerHTML = '<span class="live-dot"></span>' + fmtTime(new Date());
+    if (S.dataHealth && S.dataHealth.generatedAt) updateLastSync_(S.dataHealth.generatedAt);
+    else syncEl.textContent = 'Checking data...';
   }
 }
 
 function silentRefreshTasks_() {
   if (typeof google === 'undefined') return;
   google.script.run
-    .withSuccessHandler(tasks => {
-      S.tasks = tasks;
+    .withSuccessHandler(result => {
+      if (!result || result.ok === false) {
+        S.dataError = (result && result.error) || 'Task refresh failed';
+        if (S.view === 'tasks') renderTasks();
+        return;
+      }
+      S.tasks = result.tasks || [];
+      S.dataHealth = result.dataHealth || S.dataHealth;
+      S.dataError = '';
       // Re-render tasks table silently if on tasks view (preserve filter)
       if (S.view === 'tasks') filterTasks();
-      const el = document.getElementById('last-sync');
-      if (el) el.innerHTML = '<span class="live-dot"></span>' + fmtTime(new Date());
+      updateLastSync_(S.dataHealth && S.dataHealth.generatedAt);
+    })
+    .withFailureHandler(err => {
+      S.dataError = (err && err.message) || 'Task refresh failed';
+      if (S.view === 'tasks') renderTasks();
     })
     .serverGetTasks();
 }
@@ -671,7 +726,8 @@ function markAllNotifsRead_() {
 function quickStatusUpdate(taskId, newStatus, el) {
   const badges = {
     'New':'new','In Progress':'progress','Pending Approval':'approval',
-    'Completed':'done','At Risk':'risk'
+    'Completed':'done','At Risk':'risk','Needs Clarification':'clarif',
+    'On Hold':'risk','Cancelled':'risk'
   };
   el.disabled = true;
   if (typeof google === 'undefined') { el.disabled = false; return; }
@@ -681,7 +737,7 @@ function quickStatusUpdate(taskId, newStatus, el) {
       if (t) t.Status = newStatus;
       el.className = 'status-pill badge ' + (badges[newStatus] || 'new');
       el.disabled = false;
-      document.getElementById('last-sync').innerHTML = '<span class="live-dot"></span>' + fmtTime(new Date());
+      silentRefreshTasks_();
     })
     .withFailureHandler(() => { el.disabled = false; })
     .serverQuickUpdateTask(taskId, newStatus);
@@ -696,14 +752,21 @@ function renderOverview() {
   const total = k.total || 0;
   const pct = n => total > 0 ? Math.round(n/total*100) : 0;
 
+  const health = k.dataHealth || S.dataHealth || {};
+  const issueCounts = health.issueCounts || {};
+  const coverage = (health.sourceRecordCount||0) > 0
+    ? Math.round((health.returnedRecordCount||0)/(health.sourceRecordCount||1)*100)
+    : 0;
+
   content(`
+    ${dataHealthHtml_()}
     <div class="kpi-grid">
       ${kpi('📋','Total Tasks', total, 'c-blue', pct(total)+' total', null, () => nav('tasks'))}
-      ${kpi('✅','Completed', k.completed, 'c-green', pct(k.completed)+'%', '+18.6% vs LYTD', null)}
+      ${kpi('✅','Completed', k.completed, 'c-green', pct(k.completed)+'%', null, null)}
       ${kpi('⚡','In Progress', k.inProgress, 'c-amber', pct(k.inProgress)+'%', null, null)}
       ${kpi('🕐','Pending Approval', k.pendingApproval, 'c-purple', pct(k.pendingApproval)+'%', null, () => nav('approvals'))}
       ${kpi('⚠','At Risk / Delayed', k.atRisk, 'c-red', pct(k.atRisk)+'%', null, null)}
-      ${kpi('💰','Total Sales Impact', '—', 'c-teal', 'Placeholder', '+21.3% vs LYTD', null)}
+      ${kpi('🔎','Data Coverage', coverage+'%', 'c-teal', (health.returnedRecordCount||0)+' of '+(health.sourceRecordCount||0)+' loaded', null, null)}
     </div>
 
     <div class="grid-3">
@@ -716,12 +779,12 @@ function renderOverview() {
         <div class="card-body chart-wrap" style="height:220px"><canvas id="donut-chart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-hdr"><h3>✨ AI Insights</h3><a class="hint" href="#" style="color:var(--accent)">View all →</a></div>
+        <div class="card-hdr"><h3>Verified Insights</h3></div>
         <div class="card-body" style="padding:8px 12px">
-          ${insight('up','📈','Completion rate is tracking <strong>70%+</strong> — on target.')}
-          ${insight('info','📅','Weekly cut-off: <strong>Friday 5pm MYT</strong>. Next deadline in 2 days.')}
-          ${insight('warn','⚠','<strong>'+ k.atRisk +' tasks</strong> are at risk or delayed — review needed.')}
-          ${insight('info','🤖','Automation script covers <strong>21 brands</strong> across QPRO + QP2.')}
+          ${insight('info','📊','The dashboard loaded <strong>'+ (health.returnedRecordCount||0) +'</strong> of <strong>'+ (health.sourceRecordCount||0) +'</strong> task records.')}
+          ${insight('warn','📅','<strong>'+ (issueCounts.missing_due_date||0) +' tasks</strong> have no usable due date.')}
+          ${insight('warn','👤','<strong>'+ (issueCounts.missing_owner||0) +' tasks</strong> have no assigned owner.')}
+          ${insight(k.atRisk?'warn':'up',k.atRisk?'⚠':'✓','<strong>'+ k.atRisk +' tasks</strong> are currently classified as at risk.')}
         </div>
       </div>
     </div>
@@ -738,22 +801,16 @@ function renderOverview() {
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="card">
-          <div class="card-hdr"><h3>Automation Overview</h3><a class="hint" style="color:var(--accent)">View center →</a></div>
+          <div class="card-hdr"><h3>Automation Overview</h3></div>
           <div class="card-body" style="text-align:center">
-            <div style="font-size:36px;font-weight:700;color:var(--green);margin:8px 0">85%</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Automation Rate (placeholder)</div>
-            <div style="display:flex;justify-content:space-around;font-size:12px">
-              <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent2)">21</div><div style="color:var(--muted)">Brands live</div></div>
-              <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--amber)">3</div><div style="color:var(--muted)">Bonus types</div></div>
-            </div>
+            <div style="font-size:28px;font-weight:700;color:var(--muted);margin:8px 0">Not connected</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">No verified operations-wide automation source is connected yet. No estimated automation rate is shown.</div>
           </div>
         </div>
         <div class="card">
           <div class="card-hdr"><h3>📅 Upcoming Dates</h3></div>
           <div class="card-body" style="padding:8px 12px">
-            ${upcoming('Today','Summer Sale – Go Live','var(--red)')}
-            ${upcoming('May 25','Memorial Day Promo','var(--amber)')}
-            ${upcoming('May 31','End of Month Review','var(--accent2)')}
+            ${upcomingTasksHtml_()}
           </div>
         </div>
       </div>
@@ -765,16 +822,21 @@ function renderOverview() {
         <div class="card-body chart-wrap" style="height:180px"><canvas id="brand-chart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-hdr"><h3>🗓 Promo Heatmap</h3><a class="hint" style="color:var(--accent)">View calendar →</a></div>
-        <div class="card-body" style="padding:8px">${calHeatmap()}</div>
+        <div class="card-hdr"><h3>Data Quality</h3></div>
+        <div class="card-body" style="padding:8px 12px">
+          ${alert_('amber',(issueCounts.missing_due_date||0)+' tasks without a usable due date',null)}
+          ${alert_('amber',(issueCounts.missing_owner||0)+' tasks without an owner',null)}
+          ${alert_('blue',(issueCounts.missing_status_updated_at||0)+' tasks without a status timestamp',null)}
+          ${alert_('blue',(issueCounts.unmapped_status||0)+' unmapped statuses; '+(issueCounts.unmapped_priority||0)+' unmapped priorities',null)}
+        </div>
       </div>
       <div class="card">
         <div class="card-hdr"><h3>🔔 Alerts</h3><a class="hint" style="color:var(--accent);cursor:pointer" onclick="nav('approvals')">View all →</a></div>
         <div class="card-body" style="padding:4px 12px">
           ${alert_('red', k.pendingApproval + ' tasks pending approval', 'Review')}
           ${alert_('red', k.atRisk + ' tasks at risk of delay', 'Escalate')}
-          ${alert_('amber', '2 promo codes expiring soon', 'Check')}
-          ${alert_('blue', 'Automation script last ran: today', null)}
+          ${alert_('amber', (issueCounts.invalid_due_date||0) + ' tasks have an invalid due date', null)}
+          ${alert_('blue', 'Last verified task activity: ' + (health.latestTaskActivityAt ? fmtDate(health.latestTaskActivityAt) : 'unavailable'), null)}
         </div>
       </div>
     </div>
@@ -806,18 +868,19 @@ function mkChart(id, config) {
 
 function drawTrend(byMonth) {
   const months = Object.keys(byMonth || {}).sort().slice(-6);
-  if (!months.length) { months.push('2026-01','2026-02','2026-03','2026-04','2026-05'); }
   const labels = months.map(m => { const [y,mo]=m.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo-1]; });
   mkChart('trend-chart', { type:'line', data:{ labels, datasets:[
-    { label:'Completed', data: months.map(m=>(byMonth[m]||{}).completed||Math.floor(Math.random()*80+120)), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.1)', tension:.4, fill:true, pointRadius:3 },
-    { label:'In Progress', data: months.map(m=>(byMonth[m]||{}).inProgress||Math.floor(Math.random()*40+60)), borderColor:'#0ea5e9', backgroundColor:'rgba(14,165,233,.1)', tension:.4, fill:true, pointRadius:3 },
-    { label:'At Risk', data: months.map(m=>(byMonth[m]||{}).atRisk||Math.floor(Math.random()*15+5)), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.4, pointRadius:3 }
+    { label:'Completed', data: months.map(m=>(byMonth[m]||{}).completed||0), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.1)', tension:.4, fill:true, pointRadius:3 },
+    { label:'In Progress', data: months.map(m=>(byMonth[m]||{}).inProgress||0), borderColor:'#0ea5e9', backgroundColor:'rgba(14,165,233,.1)', tension:.4, fill:true, pointRadius:3 },
+    { label:'At Risk', data: months.map(m=>(byMonth[m]||{}).atRisk||0), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.4, pointRadius:3 }
   ]}, options: chartOpts(true) });
 }
 
 function drawDonut(k) {
-  mkChart('donut-chart', { type:'doughnut', data:{ labels:['Completed','In Progress','Pending','At Risk'],
-    datasets:[{ data:[k.completed||0,k.inProgress||0,k.pendingApproval||0,k.atRisk||0], backgroundColor:['#10b981','#f59e0b','#7c3aed','#ef4444'], borderWidth:0, hoverOffset:6 }]
+  const entries = Object.entries(k.counts||{}).filter(([,v])=>Number(v)>0);
+  const colors = {'Completed':'#10b981','In Progress':'#f59e0b','Pending Approval':'#7c3aed','At Risk':'#ef4444','New':'#0ea5e9','Needs Clarification':'#8b949e','On Hold':'#64748b','Cancelled':'#475569','Unmapped':'#f43f5e'};
+  mkChart('donut-chart', { type:'doughnut', data:{ labels:entries.map(([name])=>name),
+    datasets:[{ data:entries.map(([,value])=>value), backgroundColor:entries.map(([name])=>colors[name]||'#8b949e'), borderWidth:0, hoverOffset:6 }]
   }, options:{ responsive:true,maintainAspectRatio:false,plugins:{ legend:{position:'right',labels:{color:'#8b949e',font:{size:11},boxWidth:10}}, tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}`}} }} });
 }
 
@@ -841,15 +904,16 @@ function chartOpts(legend) {
 // =============================================================================
 function renderTasks() {
   content(`
+    ${dataHealthHtml_()}
     <div class="filter-bar">
       <input id="task-search" placeholder="🔍  Search tasks…" oninput="filterTasks()" style="width:200px">
       <select id="task-status" onchange="filterTasks()">
         <option value="">All status</option>
-        <option>New</option><option>In Progress</option><option>Pending Approval</option><option>Completed</option><option>At Risk</option>
+        <option>New</option><option>In Progress</option><option>Pending Approval</option><option>Needs Clarification</option><option>At Risk</option><option>On Hold</option><option>Completed</option><option>Cancelled</option><option>Unmapped</option>
       </select>
       <select id="task-priority" onchange="filterTasks()">
         <option value="">All priority</option>
-        <option>Urgent</option><option>High</option><option>Normal</option>
+        <option>Urgent</option><option>High</option><option>Normal</option><option>Low</option><option>Unspecified</option><option>Unmapped</option>
       </select>
       <button class="btn btn-primary" onclick="showTaskModal()">＋ Create Task</button>
       <button class="btn btn-ghost" onclick="loadAllTasks(t=>{S.tasks=t;renderTasks()})">⟳ Refresh</button>
@@ -861,6 +925,11 @@ function renderTasks() {
     </div>
   `);
   loadAllTasks(tasks => {
+    if (!tasks) {
+      const wrap = document.getElementById('task-table-wrap');
+      if (wrap) wrap.innerHTML = '<div class="empty"><div class="empty-icon">!</div><div>Live task data could not be refreshed. Existing figures were not replaced.</div></div>';
+      return;
+    }
     S.tasks = tasks;
     filterTasks();
   });
@@ -885,7 +954,7 @@ function taskTable(tasks, mini) {
   return `<table>
     <thead><tr>
       <th>ID</th><th>Title</th>${mini?'':'<th>Module</th>'}<th>Brand</th><th>Owner</th>
-      <th>Due</th><th>Priority</th><th>Status</th><th>Progress</th>${mini?'':'<th>Actions</th>'}
+      <th>Due</th><th>Priority</th><th>Status</th>${mini?'':'<th>Actions</th>'}
     </tr></thead>
     <tbody>${tasks.map(t => taskRow(t, mini)).join('')}</tbody>
   </table>`;
@@ -899,8 +968,7 @@ function taskRow(t, mini) {
   const due   = fmtDate(t.Due_Date);
   const pri   = (t.Priority||'Normal').toLowerCase();
   const status = normaliseStatus_(t.Status);
-  const prog  = Math.min(100, Math.max(0, parseInt(t.Progress)||0));
-  const statusBadge = { 'Completed':'done','In Progress':'progress','Pending Approval':'approval','At Risk':'risk','New':'new','Needs Clarification':'clarif' }[status]||'new';
+  const statusBadge = { 'Completed':'done','In Progress':'progress','Pending Approval':'approval','At Risk':'risk','New':'new','Needs Clarification':'clarif','On Hold':'risk','Cancelled':'risk','Unmapped':'risk' }[status]||'new';
   return `<tr onclick="showTaskDetail('${esc(id)}')" style="cursor:pointer">
     <td style="color:var(--muted);font-family:monospace;font-size:11px">${esc(String(id).slice(-8))}</td>
     <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</td>
@@ -913,11 +981,10 @@ function taskRow(t, mini) {
       ${mini ? `<span class="badge ${statusBadge}">${status}</span>` :
         `<select class="status-pill badge ${statusBadge}" title="Click to change status"
            onchange="quickStatusUpdate('${esc(id)}',this.value,this)">
-          ${['New','In Progress','Pending Approval','Completed','At Risk'].map(s =>
+          ${['New','In Progress','Pending Approval','Needs Clarification','At Risk','On Hold','Completed','Cancelled'].map(s =>
             `<option value="${s}" ${s===status?'selected':''}>${s}</option>`).join('')}
          </select>`}
     </td>
-    <td><div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:${prog>=100?'var(--green)':prog>50?'var(--accent)':'var(--amber)'}"></div></div></td>
     ${mini?'':`<td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showTaskModal('${esc(id)}')">Edit</button></td>`}
   </tr>`;
 }
@@ -931,7 +998,7 @@ function showTaskModal(editId) {
     <div class="form-row"><label class="form-label">Title *</label><input id="t-title" value="${esc(v('Title'))}" placeholder="e.g. Upload SUMMER26 promo to QPRO1"></div>
     <div class="form-grid">
       <div class="form-row"><label class="form-label">Module</label>
-        <select id="t-module"><option>Promo Codes</option><option>Banners</option><option>CRM</option><option>Approvals</option><option>Other</option></select>
+        <input id="t-module" value="${esc(v('Module'))}" placeholder="e.g. Promo, Banners, Translation">
       </div>
       <div class="form-row"><label class="form-label">Brand</label><input id="t-brand" value="${esc(v('Brand'))}" placeholder="e.g. QPRO1, QP2A"></div>
     </div>
@@ -945,19 +1012,22 @@ function showTaskModal(editId) {
           <option ${v('Priority')==='Normal'?'selected':''}>Normal</option>
           <option ${v('Priority')==='High'?'selected':''}>High</option>
           <option ${v('Priority')==='Urgent'?'selected':''}>Urgent</option>
+          <option ${v('Priority')==='Low'?'selected':''}>Low</option>
         </select>
       </div>
       <div class="form-row"><label class="form-label">Status</label>
         <select id="t-status">
           <option ${v('Status')==='New'?'selected':''}>New</option>
           <option ${v('Status')==='In_Progress'||v('Status')==='In Progress'?'selected':''}>In Progress</option>
-          <option ${v('Status')==='Pending_Approval'?'selected':''}>Pending Approval</option>
+          <option ${v('Status')==='Pending_Approval'||v('Status')==='Pending Approval'?'selected':''}>Pending Approval</option>
+          <option ${v('Status')==='Needs Clarification'?'selected':''}>Needs Clarification</option>
+          <option ${v('Status')==='At Risk'?'selected':''}>At Risk</option>
+          <option ${v('Status')==='On Hold'?'selected':''}>On Hold</option>
           <option ${v('Status')==='Completed'?'selected':''}>Completed</option>
-          <option ${v('Status')==='At_Risk'?'selected':''}>At Risk</option>
+          <option ${v('Status')==='Cancelled'?'selected':''}>Cancelled</option>
         </select>
       </div>
     </div>
-    <div class="form-row"><label class="form-label">Progress (0–100)</label><input id="t-progress" type="number" min="0" max="100" value="${v('Progress')||0}"></div>
     <div class="form-row"><label class="form-label">Description</label><textarea id="t-desc">${esc(v('Description'))}</textarea></div>
     ${editId?`<div style="font-size:11px;color:var(--muted);margin-top:4px">Task ID: ${editId}</div>`:''}
   `, () => saveTask(editId), editId ? 'Save Changes' : 'Create Task');
@@ -972,7 +1042,6 @@ function saveTask(editId) {
     Due_Date: document.getElementById('t-due').value,
     Priority: document.getElementById('t-priority').value,
     Status: document.getElementById('t-status').value,
-    Progress: parseInt(document.getElementById('t-progress').value)||0,
     Description: document.getElementById('t-desc').value.trim()
   };
   if (!data.Title) { alert('Title is required'); return; }
@@ -995,8 +1064,7 @@ function showTaskDetail(id) {
   const t = S.tasks.find(x => String(x.Task_ID) === String(id));
   if (!t) { showTaskModal(); return; }
   const status = normaliseStatus_(t.Status);
-  const statusBadge = { 'Completed':'done','In Progress':'progress','Pending Approval':'approval','At Risk':'risk','New':'new' }[status]||'new';
-  const prog = Math.min(100, parseInt(t.Progress)||0);
+  const statusBadge = { 'Completed':'done','In Progress':'progress','Pending Approval':'approval','At Risk':'risk','New':'new','Needs Clarification':'clarif','On Hold':'risk','Cancelled':'risk','Unmapped':'risk' }[status]||'new';
   showModal(t.Title || 'Task Detail', `
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <span class="badge ${statusBadge}">${status}</span>
@@ -1007,13 +1075,6 @@ function showTaskDetail(id) {
       <div><div class="form-label">Module</div><div style="font-size:13px">${esc(t.Module||'—')}</div></div>
       <div><div class="form-label">Owner</div><div style="font-size:13px">${esc(t.Owner||'—')}</div></div>
       <div><div class="form-label">Due Date</div><div style="font-size:13px">${fmtDate(t.Due_Date)}</div></div>
-    </div>
-    <div style="margin-bottom:14px">
-      <div class="form-label">Progress</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-        <div class="progress-bar" style="flex:1;height:8px"><div class="progress-fill" style="width:${prog}%;background:${prog>=100?'var(--green)':prog>50?'var(--accent)':'var(--amber)'}"></div></div>
-        <span style="font-size:13px;font-weight:600;color:var(--text)">${prog}%</span>
-      </div>
     </div>
     ${t.Description?`<div><div class="form-label">Description</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px">${esc(t.Description)}</div></div>`:''}
   `, () => { closeModal(); showTaskModal(id); }, 'Edit Task');
@@ -1869,7 +1930,63 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function fmtDate(v) { if (!v) return '—'; const d = new Date(v); return isNaN(d) ? String(v).slice(0,10) : d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
 function fmtISO(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? '' : d.toISOString().slice(0,10); }
 function fmtTime(d) { return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-function normaliseStatus_(raw) { const s=String(raw||'').trim(); if(/complete|done/i.test(s))return 'Completed'; if(/progress|building|wip/i.test(s))return 'In Progress'; if(/approv|waiting/i.test(s))return 'Pending Approval'; if(/risk|escalat|fail|delay/i.test(s))return 'At Risk'; if(/clarif/i.test(s))return 'Needs Clarification'; return s||'New'; }
+function normaliseStatus_(raw) {
+  const key=String(raw||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+  if(!key||key==='new')return 'New';
+  if(['completed','complete','done'].includes(key))return 'Completed';
+  if(['in_progress','progress','building','wip','validating','ready_to_execute','executing','qc_required'].includes(key))return 'In Progress';
+  if(['pending_approval','waiting_approval','approval_required'].includes(key))return 'Pending Approval';
+  if(['at_risk','failed','failed_escalated','delayed'].includes(key))return 'At Risk';
+  if(['need_clarification','needs_clarification'].includes(key))return 'Needs Clarification';
+  if(key==='on_hold')return 'On Hold';
+  if(key==='cancelled'||key==='canceled')return 'Cancelled';
+  return 'Unmapped';
+}
+
+function updateLastSync_(raw) {
+  const el = document.getElementById('last-sync');
+  if (!el) return;
+  const d = raw ? new Date(raw) : null;
+  if (!d || isNaN(d)) { el.textContent = 'Data time unavailable'; return; }
+  const time = d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kuala_Lumpur'});
+  el.innerHTML = '<span class="live-dot"></span>' + time + ' MYT';
+  el.title = 'Dashboard data generated ' + d.toLocaleString('en-GB',{timeZone:'Asia/Kuala_Lumpur'}) + ' MYT';
+}
+
+function dataHealthHtml_() {
+  if (S.dataError) {
+    return `<div class="data-health error"><div class="data-health-dot"></div><div><div class="data-health-title">Live data unavailable</div><div class="data-health-meta">${esc(S.dataError)}. Existing figures are not replaced with demo data.</div></div></div>`;
+  }
+  const h = S.dataHealth;
+  if (!h) return '';
+  const issues = h.issueCounts || {};
+  const details = [
+    `${h.returnedRecordCount||0}/${h.sourceRecordCount||0} tasks loaded`,
+    `${issues.missing_due_date||0} without a usable due date`,
+    `${issues.missing_owner||0} without an owner`,
+    `${issues.missing_status_updated_at||0} without a status timestamp`
+  ];
+  const warnings = (h.warnings||[]).slice(0,2);
+  return `<div class="data-health ${esc(h.status||'warning')}"><div class="data-health-dot"></div><div><div class="data-health-title">${h.status==='healthy'?'Live data verified':'Live data loaded with quality warnings'}</div><div class="data-health-meta">${details.map(esc).join(' | ')}${warnings.length?' | '+warnings.map(esc).join(' '):''}</div></div></div>`;
+}
+
+function renderDataError_() {
+  content(dataHealthHtml_() || '<div class="empty">Live data unavailable.</div>');
+}
+
+function malaysiaToday_() {
+  const parts = new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const map = {}; parts.forEach(p=>{if(p.type!=='literal')map[p.type]=p.value;});
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+function upcomingTasksHtml_() {
+  const today = malaysiaToday_();
+  const tasks = (S.upcomingTasks||[]).filter(t => t.Due_Date && t.Due_Date >= today && !['Completed','Cancelled'].includes(normaliseStatus_(t.Status)))
+    .sort((a,b)=>String(a.Due_Date).localeCompare(String(b.Due_Date))).slice(0,3);
+  if (!tasks.length) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No upcoming task dates are available.</div>';
+  return tasks.map((t,i)=>upcoming(i===0&&t.Due_Date===today?'Today':fmtDate(t.Due_Date),t.Title||t.Task_ID,i===0?'var(--red)':'var(--amber)')).join('');
+}
 
 function toast(msg) {
   const el = document.createElement('div');
