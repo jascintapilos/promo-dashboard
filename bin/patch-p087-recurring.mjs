@@ -9,6 +9,15 @@ import { readFileSync } from 'fs';
 
 const DRY_RUN = !process.argv.includes('--commit');
 
+// SPORT=1 and LIVE CASINO=2 were removed by patch-p087-categories.mjs.
+// The plan files still have the old categories — re-apply the same exclusion
+// here so the PUT body matches the current BO state (otherwise 422).
+const EXCLUDE_CAT_IDS = new Set([1, 2]);
+function reindexObj(arr) { const o = {}; arr.forEach((v, i) => { o[String(i)] = v; }); return o; }
+function removeCatIds(pct) {
+  return reindexObj(Object.values(pct).map(Number).filter(id => !EXCLUDE_CAT_IDS.has(id)));
+}
+
 const QPRO_TARGETS = [
   { brand: 'QPRO1',  site: 'qpro1',  promoId: 1116, templateId: 1110 },
   { brand: 'QPRO3',  site: 'qpro3',  promoId: 616,  templateId: 583  },
@@ -36,7 +45,7 @@ function buildQproPut(p, promoId, templateId) {
     code: p.code,
     name: p.name,
     free_spin_game_provider_id: p.free_spin_game_provider_id ?? 0,
-    promotion_category_turnover: p.promotion_category_turnover ?? {},
+    promotion_category_turnover: removeCatIds(p.promotion_category_turnover ?? {}),
     promotion_category_winloss: [],
     promo_type: p.promo_type,
     promo_sub_type: Number(p.promo_sub_type),
@@ -53,6 +62,7 @@ function buildQproPut(p, promoId, templateId) {
     auto_reward_activation: 1,
     visible_by_affiliate: p.visible_by_affiliate,
     recurring: 1,            // ← changed: 0 → 1 (recurring daily)
+    reset_frequency: 1,      // required when recurring=1 on QPRO
     max_per_player: p.max_per_player ?? 99999,
     daily_max: p.daily_max ?? 1,
     status: 1,
@@ -179,7 +189,7 @@ for (const { brand, site, promoId, templateId } of QPRO_TARGETS) {
       console.log(`  ⚠ unexpected response: ${JSON.stringify(res).slice(0, 200)}`);
     }
   } catch (e) {
-    console.log(`  ✗ PUT failed: ${e.message.split('\n')[0]}`);
+    console.log(`  ✗ PUT failed: ${e.message}`);
     anyFail = true;
   }
 }
