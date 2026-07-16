@@ -175,7 +175,9 @@ const DEFAULT_FS_PROVIDER_LABEL = 'PP2 - Pragmatic Play';
 // from a bare name breaks (caught on P053: "Playtech" derived to prefix
 // "PLAYTECH", which matches no provider code — the real BO code is "PTI").
 async function resolveFsProvider(site, label) {
-  const raw = String(label || DEFAULT_FS_PROVIDER_LABEL).trim();
+  const supplied = String(label || DEFAULT_FS_PROVIDER_LABEL).trim();
+  const pragmaticAlias = /^(?:pragmatic(?:\s+play(?:\s+2)?)?|pp2?|pp2?\s*[-—]\s*pragmatic\s+play)$/i.test(supplied);
+  const raw = pragmaticAlias ? DEFAULT_FS_PROVIDER_LABEL : supplied;
   const prefix = raw.split(/[\s-]+/)[0].trim().toUpperCase();
   const { rows } = await getAllGameProviders(site);
   const byCode = prefix ? rows.find((r) => String(r.code || '').trim().toUpperCase() === prefix) : null;
@@ -350,7 +352,10 @@ function promoSubTypeInt(bonusSubType, bonusType) {
 
 function fsProviderIdFromLabel(label) {
   if (!label) return 0;
-  const prefix = label.split(/[\s-]+/)[0].trim();
+  const supplied = String(label).trim();
+  const prefix = /^(?:pragmatic(?:\s+play(?:\s+2)?)?|pp2?|pp2?\s*[-—]\s*pragmatic\s+play)$/i.test(supplied)
+    ? 'PP2'
+    : supplied.split(/[\s-]+/)[0].trim();
   return QPRO11_FS_PROVIDER_ID_BY_PREFIX[prefix] ?? 0;
 }
 
