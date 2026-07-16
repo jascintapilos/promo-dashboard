@@ -508,7 +508,14 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
     if (!/^(WS|QP2|QPRO|Others?)/i.test(bSpec)) continue;
     const gName = m[2].trim();
     const pRaw = m[3]?.trim() || null;
-    const PA_INLINE = { playtech: 'Playtech', 'pragmatic play': 'Pragmatic Play', pragmatic: 'Pragmatic Play', pp: 'Pragmatic Play' };
+    const PA_INLINE = {
+      playtech: 'Playtech',
+      'pragmatic play': 'PP2 - Pragmatic Play',
+      'pragmatic play 2': 'PP2 - Pragmatic Play',
+      pragmatic: 'PP2 - Pragmatic Play',
+      pp: 'PP2 - Pragmatic Play',
+      pp2: 'PP2 - Pragmatic Play',
+    };
     const pNorm = pRaw ? (PA_INLINE[pRaw.toLowerCase().trim()] || pRaw) : null;
     const expanded = /^Others?$/i.test(bSpec) ? ['Others'] : expandBrandSpec(bSpec);
     for (const b of expanded) {
@@ -536,14 +543,27 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   // extend this map if a third shows up.
   const PROVIDER_ALIASES = {
     playtech: 'Playtech',
-    'pragmatic play': 'Pragmatic Play',
-    pragmatic: 'Pragmatic Play',
-    pp: 'Pragmatic Play',
+    'pragmatic play': 'PP2 - Pragmatic Play',
+    'pragmatic play 2': 'PP2 - Pragmatic Play',
+    pragmatic: 'PP2 - Pragmatic Play',
+    pp: 'PP2 - Pragmatic Play',
+    pp2: 'PP2 - Pragmatic Play',
   };
-  const providerMatch = text.match(/\(\s*([A-Za-z][A-Za-z\s]*?)\s*\)/);
+  const providerMatch = text.match(/\(\s*([A-Za-z][A-Za-z0-9\s]*?)\s*\)/);
   if (providerMatch) {
     const norm = PROVIDER_ALIASES[providerMatch[1].toLowerCase().trim()];
     if (norm) parsed.game_provider = norm;
+  }
+  if (parsed.game) {
+    const cleaned = String(parsed.game).replace(/^Game\s*:\s*/i, '').trim();
+    const inlineProvider = cleaned.match(/^(Playtech|Pragmatic Play 2|Pragmatic Play|Pragmatic|PP2|PP)\s+(.+)$/i);
+    if (inlineProvider) {
+      const norm = PROVIDER_ALIASES[inlineProvider[1].toLowerCase().trim()];
+      if (norm && !parsed.game_provider) parsed.game_provider = norm;
+      parsed.game = inlineProvider[2].trim();
+    } else {
+      parsed.game = cleaned;
+    }
   }
 
   // Category hints — "Slots only", "(LC, Sports)", "(Slot, Live Casino)", etc.

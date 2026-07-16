@@ -315,7 +315,10 @@ const QP2_FS_PROVIDER_ID_BY_PREFIX = {
 // nothing. This map lets a bare name resolve to the real code too.
 const QP2_PROVIDER_NAME_TO_PREFIX = {
   'pragmatic play': 'PP2',
+  'pragmatic play 2': 'PP2',
   pragmatic: 'PP2',
+  pp: 'PP2',
+  pp2: 'PP2',
   playtech: 'PTI',
 };
 
@@ -578,9 +581,10 @@ const QP2_DEFAULT_FS_PROVIDER_LABEL = 'PP2 - Pragmatic Play';
 // "Playtech" → "PTI", via QP2_PROVIDER_NAME_TO_PREFIX).
 function fsProviderPrefixFromLabel(label) {
   const raw = String(label || QP2_DEFAULT_FS_PROVIDER_LABEL).trim();
+  const byName = QP2_PROVIDER_NAME_TO_PREFIX[raw.toLowerCase()];
+  if (byName) return byName;
   const firstToken = raw.split(/[\s-]+/)[0].trim();
   if (QP2_FS_PROVIDER_ID_BY_PREFIX[firstToken] != null) return firstToken;
-  const byName = QP2_PROVIDER_NAME_TO_PREFIX[raw.toLowerCase()];
   return byName || firstToken || 'PP2';
 }
 
