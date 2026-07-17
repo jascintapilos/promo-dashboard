@@ -47,8 +47,19 @@ const checkDeposit = (cliArgs.checkDeposit ?? 'yes') !== 'no';
 const startDate    = cliArgs.startDate ?? `${todayStr(-1)} 00:00`;
 const endDate      = cliArgs.endDate   ?? `${todayStr()} 23:59`;
 
-const BONUS_TYPE_MAP = { turnover: '2', cashback: '1', referral1: '3', referral2: '4' };
+const BONUS_TYPE_MAP = { turnover: '20', cashback: '10', referral: '30' };
 const bonusTypeId = BONUS_TYPE_MAP[bonusType] ?? bonusType;
+
+// Member level: form has no "All" — must loop each level individually
+// searchGroupType values: 0=Normal, 10=VIP, 20=Silver, 30=Gold, 40=Platinum
+const LEVEL_MAP = { normal: '0', vip: '10', silver: '20', gold: '30', platinum: '40' };
+const ALL_LEVELS = Object.values(LEVEL_MAP);
+const requestedLevel = (cliArgs.memberLevel ?? 'all').toLowerCase();
+const levelsToRun = requestedLevel === 'all' ? ALL_LEVELS : [LEVEL_MAP[requestedLevel] ?? requestedLevel];
+
+// Submission type: 100=API, 150=Fish
+const SUBTYPE_MAP = { api: '100', fish: '150', 'poker g1': '120', 'poker g2': '130' };
+const submitTypeCodes = submitTypes.map(t => SUBTYPE_MAP[t.toLowerCase()] ?? t);
 
 // ── Session helpers ───────────────────────────────────────────────────────────
 function loadSession() {
@@ -110,64 +121,50 @@ if (!session || age > SESSION_MAX_AGE_HOURS || !(await isSessionAlive(session)))
 const cookie = cookieHeader(session);
 
 // ── Submit ────────────────────────────────────────────────────────────────────
+const LEVEL_LABELS = { '0': 'Normal', '10': 'VIP', '20': 'Silver', '30': 'Gold', '40': 'Platinum' };
+const SUBTYPE_LABELS = { '100': 'API', '150': 'Fish', '120': 'Poker G1', '130': 'Poker G2' };
+
 console.log('GM01 Commission Submission');
 console.log('══════════════════════════');
-console.log(`  Member level    : ${memberLevel || 'All'}`);
+console.log(`  Member levels   : ${requestedLevel === 'all' ? 'All (Normal/VIP/Silver/Gold/Platinum)' : requestedLevel}`);
 console.log(`  Bonus type      : ${bonusType} (id=${bonusTypeId})`);
 console.log(`  Submission types: ${submitTypes.join(', ')}`);
 console.log(`  Check deposit   : ${checkDeposit ? 'Yes' : 'No'}`);
 console.log(`  Date range      : ${startDate} → ${endDate}`);
+console.log(`  Total runs      : ${levelsToRun.length} levels × ${submitTypeCodes.length} types = ${levelsToRun.length * submitTypeCodes.length}`);
 console.log('');
 
 const results = [];
 
-for (const submissionType of submitTypes) {
-  process.stdout.write(`  [${submissionType}] Submitting… `);
+for (const levelCode of levelsToRun) {
+  for (const typeCode of submitTypeCodes) {
+    const lvLabel = LEVEL_LABELS[levelCode] ?? levelCode;
+    const tvLabel = SUBTYPE_LABELS[typeCode] ?? typeCode;
+    process.stdout.write(`  [${lvLabel.padEnd(8)} / ${tvLabel.padEnd(4)}] Submitting… `);
 
-  const body = new URLSearchParams({
-    memberLevel,
-    bonusType: bonusTypeId,
-    submissionType,
-    checkDeposit: checkDeposit ? 'true' : 'false',
-    startDate,
-    endDate,
-  });
+    const body = new URLSearchParams({
+      searchGroupType: levelCode,
+      searchSettingType: bonusTypeId,
+      searchSubmissionType: typeCode,
+      searchCheckDepo: checkDeposit ? '1' : '0',
+      searchDateFrom: startDate,
+      searchDateTo: endDate,
+    });
 
-  const res = await fetch(`${BASE}/secure/credit/action/submit.incentive.xhtml`, {
-    method: 'POST',
-    headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
-    redirect: 'manual',
-  });
+    const res = await fetch(`${BASE}/secure/credit/action/submit.incentive.xhtml`, {
+      method: 'POST',
+      headers: { Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+      redirect: 'manual',
+    });
 
-  let status = 'UNKNOWN';
-  let message = '';
-
-  if (res.status === 302 || res.status === 303) {
     const loc = res.headers.get('location') ?? '';
-    if (loc.includes('error')) {
-      status = 'ERROR';
-      message = `Redirected to ${loc}`;
-    } else {
-      const followUrl = loc.startsWith('http') ? loc : `${BASE}${loc}`;
-      const html = await fetch(followUrl, { headers: { Cookie: cookie } }).then(r => r.text());
-      if (html.includes('Submit bonus success')) {
-        status = 'SUCCESS';
-      } else {
-        // Extract any alert text
-        const alertMatch = html.match(/class="[^"]*alert[^"]*"[^>]*>([\s\S]{0,400}?)<\/div>/);
-        const alertText = alertMatch ? alertMatch[1].replace(/<[^>]+>/g, '').trim() : '(no alert text found)';
-        status = html.includes('error') ? 'ERROR' : 'UNKNOWN';
-        message = alertText;
-      }
-    }
-  } else {
-    status = `HTTP_${res.status}`;
+    const success = (res.status === 302 || res.status === 303) && !loc.includes('error');
+    const status = success ? 'SUCCESS' : 'ERROR';
+    console.log(success ? '✓' : `✗ → ${loc}`);
+    results.push({ level: lvLabel, submissionType: tvLabel, status });
+    await new Promise(r => setTimeout(r, 300));
   }
-
-  const icon = status === 'SUCCESS' ? '✓' : '✗';
-  console.log(`${icon} ${status}${message ? ` — ${message}` : ''}`);
-  results.push({ submissionType, status, message });
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────
@@ -177,9 +174,9 @@ console.log('──────────────────────�
 const passed = results.filter(r => r.status === 'SUCCESS').length;
 results.forEach(r => {
   const icon = r.status === 'SUCCESS' ? '✓' : '✗';
-  console.log(`  ${icon} ${r.submissionType.padEnd(6)} ${r.status}`);
+  console.log(`  ${icon} ${r.level.padEnd(10)} ${r.submissionType.padEnd(6)} ${r.status}`);
 });
 console.log(`\n  ${passed}/${results.length} submissions confirmed successful.`);
 if (passed < results.length) {
-  console.log('\n  ⚠ Some submissions failed. Check the date range — end date must be in the past.');
+  console.log('\n  ⚠ Some submissions failed. Ensure member level is specified and date range is in the past.');
 }
