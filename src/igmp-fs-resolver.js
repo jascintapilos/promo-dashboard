@@ -54,6 +54,14 @@ export async function resolveProviderId(siteId, providerHint) {
   if (!hit) hit = providers.find((p) => String(p.Code || '').toLowerCase().includes(hint));
   // Pass 4: Name contains hint
   if (!hit) hit = providers.find((p) => String(p.Name || '').toLowerCase().includes(hint));
+  // Pass 5: hint contains Name — QPRO/QP2-style labels like "PP2 - Pragmatic Play"
+  // carry the internal BO code prefix; the IGMP catalog only knows "Pragmatic Play".
+  if (!hit) {
+    hit = providers.find((p) => {
+      const name = String(p.Name || '').trim().toLowerCase();
+      return name.length >= 4 && hint.includes(name);
+    });
+  }
 
   if (!hit) {
     const available = providers.map((p) => `${p.Code} (${p.Name}) [Id=${p.Id}]`).join(', ');
