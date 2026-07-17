@@ -97,7 +97,6 @@ for (const t of TARGETS) {
     section: tmpl.section,
     type: tmpl.type,
     status: tmpl.status,
-    code: tmpl.code ?? undefined,
     details,
   };
 
