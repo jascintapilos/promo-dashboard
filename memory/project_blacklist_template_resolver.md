@@ -100,6 +100,8 @@ Note: list endpoint (`/api/bo/promotion`) does NOT return `blacklist_id`. Script
 | 7 | Fishing only | {FISHING} | 0 (empty) |
 | 8 | Crash game only | {CRASH} * | 0 (empty) |
 | 9 | Sports & Esports Only | {SPORT, E-SPORTS} * | 9 |
+| 10 | Sports and Slots (added by 2026-06-16) | {SPORT, SLOTS} | — |
+| 11 | Live Casino and Sports Only (added by 2026-07-16) | {LIVE CASINO, SPORT} | 42 pairs |
 
 Genuinely missing on QP2: **Esports Only** (standalone), **Cricket Only**.
 
