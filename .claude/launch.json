@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "name": "qc-hub",
+      "type": "node",
+      "request": "launch",
+      "program": "bin/qc-dashboard.mjs",
+      "env": {
+        "PORT": "4321",
+        "AUTH_MODE": "dev",
+        "DEV_USER_EMAIL": "dev@localhost"
+      }
+    }
+  ]
+}
