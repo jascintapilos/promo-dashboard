@@ -2,6 +2,7 @@
 *.local.json
 bo-sites.json
 google-credentials.local.json
+admitted-users.json
 
 # ─── Runtime artifacts ────────────────────────────────────────────────────────
 .session/
