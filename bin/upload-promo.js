@@ -387,21 +387,47 @@ async function fetchDocHtml(drive, docId) {
   // ── Extract description from header (before first <hr>) ─────────────────
   // Doc structure: line 1 = title, line 2 = description/tagline, then <hr>.
   // At this point spans/attrs are already stripped so paragraphs are clean text.
+  //
+  // Some drafts type the tagline and the opening body paragraph as ONE Google
+  // Docs paragraph, separated by a soft line-break (shift-enter) rather than a
+  // real paragraph break — e.g. "Catch the Drop. Claim Your Reward.<br><br>Step
+  // into the stunning aqua-themed world...". Google exports a soft line-break
+  // as <br> WITHIN the same <p>, so naively taking the whole <p> as
+  // "description" both (a) runs the tagline and body text together with no
+  // space once <br> tags are stripped, and (b) drops the body paragraph
+  // entirely, since content-extraction only starts after <hr>. Split on a
+  // double-<br> (used as a paragraph divider within the header <p>) so only
+  // the short tagline becomes `description`, and the remainder is carried
+  // forward as the opening paragraph of `content`.
   let description = '';
+  let leadingContentHtml = '';
   const headerSection = html.match(/^([\s\S]*?)<hr/i);
   if (headerSection) {
-    const nonEmptyTexts = [];
-    for (const m of headerSection[1].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)) {
-      const text = m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-      if (text) nonEmptyTexts.push(text);
+    const paraBlocks = [...headerSection[1].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].map((m) => m[1]);
+    // paraBlocks[0] = doc title, paraBlocks[1] = tagline (+ possibly more body
+    // text after a double-<br>). Fall back to paraBlocks[0] only if there's no
+    // second paragraph at all (matches prior behavior for simple docs).
+    const toText = (blockHtml) => blockHtml.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    if (paraBlocks[1] != null) {
+      const parts = paraBlocks[1].split(/(?:<br\s*\/?>\s*){2,}/i);
+      description = toText(parts[0] || '');
+      if (parts.length > 1) {
+        leadingContentHtml = parts.slice(1).join('<br>').trim();
+      }
+    } else {
+      description = toText(paraBlocks[0] || '');
     }
-    // Second non-empty paragraph = tagline/description (first = doc title)
-    description = nonEmptyTexts[1] || nonEmptyTexts[0] || '';
   }
 
   // ── Strip header block ──────────────────────────────────────────────────
   // Google Docs: [Doc Title + Subtitle] lives before the first <hr>. Drop it.
   html = html.replace(/^[\s\S]*?<hr[^>]*>/i, '');
+
+  // Carry forward any body text that was typed inside the header paragraph
+  // (see above) as the new opening paragraph of the content body.
+  if (leadingContentHtml) {
+    html = `<p>${leadingContentHtml}</p>${html}`;
+  }
 
   // ── Preserve <hr> section dividers ─────────────────────────────────────
   // Strip surrounding <p> context so <hr> becomes a clean standalone element.
@@ -733,6 +759,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
   // ── 3.3 Promotion Content (optional) ────────────────────────────────────
   let promoCode = promoCodeOverride || null;
   let contentDetails = null;
+  let pcId = null;
 
   if (!skipContent) {
     // Code = EVE + first-letter acronym of each campaign word (brackets stripped).
@@ -831,7 +858,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
         }
       }
     }
-    const pcId = pcRes?.data?.rows?.id ?? pcRes?.data?.id ?? pcRes?.data?.rows?.[0]?.id;
+    pcId = pcRes?.data?.rows?.id ?? pcRes?.data?.id ?? pcRes?.data?.rows?.[0]?.id;
     console.log(`  [${b_id}] ✅ 3.3 created id=${pcId} code=${promoCode}`);
   }
 

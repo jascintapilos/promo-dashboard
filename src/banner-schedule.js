@@ -206,8 +206,11 @@ export async function readBannerLinks(sheetsClient, bIds, tab) {
 
     if (!bIdSet.has(bId)) continue;
 
-    // Extract bare task ID from https://app.clickup.com/t/<id>
-    const taskId = resolvedClickup?.match(/\/t\/([a-z0-9]+)$/i)?.[1] || null;
+    // Extract bare task ID from https://app.clickup.com/t/<id> or the
+    // team/list-scoped variant https://app.clickup.com/t/<team_id>/<id> —
+    // the task ID is always the LAST path segment after /t/, regardless of
+    // how many ID segments precede it.
+    const taskId = resolvedClickup?.match(/\/t\/(?:[^/]+\/)*([a-z0-9]+)\/?$/i)?.[1] || null;
 
     links.set(bId, {
       clickup_url:      resolvedClickup,
