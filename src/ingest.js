@@ -377,9 +377,9 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   const minDepGeneric = text.match(new RegExp(String.raw`(?:min(?:imum)?\s+(?:dep(?:osit)?|depo)|min\.?\s+depo?)\s*[:=]?\s*${CCY_PREFIX}([\d,]+(?:\.\d+)?)`, 'i'));
   if (minDepGeneric) parsed.min_deposit = Number(minDepGeneric[1].replace(/,/g, ''));
 
-  // "Dep RMx get RMy" shorthand — column M pattern for deposit promos where
-  // "Dep" = min_deposit and "get" = max_bonus. Rate is derived as max/min × 100.
-  const depGetMatch = text.match(/\bDep\s+(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)\s+get\s+(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)/i);
+  // "Dep[osit] RMx get RMy" — column M pattern for deposit promos.
+  // Handles both abbreviated ("Dep 200 get 88") and full-word ("Deposit 200 get 88") forms.
+  const depGetMatch = text.match(/\bDep(?:osit)?\s+(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)\s+get\s+(?:RM|S\$|Rp|[A-Z]{2,3}\$?)?\s*([\d,]+(?:\.\d+)?)/i);
   if (depGetMatch) {
     const minDep = Number(depGetMatch[1].replace(/,/g, ''));
     const maxBns = Number(depGetMatch[2].replace(/,/g, ''));
