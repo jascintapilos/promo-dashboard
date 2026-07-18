@@ -87,12 +87,15 @@ function checkCampaignPrefix(code, campaign, campaignOwner, noDeposit) {
   const hasSeg = (tok) => parts.includes(tok);
   const findings = [];
 
-  if (campaignOwner) {
-    const cKey = campaign.toLowerCase();
-    const pillar = PILLAR_FROM_CAMPAIGN[cKey];
-    const obj    = OBJ_FROM_CAMPAIGN[cKey];
+  const cKey = campaign.toLowerCase();
+  const pillar = PILLAR_FROM_CAMPAIGN[cKey];
+  const obj    = OBJ_FROM_CAMPAIGN[cKey];
+  // Pillar-based check applies when the campaign label is a known Pillar label,
+  // even without a recognized team in Requestor (e.g. "Marketing") — the legacy
+  // token map predates the 2026-07-09 Pillar labels and must not shadow them.
+  if (campaignOwner || pillar || obj) {
     const missing = [];
-    if (!hasSeg(campaignOwner)) missing.push(`team "${campaignOwner}"`);
+    if (campaignOwner && !hasSeg(campaignOwner)) missing.push(`team "${campaignOwner}"`);
     if (pillar && !hasSeg(pillar)) missing.push(`pillar "${pillar}"`);
     if (obj    && !hasSeg(obj))   missing.push(`objective "${obj}"`);
     if (noDeposit && !hasSeg('NODEP')) missing.push('"NODEP"');
