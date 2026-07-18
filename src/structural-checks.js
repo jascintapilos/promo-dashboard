@@ -4,6 +4,8 @@
 // bin/brand-watch.mjs (daily 5pm estate pass) so the two can never drift
 // apart. Extracted per advisor review 2026-07-07.
 //
+import { getPopups } from './qp2-popup-registry.js';
+
 // Every check is deliberately conservative: false alarms erode trust in the
 // automated queue faster than they're worth. Checks return an array of
 // { severity: 'FAIL'|'WARNING', message } — empty array means clean.
@@ -88,7 +90,40 @@ export function checkDialogPopupPresence(cand) {
   if (!cand.dialogPopupCount) {
     return [{ severity: 'WARNING', check: 'popup-missing', message: 'No dialog popup linked' }];
   }
-  return [];
+  if (cand.platform !== 'qp2' || !Array.isArray(cand.merchantIds) || !Array.isArray(cand.dialogPopupLinks)) {
+    return [];
+  }
+
+  const findings = [];
+  const liveBySite = new Map(
+    cand.dialogPopupLinks
+      .filter((link) => link?.site_id != null)
+      .map((link) => [Number(link.site_id), Number(link.popup_id)]),
+  );
+  const missingSiteIds = cand.merchantIds
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && !liveBySite.has(id));
+  if (missingSiteIds.length) {
+    findings.push({
+      severity: 'WARNING',
+      check: 'popup-coverage',
+      message: `Dialog popup coverage missing for site_id(s): ${missingSiteIds.join(', ')}`,
+    });
+  }
+
+  const registry = getPopups(cand.code);
+  const staleSiteIds = Object.entries(registry)
+    .map(([siteId, popupId]) => ({ siteId: Number(siteId), expected: Number(popupId), live: liveBySite.get(Number(siteId)) }))
+    .filter(({ expected, live }) => Number.isFinite(expected) && Number.isFinite(live) && live !== expected);
+  if (staleSiteIds.length) {
+    findings.push({
+      severity: 'WARNING',
+      check: 'popup-stale-link',
+      message: `Dialog popup link differs from registry for site_id(s): ${staleSiteIds.map(({ siteId }) => siteId).join(', ')}`,
+    });
+  }
+
+  return findings;
 }
 
 // ── IGMP (WS1/WS2) ─────────────────────────────────────────────────────────
