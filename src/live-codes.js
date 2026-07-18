@@ -104,6 +104,8 @@ export async function fetchAllLiveCodes() {
     // live 2026-07-07) — carried so MT content checks need no extra fetches.
     messageTemplates: (r.message_templates || []).map((t) => ({ settings_locale_id: t.settings_locale_id, subject: t.subject, message: t.message })),
     dialogPopupCount: (r.dialog_popup_list || []).length,
+    dialogPopupLinks: (r.dialog_popup_list || []).map((d) => ({ site_id: d.site_id, popup_id: d.popup_id })),
+    merchantIds: (r.merchant_ids || []).map((m) => (typeof m === 'object' ? m.id : m)),
     currencies: r.currencies,
     validTo: r.valid_to, status: r.status,
   });

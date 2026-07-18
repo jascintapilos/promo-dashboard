@@ -41,9 +41,12 @@
 - [QP2 promotion PUT semantics](project_qp2_promotion_put_semantics.md) — Omit black_list_sub_categories; re-assert dialog_popup_list; omit promotion_currency.
 - [QP2 blacklist derivation is scoped](feedback_qp2_blacklist_scoped_derivation.md) — promo blacklist_sub_categories = template ∩ promo categories ∩ selected providers; full-template QC compare gives false MISMATCH.
 - [QP2 promotioncurrency PUT scales bonus_rate ×100](feedback_qp2_promotioncurrency_put_rate_scaling.md) — standalone PUT re-scales like POST; echo-PUT corrupts deposit rows (120→12000). Send rate/100 + verify after.
+- [QP2 target.game_provider_codes is authoritative](feedback_qp2_target_gp_codes_authoritative.md) — provider changes must rewrite target (string codes), not just top-level numeric ids.
+- [QP2 blacklist template create API](project_qp2_blacklist_template_create_api.md) — POST /gameprovider/updateBlacklistTemplate; promo_testbot view-only, use jascinta login; id=11 = "Live Casino and Sports Only".
 - [Promotion PUT silently wipes dialog_popup_list](feedback_promotion_put_dialog_popup_list_wipe.md) — detail GET lacks dialog_popup_list; use listing or omit field.
 - [Popups GET 405 — use listing](feedback_popups_get_405_use_listing.md) — Single-row popup GET unsupported; walk listing pages.
 - [Preserve dialog_popup_list across PUT](feedback_preserve_dialog_on_put.md) — Always read current dialog via readDialogForPreservation() and pass through.
+- [QP2 PUT auto-preserves links](feedback_qp2_put_auto_preserve.md) — updatePromotion() preserves dialog_popup_list, SMS MT, and inbox MT by default; deliberate clears require preserve:false.
 - [Dialog start_date is always now](feedback_dialog_start_date_now.md) — Popups never future-dated; use nowYmdHms() at create-time.
 - [Dialog Popup defaults](feedback_dialog_popup_defaults.md) — Position=99, Session=After Login, DUAL CTA (CLAIM NOW/READ MORE).
 - [Dialog popup = How to Apply 3-step](feedback_dialog_popup_how_to_apply_template.md) — Short 3-step + per-locale currency + Inbox redirect, NOT full T&C.
