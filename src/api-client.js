@@ -526,8 +526,124 @@ export async function getAllMerchantBankIds(site, { currencyId = 3, purpose = 1 
 // `message_template_id` (the only way to link a template to a promo). Body
 // shape matches PUT /api/bo/promotion/{id} from the captures; the API
 // tolerates booleans-as-0/1 on PUT (POST uses true/false — strict typing).
-export async function updatePromotion(site, promotionId, body) {
-  return authedFetch(site, `/api/bo/promotion/${promotionId}`, { method: 'PUT', body });
+function resolveSiteForPut(siteOrId) {
+  if (typeof siteOrId === 'string' || siteOrId == null) return getSite(siteOrId);
+  if (siteOrId?.id) {
+    try {
+      return getSite(siteOrId.id);
+    } catch {
+      return siteOrId;
+    }
+  }
+  return siteOrId;
+}
+
+function objectValues(v) {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object') return Object.values(v);
+  return [];
+}
+
+function nonZeroId(v) {
+  if (v == null || v === '') return false;
+  const n = Number(v);
+  return Number.isFinite(n) && n !== 0;
+}
+
+function hasPopupIdentity(v) {
+  return v && typeof v === 'object' && nonZeroId(v.id ?? v.popup_id);
+}
+
+export function hasRealDialogPopupList(dialogPopupList) {
+  const entries = objectValues(dialogPopupList);
+  return entries.length > 0 && entries.some(hasPopupIdentity);
+}
+
+export async function preserveQp2PutFields(site, promotionId, body) {
+  const nextBody = { ...body };
+  const preserved = { dialogLinks: 0, message_template_sms_id: false, message_template_id: false };
+  const needsDialog = !hasRealDialogPopupList(body?.dialog_popup_list);
+  const needsSms = !nonZeroId(body?.message_template_sms_id);
+  const needsMt = !nonZeroId(body?.message_template_id);
+
+  if (!needsDialog && !needsSms && !needsMt) return { body: nextBody, preserved };
+
+  const suppliedCode = body?.code;
+  const needsDetail = needsSms || needsMt || !suppliedCode;
+  let detail = null;
+  if (needsDetail) {
+    try {
+      detail = (await authedFetch(site, `/api/bo/promotion/${promotionId}`))?.data?.rows;
+    } catch (e) {
+      throw new Error(`updatePromotion preservation failed before PUT: could not read promotion ${promotionId}: ${e.message}`);
+    }
+    if (!detail) {
+      throw new Error(`updatePromotion preservation failed before PUT: promotion ${promotionId} detail response was empty`);
+    }
+  }
+
+  const code = suppliedCode || detail?.code;
+  if (needsSms && nonZeroId(detail?.message_template_sms_id)) {
+    nextBody.message_template_sms_id = detail.message_template_sms_id;
+    preserved.message_template_sms_id = true;
+    console.log(`↺ updatePromotion: preserved SMS template ${detail.message_template_sms_id} for ${code || promotionId}`);
+  }
+  if (needsMt && nonZeroId(detail?.message_template_id)) {
+    nextBody.message_template_id = detail.message_template_id;
+    preserved.message_template_id = true;
+    console.log(`↺ updatePromotion: preserved inbox template ${detail.message_template_id} for ${code || promotionId}`);
+  }
+
+  if (!needsDialog) return { body: nextBody, preserved };
+  if (!code) {
+    throw new Error(`updatePromotion preservation failed before PUT: promotion ${promotionId} has no code for dialog lookup`);
+  }
+
+  let dialogList;
+  try {
+    const listResp = await authedFetch(site, `/api/bo/promotion?code=${encodeURIComponent(code)}&perPage=10`);
+    const rows = listResp?.data?.rows || [];
+    const listRow = rows.find((r) => Number(r.id) === Number(promotionId));
+    dialogList = listRow?.dialog_popup_list || [];
+  } catch (e) {
+    throw new Error(`updatePromotion preservation failed before PUT: could not read promotion listing for ${code}: ${e.message}`);
+  }
+
+  if (!dialogList.length) return { body: nextBody, preserved };
+
+  let allPopups;
+  try {
+    const popResp = await authedFetch(site, '/api/bo/popups?perPage=500&page=1&sort_by=id&sort_order=desc');
+    allPopups = popResp?.data?.rows || [];
+  } catch (e) {
+    throw new Error(`updatePromotion preservation failed before PUT: could not read popups for ${code}: ${e.message}`);
+  }
+
+  const fullDialogObj = {};
+  dialogList.forEach((link, i) => {
+    const popupId = link?.popup_id ?? link?.id;
+    const fullRow = allPopups.find((p) => Number(p.id) === Number(popupId));
+    fullDialogObj[String(i)] = fullRow
+      ? { ...fullRow, promotion_id: promotionId }
+      : { ...link, promotion_id: promotionId };
+  });
+  nextBody.dialog_popup_list = fullDialogObj;
+  preserved.dialogLinks = dialogList.length;
+  console.log(`↺ updatePromotion: preserved ${dialogList.length} dialog link(s) for ${code}`);
+
+  return { body: nextBody, preserved };
+}
+
+export async function updatePromotion(site, promotionId, body, { preserve = true } = {}) {
+  if (!preserve) {
+    return authedFetch(site, `/api/bo/promotion/${promotionId}`, { method: 'PUT', body });
+  }
+  const resolvedSite = resolveSiteForPut(site);
+  if (resolvedSite?.platform !== 'qp2') {
+    return authedFetch(site, `/api/bo/promotion/${promotionId}`, { method: 'PUT', body });
+  }
+  const { body: guardedBody } = await preserveQp2PutFields(resolvedSite, promotionId, body);
+  return authedFetch(resolvedSite, `/api/bo/promotion/${promotionId}`, { method: 'PUT', body: guardedBody });
 }
 
 // Read the current dialog_popup_list for a promotion and return a `dialog` arg
@@ -733,16 +849,53 @@ export async function createBanner(site, body) {
 //
 // Use `type='promotions'` for Section 3.3 Promotion Content uploads.
 // Use `type='banners'` for Section 14.2 Banner uploads.
-export async function uploadFile(site, fileBuffer, filename, { type = 'promotions', mimeType = 'image/jpeg' } = {}) {
-  const session = await getSession(site);
-  const form = new FormData();
-  form.append('files', new Blob([fileBuffer], { type: mimeType }), filename);
-  form.append('type', type);
-  const res = await fetch(`${site.apiHost}/api/bo/file`, {
-    method: 'POST',
-    headers: { ...authHeaders(session) },
-    body: form,
-  });
+//
+// Auto-relogin on 401/419: mirrors authedFetch's transparent one-shot retry
+// (see authedFetch above) — a raw multipart upload doesn't flow through
+// rawFetchJson/authedFetch, so it never got that self-heal for free. Without
+// this, the FIRST upload in a run could fail hard on a transient auth hiccup
+// that every other call in the same run would have quietly recovered from.
+// FormData/Blob are rebuilt from the same fileBuffer/filename/mimeType for
+// the retry — Blob([fileBuffer]) doesn't consume/drain fileBuffer, so the
+// original buffer is safe to reuse across both attempts.
+//
+// `_deps` is an internal/test-only escape hatch (underscore-prefixed to
+// signal that): it defaults to the real getSession/clearSession/forceRefresh
+// so every existing caller (bin/upload-promo.js et al., which never pass it)
+// gets exactly today's behavior plus the new retry. A test can override it
+// to fully control session behavior — no real network or BO login — while
+// still monkey-patching global fetch to simulate the 401-then-200 sequence.
+export async function uploadFile(site, fileBuffer, filename, {
+  type = 'promotions',
+  mimeType = 'image/jpeg',
+  _deps = {},
+} = {}) {
+  const {
+    getSession: getSessionImpl = getSession,
+    clearSession: clearSessionImpl = clearSession,
+    forceRefresh: forceRefreshImpl = forceRefresh,
+  } = _deps;
+
+  const doUpload = (session) => {
+    const form = new FormData();
+    form.append('files', new Blob([fileBuffer], { type: mimeType }), filename);
+    form.append('type', type);
+    return fetch(`${site.apiHost}/api/bo/file`, {
+      method: 'POST',
+      headers: { ...authHeaders(session) },
+      body: form,
+    });
+  };
+
+  let session = await getSessionImpl(site);
+  let res = await doUpload(session);
+
+  if (res.status === 401 || res.status === 419) {
+    await clearSessionImpl(site.id).catch(() => {});
+    session = await forceRefreshImpl(site);
+    res = await doUpload(session);
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`uploadFile HTTP ${res.status} (type=${type}): ${text.slice(0, 300)}`);
