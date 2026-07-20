@@ -220,6 +220,7 @@ These map the abstract criteria in Rule 4 to the bundle's actual field paths. Co
 | auto_reward_activation | implicit ON unless source.instructions says otherwise | `live_state.detail.auto_reward_activation` (must be true). **QPRO platform: if this field is null or absent in `live_state.detail`, return INCONCLUSIVE — not FAIL.** The QPRO GET endpoint never returns this field. Null = unverifiable, not disabled. See Suppressions. |
 | dialog linkage | `dialog_popup_id` in bundle | `live_state.list_row.dialog_popup_list[].popup_id` (must include the saved `dialog_popup_id`). **QP2 multi-merchant count check:** count `live_state.list_row.dialog_popup_list` entries and count `live_state.list_row.merchant_ids` entries. If dialog count < merchant count, FAIL: "dialog count mismatch — only D/M merchant sites have a linked popup; run `node bin/relink-qp2-dialogs.mjs <handle> --commit`." INCONCLUSIVE if either list is absent from the bundle. Skip count check on QPRO/IGMP (single-merchant dialog model). |
 | MT linkage | `template_id` in bundle | `live_state.list_row.message_template_id` (must equal saved id) |
+| SMS linkage | `sms_template_id` in bundle (if `source.instructions.sms_required` is true and `bonus_type` is not Cashback) | `live_state.list_row.message_template_sms_id` — must equal the saved `sms_template_id` and be non-zero/non-null. **QPRO/QP2 only — skip entirely on IGMP** (not a concept there). FAIL if `sms_required` is true, bonus_type isn't Cashback, and `message_template_sms_id` is 0/null/missing — this is a silent-drop failure mode in `buildSmsTemplateBody()`/`buildSmsLocaleCopy()` (both mappers), not merely a cosmetic gap: the operator explicitly required SMS and it was never linked. WARNING (not silent pass) if `sms_required` is true and bonus_type IS Cashback — SMS is never built for Cashback by design; still worth surfacing as a flagged contradiction. INCONCLUSIVE if `list_row` absent. |
 | brand/site | `source.brand` / `source.site` | `live_state.list_row.merchant_ids` (QP2) / site context |
 | validity period | `source.parsed.start_date` / `end_date` | `live_state.detail.start_date` / `end_date` |
 | recurring | `source.instructions.recurring` | `live_state.detail.recurring_*` fields |
@@ -296,6 +297,7 @@ When `platform` in the bundle is `"igmp"`, the standard field paths in the crite
 - `auto_reward_activation` — not a concept on IGMP
 - `dialog linkage` / `dialog_popup_id` — IGMP has no dialog popups
 - `MT linkage` / `template_id` — T&C is embedded in PromotionRewardContents (checked via tnc block)
+- `SMS linkage` / `sms_template_id` — not a plan/BO-field concept on IGMP; a true `sms_required` there means manual handling outside this pipeline
 - `promotion_currency_list` / `currency_id` — single currency per IGMP site
 - `per_currency_overrides` — single currency per IGMP site
 - `freespin_check` — not a concept on IGMP

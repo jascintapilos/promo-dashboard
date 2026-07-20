@@ -5,6 +5,8 @@ const COOKIE = 'qc_hub_session';
 const ALLOWLIST = 'admitted-users.json';
 const SECRET_FILE = 'qc-dashboard-session-secret.local.json';
 
+export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
+
 function sessionSecret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
   if (existsSync(SECRET_FILE)) {
@@ -33,9 +35,15 @@ export function parseCookies(req) {
   }).filter(([k]) => k));
 }
 
-export function makeSessionCookie(user) {
+export function isSessionExpired(session) {
+  return !session?.iat || Date.now() - session.iat > SESSION_MAX_AGE_MS;
+}
+
+export function makeSessionCookie(user, opts = {}) {
   const payload = Buffer.from(JSON.stringify({ ...user, iat: Date.now() })).toString('base64url');
-  return `${COOKIE}=${payload}.${sign(payload)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800`;
+  const sameSite = opts.secure ? 'Strict' : 'Lax';
+  const secureFlag = opts.secure ? '; Secure' : '';
+  return `${COOKIE}=${payload}.${sign(payload)}; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=28800${secureFlag}`;
 }
 
 export function readSession(req) {
@@ -47,24 +55,47 @@ export function readSession(req) {
   if (Buffer.byteLength(mac) !== Buffer.byteLength(expected)) return null;
   const ok = timingSafeEqual(Buffer.from(mac), Buffer.from(expected));
   if (!ok) return null;
-  try { return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')); } catch { return null; }
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (isSessionExpired(session)) return null;
+    return session;
+  } catch { return null; }
 }
 
-function isLocalhost(req) {
+export function isLocalhost(req) {
   const host = String(req.headers.host || '').split(':')[0];
   const remote = req.socket.remoteAddress;
   return ['localhost', '127.0.0.1', '::1'].includes(host) || ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote);
+}
+
+/**
+ * Pure token-data validator — separated so it can be unit-tested without network calls.
+ * allowSet: Set<string> of lowercase admitted emails.
+ * clientId: expected OAuth audience; if null/undefined, audience check is skipped with a console warning.
+ */
+export function validateTokenData(data, allowSet, clientId) {
+  if (!data.email || data.email_verified !== 'true') throw new Error('Google token has no verified email');
+  if (clientId) {
+    if (String(data.aud) !== String(clientId)) {
+      throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
+    }
+  }
+  if (!String(data.email).toLowerCase().endsWith('@thebrandingpeople.co')) {
+    throw new Error('Email is outside admitted workspace domain');
+  }
+  if (!allowSet.has(String(data.email).toLowerCase())) {
+    throw new Error('Email is not in admitted-users allowlist');
+  }
+  return { email: String(data.email).toLowerCase(), name: data.name || data.email };
 }
 
 export async function verifyGoogleIdToken(idToken) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
   if (!res.ok) throw new Error(`Google tokeninfo rejected token (${res.status})`);
   const data = await res.json();
-  if (!data.email || data.email_verified !== 'true') throw new Error('Google token has no verified email');
-  if (!String(data.email).toLowerCase().endsWith('@thebrandingpeople.co')) throw new Error('Email is outside admitted workspace domain');
-  const allow = admittedEmails();
-  if (!allow.has(String(data.email).toLowerCase())) throw new Error('Email is not in admitted-users allowlist');
-  return { email: String(data.email).toLowerCase(), name: data.name || data.email };
+  const clientId = process.env.GOOGLE_CLIENT_ID || null;
+  if (!clientId) console.warn('[qc-hub] GOOGLE_CLIENT_ID not set — skipping audience check (configure before going live)');
+  return validateTokenData(data, admittedEmails(), clientId);
 }
 
 export async function loginFromRequest(req, body) {

@@ -155,6 +155,21 @@ export function parseScheduleTable(markdown) {
   return out;
 }
 
+// ── ClickUp task-id extraction ────────────────────────────────────────────
+// Extracts the bare task ID from https://app.clickup.com/t/<id> or the
+// team/list-scoped variant https://app.clickup.com/t/<team_id>/<id> — the
+// task ID is always the LAST path segment after /t/, regardless of how many
+// ID segments precede it. Also tolerates an optional trailing slash and/or
+// an optional trailing query string and/or fragment (e.g. "?view=abc",
+// "#comment-123") — those previously caused a silent null on an otherwise
+// valid task URL. Returns null when the URL doesn't contain a /t/ segment.
+
+export function extractClickupTaskId(url) {
+  if (!url) return null;
+  const m = url.match(/\/t\/(?:[^/?#]+\/)*([a-z0-9]+)\/?(?:[?#].*)?$/i);
+  return m ? m[1] : null;
+}
+
 // ── Hyperlink extraction (ClickUp + Drive) ────────────────────────────────
 // Uses Sheets API includeGridData to read embedded hyperlinks that values.get()
 // strips out. Col C (campaign) carries the ClickUp task URL; col D (draft folder
@@ -206,11 +221,7 @@ export async function readBannerLinks(sheetsClient, bIds, tab) {
 
     if (!bIdSet.has(bId)) continue;
 
-    // Extract bare task ID from https://app.clickup.com/t/<id> or the
-    // team/list-scoped variant https://app.clickup.com/t/<team_id>/<id> —
-    // the task ID is always the LAST path segment after /t/, regardless of
-    // how many ID segments precede it.
-    const taskId = resolvedClickup?.match(/\/t\/(?:[^/]+\/)*([a-z0-9]+)\/?$/i)?.[1] || null;
+    const taskId = extractClickupTaskId(resolvedClickup);
 
     links.set(bId, {
       clickup_url:      resolvedClickup,
@@ -223,17 +234,63 @@ export async function readBannerLinks(sheetsClient, bIds, tab) {
 }
 
 // ── Dynamic tab detection ─────────────────────────────────────────────────
-// Returns the current month tab name (e.g. "Jun 2026"), falling back to
-// the most recently created tab if the current month isn't found.
+// resolveMonthTab is the single source of truth for "which month tab do we
+// use" — it replaces two divergent copies of this logic that used to live
+// separately in bin/upload-promo.js (supported --month, threw when nothing
+// resolved) and here (no override, abbreviated-month-only match, and a
+// tabs[0] fallback that could silently pick an unrelated month tab with zero
+// warning). Pure and synchronous so it's directly unit-testable.
 
-export async function resolveScheduleTab(sheetsClient) {
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+export function resolveMonthTab(tabs, options = {}) {
+  const { monthOverride = null, referenceDate = new Date() } = options;
+
+  if (monthOverride) {
+    const match = tabs.find((t) => t.toLowerCase() === String(monthOverride).toLowerCase());
+    if (!match) {
+      throw new Error(
+        `Month override "${monthOverride}" not found among available tabs: ${tabs.join(', ')}`
+      );
+    }
+    return match;
+  }
+
+  const monthIndex = referenceDate.getMonth();
+  const year = referenceDate.getFullYear();
+  const abbrForm = `${MONTH_ABBR[monthIndex]} ${year}`;
+  const fullForm = `${MONTH_FULL[monthIndex]} ${year}`;
+
+  const exact = tabs.find(
+    (t) => t.toLowerCase() === abbrForm.toLowerCase() || t.toLowerCase() === fullForm.toLowerCase()
+  );
+  if (exact) return exact;
+
+  // Fallback: sweep for a "<letters> <4-digit year>"-shaped tab (so full
+  // month names match too, not just exactly 3 letters) whose month token
+  // case-insensitively equals THIS month's abbreviated or full-word name.
+  // This is what stops the sweep from grabbing an arbitrary
+  // "SomeOtherMonth 2026"-shaped tab — the exact bug in the old tabs[0]
+  // fallback.
+  const currentMonthNames = [MONTH_ABBR[monthIndex].toLowerCase(), MONTH_FULL[monthIndex].toLowerCase()];
+  const swept = tabs.find((t) => {
+    const m = t.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (!m) return false;
+    return currentMonthNames.includes(m[1].toLowerCase());
+  });
+  if (swept) return swept;
+
+  throw new Error(
+    `No month tab found for "${abbrForm}" / "${fullForm}"; available tabs: ${tabs.join(', ')}`
+  );
+}
+
+export async function resolveScheduleTab(sheetsClient, { monthOverride } = {}) {
   const SHEET_ID = '1vpyjhqiKzcn2XHovcN2tEa4UkzUMqTmFsUZ59m-n8_E';
   const meta = await sheetsClient.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
   const tabs = meta.data.sheets.map((s) => s.properties.title);
-  const now = new Date();
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const current = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
-  return tabs.find((t) => t === current) || tabs[0];
+  return resolveMonthTab(tabs, { monthOverride });
 }
 
 // ── B-ID lookup with bucketed result ──────────────────────────────────────
