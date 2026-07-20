@@ -17,6 +17,7 @@
     "promotions": "node bin/promotions.js",
     "sessions": "node bin/sessions.js",
     "browser": "node src/browser/phase1-browser.js",
+    "test": "node --test test/*.test.mjs",
     "test:free-spin": "node bin/test-free-spin-conformance.mjs"
   },
   "dependencies": {
