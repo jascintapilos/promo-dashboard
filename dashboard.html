@@ -2662,15 +2662,18 @@ loadData();
       },
     },
     setup(p){
+      let _selTimer=null;
       p.on('selected',(d1,d2)=>{
-        const di1=d1.dateInstance,di2=d2.dateInstance;
-        console.log('[selected] d1.getDate='+d1.getDate()+' di1.getDate='+di1.getDate()+' d1.getTime='+d1.getTime()+' di1.getTime='+di1.getTime());
-        console.log('[selected] d2.getDate='+d2.getDate()+' di2.getDate='+di2.getDate()+' d2.getTime='+d2.getTime()+' di2.getTime='+di2.getTime());
-        _filterFrom=new Date(di1.getFullYear(),di1.getMonth(),di1.getDate(),0,0,0,0);
-        _filterTo=new Date(di2.getFullYear(),di2.getMonth(),di2.getDate(),23,59,59,999);
-        console.log('[selected] _filterFrom='+_filterFrom.toISOString()+' _filterTo='+_filterTo.toISOString());
+        // d1.getTime() is already the LOCAL midnight timestamp Litepicker derived from
+        // the clicked cell's data-time attribute — it is correct for the displayed date
+        // regardless of system timezone. We skip duplicate firings (Apply triggers a
+        // second 'selected' via internal setDateRange normalization) using a short flag.
+        if(_selTimer!==null)return;
+        _filterFrom=new Date(d1.getTime());
+        _filterTo=new Date(d2.getTime()+86399999); // +23:59:59.999 for end-of-day
         document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
+        _selTimer=setTimeout(()=>{_selTimer=null;},200);
       });
       p.on('clear:selection',()=>{
         _filterFrom=null;_filterTo=null;
