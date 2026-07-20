@@ -753,7 +753,7 @@ async function buildMessageTemplateBody(resolved, brand) {
   };
 }
 
-function hasSmsRequirement(resolved) {
+export function hasSmsRequirement(resolved) {
   if (resolved?.instructions?.sms_required === true) return true;
   const all = [
     resolved?.remark,
@@ -806,7 +806,7 @@ function buildSmsGenericSubject(resolved) {
   return prefix;
 }
 
-function buildSmsLocaleCopy(resolved, locale) {
+export function buildSmsLocaleCopy(resolved, locale) {
   const dk = localeDocKey(locale);
   const isZh = dk === 'ZH';
   const currency = localeCurrencyQp2(locale) || (resolved.currencies || [])[0] || 'MYR';
@@ -858,7 +858,7 @@ function buildSmsLocaleCopy(resolved, locale) {
   return null;
 }
 
-async function buildSmsTemplateBody(resolved, brand) {
+export async function buildSmsTemplateBody(resolved, brand) {
   if (!hasSmsRequirement(resolved)) return null;
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   void brand;
