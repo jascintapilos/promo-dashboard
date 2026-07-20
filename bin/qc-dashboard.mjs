@@ -12,6 +12,7 @@ import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { isLocalhost, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
+import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -30,12 +31,6 @@ function send(res, status, data, headers = {}) {
   res.end(body);
 }
 
-async function readJson(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  if (!chunks.length) return {};
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
-}
 
 function contentType(file) {
   if (file.endsWith('.html')) return 'text/html; charset=utf-8';
@@ -97,7 +92,7 @@ async function handleApi(req, res, user) {
   }
   if (req.method === 'POST' && url.pathname === '/api/run-qc') {
     const started = Date.now();
-    const body = await readJson(req);
+    const body = await readJsonBounded(req);
     const normalized = normalizeRunQcRequest(body);
     if (!normalized.ok) return send(res, normalized.status, { error: normalized.error });
     const { brand, codes } = normalized;
@@ -146,11 +141,11 @@ async function handleApi(req, res, user) {
     return send(res, 200, { results });
   }
   if (req.method === 'POST' && url.pathname === '/api/qc-record') {
-    const body = await readJson(req);
+    const body = await readJsonBounded(req);
     return send(res, 200, await saveQcRecord(body, user));
   }
   if (req.method === 'POST' && url.pathname === '/api/fix-request') {
-    const body = await readJson(req);
+    const body = await readJsonBounded(req, 65536);
     return send(res, 200, await dispatchFixRequest({ ...body, requestedBy: user.email }));
   }
   send(res, 404, { error: 'not found' });
@@ -166,7 +161,7 @@ async function handle(req, res) {
       });
     }
     if (req.method === 'POST' && url.pathname === '/auth/login') {
-      const user = await loginFromRequest(req, await readJson(req));
+      const user = await loginFromRequest(req, await readJsonBounded(req));
       const secure = !isLocalhost(req);
       return send(res, 200, { user }, { 'set-cookie': makeSessionCookie(user, { secure }) });
     }
@@ -183,7 +178,8 @@ async function handle(req, res) {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(index);
   } catch (e) {
-    send(res, 500, { error: e.message });
+    const status = e.status && e.status >= 400 && e.status < 600 ? e.status : 500;
+    send(res, status, { error: status < 500 ? e.message : 'Internal server error' });
   }
 }
 

@@ -158,6 +158,18 @@ function escapeHtml(value) {
   })[ch]);
 }
 
+function openPromptModal(prompt) {
+  const pre = $('promptText');
+  pre.textContent = prompt;
+  $('copiedConfirm').classList.add('hidden');
+  $('promptModal').classList.remove('hidden');
+  pre.scrollTop = 0;
+}
+
+function closePromptModal() {
+  $('promptModal').classList.add('hidden');
+}
+
 function fieldsForFinding(finding = {}) {
   const fields = new Set();
   if (finding.field) fields.add(finding.field);
@@ -279,19 +291,25 @@ async function runQc() {
 
 async function dispatchFindingFix(index) {
   const data = activeResult();
+  if (!data) return;
   const finding = data.findings[index];
-  const result = await api('/api/fix-request', {
-    method: 'POST',
-    body: JSON.stringify({
-      brand: state.selectedBrand,
-      code: data.code,
-      finding,
-      expected: finding.expected || '',
-      actual: finding.actual || '',
-      snapshotPath: data.snapshotPath,
-    }),
-  });
-  alert(`Fix request created: ${result.path}`);
+  try {
+    const result = await api('/api/fix-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        source: 'auto-finding',
+        brand: state.selectedBrand,
+        code: data.code,
+        finding,
+        expected: finding.expected || '',
+        actual: finding.actual || '',
+        snapshotPath: data.snapshotPath,
+      }),
+    });
+    openPromptModal(result.prompt);
+  } catch (e) {
+    alert(`Fix request failed: ${e.message}`);
+  }
 }
 
 async function dispatchManualFix() {
@@ -302,18 +320,23 @@ async function dispatchManualFix() {
     check: $('errorCategory').value || 'manual-error',
     message: $('description').value || 'Manual QC error',
   };
-  const result = await api('/api/fix-request', {
-    method: 'POST',
-    body: JSON.stringify({
-      brand: state.selectedBrand,
-      code: data.code,
-      finding,
-      expected: $('expected').value,
-      actual: $('actual').value,
-      snapshotPath: data.snapshotPath,
-    }),
-  });
-  alert(`Fix request created: ${result.path}`);
+  try {
+    const result = await api('/api/fix-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        source: 'manual',
+        brand: state.selectedBrand,
+        code: data.code,
+        finding,
+        expected: $('expected').value,
+        actual: $('actual').value,
+        snapshotPath: data.snapshotPath,
+      }),
+    });
+    openPromptModal(result.prompt);
+  } catch (e) {
+    alert(`Fix request failed: ${e.message}`);
+  }
 }
 
 function compactFindings(data) {
@@ -390,18 +413,23 @@ async function dispatchHistoryFix(index) {
     check: row.error_category || 'history-qc-record',
     message: row.description || row.qc_result || 'History QC finding',
   };
-  const result = await api('/api/fix-request', {
-    method: 'POST',
-    body: JSON.stringify({
-      brand: row.brand,
-      code: row.code,
-      finding,
-      expected: row.expected || '',
-      actual: row.actual || '',
-      snapshotPath: row.fetch_snapshot || '',
-    }),
-  });
-  alert(`Fix request created: ${result.path}`);
+  try {
+    const result = await api('/api/fix-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        source: 'history',
+        brand: row.brand,
+        code: row.code,
+        finding,
+        expected: row.expected || '',
+        actual: row.actual || '',
+        snapshotPath: row.fetch_snapshot || '',
+      }),
+    });
+    openPromptModal(result.prompt);
+  } catch (e) {
+    alert(`Fix request failed: ${e.message}`);
+  }
 }
 
 async function loadHistory() {
@@ -433,6 +461,20 @@ function bind() {
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
   $('manualFix').addEventListener('click', dispatchManualFix);
+  $('closePromptBtn').addEventListener('click', closePromptModal);
+  $('copyPromptBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('promptText').textContent);
+      const el = $('copiedConfirm');
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3000);
+    } catch {
+      alert('Copy failed — select and copy the text manually.');
+    }
+  });
+  $('promptModal').addEventListener('click', (e) => {
+    if (e.target === $('promptModal')) closePromptModal();
+  });
   document.querySelectorAll('[data-result]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const data = activeResult();

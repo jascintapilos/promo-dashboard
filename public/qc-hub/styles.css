@@ -194,3 +194,41 @@ th { color: var(--muted); font-weight: 600; }
   .topbar { padding: 14px 16px; }
   main { padding: 12px; }
 }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 28px;
+  width: min(720px, 95vw);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.prompt-text {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 0 0 16px;
+  color: var(--text);
+}
+.modal-actions { display: flex; gap: 8px; }
+.copy-confirm { margin: 8px 0 0; color: var(--safe); font-size: 13px; }
+.copy-confirm.hidden { display: none; }
