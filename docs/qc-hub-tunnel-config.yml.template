@@ -1,0 +1,49 @@
+# Cloudflare Tunnel configuration — TEMPLATE
+# Replace all <placeholder> values with real values before use.
+# This template file has no secrets. Once filled in, the resulting config
+# MUST NOT be committed — keep it local only (it references a credential path).
+#
+# ─── SECURITY REQUIREMENT ───────────────────────────────────────────────────
+# Cloudflare Access MUST be configured in front of this tunnel.
+# The tunnel alone provides HTTPS and routing, but not access control.
+# Without Access, anyone who discovers the hostname can reach the hub.
+#
+# Access configuration (in Cloudflare Zero Trust dashboard):
+#   - Create an Application → Self-hosted → hostname: <qc-hub-subdomain>.<your-domain>
+#   - Policy: Default Deny
+#   - Add ONE allow rule: Emails ending in @thebrandingpeople.co
+#     (or an explicit allowlist of individual @thebrandingpeople.co addresses)
+#   - Session duration: 8 hours (matches QC Hub's own session lifetime)
+#   - Do NOT enable "bypass" for any path — the hub enforces its own login on top
+#
+# Result: two independent gates.
+#   Gate 1 — Cloudflare Access: Requires @thebrandingpeople.co Google login
+#   Gate 2 — QC Hub app: Requires same Google account + admitted-users.json
+# ────────────────────────────────────────────────────────────────────────────
+#
+# Steps to create the tunnel (one-time):
+#   1. cloudflared tunnel login
+#   2. cloudflared tunnel create qc-hub
+#      → Note the tunnel UUID printed to the console
+#   3. A credential JSON is saved to:
+#         C:\Users\vdiuser\.cloudflared\<tunnel-uuid>.json
+#      This file contains a secret — DO NOT commit it.
+#   4. Copy this template, fill in tunnel UUID and hostname below.
+#   5. Save the filled file locally — DO NOT commit the filled copy.
+#
+# To run:
+#   cloudflared tunnel --config <path-to-filled-config.yml> run
+#
+# To add to Task Scheduler (see qc-hub-deployment.md § Task Scheduler):
+#   Action:  C:\tools\cloudflared.exe tunnel --config <path-to-filled-config.yml> run
+#   Trigger: At startup (or At log on if non-interactive not needed)
+
+tunnel: <tunnel-uuid>
+credentials-file: C:\Users\vdiuser\.cloudflared\<tunnel-uuid>.json
+
+ingress:
+  - hostname: <qc-hub-subdomain>.<your-domain>
+    service: http://localhost:4321
+    originRequest:
+      noTLSVerify: false
+  - service: http_status:404
