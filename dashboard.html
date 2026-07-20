@@ -1514,7 +1514,7 @@ function render(data,_skipStore){
   const platsSet=uniq(DELIV.map(d=>platformOf(d.brand)).filter(Boolean));
   const teamUtil=calcWeeklyTeamUtil();
 
-  const ts=new Date(data.lastUpdated);
+  const ts=new Date();  // stamp with current time so Refresh button always shows when user last fetched
   const dStr=fmtDate(ts);
   const tStr=fmtTime(ts);
   document.getElementById('sub').textContent=`Operations overview · ${rangeNote()}`;
@@ -2628,20 +2628,18 @@ loadData();
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>
 <script>
 (function initPicker(){
-  // All date math anchored to GMT+8 (MYT) — system timezone is irrelevant.
+  // Compute today's calendar date in GMT+8 regardless of the system/browser timezone.
   function toMYT(ms){const d=new Date(ms!=null?ms:Date.now());return new Date(d.getTime()+(d.getTimezoneOffset()+480)*60000);}
-  // Noon MYT = 04:00 UTC. Litepicker normalises any Date to its UTC midnight, so passing noon MYT
-  // gives Litepicker the correct UTC day (avoids the midnight UTC ≡ prior-day MYT boundary shift).
-  function noon(myt){return new Date(Date.UTC(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate(),4));}
-  // Midnight / end-of-day expressed in UTC so fmtDate() renders the right MYT calendar day.
-  function midMYT(y,mo,d){return new Date(Date.UTC(y,mo,d)-28800000);}   // 00:00 MYT
-  function eodMYT(y,mo,d){return new Date(Date.UTC(y,mo,d,15,59,59,999));} // 23:59:59 MYT
+  // Build a LOCAL-midnight Date from MYT calendar components — Litepicker stores dates in LOCAL time,
+  // so getDate()/setHours(0,0,0,0) in the 'selected' handler will give the right day boundary.
+  function ld(y,mo,d){return new Date(y,mo,d);}
   function weekStart(){
-    const d=toMYT(),day=d.getUTCDay(),diff=d.getUTCDate()-(day===0?6:day-1);
-    return noon(new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),diff)));
+    const m=toMYT(),day=m.getUTCDay(),diff=m.getUTCDate()-(day===0?6:day-1);
+    return ld(m.getUTCFullYear(),m.getUTCMonth(),diff);
   }
-  const tMYT=toMYT(), yMYT=toMYT(Date.now()-864e5);
-  const today=noon(tMYT), yest=noon(yMYT);
+  const myt=toMYT();
+  const today=ld(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate());
+  const yest=ld(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate()-1);
   const picker=new Litepicker({
     element:document.getElementById('date-btn'),
     singleMode:false,
@@ -2657,19 +2655,17 @@ loadData();
         'Today':[today,today],
         'Yesterday':[yest,yest],
         'This Week':[weekStart(),today],
-        'Last 7 Days':[noon(toMYT(Date.now()-6*864e5)),today],
-        'This Month':[noon(new Date(Date.UTC(tMYT.getUTCFullYear(),tMYT.getUTCMonth(),1))),today],
-        'Last 30 Days':[noon(toMYT(Date.now()-29*864e5)),today],
-        'Year to Date':[noon(new Date(Date.UTC(tMYT.getUTCFullYear(),0,1))),today],
+        'Last 7 Days':[ld(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate()-6),today],
+        'This Month':[ld(myt.getUTCFullYear(),myt.getUTCMonth(),1),today],
+        'Last 30 Days':[ld(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate()-29),today],
+        'Year to Date':[ld(myt.getUTCFullYear(),0,1),today],
       },
     },
     setup(p){
       p.on('selected',(d1,d2)=>{
-        // dateInstance is midnight UTC of the noon-MYT date we passed → getUTC* gives correct MYT day
-        const y1=d1.dateInstance.getUTCFullYear(),mo1=d1.dateInstance.getUTCMonth(),da1=d1.dateInstance.getUTCDate();
-        const y2=d2.dateInstance.getUTCFullYear(),mo2=d2.dateInstance.getUTCMonth(),da2=d2.dateInstance.getUTCDate();
-        _filterFrom=midMYT(y1,mo1,da1);
-        _filterTo=eodMYT(y2,mo2,da2);
+        // Litepicker stores dates as LOCAL-midnight; setHours gives correct LOCAL day boundaries
+        const f=new Date(d1.dateInstance);f.setHours(0,0,0,0);_filterFrom=f;
+        const t=new Date(d2.dateInstance);t.setHours(23,59,59,999);_filterTo=t;
         document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
       });
@@ -2680,10 +2676,9 @@ loadData();
       });
     },
   });
-  const ws=weekStart();
-  picker.setDateRange(ws,today);
-  _filterFrom=midMYT(ws.getUTCFullYear(),ws.getUTCMonth(),ws.getUTCDate());
-  _filterTo=eodMYT(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate());
+  picker.setDateRange(weekStart(),today);
+  const f=new Date(weekStart());f.setHours(0,0,0,0);_filterFrom=f;
+  const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
   document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
 })();
 
