@@ -119,7 +119,7 @@ export const BRAND_TO_SITE = {
   'WS1-TH':    { platform: 'igmp', siteId: 'ws1-v3-th', merchantName: 'MB8'    },
   'WS1-KH':    { platform: 'igmp', siteId: 'ws1-v3-kh', merchantName: 'MB8'    },
   'WS2':       { platform: 'igmp', siteId: 'ws2',       merchantName: 'RWS77'  },
-  // WS1 V4 (cms.best-in-asia.com, unified multi-country) NOT in this scope —
+  // WS1 V4 (cms.toffeemace.com, unified multi-country) NOT in this scope —
   // separate BO software with its own API surface.
 };
 

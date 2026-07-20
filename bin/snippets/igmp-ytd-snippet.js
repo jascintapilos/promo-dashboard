@@ -3,8 +3,8 @@
  *
  * Usage:
  *   1. Log into the iGMP kiosk in Chrome
- *      (kioskmy/kiosksg/kioskid/kioskth/kioskkh.best-in-asia.com
- *       or ws2-kioskmy.best-in-asia.com)
+ *      (kioskmy/kiosksg/kioskid/kioskth/kioskkh.nougatsage.com
+ *       or ws2-kioskmy.nougatsage.com)
  *   2. Open DevTools → Console
  *   3. Paste this whole file + press Enter
  *   4. Wait ~10-30 sec, results print to console
