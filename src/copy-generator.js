@@ -356,7 +356,7 @@ const COPY = {
     deposit: {
       EN: {
         dialog: { title: 'VIP Exclusive Gift', hook: 'Deposit now and claim your exclusive bonus' },
-        mt:     { subject: 'Your Exclusive Reward is Here', intro: 'A special bonus has been reserved just for you. Deposit now to unlock your exclusive reward and make the most of every ringgit.' },
+        mt:     { subject: 'Your Exclusive Reward is Here', intro: 'A special bonus has been reserved just for you. Deposit now to unlock your exclusive reward and make every deposit count.' },
       },
       ZH: {
         dialog: { title: 'VIP尊享礼遇', hook: '立即存款，领取您的专属奖金' },
