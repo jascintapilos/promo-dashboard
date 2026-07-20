@@ -93,6 +93,18 @@
       </section>
     </main>
 
+    <div id="promptModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
+      <div class="modal-box">
+        <h2 id="promptModalTitle" style="margin-bottom:8px">Fix with Claude</h2>
+        <p class="muted" style="margin:0 0 12px">Copy this prompt and paste it into a new Claude conversation.</p>
+        <pre id="promptText" class="prompt-text"></pre>
+        <div class="modal-actions">
+          <button id="copyPromptBtn" class="primary" type="button">Copy Prompt</button>
+          <button id="closePromptBtn" class="secondary" type="button">Close</button>
+        </div>
+        <p id="copiedConfirm" class="copy-confirm hidden">Copied to clipboard.</p>
+      </div>
+    </div>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
