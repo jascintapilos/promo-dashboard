@@ -7,6 +7,7 @@ import {
   makeSessionCookie,
   readSession,
   SESSION_MAX_AGE_MS,
+  validateProductionConfig,
   validateTokenData,
 } from '../src/qc-dashboard/auth.js';
 import { buildBrandList } from '../src/qc-dashboard/brand-config.js';
@@ -39,16 +40,50 @@ test('correct Google token audience is accepted', () => {
   assert.equal(result.email, 'user@thebrandingpeople.co');
 });
 
+test('null clientId is always rejected (fail-closed)', () => {
+  const allow = new Set(['user@thebrandingpeople.co']);
+  const data = { email: 'user@thebrandingpeople.co', email_verified: 'true', aud: 'any', name: 'U' };
+  assert.throws(() => validateTokenData(data, allow, null), /GOOGLE_CLIENT_ID/i);
+});
+
 test('email outside admitted domain is rejected', () => {
   const allow = new Set(['user@thebrandingpeople.co']);
   const data = { email: 'user@gmail.com', email_verified: 'true', aud: 'cid', name: 'U' };
-  assert.throws(() => validateTokenData(data, allow, null), /domain/i);
+  assert.throws(() => validateTokenData(data, allow, 'cid'), /domain/i);
 });
 
 test('email not in allowlist is rejected', () => {
   const allow = new Set(['other@thebrandingpeople.co']);
   const data = { email: 'user@thebrandingpeople.co', email_verified: 'true', aud: 'cid', name: 'U' };
-  assert.throws(() => validateTokenData(data, allow, null), /allowlist/i);
+  assert.throws(() => validateTokenData(data, allow, 'cid'), /allowlist/i);
+});
+
+test('validateProductionConfig throws when GOOGLE_CLIENT_ID is missing outside dev mode', () => {
+  const origClientId = process.env.GOOGLE_CLIENT_ID;
+  const origMode = process.env.AUTH_MODE;
+  process.env.AUTH_MODE = 'production';
+  process.env.GOOGLE_CLIENT_ID = '';
+  try {
+    assert.throws(() => validateProductionConfig(), /GOOGLE_CLIENT_ID/i);
+  } finally {
+    if (origClientId != null) process.env.GOOGLE_CLIENT_ID = origClientId;
+    else process.env.GOOGLE_CLIENT_ID = '';
+    process.env.AUTH_MODE = origMode || '';
+  }
+});
+
+test('validateProductionConfig passes in dev mode without GOOGLE_CLIENT_ID', () => {
+  const origClientId = process.env.GOOGLE_CLIENT_ID;
+  const origMode = process.env.AUTH_MODE;
+  process.env.AUTH_MODE = 'dev';
+  process.env.GOOGLE_CLIENT_ID = '';
+  try {
+    assert.doesNotThrow(() => validateProductionConfig());
+  } finally {
+    if (origClientId != null) process.env.GOOGLE_CLIENT_ID = origClientId;
+    else process.env.GOOGLE_CLIENT_ID = '';
+    process.env.AUTH_MODE = origMode || '';
+  }
 });
 
 // ── Session expiry ────────────────────────────────────────────────────────────

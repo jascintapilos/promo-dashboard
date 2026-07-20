@@ -68,17 +68,22 @@ export function isLocalhost(req) {
   return ['localhost', '127.0.0.1', '::1'].includes(host) || ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote);
 }
 
-/**
- * Pure token-data validator — separated so it can be unit-tested without network calls.
- * allowSet: Set<string> of lowercase admitted emails.
- * clientId: expected OAuth audience; if null/undefined, audience check is skipped with a console warning.
- */
+export function validateProductionConfig() {
+  if (process.env.AUTH_MODE === 'dev') return;
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID is required outside AUTH_MODE=dev.\n' +
+      'Set it via the GOOGLE_CLIENT_ID environment variable.\n' +
+      'To run locally without OAuth, set AUTH_MODE=dev.',
+    );
+  }
+}
+
 export function validateTokenData(data, allowSet, clientId) {
   if (!data.email || data.email_verified !== 'true') throw new Error('Google token has no verified email');
-  if (clientId) {
-    if (String(data.aud) !== String(clientId)) {
-      throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
-    }
+  if (!clientId) throw new Error('GOOGLE_CLIENT_ID is required to validate token audience');
+  if (String(data.aud) !== String(clientId)) {
+    throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
   }
   if (!String(data.email).toLowerCase().endsWith('@thebrandingpeople.co')) {
     throw new Error('Email is outside admitted workspace domain');
@@ -93,8 +98,8 @@ export async function verifyGoogleIdToken(idToken) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
   if (!res.ok) throw new Error(`Google tokeninfo rejected token (${res.status})`);
   const data = await res.json();
-  const clientId = process.env.GOOGLE_CLIENT_ID || null;
-  if (!clientId) console.warn('[qc-hub] GOOGLE_CLIENT_ID not set — skipping audience check (configure before going live)');
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) throw new Error('GOOGLE_CLIENT_ID must be set in production — cannot verify token audience');
   return validateTokenData(data, admittedEmails(), clientId);
 }
 

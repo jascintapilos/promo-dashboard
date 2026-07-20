@@ -10,7 +10,7 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
-import { isLocalhost, loginFromRequest, makeSessionCookie, readSession } from '../src/qc-dashboard/auth.js';
+import { isLocalhost, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,6 +18,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public', 'qc-hub');
 const PORT = Number(process.env.PORT || 4321);
 
+validateProductionConfig();
 loadQcBrandConfig();
 
 function send(res, status, data, headers = {}) {
