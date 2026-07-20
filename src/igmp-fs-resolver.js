@@ -111,7 +111,33 @@ export async function resolveGameId(siteId, gameHint, { providerId } = {}) {
     ? games
     : games.filter((g) => String(g.ProductId) === String(providerId));
 
-  const hit = _matchGameFromPool(pool, gameHint);
+  // Pass 1: exact VendorDisplayCode
+  let hit = pool.find((g) => String(g.VendorDisplayCode || '').toLowerCase() === hint);
+  // Pass 1.5 (WS1/MB8 only): prefer the MB8-branded skin when one exists.
+  // On MB8 kiosks the generic Pragmatic variant (e.g. "Gates of Olympus" /
+  // vs20olympgate) rejects the operator's free-spin bet levels (0.40/spin),
+  // while the MB8-branded clone ("MB8 Gates of Olympus" / vs20mb88gates)
+  // accepts them and is what live promos use. An explicit VendorDisplayCode
+  // hint (Pass 1) still wins — so --fs-game overrides are honoured — and this
+  // falls through to the generic name match below when no MB8 skin exists for
+  // the requested game. See memory/project_igmp_fs_mb8_game_skin.md.
+  if (!hit && String(siteId || '').startsWith('ws1') && !hint.startsWith('mb8 ')) {
+    const mb8Name = `mb8 ${hint}`;
+    hit = pool.find((g) => String(g.Name || '').toLowerCase() === mb8Name);
+  }
+  // Pass 2: exact Name
+  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase() === hint);
+  // Pass 3: Name contains hint
+  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(hint));
+  // Pass 4: strip a leading brand prefix (e.g. "MB8 Sugar Rush" → "Sugar Rush")
+  // so operator display names like "MB8 Sugar Rush" match catalog entry "Sugar Rush1".
+  if (!hit) {
+    const spaceIdx = hint.indexOf(' ');
+    if (spaceIdx > 0) {
+      const stripped = hint.slice(spaceIdx + 1);
+      hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(stripped));
+    }
+  }
 
   if (!hit) {
     const scope = providerId == null ? 'all providers' : `provider ${providerId}`;
