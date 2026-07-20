@@ -1,4 +1,4 @@
-// iGMP (best-in-asia) HTTP client — cookie-session based.
+// iGMP (nougatsage) HTTP client — cookie-session based.
 //
 // iGMP uses cookie auth (server-side session set by the standard browser
 // login form), not the AES-encrypted login flow the QPRO/QP2 client uses.
@@ -37,12 +37,12 @@ function cookieFromStore(siteId) {
 
 const IGMP_BASE_URLS = {
   // Promo-code BOs in scope per project_igmp_platform.md
-  'ws1-v3-my': 'https://kioskmy.best-in-asia.com',
-  'ws1-v3-sg': 'https://kiosksg.best-in-asia.com',
-  'ws1-v3-id': 'https://kioskid.best-in-asia.com',
-  'ws1-v3-th': 'https://kioskth.best-in-asia.com',
-  'ws1-v3-kh': 'https://kioskkh.best-in-asia.com',
-  'ws2':       'https://ws2-kioskmy.best-in-asia.com',
+  'ws1-v3-my': 'http://kioskmy.nougatsage.com',
+  'ws1-v3-sg': 'http://kiosksg.nougatsage.com',
+  'ws1-v3-id': 'http://kioskid.nougatsage.com',
+  'ws1-v3-th': 'http://kioskth.nougatsage.com',
+  'ws1-v3-kh': 'http://kioskkh.nougatsage.com',
+  'ws2':       'http://ws2-kioskmy.nougatsage.com',
 };
 
 export function igmpBaseUrl(siteId) {

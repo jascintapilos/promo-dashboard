@@ -25,7 +25,7 @@
 //   --commit              live upload via Directus API
 //   --tag=<label>         extra label for image subfolder search (e.g. TEST)
 //
-// API shape (Directus, cms.best-in-asia.com)
+// API shape (Directus, cms.toffeemace.com)
 // ──────────────────────────────────────────
 //   1. POST /files                                → upload image → UUID
 //   2. POST /items/UICarousel_images              → slide row
@@ -59,8 +59,8 @@ const CAROUSEL_IDS = {
 };
 
 const CMS_HOST = {
-  ws1: 'https://cms.best-in-asia.com',
-  ws2: 'https://ws2-cms.best-in-asia.com',
+  ws1: 'https://cms.toffeemace.com',
+  ws2: 'https://ws2-cms.toffeemace.com',
 };
 
 // Locales per region. MY supports EN+ZH confirmed by vendor delivery.
