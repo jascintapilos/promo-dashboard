@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const BASE = 'https://kioskmy.best-in-asia.com';
+const BASE = 'http://kioskmy.nougatsage.com';
 const store = JSON.parse(readFileSync(path.resolve('igmp-sessions.local.json'), 'utf8'));
 const saved = store.sessions?.['ws1-v3-my'];
 const browser = await chromium.launch({ headless: true, channel: 'chrome' });

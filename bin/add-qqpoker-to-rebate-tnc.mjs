@@ -47,12 +47,12 @@ const QP2_JOBS = [
 
 // ── WS1/WS2 targets ─────────────────────────────────────────────────────────
 const BIA_JOBS = [
-  { siteId: 'ws1', host: 'https://cms.best-in-asia.com',     promoId: 8,   region: 'MYS' },
-  { siteId: 'ws1', host: 'https://cms.best-in-asia.com',     promoId: 226, region: 'THA' },
-  { siteId: 'ws1', host: 'https://cms.best-in-asia.com',     promoId: 185, region: 'SGP' },
-  { siteId: 'ws1', host: 'https://cms.best-in-asia.com',     promoId: 216, region: 'KHM' },
-  { siteId: 'ws1', host: 'https://cms.best-in-asia.com',     promoId: 195, region: 'IDN' },
-  { siteId: 'ws2', host: 'https://ws2-cms.best-in-asia.com', promoId: 8,   region: 'MYS' },
+  { siteId: 'ws1', host: 'https://cms.toffeemace.com',     promoId: 8,   region: 'MYS' },
+  { siteId: 'ws1', host: 'https://cms.toffeemace.com',     promoId: 226, region: 'THA' },
+  { siteId: 'ws1', host: 'https://cms.toffeemace.com',     promoId: 185, region: 'SGP' },
+  { siteId: 'ws1', host: 'https://cms.toffeemace.com',     promoId: 216, region: 'KHM' },
+  { siteId: 'ws1', host: 'https://cms.toffeemace.com',     promoId: 195, region: 'IDN' },
+  { siteId: 'ws2', host: 'https://ws2-cms.toffeemace.com', promoId: 8,   region: 'MYS' },
 ];
 
 // ── Patch functions ─────────────────────────────────────────────────────────

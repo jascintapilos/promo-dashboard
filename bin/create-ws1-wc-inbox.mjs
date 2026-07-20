@@ -18,8 +18,8 @@ const commit = process.argv.includes('--commit');
 const SESSIONS = JSON.parse(readFileSync('./igmp-sessions.local.json', 'utf8'));
 
 const SITES = [
-  { key: 'ws1-v3-my', origin: 'https://kioskmy.best-in-asia.com', ccy: 'MYR' },
-  { key: 'ws1-v3-sg', origin: 'https://kiosksg.best-in-asia.com', ccy: 'SGD' },
+  { key: 'ws1-v3-my', origin: 'http://kioskmy.nougatsage.com', ccy: 'MYR' },
+  { key: 'ws1-v3-sg', origin: 'http://kiosksg.nougatsage.com', ccy: 'SGD' },
 ];
 
 const PROMOS = [

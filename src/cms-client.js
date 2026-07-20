@@ -1,10 +1,10 @@
 // Directus CMS client for the WS1 (MB8) + WS2 (RWS77) banner CMSs on
-// best-in-asia.com. Email/password auth → short-lived access_token.
+// toffeemace.com. Email/password auth → short-lived access_token.
 //
 // Credentials: cms-creds.local.json (gitignored)
 //   { "email": "...", "password": "...",
-//     "hosts": { "MB8": "https://cms.best-in-asia.com",
-//                "RWS77": "https://ws2-cms.best-in-asia.com" } }
+//     "hosts": { "MB8": "https://cms.toffeemace.com",
+//                "RWS77": "https://ws2-cms.toffeemace.com" } }
 
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';

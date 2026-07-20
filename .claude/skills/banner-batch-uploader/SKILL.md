@@ -35,7 +35,7 @@ Before touching the BO:
 3. Surface missing and unsupported up front — don't try to plough through. Unsupported means the brand has no `bo-sites.json` entry yet (SBO28, WARUNG18, UG02, MENANG7, QPLY) or is the WS1 Classic MB8 kiosk (out of scope).
 4. For each found B-ID, confirm the row's `status` is `QC Completed` — banners in `Banner Requested`, `Pending PSD`, or `Waiting for Translation` are not ready to upload. Surface and skip.
 5. Confirm the user has the asset zip ready, or note that you'll prompt per B-ID.
-6. **Verify Chrome allowlist (BIA only).** QPRO/QP2 upload is pure API (`bin/upload-promo.js`) and needs no Chrome. For BIA (WS1/WS2), the `BO Access` Chrome MCP extension must have allowlisted: `cms.best-in-asia.com` (WS1), `ws2-cms.best-in-asia.com` (WS2 — first-use needs whitelist). This is only needed for one-off admin tasks (e.g. carousel-ID discovery, activating a carousel item) — normal upload/commit runs are also API-direct and need no Chrome.
+6. **Verify Chrome allowlist (BIA only).** QPRO/QP2 upload is pure API (`bin/upload-promo.js`) and needs no Chrome. For BIA (WS1/WS2), the `BO Access` Chrome MCP extension must have allowlisted: `cms.toffeemace.com` (WS1), `ws2-cms.toffeemace.com` (WS2 — first-use needs whitelist). This is only needed for one-off admin tasks (e.g. carousel-ID discovery, activating a carousel item) — normal upload/commit runs are also API-direct and need no Chrome.
 
 ## What to gather from the user
 
@@ -251,7 +251,7 @@ After each B-ID's `--commit` run succeeds (banner/carousel record created, `stat
 
 ## Gotchas
 
-1. **Domain allowlist** — each Directus host (`cms.best-in-asia.com`, `ws2-cms.best-in-asia.com`) must be in the Claude-in-Chrome extension's allowed sites. First-use of `ws2-cms` will need user-side allowlist.
+1. **Domain allowlist** — each Directus host (`cms.toffeemace.com`, `ws2-cms.toffeemace.com`) must be in the Claude-in-Chrome extension's allowed sites. First-use of `ws2-cms` will need user-side allowlist.
 2. **Session expiry** — if a JS fetch probe fails, don't loop; that's a sign the session is dying. Switch back to DOM-only.
 3. **Banner image dimensions** — confirmed MB8 MYS uses **1280×320** per locale (single image per slot, English only). Other MB8 regions TBD; confirm with user once per region.
 4. **`promotionData` is readable** via API (`/items/promotionData?...`) — use it to look up the slug for Link URL when the brief is unclear. Fields seen: `promotionCode`, `promotionId`, `promotionName`, `regionCode`, `id`.
