@@ -801,7 +801,17 @@ async function buildSmsTemplateBody(resolved, brand) {
       message: copy.message,
     };
   }
-  if (Object.keys(details).length === 0) return null;
+  // hasSmsRequirement() was true and this isn't Cashback, yet buildSmsLocaleCopy()
+  // produced nothing for any locale (e.g. bonus_type didn't match one of its
+  // known branches, or a required field like to_multiplier/spin_count/
+  // free_credit_amount/bonus_rate_pct was null) — SMS was required but silently
+  // never gets built. Warn loudly so this doesn't look identical to "not
+  // required"; Pre-QC/Sentinel also check for this downstream (see
+  // .claude/agents/promo-qc.md / sentinel.md "SMS linkage").
+  if (Object.keys(details).length === 0) {
+    console.warn(`⚠ SMS required for ${resolved.promo_code} (bonus_type="${resolved.bonus_type}") but buildSmsLocaleCopy() produced no message for any locale in [${(resolved.locales || []).join(', ')}] — check to_multiplier/spin_count/free_credit_amount/bonus_rate_pct are set. SMS template will NOT be created.`);
+    return null;
+  }
   return {
     name: resolved.promo_code,
     section: Number(MSG_TEMPLATE_SECTION_PROMOTIONS),
@@ -867,7 +877,15 @@ export async function buildDialogPopupBody(resolved, brand) {
       cta_button_link_2: ctaRightLink,
     };
   }
-  if (Object.keys(contents).length === 0) return null;
+  // popup_dialog was true and this isn't Cashback, yet renderDialogBody()
+  // produced no content for any locale (e.g. bonus_type didn't resolve to a
+  // supported dialog-body slug) — a popup was requested but silently never
+  // gets built. Warn loudly; Pre-QC/Sentinel also check dialog linkage
+  // downstream.
+  if (Object.keys(contents).length === 0) {
+    console.warn(`⚠ Dialog popup requested for ${resolved.promo_code} (bonus_type="${resolved.bonus_type}") but renderDialogBody() produced no content for any locale in [${(resolved.locales || []).join(', ')}] — check bonus_type maps to a supported dialog-body slug. Dialog popup will NOT be created.`);
+    return null;
+  }
 
   return {
     platform: 1,

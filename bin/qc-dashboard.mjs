@@ -10,7 +10,7 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
-import { loginFromRequest, makeSessionCookie, readSession } from '../src/qc-dashboard/auth.js';
+import { isLocalhost, loginFromRequest, makeSessionCookie, readSession } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -63,10 +63,29 @@ function requireSession(req, res) {
   return user;
 }
 
+function checkCsrf(req, res) {
+  if (process.env.AUTH_MODE === 'dev') return true;
+  const origin = req.headers.origin;
+  if (!origin) return true; // same-origin requests without Origin header are tolerated
+  const host = req.headers.host || '';
+  try {
+    const oHost = new URL(origin).host;
+    if (oHost !== host) {
+      send(res, 403, { error: `CSRF: origin "${origin}" does not match host "${host}"` });
+      return false;
+    }
+  } catch {
+    send(res, 403, { error: 'CSRF: invalid Origin header' });
+    return false;
+  }
+  return true;
+}
+
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
+  if (req.method === 'POST' && !checkCsrf(req, res)) return;
   if (req.method === 'GET' && url.pathname === '/api/history') {
     return send(res, 200, await queryHistory({
       brand: url.searchParams.get('brand') || '',
@@ -84,7 +103,7 @@ async function handleApi(req, res, user) {
     const brands = buildBrandList();
     const selected = brands.find((b) => b.id === brand);
     if (!selected) return send(res, 400, { error: `Unknown brand ${brand}` });
-    if (!selected.enabled) return send(res, 400, { error: `${brand} is coming soon in the MVP` });
+    if (!selected.enabled) return send(res, 400, { error: `${brand} is not enabled — coming soon` });
     const settled = await Promise.allSettled(codes.map(async (code) => {
       const codeStarted = Date.now();
       const duplicateRecent = await findDuplicateRecent({ brand, code });
@@ -139,9 +158,16 @@ async function handleApi(req, res, user) {
 async function handle(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (req.method === 'GET' && url.pathname === '/api/config') {
+      return send(res, 200, {
+        googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+        devMode: process.env.AUTH_MODE === 'dev',
+      });
+    }
     if (req.method === 'POST' && url.pathname === '/auth/login') {
       const user = await loginFromRequest(req, await readJson(req));
-      return send(res, 200, { user }, { 'set-cookie': makeSessionCookie(user) });
+      const secure = !isLocalhost(req);
+      return send(res, 200, { user }, { 'set-cookie': makeSessionCookie(user, { secure }) });
     }
     if (req.method === 'POST' && url.pathname === '/auth/logout') {
       return send(res, 200, { ok: true }, { 'set-cookie': 'qc_hub_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });

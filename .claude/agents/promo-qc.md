@@ -47,6 +47,7 @@ Validate:
 * Validity period configured
 * Reward settings populated
 * Dialog linkage present
+* SMS linkage present (if applicable)
 * Provider assignment present (if applicable)
 * Promotion linkage present (if applicable)
 
@@ -91,7 +92,7 @@ Read ONLY that file. Return the JSON.
 The plan bundle is a self-contained JSON file containing:
 
 - `source` — the approved request fields
-- `plan` — the structured API bodies that WOULD be POSTed (`promotion`, `messageTemplate`, `dialogPopup`, `names`, `update`, `tierConstraint`, `categoriesOnly`, `currencyFilter`)
+- `plan` — the structured API bodies that WOULD be POSTed (`promotion`, `messageTemplate`, `smsTemplate`, `dialogPopup`, `names`, `update`, `tierConstraint`, `categoriesOnly`, `currencyFilter`)
 - `bonus_type`, `bonus_sub_type`, `brand`, `platform`, `site`, `promo_code`
 
 **Strict execution rules — non-negotiable:**
@@ -129,6 +130,7 @@ Each row below maps a responsibility to the bundle's field path. FAIL if the fie
 | Validity days match source | `plan.promotion.validity` and `reward_validity` | WARNING if `validity` ≠ `source.validity_days` or `reward_validity` ≠ `source.rewards_validity_days`; note known code bug: validity=expiry after claim, reward_validity=claim window before claim — values may appear swapped |
 | Per-currency amounts correct | `plan.promotion.promotion_currency_list[]` rows | FAIL if any currency row has a different `bonus_rate_pct`, `max_bonus`, or `free_credit_amount` than source.parsed or source.per_currency_overrides for that currency |
 | Dialog linkage present | `plan.dialogPopup` (if expected per `source.instructions.popup_dialog`) | popup_dialog requested but `plan.dialogPopup` is null |
+| SMS linkage present | `plan.smsTemplate` (if expected per `source.instructions.sms_required`) | **QPRO/QP2 only — skip entirely on WS1/WS2/IGMP.** SMS is not a plan-field concept there; a true `sms_required` on IGMP means manual handling outside this pipeline, not a missing `plan.smsTemplate`. On QPRO/QP2: FAIL if `source.instructions.sms_required` is true, `bonus_type` is not Cashback, and `plan.smsTemplate` is null — `buildSmsTemplateBody()`/`buildSmsLocaleCopy()` in `src/api-mapper-qp2.js` / `src/api-mapper-qpro.js` can silently return null per-locale (e.g. a required numeric field like `to_multiplier` or `spin_count` missing for that bonus_type), producing an SMS-less save indistinguishable from "not required." WARNING (never a silent pass) if `sms_required` is true and `bonus_type` IS Cashback — SMS templates are never built for Cashback by design, so this is a real, detectable contradiction the operator should still see. |
 | Provider assignment present | FS: `plan.promotion.game_provider_codes` includes FS provider; Dep/FC: `plan.promotion.game_provider_ids` set per Layer-1 rules | empty when bonus_type requires provider scoping |
 | Category restriction requires provider restriction | `plan.categoriesOnly` AND (`plan.promotion.game_provider_ids` for QPRO, or `plan.promotion.game_provider_codes` for QP2) | **FAIL if `plan.categoriesOnly` is set (non-null, non-empty) but the corresponding game_provider_ids/game_provider_codes field is null or empty** — a category restriction without a matching provider restriction means members can transfer the bonus to any game provider, including those outside the restricted category. Both must be configured together for all bonus types (Dep, FC, FS). Root cause of WC_GLD_100FC_10X incident (Sports-only promo, all providers listed). |
 | Blacklist template assigned | `plan.promotion.blacklist_id` (QPRO and QP2 only — skip on IGMP) | FAIL if null or 0 — every QPRO/QP2 promo must have a blacklist template; a save without one will require a manual BO edit after Sentinel flags it post-save |
@@ -240,6 +242,7 @@ When `platform = "igmp"`, **ignore the QPRO/QP2 table above entirely.** Use only
 - **"Refresh button" clause on QPRO/QP2 — never flag as FAIL.** It is the native 8-clause template's own clause 7 on QPRO/QP2 (confirmed present verbatim on every passing QPRO/QP2 bundle checked to date). It is ONLY a leak concern when it appears on **WS1/WS2** (which use the 5-clause template and should never carry it) — see `feedback_ws1_qpro_template_leak.md`. Confirmed false positive 2026-07-09 (P028): an agent flagged it as a "banned WS1/QPRO-leak" FAIL on a QPRO bundle, when the identical clause appeared unflagged on a sibling QPRO bundle that PASSED.
 - **A single MY-only or SG-only IGMP site (WS1_MY, WS1_SG, WS2, etc.) showing only its own region's currency is not a gap — even when `source.regions`/`currencies` in the SAME bundle lists both.** IGMP is single-currency-per-site by design — do not flag "missing SGD" on a site whose `site` id/label has no SG counterpart (e.g. WS2 is RWS77 MY-only per `bo-sites.json`; there is no WS2_SG). The `source` block inside every brand's bundle is a verbatim copy of the shared multi-brand request row — `source.regions: ["MY","SG"]` reflects the WHOLE request (because e.g. WS1 in the same request DOES support SG), not a claim that THIS specific brand must have SGD content. Confirmed false positive 2026-07-09 (P028) and recurred 2026-07-10 (P029) when an agent argued the shared-source-block field meant the brand itself was claiming SG scope — it wasn't; check the brand's actual site capability (`bo-sites.json` label), not the shared source block, before flagging a currency gap.
 - `tier_constraint` only applies to QP2 — never flag missing on QPRO.
+- `source.instructions.sms_required` on WS1/WS2/IGMP — not a plan-field concept there (no `plan.smsTemplate` equivalent exists on that platform's plan shape). Skip the SMS linkage check entirely on IGMP bundles; a true value there means manual handling outside this pipeline, not a missing plan field.
 - `plan.dialogPopup` null on IGMP — intentional; WS1/WS2 has no dialog popups.
 - Missing `promotion_currency_list` on IGMP — intentional; single currency per site.
 - Missing `merchant_ids` on IGMP — intentional; site-level scoping.

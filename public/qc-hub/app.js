@@ -19,15 +19,64 @@ async function api(path, opts = {}) {
   return data;
 }
 
+function waitForGoogle() {
+  if (typeof google !== 'undefined' && google.accounts) return Promise.resolve();
+  return new Promise((resolve) => {
+    const iv = setInterval(() => {
+      if (typeof google !== 'undefined' && google.accounts) { clearInterval(iv); resolve(); }
+    }, 80);
+  });
+}
+
 async function ensureLogin() {
+  // Try existing valid session first.
   try {
     const me = await api('/api/me');
     state.user = me.user;
-  } catch {
+    $('signedIn').textContent = state.user.email;
+    return;
+  } catch {}
+
+  const cfg = await fetch('/api/config').then((r) => r.json());
+
+  if (cfg.devMode) {
+    // Dev bypass — localhost only; server enforces the restriction.
     const login = await api('/auth/login', { method: 'POST', body: JSON.stringify({}) });
     state.user = login.user;
+    $('signedIn').textContent = state.user.email;
+    return;
   }
-  $('signedIn').textContent = state.user.email;
+
+  // Production: Google Sign-In.
+  $('loginOverlay').classList.remove('hidden');
+  await waitForGoogle();
+
+  await new Promise((resolve, reject) => {
+    function onCredential(response) {
+      api('/auth/login', { method: 'POST', body: JSON.stringify({ credential: response.credential }) })
+        .then((data) => {
+          state.user = data.user;
+          $('signedIn').textContent = state.user.email;
+          $('loginOverlay').classList.add('hidden');
+          resolve();
+        })
+        .catch((err) => {
+          const el = $('loginError');
+          el.textContent = err.message || 'Sign-in failed — check your account has been admitted.';
+          el.classList.remove('hidden');
+          // Re-render button so the user can retry.
+          google.accounts.id.renderButton($('googleBtn'), { theme: 'outline', size: 'large' });
+        });
+    }
+
+    if (!cfg.googleClientId) {
+      reject(new Error('GOOGLE_CLIENT_ID is not configured on the server.'));
+      return;
+    }
+
+    google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: onCredential });
+    google.accounts.id.renderButton($('googleBtn'), { theme: 'outline', size: 'large' });
+  });
 }
 
 const CODE_BOX_IDS = ['promoCode1', 'promoCode2', 'promoCode3', 'promoCode4', 'promoCode5'];
@@ -143,8 +192,8 @@ function renderCell(result, column) {
     }));
   const chipHtml = chips.map((chip) => (
     `<span class="chip ${chip.severity === 'FAIL' ? 'not-safe' : 'review'}">${chip.label}</span>`
-  )).join('');
-  return `<td class="${column.mono ? 'mono-cell' : 'name-cell'}"><span>${escapeHtml(value)}</span>${chipHtml}</td>`;
+  )).join(' ');
+  return `<td class="${column.mono ? 'mono-cell' : 'name-cell'}"><span>${escapeHtml(value)}</span>${chipHtml ? ' ' + chipHtml : ''}</td>`;
 }
 
 function renderDetailsTable() {

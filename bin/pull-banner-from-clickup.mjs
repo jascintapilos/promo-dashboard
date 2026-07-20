@@ -7,6 +7,7 @@
 //   node bin/pull-banner-from-clickup.mjs --bid=B50           ← auto-resolves task from Banner Schedule
 //   node bin/pull-banner-from-clickup.mjs --bid=B50 --dry-run
 //   node bin/pull-banner-from-clickup.mjs --task=86d3ay50u --banner-dir=D:/Banners
+//   node bin/pull-banner-from-clickup.mjs --bid=B50 --month="July 2026"  ← override month tab used to resolve --bid
 //
 // Filename conventions supported:
 //   QPRO/QP2:  qpro4-ye55-mup-pp-daily-wins-960x400-my-en.jpg   (up/mup split)
@@ -41,12 +42,13 @@ const args = Object.fromEntries(
 
 let taskId = args['task'];
 const bid   = args['bid'] ? String(args['bid']).toUpperCase() : null;
+const monthOverride = args['month'] ? String(args['month']) : null;
 
 // Auto-resolve --bid → task ID from Banner Schedule
 if (!taskId && bid) {
   console.log(`[pull-banner] Looking up ClickUp task for ${bid} in Banner Schedule...`);
   const sheetsClient = await getSheetsClient();
-  const tab = await resolveScheduleTab(sheetsClient);
+  const tab = await resolveScheduleTab(sheetsClient, { monthOverride });
   const links = await readBannerLinks(sheetsClient, [bid], tab);
   const entry = links.get(bid);
   if (!entry?.clickup_task_id) {
@@ -67,7 +69,9 @@ if (!taskId) {
 }
 const dryRun    = args['dry-run'] === true || args['dry-run'] === 'true';
 const tag       = args['tag'] ? String(args['tag']).toUpperCase() : null;
-const bannerDir = args['banner-dir'] || join(ROOT, 'Banner');
+// Keep the staging default aligned with upload-promo.js, which reads the
+// workspace-level Banner directory (the repository lives one level below it).
+const bannerDir = args['banner-dir'] || join(ROOT, '..', 'Banner');
 
 // ── Token ─────────────────────────────────────────────────────────────────────
 const tokenFile = join(ROOT, 'clickup-token.local.json');
@@ -84,10 +88,21 @@ async function getJson(url) {
   return res.json();
 }
 
-async function downloadBuffer(url) {
-  const res = await fetch(url, { headers: { Authorization: token } });
-  if (!res.ok) throw new Error(`Download failed ${res.status} — ${url}`);
-  return Buffer.from(await res.arrayBuffer());
+async function downloadBuffer(att) {
+  // ClickUp's attachment CDN can reject a plain URL even with the API token.
+  // Fall back to the signed URL returned alongside it by the task API.
+  const urls = [...new Set([att.url, att.url_w_query].filter(Boolean))];
+  let lastStatus = 'no attachment URL';
+  for (const url of urls) {
+    // Attachment URLs are signed CDN links on some workspaces and protected
+    // resources on others, so support both request styles.
+    for (const headers of [{ Authorization: token }, {}]) {
+      const res = await fetch(url, { headers });
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+      lastStatus = `${res.status} ${res.statusText}`;
+    }
+  }
+  throw new Error(`Download failed ${lastStatus}`);
 }
 
 // ── Filename parsers ──────────────────────────────────────────────────────────
@@ -420,11 +435,57 @@ if (dryRun) {
 const downloadedBuffers = new Map(); // att.id → Buffer
 let ok = 0, failed = 0;
 
+// Cache the Nextcloud listing ONCE per run (if a Banners share was found in
+// the task comments) so the per-attachment fallback below can match by
+// LOCALE rather than assuming an exact filename match — ClickUp-attached
+// filenames use a region-locale suffix (e.g. "-my-en.jpg") while
+// Nextcloud-hosted filenames use a locale-only suffix with a pixel-dimension
+// marker (e.g. "-1280x320px-en.jpg"), so exact-name matching between the two
+// sources essentially never succeeds. A listing failure here just leaves the
+// fallback unavailable for this run — it must not crash the download loop.
+let ncFileList = null;
+if (ncLinks.banners) {
+  try {
+    ncFileList = await nextcloudListImages(ncLinks.banners);
+  } catch (err) {
+    console.log(`[Nextcloud] Listing failed — fallback unavailable this run (${err.message})`);
+    ncFileList = null;
+  }
+}
+
 console.log(`Downloading ${bannerFiles.length} source file(s)...\n`);
 for (const att of bannerFiles) {
   process.stdout.write(`  ${att.title} (${Math.round(att.size / 1024)}KB) ... `);
   try {
-    const buf = await downloadBuffer(att.url);
+    let buf;
+    try {
+      buf = await downloadBuffer(att);
+    } catch (clickupError) {
+      if (!ncFileList) throw clickupError;
+
+      const locale = extractLocale(att.title);
+      if (!locale) {
+        throw new Error(
+          `ClickUp download failed (${clickupError.message}) and no locale suffix could be extracted ` +
+          `from "${att.title}" to match against the Nextcloud share`
+        );
+      }
+
+      const candidates = ncFileList.filter((f) => f.name.toLowerCase().includes(locale.toLowerCase()));
+      if (candidates.length === 1) {
+        buf = await nextcloudDownload(ncLinks.banners, candidates[0].name);
+      } else if (candidates.length === 0) {
+        throw new Error(
+          `ClickUp download failed (${clickupError.message}) and no Nextcloud file matching locale ` +
+          `"${locale}" was found in the share (${ncFileList.length} file(s) listed)`
+        );
+      } else {
+        throw new Error(
+          `ClickUp download failed (${clickupError.message}) and ${candidates.length} Nextcloud files ` +
+          `matched locale "${locale}" ambiguously — refusing to guess: ${candidates.map((f) => f.name).join(', ')}`
+        );
+      }
+    }
     downloadedBuffers.set(att.id, buf);
     console.log('OK');
   } catch (err) {

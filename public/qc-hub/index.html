@@ -5,8 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Promo QC Hub</title>
     <link rel="stylesheet" href="/styles.css">
+    <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
+    <div id="loginOverlay" class="login-overlay hidden">
+      <div class="login-box">
+        <h2 style="margin-bottom:8px">Promo QC Hub</h2>
+        <p class="muted" style="margin:0 0 20px">Sign in with your @thebrandingpeople.co account</p>
+        <div id="googleBtn"></div>
+        <p id="loginError" class="login-error hidden"></p>
+      </div>
+    </div>
     <header class="topbar">
       <h1>Promo QC Hub</h1>
       <span id="signedIn" class="signed-in">Signed out</span>

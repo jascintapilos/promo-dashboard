@@ -549,10 +549,22 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
     pp: 'PP2 - Pragmatic Play',
     pp2: 'PP2 - Pragmatic Play',
   };
+  // Explicit "Game Provider: X" label on its own comma/line-separated segment
+  // (distinct from the parenthetical/prefix conventions above) — seen first on
+  // P093: "Game: Mighty Hat: Lamp of Gold, Game Provider: Playtech". By this
+  // point `text` has already had all whitespace (including newlines) collapsed
+  // to single spaces (see the .replace(/\s+/g, ' ') above), so there's no line
+  // or comma boundary left to anchor a lazy capture on — match the known
+  // provider tokens directly instead of capturing free text.
+  const providerLabelMatch = text.match(/Game\s+Provider\s*:\s*(Pragmatic\s+Play\s*2|Pragmatic\s+Play|Pragmatic|Playtech|PP2|PP)\b/i);
+  if (providerLabelMatch) {
+    const norm = PROVIDER_ALIASES[providerLabelMatch[1].toLowerCase().replace(/\s+/g, ' ').trim()];
+    if (norm) parsed.game_provider = norm;
+  }
   const providerMatch = text.match(/\(\s*([A-Za-z][A-Za-z0-9\s]*?)\s*\)/);
   if (providerMatch) {
     const norm = PROVIDER_ALIASES[providerMatch[1].toLowerCase().trim()];
-    if (norm) parsed.game_provider = norm;
+    if (norm && !parsed.game_provider) parsed.game_provider = norm;
   }
   if (parsed.game) {
     const cleaned = String(parsed.game).replace(/^Game\s*:\s*/i, '').trim();
