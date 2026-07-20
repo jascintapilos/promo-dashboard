@@ -2663,9 +2663,11 @@ loadData();
     },
     setup(p){
       p.on('selected',(d1,d2)=>{
-        // Litepicker stores dates as LOCAL-midnight; setHours gives correct LOCAL day boundaries
-        const f=new Date(d1.dateInstance);f.setHours(0,0,0,0);_filterFrom=f;
-        const t=new Date(d2.dateInstance);t.setHours(23,59,59,999);_filterTo=t;
+        // Litepicker's DateTime wraps an inner dateInstance; use delegated getDate/Month/FullYear
+        // (not new Date(d1.dateInstance) which copies the outer super() timestamp, off by 1 on UTC+8)
+        const di1=d1.dateInstance,di2=d2.dateInstance;
+        _filterFrom=new Date(di1.getFullYear(),di1.getMonth(),di1.getDate(),0,0,0,0);
+        _filterTo=new Date(di2.getFullYear(),di2.getMonth(),di2.getDate(),23,59,59,999);
         document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
       });
