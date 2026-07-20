@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const SITE = 'ws1-v3-my';
-const BASE = 'https://kioskmy.best-in-asia.com';
+const BASE = 'http://kioskmy.nougatsage.com';
 const COMMIT = process.argv.includes('--commit');
 const ACTIVE_ONLY = process.argv.includes('--active-only');
 

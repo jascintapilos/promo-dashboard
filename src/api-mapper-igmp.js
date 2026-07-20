@@ -1,11 +1,11 @@
 import { buildTncRow, needsZh } from './igmp-tnc.js';
 import { splitDualPromoName } from './promo-namer.js';
 
-// API mapper for iGMP (WS1 V3 / WS2 — best-in-asia.com kiosk Back Office).
+// API mapper for iGMP (WS1 V3 / WS2 — nougatsage.com kiosk Back Office).
 //
 // Captured shapes: project_igmp_api_shapes.md.
-// Single mapper handles all locale BOs (kiosk{my,sg,id,th,kh}.best-in-asia.com)
-// and WS2 (ws2-kioskmy.best-in-asia.com) — Create*.js files are byte-identical
+// Single mapper handles all locale BOs (kiosk{my,sg,id,th,kh}.nougatsage.com)
+// and WS2 (ws2-kioskmy.nougatsage.com) — Create*.js files are byte-identical
 // across all three (md5 verified 2026-05-19).
 //
 // Per bonus_type, returns:

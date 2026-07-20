@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Replicate 10 FT_REL_TLEO_* codes to WS1 MY (kioskmy.best-in-asia.com).
+// Replicate 10 FT_REL_TLEO_* codes to WS1 MY (kioskmy.nougatsage.com).
 // Uses iGMP API path with the auto-T&C builder. Note: iGMP /PM/AddBonus has
 // no category-restriction field — LC/Slot narrowing isn't expressible at this
 // level (would be a separate game-restriction config). Promo description

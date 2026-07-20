@@ -103,8 +103,8 @@ const cmsMap = new Map();
 
 const creds = loadCmsCreds();
 const HOSTS = [
-  { brand:'WS1', host: creds.hosts?.MB8   || 'https://cms.best-in-asia.com' },
-  { brand:'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com' },
+  { brand:'WS1', host: creds.hosts?.MB8   || 'https://cms.toffeemace.com' },
+  { brand:'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.toffeemace.com' },
 ];
 process.stdout.write('Fetching CMS banners…\n');
 for (const { brand, host } of HOSTS) {

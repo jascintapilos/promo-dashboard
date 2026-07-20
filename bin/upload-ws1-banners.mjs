@@ -155,8 +155,8 @@ const CAROUSEL_IDS = {
 };
 
 const CMS_BASE = {
-  ws1: 'https://cms.best-in-asia.com',
-  ws2: 'https://ws2-cms.best-in-asia.com',
+  ws1: 'https://cms.toffeemace.com',
+  ws2: 'https://ws2-cms.toffeemace.com',
 };
 
 // Region code → URL prefix for Link URL slug
@@ -314,7 +314,7 @@ async function readScheduleRows(bIds) {
       continue;
     }
 
-    // Classic MB8 uses iGMP BO (kioskmy.best-in-asia.com), not Directus — out of scope
+    // Classic MB8 uses iGMP BO (kioskmy.nougatsage.com), not Directus — out of scope
     if (/classic/i.test(platform)) {
       console.log(`  [skip] ${bId} — "${platform}" is Classic MB8 (iGMP BO, not Directus). Out of scope for this script.`);
       continue;

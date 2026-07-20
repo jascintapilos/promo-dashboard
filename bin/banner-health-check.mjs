@@ -466,8 +466,8 @@ async function probeSite(site, scheduleIndex) {
 async function probeBiaSite(site, scheduleIndex) {
   const creds = loadCmsCreds();
   const host = site.id === 'ws2'
-    ? (creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com')
-    : (creds.hosts?.MB8   || 'https://cms.best-in-asia.com');
+    ? (creds.hosts?.RWS77 || 'https://ws2-cms.toffeemace.com')
+    : (creds.hosts?.MB8   || 'https://cms.toffeemace.com');
   const brandLabel = siteToLabel(site.id); // 'WS1' or 'WS2'
 
   const cms = await cmsClient(host, creds);

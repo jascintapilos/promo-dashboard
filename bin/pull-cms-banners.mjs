@@ -107,8 +107,8 @@ async function fetchCreatorMap(cms, fromDate) {
 
 const creds = loadCmsCreds();
 const HOSTS = [
-  { brand: 'WS1', host: creds.hosts?.MB8   || 'https://cms.best-in-asia.com',        slugPrefix: 'mb8-' },
-  { brand: 'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.best-in-asia.com',    slugPrefix: 'rws77-' },
+  { brand: 'WS1', host: creds.hosts?.MB8   || 'https://cms.toffeemace.com',        slugPrefix: 'mb8-' },
+  { brand: 'WS2', host: creds.hosts?.RWS77 || 'https://ws2-cms.toffeemace.com',    slugPrefix: 'rws77-' },
 ];
 
 const collected = [];
