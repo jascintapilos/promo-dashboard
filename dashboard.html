@@ -2663,11 +2663,12 @@ loadData();
     },
     setup(p){
       p.on('selected',(d1,d2)=>{
-        // Litepicker's DateTime wraps an inner dateInstance; use delegated getDate/Month/FullYear
-        // (not new Date(d1.dateInstance) which copies the outer super() timestamp, off by 1 on UTC+8)
         const di1=d1.dateInstance,di2=d2.dateInstance;
+        console.log('[selected] d1.getDate='+d1.getDate()+' di1.getDate='+di1.getDate()+' d1.getTime='+d1.getTime()+' di1.getTime='+di1.getTime());
+        console.log('[selected] d2.getDate='+d2.getDate()+' di2.getDate='+di2.getDate()+' d2.getTime='+d2.getTime()+' di2.getTime='+di2.getTime());
         _filterFrom=new Date(di1.getFullYear(),di1.getMonth(),di1.getDate(),0,0,0,0);
         _filterTo=new Date(di2.getFullYear(),di2.getMonth(),di2.getDate(),23,59,59,999);
+        console.log('[selected] _filterFrom='+_filterFrom.toISOString()+' _filterTo='+_filterTo.toISOString());
         document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
       });
