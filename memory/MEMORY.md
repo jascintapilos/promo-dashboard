@@ -137,6 +137,7 @@
 - [BO currency_id catalog](project_bo_currency_id_catalog.md) — MYR=1, SGD=3, IDR=4 on QPRO + QP2. THB/KHR/AUD unverified.
 - [Per-brand FS currency auto-filter](project_per_brand_currency_filter.md) — Drops unsupported currencies + tied locales at mapper-time.
 - [FS game-code resolver](project_fs_game_code_resolver.md) — /api/bo/gameprovider/freespingame/<code> + exact-stem-set match.
+- [PTI + PP FS Coins/Lines (QPRO/QP2 only)](project_fs_coins_lines_zero.md) — IGMP uses AmountPerBet/AmountPerLine; Coins/Lines are QPRO/QP2 concepts only.
 - [FS lines-per-spin resolver](project_fs_lines_resolver.md) — reader exposes raw amount_per_line + computed value_per_spin via vs<N> prefix + data/fs-games-lines.json.
 - [Blacklist Template resolver](project_blacklist_template_resolver.md) — QPRO /api/bo/blacklist; QP2 /api/bo/gameprovider/getAllBlacklistTemplate.
 - [Blacklist Template PUT API + qpro5 config](project_blacklist_template_put_api.md) — PUT /api/bo/blacklist/{id}. qpro5 LC+Slot (id=9) configured 2026-06-08.

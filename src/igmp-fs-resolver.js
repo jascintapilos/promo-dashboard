@@ -73,6 +73,32 @@ export async function resolveProviderId(siteId, providerHint) {
   return hit.Id;
 }
 
+// Pure game-matching function — resolves against a pre-fetched pool array.
+// Exported for tests so callers can inject synthetic pools without live BO calls.
+//
+// Accepts hints like "Gates of Olympus" (Name match), "vs20olympgate"
+// (VendorDisplayCode match), or "MB8 Gates of Olympus" (brand-prefix stripped).
+export function _matchGameFromPool(pool, gameHint) {
+  const hint = String(gameHint || '').trim().toLowerCase();
+  // Pass 1: exact VendorDisplayCode
+  let hit = pool.find((g) => String(g.VendorDisplayCode || '').toLowerCase() === hint);
+  // Pass 2: exact Name
+  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase() === hint);
+  // Pass 3: Name contains hint
+  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(hint));
+  // Pass 4: strip a leading brand prefix (e.g. "MB8 Gates of Olympus" → "Gates of Olympus").
+  // Try exact match FIRST — prevents "Gates of Olympus" from matching "Gates of Olympus 1000".
+  if (!hit) {
+    const spaceIdx = hint.indexOf(' ');
+    if (spaceIdx > 0) {
+      const stripped = hint.slice(spaceIdx + 1);
+      hit = pool.find((g) => String(g.Name || '').toLowerCase() === stripped);
+      if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(stripped));
+    }
+  }
+  return hit || null;
+}
+
 // Match game by Name (case-insensitive) within the optional provider.
 // Accepts game-name hints like "Gates of Olympus" or vendor codes like
 // "vs20olympgate" (which match against VendorDisplayCode).
@@ -80,27 +106,12 @@ export async function resolveGameId(siteId, gameHint, { providerId } = {}) {
   if (gameHint == null) {
     throw new Error('resolveGameId: gameHint is required');
   }
-  const hint = String(gameHint).trim().toLowerCase();
   const games = await getGames(siteId);
   const pool = providerId == null
     ? games
     : games.filter((g) => String(g.ProductId) === String(providerId));
 
-  // Pass 1: exact VendorDisplayCode
-  let hit = pool.find((g) => String(g.VendorDisplayCode || '').toLowerCase() === hint);
-  // Pass 2: exact Name
-  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase() === hint);
-  // Pass 3: Name contains hint
-  if (!hit) hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(hint));
-  // Pass 4: strip a leading brand prefix (e.g. "MB8 Sugar Rush" → "Sugar Rush")
-  // so operator display names like "MB8 Sugar Rush" match catalog entry "Sugar Rush1".
-  if (!hit) {
-    const spaceIdx = hint.indexOf(' ');
-    if (spaceIdx > 0) {
-      const stripped = hint.slice(spaceIdx + 1);
-      hit = pool.find((g) => String(g.Name || '').toLowerCase().includes(stripped));
-    }
-  }
+  const hit = _matchGameFromPool(pool, gameHint);
 
   if (!hit) {
     const scope = providerId == null ? 'all providers' : `provider ${providerId}`;
