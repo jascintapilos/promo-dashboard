@@ -216,6 +216,8 @@ function runCanary(job) {
     if (flags['parallel-qc']) args.push('--parallel-qc');
     // Forward allow-recreate so inactive promos can be recreated (QPRO honors it).
     if (flags['allow-recreate']) args.push('--allow-recreate');
+    // Forward allow-dup-name so smoke tests can bypass name-uniqueness gate (IGMP honors it).
+    if (flags['allow-dup-name']) args.push('--allow-dup-name');
     const siteTag = site ? `@${site.replace(/^ws1-v3-/, '')}` : '';
     const label = `${brand}${siteTag}${suffix || ''}`;
     const startedAt = Date.now();
