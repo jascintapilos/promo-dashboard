@@ -2628,11 +2628,20 @@ loadData();
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>
 <script>
 (function initPicker(){
+  // All date math anchored to GMT+8 (MYT) — system timezone is irrelevant.
+  function toMYT(ms){const d=new Date(ms!=null?ms:Date.now());return new Date(d.getTime()+(d.getTimezoneOffset()+480)*60000);}
+  // Noon MYT = 04:00 UTC. Litepicker normalises any Date to its UTC midnight, so passing noon MYT
+  // gives Litepicker the correct UTC day (avoids the midnight UTC ≡ prior-day MYT boundary shift).
+  function noon(myt){return new Date(Date.UTC(myt.getUTCFullYear(),myt.getUTCMonth(),myt.getUTCDate(),4));}
+  // Midnight / end-of-day expressed in UTC so fmtDate() renders the right MYT calendar day.
+  function midMYT(y,mo,d){return new Date(Date.UTC(y,mo,d)-28800000);}   // 00:00 MYT
+  function eodMYT(y,mo,d){return new Date(Date.UTC(y,mo,d,15,59,59,999));} // 23:59:59 MYT
   function weekStart(){
-    const d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1);
-    return new Date(new Date().setDate(diff));
+    const d=toMYT(),day=d.getUTCDay(),diff=d.getUTCDate()-(day===0?6:day-1);
+    return noon(new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),diff)));
   }
-  const today=new Date(),yest=new Date(Date.now()-864e5);
+  const tMYT=toMYT(), yMYT=toMYT(Date.now()-864e5);
+  const today=noon(tMYT), yest=noon(yMYT);
   const picker=new Litepicker({
     element:document.getElementById('date-btn'),
     singleMode:false,
@@ -2648,18 +2657,19 @@ loadData();
         'Today':[today,today],
         'Yesterday':[yest,yest],
         'This Week':[weekStart(),today],
-        'Last 7 Days':[new Date(Date.now()-6*864e5),today],
-        'This Month':[new Date(today.getFullYear(),today.getMonth(),1),today],
-        'Last 30 Days':[new Date(Date.now()-29*864e5),today],
-        'Year to Date':[new Date(today.getFullYear(),0,1),today],
+        'Last 7 Days':[noon(toMYT(Date.now()-6*864e5)),today],
+        'This Month':[noon(new Date(Date.UTC(tMYT.getUTCFullYear(),tMYT.getUTCMonth(),1))),today],
+        'Last 30 Days':[noon(toMYT(Date.now()-29*864e5)),today],
+        'Year to Date':[noon(new Date(Date.UTC(tMYT.getUTCFullYear(),0,1))),today],
       },
     },
     setup(p){
       p.on('selected',(d1,d2)=>{
-        // Litepicker stores dates as UTC midnight; extract UTC y/m/d to get the intended local date
-        const toLocal=di=>{const d=di.dateInstance;return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());};
-        const f=toLocal(d1);f.setHours(0,0,0,0);_filterFrom=f;
-        const t=toLocal(d2);t.setHours(23,59,59,999);_filterTo=t;
+        // dateInstance is midnight UTC of the noon-MYT date we passed → getUTC* gives correct MYT day
+        const y1=d1.dateInstance.getUTCFullYear(),mo1=d1.dateInstance.getUTCMonth(),da1=d1.dateInstance.getUTCDate();
+        const y2=d2.dateInstance.getUTCFullYear(),mo2=d2.dateInstance.getUTCMonth(),da2=d2.dateInstance.getUTCDate();
+        _filterFrom=midMYT(y1,mo1,da1);
+        _filterTo=eodMYT(y2,mo2,da2);
         document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
         rerender();
       });
@@ -2670,9 +2680,10 @@ loadData();
       });
     },
   });
-  picker.setDateRange(weekStart(),today);
-  const f=weekStart();f.setHours(0,0,0,0);_filterFrom=f;
-  const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
+  const ws=weekStart();
+  picker.setDateRange(ws,today);
+  _filterFrom=midMYT(ws.getUTCFullYear(),ws.getUTCMonth(),ws.getUTCDate());
+  _filterTo=eodMYT(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate());
   document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
 })();
 
