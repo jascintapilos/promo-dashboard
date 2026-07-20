@@ -47,9 +47,10 @@
 
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from './_args.js';
 import { getSite } from '../src/sites.js';
-import { parseBannerIdRange } from '../src/banner-schedule.js';
+import { parseBannerIdRange, BANNER_BRAND_TO_SITE, normalizeBrand, resolveMonthTab } from '../src/banner-schedule.js';
 import {
   authedFetch,
   getAllCategories,
@@ -111,7 +112,15 @@ async function getLocaleMap(site) {
 
 // imageDirOverride: when provided, use this folder directly and match any *-up-* / *-mup-* files
 // (ignores brand-code prefix requirement — for testing with cross-brand image sets)
-function discoverImages(siteId, bannerDir, imageDirOverride = null) {
+//
+// campaignHint: the campaign/label text for THIS run. When more than one
+// brand-prefix-matching subfolder exists in bannerDir, folder selection used
+// to just prefer whichever one ended in "-min" with zero correlation to the
+// actual campaign — a real incident let a stale -min folder from a past
+// campaign silently get used instead of the freshly staged one. Now,
+// candidates are disambiguated by keyword overlap against campaignHint;
+// genuinely ambiguous cases throw rather than guess (see below).
+export function discoverImages(siteId, bannerDir, imageDirOverride = null, campaignHint = null) {
   const site = getSite(siteId);
   const brandCode = (site.loginMerchantCode || siteId).toLowerCase();
 
@@ -135,8 +144,62 @@ function discoverImages(siteId, bannerDir, imageDirOverride = null) {
       throw new Error(`No banner subfolder starting with "${siteKey}" found in ${bannerDir}.\n  Available: ${readdirSync(bannerDir).join(', ')}`);
     }
 
-    // Prefer -min (compressed) over -ext if both exist
-    folder = subfolders.find((f) => f.endsWith('-min')) || subfolders[0];
+    if (subfolders.length === 1) {
+      // Only one candidate total — no ambiguity possible. Common simple case;
+      // don't add friction here.
+      folder = subfolders[0];
+    } else {
+      // Multiple brand-prefix-matching candidates — disambiguate by keyword
+      // overlap against the campaign, the same stopword-filtered approach
+      // already used by the creative-mismatch guard (keywordsFromText /
+      // keywordsFromFilenames further down this file).
+      const campKw = campaignHint ? keywordsFromText(campaignHint) : [];
+      const candidates = subfolders.map((f) => {
+        const folderName = path.basename(f);
+        const stripped = folderName
+          .replace(new RegExp(`^${siteKey}[-_]*`, 'i'), '')
+          .replace(/-(min|ext)$/i, '');
+        const kw = keywordsFromText(stripped);
+        const overlap = campKw.filter((c) => kw.includes(c));
+        return { folder: f, name: folderName, kw, overlap };
+      });
+
+      const withOverlap = candidates.filter((c) => c.overlap.length > 0);
+
+      if (withOverlap.length === 1) {
+        // Exactly one candidate matches the campaign, every other candidate
+        // has zero overlap — prefer it regardless of -min/-ext suffix.
+        folder = withOverlap[0].folder;
+        console.log(`  [images] campaign-matched folder: "${withOverlap[0].name}" (keywords: ${withOverlap[0].overlap.join(', ')})`);
+      } else if (withOverlap.length >= 2) {
+        throw new Error(
+          `Ambiguous banner folder for campaign "${campaignHint || '(none)'}" — multiple candidates match campaign keywords: `
+          + candidates.map((c) => `"${c.name}" (overlap: ${c.overlap.join(', ') || 'none'})`).join(', ')
+          + `. Pass --image-dir explicitly.`,
+        );
+      } else {
+        // No candidate overlaps the campaign at all.
+        const minCandidates = candidates.filter((c) => /-min$/i.test(c.name));
+        if (minCandidates.length > 1) {
+          throw new Error(
+            `Ambiguous banner folder for campaign "${campaignHint || '(none)'}" — none of the candidates match campaign `
+            + `keywords and more than one -min folder exists: ${candidates.map((c) => `"${c.name}"`).join(', ')}. Pass --image-dir explicitly.`,
+          );
+        }
+        if (minCandidates.length === 1) {
+          // Preserve current permissive behavior for the single-min-candidate
+          // case, but make it loudly visible in a dry run before any commit.
+          folder = minCandidates[0].folder;
+          console.warn(`  [images] WARNING: folder "${minCandidates[0].name}" does not keyword-match campaign "${campaignHint || '(unknown)'}" — proceeding anyway (single -min candidate). Verify this is the correct campaign creative before --commit.`);
+        } else {
+          // No -min folder either — nothing to fall back on safely.
+          throw new Error(
+            `Ambiguous banner folder for campaign "${campaignHint || '(none)'}" — no candidate keyword-matches the campaign `
+            + `and none is an unambiguous -min default: ${candidates.map((c) => `"${c.name}"`).join(', ')}. Pass --image-dir explicitly.`,
+          );
+        }
+      }
+    }
     console.log(`  [images] using folder: ${folder}`);
     prefixRegexDesktop = new RegExp(`^${siteKey}-up-`, 'i');
     prefixRegexMobile  = new RegExp(`^${siteKey}-mup-`, 'i');
@@ -185,29 +248,43 @@ function discoverImages(siteId, bannerDir, imageDirOverride = null) {
 // the promo request tracker). Resolves the tab name from the numeric GID first,
 // then fetches the entire A:P data range.
 
+// Pure tab-name resolution — split out of readScheduleRows so it's directly
+// unit-testable without a live Sheets call. `props` is the array of
+// {sheetId, title} tab-metadata objects as returned by
+// sheets.spreadsheets.get({ fields: 'sheets.properties(sheetId,title)' }).
+//
+// --gid is a separate, non-overlapping override keyed on numeric sheetId (not
+// month name) and is resolved directly, exactly as before. The month-name
+// path (the --month flag / SCHEDULE_MONTH_OVERRIDE, or automatic
+// current-month detection) delegates entirely to the shared resolveMonthTab
+// (src/banner-schedule.js) — this used to be a second, forgotten copy of that
+// logic living here, which only auto-detected the abbreviated month form
+// ("Jul 2026", never "July 2026") and fell back to an unchecked regex sweep
+// that could silently pick the FIRST "SomeWord 2026"-shaped tab in the whole
+// spreadsheet with no check that it was actually the current month.
+export function resolveScheduleTabName(props, { gidOverride = null, monthOverride = null, referenceDate } = {}) {
+  if (gidOverride != null) {
+    const t = props.find((p) => p.sheetId === gidOverride);
+    if (!t) throw new Error(`--gid ${gidOverride} not found in banner schedule spreadsheet`);
+    return t.title;
+  }
+  return resolveMonthTab(props.map((p) => p.title), { monthOverride, referenceDate });
+}
+
 async function readScheduleRows(client) {
   const { sheets } = client;
 
-  // Resolve the tab: explicit --gid wins, then --month, then the current month,
-  // then the first "Mon YYYY" tab as a last resort.
+  // Resolve the tab: explicit --gid wins; otherwise delegate the month-name
+  // resolution to resolveScheduleTabName (→ shared resolveMonthTab).
   const meta = await sheets.spreadsheets.get({
     spreadsheetId: BANNER_SCHEDULE_SHEET_ID,
     fields: 'sheets.properties(sheetId,title)',
   });
   const props = (meta.data.sheets || []).map((s) => s.properties);
-  let tabName;
-  if (SCHEDULE_GID_OVERRIDE != null) {
-    const t = props.find((p) => p.sheetId === SCHEDULE_GID_OVERRIDE);
-    if (!t) throw new Error(`--gid ${SCHEDULE_GID_OVERRIDE} not found in banner schedule spreadsheet`);
-    tabName = t.title;
-  } else {
-    const want = SCHEDULE_MONTH_OVERRIDE
-      || new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); // "Jun 2026"
-    const t = props.find((p) => p.title.toLowerCase() === want.toLowerCase())
-      || props.find((p) => /^[A-Za-z]{3}\s+\d{4}$/.test(p.title));
-    if (!t) throw new Error(`No month tab "${want}" found in banner schedule; tabs: ${props.map((p) => p.title).join(', ')}`);
-    tabName = t.title;
-  }
+  const tabName = resolveScheduleTabName(props, {
+    gidOverride: SCHEDULE_GID_OVERRIDE,
+    monthOverride: SCHEDULE_MONTH_OVERRIDE,
+  });
   console.log(`  [schedule] tab: ${tabName}`);
 
   // Use includeGridData so we can extract hyperlinks from column D
@@ -310,10 +387,18 @@ function extractFolderIdFromUrl(url) {
 // Handles the naming pattern:  "{Campaign title} CC/LANG"  e.g. "… MY/EN", "… ID/ZH"
 // Returns e.g. "MY_EN", "ID_ID", "MY_ZH".
 // Falls back to crude heuristics when the pattern is absent.
-function docNameToLocaleKey(name) {
-  // Pattern: "… XX/YY" at end of filename (CC = 2 alpha, LANG = 2-3 alpha)
-  const slash = name.match(/\b([A-Z]{2})\/([A-Z]{2,3})\s*$/i);
-  if (slash) return `${slash[1].toUpperCase()}_${slash[2].toUpperCase()}`;
+//
+// The CC/LANG token doesn't have to be the very last thing in the title —
+// a trailing parenthetical note, version suffix, or period used to make this
+// fall through to the much cruder CJK/word-sniffing fallback below for no
+// reason. Match the pattern ANYWHERE in the name (global) and take the LAST
+// occurrence, so trailing text after the token no longer defeats detection.
+export function docNameToLocaleKey(name) {
+  const matches = [...(name || '').matchAll(/\b([A-Z]{2})\/([A-Z]{2,3})\b/gi)];
+  if (matches.length) {
+    const last = matches[matches.length - 1];
+    return `${last[1].toUpperCase()}_${last[2].toUpperCase()}`;
+  }
   const low = (name || '').toLowerCase();
   // Chinese characters in the name
   if (/[一-鿿]/.test(name)) return 'MY_ZH';
@@ -322,19 +407,61 @@ function docNameToLocaleKey(name) {
   return 'MY_EN';
 }
 
-// Export a Google Doc as HTML and produce clean BO-format HTML.
-// Returns { content, description } where:
-//   content     — full BO-format HTML for the 3.3 article body
-//   description — second non-empty line from the doc header (plain text); used for
-//                 the 3.3 Promotion Content `description` field shown in listings
+// Plain-text-ify a paragraph's inner HTML: strip tags, collapse &nbsp; and
+// whitespace. Used both for header-title comparison and description text.
+function docHtmlToPlainText(blockHtml) {
+  return (blockHtml || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Normalize for a fuzzy title comparison: lowercase, strip everything except
+// Unicode letters/numbers/whitespace, collapse whitespace, trim.
+//
+// Must be Unicode-aware (the \p{L}/\p{N} classes with the `u` flag), NOT an
+// ASCII-only [a-z0-9] class — an ASCII-only class strips every character of a
+// genuinely non-Latin-script title (e.g. Chinese) down to an empty string,
+// which then hits titlesRoughlyMatch's own "empty normalized string is never
+// a match" guard regardless of what the other side is. That silently defeats
+// the divider-independent header-stripping fix for any MY_ZH/ID_ID doc whose
+// title paragraph is actually written in Chinese (or any other non-Latin
+// script) rather than an incidental English provider name. Lowercasing is a
+// harmless no-op on scripts without case (CJK, etc.).
+function normalizeForTitleMatch(s) {
+  return (s || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+}
+
+// True when `candidate` plausibly IS `expectedTitle` — exact match after
+// normalization, or one contains the other (tolerates minor differences like
+// an all-caps provider name vs. title case, or a short subtitle fragment).
+function titlesRoughlyMatch(candidate, expectedTitle) {
+  const a = normalizeForTitleMatch(candidate);
+  const b = normalizeForTitleMatch(expectedTitle);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
+// Pure HTML transformation — no Drive API calls, so this is directly
+// unit-testable without mocking Google Drive. Takes the raw HTML exported
+// from a Google Doc and produces clean BO-format HTML.
+//
+// options.expectedTitle — the campaign label the caller expects the doc's
+// title paragraph to read as (e.g. the B-ID's `label`/`campaign`). Used to
+// decide whether it's safe to strip the doc's title+tagline header — see
+// below.
+//
+// Returns { content, description, headerShapeUnrecognized } where:
+//   content                 — full BO-format HTML for the 3.3 article body
+//   description             — tagline from the doc header (plain text); used for
+//                              the 3.3 Promotion Content `description` field
+//   headerShapeUnrecognized — true when the header could NOT be confidently
+//                              identified/stripped (see below); callers should
+//                              treat that locale as stub-quality for QC.
 // Output uses only BO-native tags: <p>, <ol>/<li>, <table>/<tr>/<td>,
 // <strong>, <em>, <a href>. No inline styles, no Google fonts/colours.
-// Doc title+subtitle header (before first <hr>) is stripped after extracting description.
 // <hr> section dividers are preserved (not converted to spacers).
 // <p style="text-align:center;"> inside <td> is preserved for centred table headings.
-async function fetchDocHtml(drive, docId) {
-  const res = await drive.files.export({ fileId: docId, mimeType: 'text/html' });
-  let html = typeof res.data === 'string' ? res.data : String(res.data);
+export function processDocHtml(rawHtml, options = {}) {
+  const { expectedTitle = null } = options;
+  let html = typeof rawHtml === 'string' ? rawHtml : String(rawHtml);
 
   // Remove <style> / <script> blocks
   html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
@@ -384,49 +511,71 @@ async function fetchDocHtml(drive, docId) {
   // ── Strip span wrappers (all Docs text is wrapped in <span>) ─────────────
   html = html.replace(/<\/?span>/gi, '');
 
-  // ── Extract description from header (before first <hr>) ─────────────────
-  // Doc structure: line 1 = title, line 2 = description/tagline, then <hr>.
-  // At this point spans/attrs are already stripped so paragraphs are clean text.
+  // ── Header detection & extraction (divider-independent) ─────────────────
+  // Historically this only looked at content BEFORE the first <hr> — for the
+  // EN version of a real campaign doc that worked fine, but the MY_ZH and
+  // ID_ID versions had NO divider at all (most likely never inserted by the
+  // translator), so the old code silently did nothing: description stayed
+  // empty AND the raw title+tagline paragraphs survived verbatim as the first
+  // lines of `content` — duplicating the title on the live BO page.
   //
-  // Some drafts type the tagline and the opening body paragraph as ONE Google
-  // Docs paragraph, separated by a soft line-break (shift-enter) rather than a
-  // real paragraph break — e.g. "Catch the Drop. Claim Your Reward.<br><br>Step
-  // into the stunning aqua-themed world...". Google exports a soft line-break
-  // as <br> WITHIN the same <p>, so naively taking the whole <p> as
-  // "description" both (a) runs the tagline and body text together with no
-  // space once <br> tags are stripped, and (b) drops the body paragraph
-  // entirely, since content-extraction only starts after <hr>. Split on a
-  // double-<br> (used as a paragraph divider within the header <p>) so only
-  // the short tagline becomes `description`, and the remainder is carried
-  // forward as the opening paragraph of `content`.
+  // Fix: parse ALL <p> blocks in document order, not just those before a
+  // divider. Paragraph 0 is the title candidate; paragraph 1 (if present) is
+  // the tagline-plus-leading-body candidate, using the same double-<br>
+  // splitting logic as before. Only strip when paragraph 0 plausibly matches
+  // the caller-supplied expectedTitle — otherwise leave content untouched and
+  // flag it, rather than guess wrong and silently mangle real body text.
+  const paraMatches = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+  const paraBlocks = paraMatches.map((m) => m[1]);
+
   let description = '';
   let leadingContentHtml = '';
-  const headerSection = html.match(/^([\s\S]*?)<hr/i);
-  if (headerSection) {
-    const paraBlocks = [...headerSection[1].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].map((m) => m[1]);
+  let headerShapeUnrecognized = false;
+
+  const title0Text = docHtmlToPlainText(paraBlocks[0] || '');
+  const stripHeader = !!expectedTitle && titlesRoughlyMatch(title0Text, expectedTitle);
+
+  if (stripHeader) {
     // paraBlocks[0] = doc title, paraBlocks[1] = tagline (+ possibly more body
     // text after a double-<br>). Fall back to paraBlocks[0] only if there's no
     // second paragraph at all (matches prior behavior for simple docs).
-    const toText = (blockHtml) => blockHtml.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
     if (paraBlocks[1] != null) {
       const parts = paraBlocks[1].split(/(?:<br\s*\/?>\s*){2,}/i);
-      description = toText(parts[0] || '');
+      description = docHtmlToPlainText(parts[0] || '');
       if (parts.length > 1) {
         leadingContentHtml = parts.slice(1).join('<br>').trim();
       }
     } else {
-      description = toText(paraBlocks[0] || '');
+      description = title0Text;
     }
-  }
 
-  // ── Strip header block ──────────────────────────────────────────────────
-  // Google Docs: [Doc Title + Subtitle] lives before the first <hr>. Drop it.
-  html = html.replace(/^[\s\S]*?<hr[^>]*>/i, '');
+    // Strip paragraphs 0 (and 1, if present) from the START of the content —
+    // regardless of whether a divider follows anywhere later in the doc. A
+    // later divider, if present, is just a normal section separator handled
+    // by the existing divider-preservation logic further down, completely
+    // independent of header extraction.
+    const stripCount = paraBlocks[1] != null ? 2 : 1;
+    let cursor = 0;
+    for (let i = 0; i < stripCount; i++) {
+      const m = paraMatches[i];
+      if (!m) break;
+      const idx = html.indexOf(m[0], cursor);
+      if (idx === -1) break;
+      cursor = idx + m[0].length;
+    }
+    html = html.slice(cursor);
 
-  // Carry forward any body text that was typed inside the header paragraph
-  // (see above) as the new opening paragraph of the content body.
-  if (leadingContentHtml) {
-    html = `<p>${leadingContentHtml}</p>${html}`;
+    // Carry forward any body text that was typed inside the header paragraph
+    // (see above) as the new opening paragraph of the content body.
+    if (leadingContentHtml) {
+      html = `<p>${leadingContentHtml}</p>${html}`;
+    }
+  } else {
+    // Safe, conservative branch: no expectedTitle, or paragraph 0 doesn't
+    // plausibly match it. Better to leave content untouched and flag it than
+    // to guess wrong and silently duplicate or wrongly strip real body text.
+    description = '';
+    headerShapeUnrecognized = true;
   }
 
   // ── Preserve <hr> section dividers ─────────────────────────────────────
@@ -497,13 +646,46 @@ async function fetchDocHtml(drive, docId) {
   // Strip any leading <br> left at the very start
   html = html.replace(/^(\s*<br>)+/i, '');
 
-  return { content: html.trim(), description };
+  // ── Safety net: guard against a duplicated title/tagline slipping through ─
+  // Defense-in-depth for any shape the header-detection above didn't
+  // anticipate — if the resolved description still shows up verbatim near the
+  // start of content, strip it and flag the doc rather than silently ship a
+  // dupe (better a flagged doc than a wrong one).
+  if (description) {
+    const flatten = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    const contentStart = flatten(html.slice(0, 1000)).slice(0, 300);
+    if (contentStart.includes(description)) {
+      const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const words = description.split(/\s+/).filter(Boolean).map(escapeRe);
+      if (words.length) {
+        const gap = '(?:\\s|<[^>]+>|&nbsp;)*';
+        const dupPattern = words.join(gap);
+        const dupRe = new RegExp(`^${gap}${dupPattern}${gap}(?:<br\\s*/?>)*`, 'i');
+        html = html.replace(dupRe, '').trim();
+      }
+      headerShapeUnrecognized = true;
+    }
+  }
+
+  return { content: html.trim(), description, headerShapeUnrecognized };
+}
+
+// Thin wrapper around processDocHtml: export a Google Doc as HTML via the
+// Drive API, then run the pure transformation. All the actual parsing logic
+// lives in processDocHtml so it's unit-testable without mocking Drive.
+async function fetchDocHtml(drive, docId, opts = {}) {
+  const res = await drive.files.export({ fileId: docId, mimeType: 'text/html' });
+  const rawHtml = typeof res.data === 'string' ? res.data : String(res.data);
+  return processDocHtml(rawHtml, opts);
 }
 
 // List Google Docs in a Drive folder and return a locale→{ content, description } map.
 // { MY_EN: { content: '<p>…</p>', description: 'Glory Begins at…' }, … }
 // Gracefully returns {} if the folder is empty or Drive API errors.
-async function getDocContentMap(drive, folderUrl) {
+//
+// expectedTitle — campaign label threaded through to fetchDocHtml/processDocHtml
+// so it can decide whether it's safe to strip each doc's title+tagline header.
+async function getDocContentMap(drive, folderUrl, expectedTitle = null) {
   const folderId = extractFolderIdFromUrl(folderUrl);
   if (!folderId) { console.warn(`  [docs] invalid folder URL: ${folderUrl}`); return {}; }
 
@@ -530,7 +712,7 @@ async function getDocContentMap(drive, folderUrl) {
     const localeKey = docNameToLocaleKey(doc.name);
     try {
       console.log(`  [docs] exporting "${doc.name}" → ${localeKey}…`);
-      contentMap[localeKey] = await fetchDocHtml(drive, doc.id);
+      contentMap[localeKey] = await fetchDocHtml(drive, doc.id, { expectedTitle });
       await delay(800);
     } catch (e) {
       console.warn(`  [docs] export failed for "${doc.name}": ${e.message}`);
@@ -543,11 +725,11 @@ async function getDocContentMap(drive, folderUrl) {
 
 const docContentCache = new Map();
 
-async function getCachedDocContentMap(drive, folderUrl) {
+async function getCachedDocContentMap(drive, folderUrl, expectedTitle = null) {
   const folderId = extractFolderIdFromUrl(folderUrl);
-  if (!folderId) return getDocContentMap(drive, folderUrl);
+  if (!folderId) return getDocContentMap(drive, folderUrl, expectedTitle);
   if (docContentCache.has(folderId)) return docContentCache.get(folderId);
-  const contentMap = await getDocContentMap(drive, folderUrl);
+  const contentMap = await getDocContentMap(drive, folderUrl, expectedTitle);
   docContentCache.set(folderId, contentMap);
   return contentMap;
 }
@@ -590,6 +772,20 @@ function checkCreativeMatch(campaignText, imageLocales) {
   const overlap = campKw.filter((c) => fileKw.has(c));
   const weak = campKw.length === 0;
   return { ok: weak || overlap.length > 0, weak, overlap, campKw, fileKw: [...fileKw] };
+}
+
+// Resolve a docContentMap entry for a given locale code, in preference order:
+// exact-locale match → same-country EN variant → MY_EN → null.
+// Deliberately stops at null — never falls back to an ARBITRARY locale entry
+// (Object.values(docContentMap)[0]), which used to be able to silently put,
+// e.g., Chinese doc content onto an Indonesian-locale banner with zero warning.
+export function resolveDocEntry(docContentMap, locCode) {
+  if (!docContentMap || !locCode) return docContentMap?.['MY_EN'] || null;
+  const countryEn = locCode.replace(/_[^_]+$/, '_EN');
+  return docContentMap[locCode]
+      || docContentMap[countryEn]
+      || docContentMap['MY_EN']
+      || null;
 }
 
 async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, promoCodeOverride, dryRun, drive, campaignFolderMap, promoFolderOverride }) {
@@ -640,7 +836,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
   // ── Discover local images ────────────────────────────────────────────────
   let imageLocales;
   try {
-    imageLocales = discoverImages(site_id, bannerDir, imageDirOverride);
+    imageLocales = discoverImages(site_id, bannerDir, imageDirOverride, campaign || label);
   } catch (e) {
     return { b_id, status: 'error', reason: e.message };
   }
@@ -675,14 +871,22 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
     || null;
 
   let docContentMap = {};
+  const headerWarnings = [];
   if (!skipContent && resolvedFolderUrl && drive) {
     console.log(`  [${b_id}] fetching promo doc content from folder...`);
-    docContentMap = await getCachedDocContentMap(drive, resolvedFolderUrl);
+    docContentMap = await getCachedDocContentMap(drive, resolvedFolderUrl, label);
     const langs = Object.keys(docContentMap);
     if (langs.length) {
       console.log(`  [${b_id}] doc content loaded for: ${langs.join(', ')}`);
     } else {
       console.log(`  [${b_id}] no doc content found - will fall back to image-only content`);
+    }
+    for (const [locale, entry] of Object.entries(docContentMap)) {
+      if (entry?.headerShapeUnrecognized) {
+        const reason = 'header shape unrecognized — doc title/tagline could not be confidently matched against the campaign label; description left empty, content left unstripped';
+        console.warn(`  [${b_id}] ⚠ ${locale}: ${reason}. Treating as stub-quality for QC.`);
+        headerWarnings.push({ locale, reason });
+      }
     }
   } else if (!skipContent && !drive) {
     console.log(`  [${b_id}] Drive API not available - using image-only content`);
@@ -712,7 +916,7 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
     return {
       b_id, status: 'dry-run', promoCode: codeDry,
       site_id, label, campaign, startUtc, endUtc,
-      contentIsStub,
+      contentIsStub, headerWarnings,
       stagedImages: imageLocales.map((il) => ({ localeSuffix: il.localeSuffix, desktop: il.desktopPath, mobile: il.mobilePath })),
     };
   }
@@ -781,13 +985,9 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
       const imgLocale = imageLocales.find((il) => suffixToCode(il.localeSuffix) === locCode);
       if (imgLocale) {
         const { promoImageUrl } = contentImages.get(locId) || {};
-        // Doc content: exact locale match → same country EN → any EN → none
-        const countryEn = locCode.replace(/_[^_]+$/, '_EN');
-        const docEntry = docContentMap[locCode]
-                      || docContentMap[countryEn]
-                      || docContentMap['MY_EN']
-                      || Object.values(docContentMap)[0]
-                      || null;
+        // Doc content: exact locale match → same country EN → MY_EN → none.
+        // Never an arbitrary locale grab (resolveDocEntry stops at null).
+        const docEntry = resolveDocEntry(docContentMap, locCode);
         if (!docEntry) contentIsStub = true;
         const content = docEntry?.content
           || (promoImageUrl ? `<p><img src="${promoImageUrl}" style="max-width:100%;height:auto;"></p>` : '<p>&nbsp;</p>');
@@ -814,7 +1014,11 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
       const firstLocId = imageRows[0]?.settings_locale_id;
       if (firstLocId && detailsObj[String(firstLocId)]) {
         const { promoImageUrl } = contentImages.get(firstLocId) || {};
-        const fallbackEntry = docContentMap['MY_EN'] || Object.values(docContentMap)[0] || null;
+        // Same exact-locale → country-EN → MY_EN → null chain as above, never
+        // an arbitrary locale grab. Resolve firstLocId back to its locCode so
+        // an exact-locale doc (if one exists for it) is still preferred.
+        const firstLocCode = Object.keys(localeMap).find((k) => localeMap[k] === firstLocId) || null;
+        const fallbackEntry = resolveDocEntry(docContentMap, firstLocCode);
         if (!fallbackEntry) contentIsStub = true;
         detailsObj[String(firstLocId)].title = label;
         detailsObj[String(firstLocId)].description = fallbackEntry?.description || label;
@@ -885,12 +1089,18 @@ async function uploadBanner(bRec, { bannerDir, imageDirOverride, skipContent, pr
     b_id, status: 'ok', promoCode, bannerId, pcId,
     site_id, label, campaign, startUtc, endUtc,
     contentDetails: skipContent ? null : contentDetails,
-    contentIsStub,
+    contentIsStub, headerWarnings,
     imageRows, bannerPosition: bannerBody.position,
   };
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
+// Gated behind isMainModule so importing this file (e.g. from the regression
+// test scripts in bin/test-banner-*.mjs) never triggers a CLI parse, a real
+// network call, or process.exit — importing must be a pure, side-effect-free
+// operation. Only invoked when this file is executed directly.
+
+async function main() {
 
 const { flags } = parseArgs(process.argv.slice(2));
 
@@ -946,8 +1156,6 @@ const colIdx = {
   start_date:        10,
   end_date:          11,
 };
-
-import { BANNER_BRAND_TO_SITE, normalizeBrand } from '../src/banner-schedule.js';
 
 for (let ri = 1; ri < rows.length; ri++) {
   const row  = rows[ri];
@@ -1049,8 +1257,8 @@ for (const r of results) {
   mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${r.b_id}__${r.site_id}.json`);
   const bundle = isplan
-    ? { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, start_datetime: r.startUtc, end_datetime: r.endUtc, contentIsStub: !!r.contentIsStub, staged_images: r.stagedImages, website: getBrandWebsite(r.site_id), type: 'plan', created_at: new Date().toISOString() }
-    : { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, banner_id: r.bannerId, content_id: r.pcId, start_datetime: r.startUtc, end_datetime: r.endUtc, position: r.bannerPosition, image_rows: r.imageRows, content_details: r.contentDetails || null, contentIsStub: !!r.contentIsStub, website: getBrandWebsite(r.site_id), type: 'saved', created_at: new Date().toISOString() };
+    ? { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, start_datetime: r.startUtc, end_datetime: r.endUtc, contentIsStub: !!r.contentIsStub, headerWarnings: r.headerWarnings || [], staged_images: r.stagedImages, website: getBrandWebsite(r.site_id), type: 'plan', created_at: new Date().toISOString() }
+    : { b_id: r.b_id, site_id: r.site_id, label: r.label, campaign: r.campaign, promo_code: r.promoCode, banner_id: r.bannerId, content_id: r.pcId, start_datetime: r.startUtc, end_datetime: r.endUtc, position: r.bannerPosition, image_rows: r.imageRows, content_details: r.contentDetails || null, contentIsStub: !!r.contentIsStub, headerWarnings: r.headerWarnings || [], website: getBrandWebsite(r.site_id), type: 'saved', created_at: new Date().toISOString() };
   writeFileSync(file, JSON.stringify(bundle, null, 2));
   bundlesWritten.push(file);
 }
@@ -1058,4 +1266,21 @@ if (bundlesWritten.length) {
   const label = dryRun ? 'banner-qc-plans' : 'banner-qc-bundles';
   console.log(`\n[qc] ${bundlesWritten.length} bundle(s) written to captures/${label}/`);
   console.log(`[qc] Next: ${dryRun ? 'node bin/upload-promo.js --range=... --commit → /banner-pre-qc' : '/banner-deep-qc'}`);
+}
+
+} // end main()
+
+const isMainModule = (() => {
+  try {
+    return import.meta.url === pathToFileURL(process.argv[1]).href;
+  } catch {
+    return false;
+  }
+})();
+
+if (isMainModule) {
+  main().catch((e) => {
+    console.error('[upload-promo] fatal error:', e && e.stack || e);
+    process.exit(1);
+  });
 }

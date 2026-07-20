@@ -1,0 +1,3 @@
+[mcp_servers.telegram-morning-chain]
+command = "node"
+args = ["bin/mcp-telegram-server.mjs"]
