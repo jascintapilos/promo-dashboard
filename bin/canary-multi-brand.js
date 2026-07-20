@@ -218,6 +218,8 @@ function runCanary(job) {
     if (flags['allow-recreate']) args.push('--allow-recreate');
     // Forward allow-dup-name so IGMP can save despite a PromotionName collision (operator override).
     if (flags['allow-dup-name']) args.push('--allow-dup-name');
+    // Forward fs-game override (VendorDisplayCode) so IGMP FS resolves to a specific game skin.
+    if (flags['fs-game']) args.push(`--fs-game=${flags['fs-game']}`);
     const siteTag = site ? `@${site.replace(/^ws1-v3-/, '')}` : '';
     const label = `${brand}${siteTag}${suffix || ''}`;
     const startedAt = Date.now();

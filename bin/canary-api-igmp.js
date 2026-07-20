@@ -82,6 +82,14 @@ await (async () => {
     return bail(3);
   }
 
+  // Operator override: force a specific FS game for this run, bypassing
+  // name-based catalog resolution. Value is a VendorDisplayCode (exact match,
+  // Pass 1 in resolveGameId). Needed when the sheet's game name resolves to a
+  // variant that can't take the reward — e.g. plain "Gates of Olympus"
+  // (vs20olympgate) rejects the free-spin bet, while the MB8-branded skin
+  // "vs20mb88gates" (what live WS1 promos use) accepts it.
+  if (flags['fs-game']) rec.fs_game = flags['fs-game'];
+
   // For Free Spin records that supply human-readable provider/game names
   // instead of pre-resolved IDs, fetch the per-BO catalog and resolve.
   // Requires a valid cookie. Skipped in dry-run when IGMP_COOKIE is absent.
