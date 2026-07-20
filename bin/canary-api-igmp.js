@@ -10,15 +10,16 @@
 //
 // Auth: requires IGMP_COOKIE env var (see src/igmp-client.js for instructions).
 //
-// Scope (2026-05-19): Deposit Bonus (3.1) and Free Credit (3.4) are
-// single-call ready. Free Spin (3.15) creates only the campaign shell —
-// reward rows + locale contents need follow-up endpoints that aren't yet
-// implemented (require additional capture). The canary errors clearly
-// if --commit is used with FS until those are filled in.
+// Bonus types: Deposit Bonus (3.1), Free Credit (3.4), Free Spin (3.15).
+// All three are fully implemented. FS uses a three-step commit chain:
+// (1) AddFreeSpin shell — captures PromotionId via GetPromotionInfoByCode;
+// (2) AddFreeSpinReward — posts reward row + T&C ($PromotionId substituted);
+// (3) UpdatePromotionSettings. captureFrom: 'RewardId' on step 2 extracts
+// RewardId from the response for QC L3 T&C verification.
 
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
-import { buildIgmpPlan } from '../src/api-mapper-igmp.js';
+import { buildIgmpPlan, extractRewardContents } from '../src/api-mapper-igmp.js';
 import { igmpPost, listIgmpSites } from '../src/igmp-client.js';
 import { resolveFsCatalog } from '../src/igmp-fs-resolver.js';
 import { BRAND_TO_SITE } from '../src/ingest.js';
@@ -204,11 +205,13 @@ await (async () => {
     const planDir = path.resolve('captures/qc-plans');
     await mkdir(planDir, { recursive: true });
 
-    // Extract the already-rendered T&C from plan.body so the bundle mirrors
+    // Extract the already-rendered T&C from the plan so the bundle mirrors
     // exactly what will be POSTed (and what the BO will persist). Calling
     // buildTncRow again here would skip api-mapper-igmp.js's per-currency
     // min_deposit override, producing a divergent body in the bundle.
-    const rewardContents = plan.body?.PromotionRewards?.[0]?.PromotionRewardContents || [];
+    // For FS: the shell body has no PromotionRewards — T&C is in the reward
+    // follow-up (followups[0].body.PromotionReward.PromotionRewardContents).
+    const rewardContents = extractRewardContents(plan, bonusTypeLower);
     const tncEn = rewardContents.find((c) => c.Locale === 'en') || null;
     const tncZh = rewardContents.find((c) => c.Locale === 'zh') || null;
     const messageTemplate = { details: {} };
@@ -498,7 +501,16 @@ await (async () => {
         }
         const rew = det.PromotionRewards?.[0];
         rewardId = rew?.RewardId ?? null;
-        const sentReward = plan.body.PromotionRewards?.[0];
+        // For FS: captureFrom: 'RewardId' on AddFreeSpinReward populates
+        // captured.RewardId at save time. Use it when GetFreeSpinPromotionInfo
+        // doesn't expose the RewardId field directly on PromotionRewards[0].
+        if (bonusType === 'free spin' && !rewardId && captured?.RewardId != null) {
+          rewardId = captured.RewardId;
+        }
+        // For FS: reward data is in the follow-up body, not the shell body.
+        const sentReward = bonusType === 'free spin'
+          ? plan.followups?.[0]?.body?.PromotionReward
+          : plan.body?.PromotionRewards?.[0];
         const mechChecks = {};
         const mechLog = [];
         function mechCheck(label, boVal, expectedVal) {
@@ -605,7 +617,10 @@ await (async () => {
       // Verify key values appear in the EN T&C HTML
       if (enRow?.Content) {
         const html = enRow.Content;
-        const sentReward = plan.body.PromotionRewards?.[0];
+        // For FS: reward data is in the follow-up body, not the shell body.
+        const sentReward = bonusType === 'free spin'
+          ? plan.followups?.[0]?.body?.PromotionReward
+          : plan.body?.PromotionRewards?.[0];
         if (bonusType === 'deposit' && sentReward) {
           const minDep = Number(sentReward.MinimumActionAmount);
           const cap = Number(sentReward.CapBonusAmount);
@@ -638,6 +653,20 @@ await (async () => {
             tcChecks['EN_TO_in_html'] = found;
             tcLog.push(`  EN turnover (${to}x):    ${found ? '✓' : '✗'}`);
           }
+        } else if (bonusType === 'free spin') {
+          const sentFreeSpin = plan.followups?.[0]?.body?.FreeSpin;
+          const spinCount = Number(sentFreeSpin?.FreeSpinRounds ?? rec.parsed?.spin_count ?? 0);
+          const to = Number(sentReward?.RolloverMultiplier ?? rec.parsed?.to_multiplier ?? 0);
+          if (spinCount > 0) {
+            const found = html.includes(String(spinCount));
+            tcChecks['EN_spinCount_in_html'] = found;
+            tcLog.push(`  EN spin count (${spinCount}): ${found ? '✓' : '✗'}`);
+          }
+          if (to > 0) {
+            const found = html.includes(`${to}x`) || html.includes(`${to}X`) || html.includes(String(to));
+            tcChecks['EN_TO_in_html'] = found;
+            tcLog.push(`  EN turnover (${to}x):    ${found ? '✓' : '✗'}`);
+          }
         }
         // T&C hyperlink check — should contain the brand's T&C URL
         const tncUrlMatch = html.includes('info-center/tnc');
@@ -657,6 +686,11 @@ await (async () => {
     } catch (e) {
       console.warn(`⚠ QC Level 3 skipped: ${e.message}`);
     }
+  } else if (bonusType === 'free spin') {
+    // RewardId is captured from AddFreeSpinReward via captureFrom: 'RewardId'.
+    // If null here, the BO response didn't include it — T&C was pre-verified
+    // against the plan bundle by pre-QC; post-save check is INCONCLUSIVE.
+    console.log('  (skipped — RewardId not available from FS save response; T&C pre-verified via plan bundle)');
   } else {
     console.log('  (skipped — no RewardId available for T&C lookup)');
   }

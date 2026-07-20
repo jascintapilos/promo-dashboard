@@ -439,6 +439,8 @@ function buildAddFreeSpin(rec, { siteId } = {}) {
       })(),
       FreeSpinName: rec.fs_name || '',
       FreeSpinRounds: String(Number(rec.fs_rounds ?? 0)),
+      // IGMP uses dollar-value fields (AmountPerBet / AmountPerLine), not Coins/Lines.
+      // Coins and Lines are Playtech/QPRO2-QP2 concepts and do not exist in iGMP's API.
       AmountPerBet: rec.fs_amount_per_bet != null ? String(rec.fs_amount_per_bet) : null,
       AmountPerLine: rec.fs_amount_per_line != null ? String(rec.fs_amount_per_line) : null,
       ValidityTimeStamp: rec.fs_validity_date ? toIgmpDateString(rec.fs_validity_date) : null,
@@ -462,7 +464,11 @@ function buildAddFreeSpin(rec, { siteId } = {}) {
     endpoint: '/PM/AddFreeSpin',
     body: shellBody,
     followups: [
-      { endpoint: '/PM/AddFreeSpinReward', body: rewardBody },
+      // captureFrom: 'RewardId' — the canary uses findFirstKey() to extract RewardId from
+      // the AddFreeSpinReward response so QC L3 can call GetPromotionRewardContents.
+      // If RewardId is absent from the response, captured.RewardId stays undefined
+      // and QC L3 falls back to the GetFreeSpinPromotionInfo path (which may also lack it).
+      { endpoint: '/PM/AddFreeSpinReward', body: rewardBody, captureFrom: 'RewardId' },
       { endpoint: '/PM/UpdatePromotionSettings', body: settingsBody },
     ],
     _unimplemented: needsResolve ? ['fs_provider_id + fs_game_id (resolver TBD)'] : [],
@@ -546,6 +552,18 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
   if (bt.includes('free credit') || bt === 'fc') return buildAddFreeCredit(normalizedRec);
   if (bt.includes('free spin') || bt === 'fs') return buildAddFreeSpin(normalizedRec, { siteId });
   throw new Error(`buildIgmpPlan: unknown bonus_type "${rec.bonus_type}"`);
+}
+
+// ── Pre-QC helper ─────────────────────────────────────────────────────────
+// Reads the rendered T&C rows from the plan bundle in the right location
+// depending on bonus type. FS T&C is in the reward followup (not the shell
+// body); Dep/FC T&C is in the shell body's PromotionRewards[0].
+// Exported so the canary and tests both call the same function.
+export function extractRewardContents(plan, bonusTypeLower) {
+  if (String(bonusTypeLower).toLowerCase() === 'free spin') {
+    return plan.followups?.[0]?.body?.PromotionReward?.PromotionRewardContents || [];
+  }
+  return plan.body?.PromotionRewards?.[0]?.PromotionRewardContents || [];
 }
 
 // Test-friendly exports
