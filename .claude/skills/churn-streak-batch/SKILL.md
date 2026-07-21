@@ -19,7 +19,20 @@ for(const r of [...by.values()]){if(new RegExp("day\\s*"+N+"\\b","i").test((r.na
 console.log(r.request_id,r.handle,r.bonus_type,r.promo_code)}'
 ```
 
-A day = **8 handles**: 4 Free Credit (Silver 18FC ×V1/V2, Gold+ 38FC ×V1/V2) + 4 Free Spin (Gates of Olympus, 0.40/spin, spin counts vary by segment). All WS1 · MY+SG · MYR+SGD · min dep 0 (Claim) · reward validity 1 day · inbox "Indicate Day N Streak".
+A day = **8 handles**, but the **bonus TYPE varies by day** (confirm from the scan, don't assume):
+- **Day 1–3:** 4 Free Credit (Silver 18FC / Gold+ 38FC, ×V1/V2 churn windows) + 4 Free Spin (Gates of Olympus, 0.40/spin, spin counts per segment). Min dep 0 (Claim).
+- **Day 4:** 8 **Deposit/Reload** promos (20% reload) — two sub-blocks: **18× / All Games ex-Blackjack** (min dep 250 Silver / 500 Gold+) and **12× / Slots-only** (same min deps), each ×V1/V2. NOT FC/FS. (Verified Day-4 2026-07-20.)
+- **Day 5:** mixed — FC + Deposit rows (two per segment). Verify structure from the scan before running.
+
+All WS1 · MY+SG · MYR+SGD · reward validity 1 day · inbox "Indicate Day N Streak".
+
+**Deposit-day (Day 4) specifics** — the FC/FS overrides do NOT apply; instead:
+- Commit: `--allow-dup-name` (names collide within pairs); no `--fs-game`, no 0.40 override.
+- 18× TO is above the usual 10–12× Reload range — Pre-QC WARNs; confirm with operator (operator-confirmed intentional on Day-4).
+- Slots-only sub-block is category-restricted → Categories + Game Providers must both be set (triage NOTE).
+- RewardId for T&C edits: `GetBonusInfo`.data.Promotion.PromotionRewards[0].RewardId.
+- Streak-header T&C anchor: EN `Boost your balance!` → `🔥 Day N Streak Reward Unlocked!`; ZH `提升您的余额！` → `🔥 第 N 天连续奖励已解锁！`. (No FS game-name cleanup / no validity edit needed — Deposit already emits "one (1) day".)
+- Deep-QC = WARNING/no-FAIL (only the non-verifiable per-player cap) → QC Completed normally.
 
 ## 2. Pre-flight: codes must carry `_DN`
 
