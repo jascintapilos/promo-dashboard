@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "googleapis": "^171.4.0",
-    "playwright": "^1.60.0",
-    "pptxgenjs": "^4.0.1"
-  }
-}
