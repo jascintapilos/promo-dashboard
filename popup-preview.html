@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FC Popup Template — Before / After</title>
+<style>
+  body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background:#1a1d24; color:#e7e9ee; padding:32px; }
+  h1 { font-size:14px; color:#8b94a6; font-weight:400; margin:0 0 8px 0; letter-spacing:.5px; }
+  h2 { font-size:12px; color:#8b94a6; font-weight:500; text-transform:uppercase; letter-spacing:1px; margin:32px 0 16px 0; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:24px; max-width:1400px; }
+  .popup-shell { background:#fff; color:#222; border-radius:14px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.5); }
+  .popup-banner { background:linear-gradient(135deg,#6a4cf0 0%, #4b3bff 100%); color:#fff; padding:32px 28px; }
+  .popup-title { font-size:20px; font-weight:700; margin:0; }
+  .popup-body { padding:24px 28px 8px 28px; font-size:14px; line-height:1.6; }
+  .popup-body p { margin:0 0 12px 0; }
+  .popup-cta { display:flex; gap:12px; padding:8px 28px 24px 28px; }
+  .btn { flex:1; padding:13px 16px; border-radius:8px; font-weight:600; text-align:center; font-size:13px; }
+  .btn-primary { background:#1a1d24; color:#fff; }
+  .btn-secondary { background:#e7e9ee; color:#1a1d24; }
+  .meta { font-size:11px; color:#8b94a6; padding:0 0 8px 0; }
+  .meta b { color:#e7e9ee; }
+  .bad { color:#ff7a7a; }
+  .good { color:#7adfa3; }
+  .legend { font-size:12px; color:#8b94a6; margin-top:8px; }
+  .strike { text-decoration: line-through; color:#aaa; }
+</style>
+</head>
+<body>
+<h1>FC Popup — Before (current in BO, popup id=93) vs After (proposed FC-specific template)</h1>
+<div class="legend">Proposal applies to <b>P104 + P105</b> (FC only — 4 brands × 2 RNs = 8 popup rewrites). P102/P103 (Deposit) stay as-is.</div>
+
+<h2>BEFORE — Deposit-flow template forced onto FC <span class="bad">(odd)</span></h2>
+<div class="grid">
+  <div>
+    <div class="meta">Locale 1 · MY_EN</div>
+    <div class="popup-shell">
+      <div class="popup-banner"><div class="popup-title">Exclusive Offer - 20 Free Credit</div></div>
+      <div class="popup-body">
+        <p><strong>How to Apply:</strong><br><br>1. Go to the [Transfer] page and select your game provider.<br>2. <span class="strike">Enter amount RM0 and above</span> <span class="bad">← FC has no deposit, this is wrong</span><br>3. Choose [<strong>Exclusive Offer - 20 Free Credit</strong>] under "Promotion" and click SUBMIT.<br><br><i><strong>*For full promotion terms &amp; conditions, please check your Inbox.</strong></i></p>
+      </div>
+      <div class="popup-cta">
+        <div class="btn btn-primary">CLAIM NOW</div>
+        <div class="btn btn-secondary">READ MORE</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="meta">Locale 3 · MY_ZH</div>
+    <div class="popup-shell">
+      <div class="popup-banner"><div class="popup-title">独家优惠 - 20 免费体验金</div></div>
+      <div class="popup-body">
+        <p><strong>如何申请：</strong></p><p>1. 点击 [转账] 页面并选择您的游戏提供商。<br>2. <span class="strike">输入金额 RM0 以上</span> <span class="bad">← 免费体验金无需存款</span><br>3. 在"促销"下选择 <strong>[独家优惠 - 20 免费体验金]</strong> 并点击提交。</p><p><strong>*有关完整的促销条款和条件，请查看您的收件箱。</strong></p>
+      </div>
+      <div class="popup-cta">
+        <div class="btn btn-primary">立即领取</div>
+        <div class="btn btn-secondary">阅读更多</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="good">AFTER — FC-specific template (no deposit step)</h2>
+<div class="grid">
+  <div>
+    <div class="meta">Locale 1 · MY_EN · CTA: CLAIM NOW → /member/reward · READ MORE → /member/message</div>
+    <div class="popup-shell">
+      <div class="popup-banner"><div class="popup-title">Exclusive Offer - 20 Free Credit</div></div>
+      <div class="popup-body">
+        <p><strong>How to Apply:</strong><br><br>1. Login to your account and go to the [Rewards] page.<br>2. Find [<strong>Exclusive Offer - 20 Free Credit</strong>] in the available promotions list.<br>3. Click CLAIM NOW to receive your free credit instantly.<br><br><i><strong>*For full promotion terms &amp; conditions, please check your Inbox.</strong></i></p>
+      </div>
+      <div class="popup-cta">
+        <div class="btn btn-primary">CLAIM NOW</div>
+        <div class="btn btn-secondary">READ MORE</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="meta">Locale 3 · MY_ZH</div>
+    <div class="popup-shell">
+      <div class="popup-banner"><div class="popup-title">独家优惠 - 20 免费体验金</div></div>
+      <div class="popup-body">
+        <p><strong>如何申请：</strong></p><p>1. 登录账户并前往[奖励]页面。<br>2. 在可用促销列表中找到 <strong>[独家优惠 - 20 免费体验金]</strong>。<br>3. 点击立即领取以即时获得您的免费体验金。</p><p><strong>*有关完整的促销条款和条件，请查看您的收件箱。</strong></p>
+      </div>
+      <div class="popup-cta">
+        <div class="btn btn-primary">立即领取</div>
+        <div class="btn btn-secondary">阅读更多</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

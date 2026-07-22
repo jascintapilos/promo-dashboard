@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BO Training Guide for Sales Team</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; }
+        .content { padding: 40px; }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .module {
+            background: #f0f7ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .step {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .tip {
+            background: #e8f4f8;
+            border-left: 4px solid #00bcd4;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .caution {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tbody tr:hover { background: #f5f5f5; }
+        ol, ul { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .quick-ref {
+            background: #f0f7ff;
+            border: 1px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+        .nav {
+            text-align: center;
+            margin: 40px 0 20px 0;
+        }
+        .nav a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover { background: #764ba2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 BO Training Guide for Sales Team</h1>
+            <p>Learn to Query Promos, Check Eligibility, and Assign Bonuses Independently</p>
+        </div>
+
+        <div class="content">
+            <!-- Overview -->
+            <h2>Training Overview</h2>
+            <div class="module">
+                <h3>What You'll Learn</h3>
+                <ul>
+                    <li>Query BO for promo codes by brand</li>
+                    <li>Check promo details (eligible tiers, validity, terms)</li>
+                    <li>Verify player claim history</li>
+                    <li>Evaluate bonus terms for red flags</li>
+                    <li>Assign promos in BO/CRM for your brands</li>
+                </ul>
+
+                <h3>Timeline</h3>
+                <p><strong>Duration:</strong> 1 day (4–6 hours total)</p>
+                <p><strong>Format:</strong> Live demo + hands-on practice</p>
+                <p><strong>Trainer:</strong> Jascinta or promo team member</p>
+
+                <h3>After Training, You Will Be Able To:</h3>
+                <ul>
+                    <li>✅ Make Tier 1 decisions independently (no waiting on promo team)</li>
+                    <li>✅ Check BO before offering any bonus</li>
+                    <li>✅ Assign promos yourself for WS1/WS2/QPRO1/QP2A</li>
+                    <li>✅ Spot red flags and decide when to escalate (Tier 2)</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 1 -->
+            <h2>Module 1: Login & Navigation</h2>
+            <div class="module">
+                <h3>Learning Objective</h3>
+                <p>Get comfortable accessing BO and finding the promo section.</p>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Access BO Portal</strong><br>
+                    Go to: [Your BO URL] (e.g., bo.mei707.com or bo.qpro.com)<br>
+                    Login with your assigned credentials
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Find Promotion Section</strong><br>
+                    Look for menu: <code>Promotions</code> or <code>Promo Management</code><br>
+                    You should see: Promotions List, Promotion Details, etc.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Select Your Brand</strong><br>
+                    If multi-brand BO, select your brand from dropdown<br>
+                    (WS1, WS2, QPRO1, QP2A, etc.)
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Tip:</strong> Bookmark the Promotions List page so you can access it quickly.
+                </div>
+            </div>
+
+            <!-- MODULE 2 -->
+            <h2>Module 2: Query Promos by Brand</h2>
+            <div class="module">
+                <h3>Learning Objective</h3>
+                <p>Find and verify if a promo code exists and is ACTIVE.</p>
+
+                <h3>Menu Paths by Platform</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>Bonus Type</th>
+                            <th>Menu Path</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="3"><strong>QPRO1–19</strong></td>
+                            <td>All Bonus Types</td>
+                            <td><code>Menu 3.2</code> – Promotion Codes</td>
+                        </tr>
+                        <tr>
+                            <td>Message Templates</td>
+                            <td><code>Menu 6.6</code> – Message Template</td>
+                        </tr>
+                        <tr>
+                            <td>Dialog Popups</td>
+                            <td><code>Menu 14.1.2</code> – Dialog</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3"><strong>QP2A/B/C/D</strong></td>
+                            <td>All Bonus Types</td>
+                            <td><code>Menu 3.2</code> – Promotion Codes</td>
+                        </tr>
+                        <tr>
+                            <td>Message Templates</td>
+                            <td><code>Menu 6.6</code> – Message Template</td>
+                        </tr>
+                        <tr>
+                            <td>Dialog Popups</td>
+                            <td><code>Menu 15.1.2</code> – Dialog</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3"><strong>WS1/WS2 (IGMP)</strong></td>
+                            <td>Deposit Bonus</td>
+                            <td><code>iGMP 3.1</code> – Deposit Bonus</td>
+                        </tr>
+                        <tr>
+                            <td>Free Credit</td>
+                            <td><code>iGMP 3.3</code> – Free Credit</td>
+                        </tr>
+                        <tr>
+                            <td>Free Spins</td>
+                            <td><code>iGMP 3.15</code> – Free Spins</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Access Promotions List</strong><br>
+                    <strong>For QPRO/QP2:</strong> Go to <code>Menu 3.2 → Promotion Codes</code><br>
+                    <strong>For WS1/WS2:</strong> Go to <code>iGMP 3.1 (Deposit) or 3.3 (Free Credit)</code><br>
+                    You'll see a table of all promos for your brand
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Search for a Promo Code</strong><br>
+                    Use the search/filter box: Type the promo code (e.g., <code>FT_DEP_VIP_100</code>)<br>
+                    System will show matching promos
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Check Status Column</strong><br>
+                    Look for <code>Status</code> column. It should show:<br>
+                    ✅ <code>ACTIVE</code> = promo is live<br>
+                    ⏳ <code>UPCOMING</code> = not yet live<br>
+                    ❌ <code>INACTIVE</code> or <code>ARCHIVED</code> = can't use
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Tip:</strong> If you can't find a promo code, ask in #ba-promo. It might not exist or might be on a different brand.
+                </div>
+
+                <h3>Practice Scenario 1</h3>
+                <p><strong>Task:</strong> Find promo code <code>FT_DEP_NRM_50</code> and verify it's ACTIVE.</p>
+                <p><strong>Steps:</strong> Open Promotions List → Search for code → Check Status column → Report findings</p>
+            </div>
+
+            <!-- MODULE 3 -->
+            <h2>Module 3: Check Promo Details</h2>
+            <div class="module">
+                <h3>Learning Objective</h3>
+                <p>Read promo terms (bonus amount, eligible tiers, valid dates, turnover).</p>
+
+                <h3>Specific Menu Locations</h3>
+                <ul>
+                    <li><strong>QPRO/QP2:</strong> Menu 3.2 → Click on Promo Code → Settings icon</li>
+                    <li><strong>WS1/WS2:</strong> iGMP 3.1/3.3 → Select Bonus → View Details</li>
+                </ul>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Open Promo Details</strong><br>
+                    <strong>QPRO/QP2:</strong> In Menu 3.2, click the <code>Settings</code> icon under "Action" column<br>
+                    <strong>WS1/WS2:</strong> In iGMP 3.1/3.3, select the bonus to view all details<br>
+                    Details page opens showing all promo info
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Check Key Fields</strong><br>
+                    Look for and note:
+                    <ul>
+                        <li><code>Bonus Amount</code> — MYR/SGD/currency + amount (e.g., "100% up to MYR 500")</li>
+                        <li><code>Eligible Tiers/Categories</code> — which player tiers can use (Bronze, Silver, Gold, etc.)</li>
+                        <li><code>Valid From / Valid Until</code> — dates (is it still valid today?)</li>
+                        <li><code>Turnover</code> — (e.g., 8x, 12x, 20x)</li>
+                        <li><code>Min Deposit</code> — minimum deposit required</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Evaluate Red Flags</strong><br>
+                    Ask yourself:
+                    <ul>
+                        <li>Is TO >20x? (might be hard to clear)</li>
+                        <li>Is min deposit >player's usual deposit?</li>
+                        <li>Is bonus amount too low (<10% of deposit)?</li>
+                        <li>Has the promo expired already?</li>
+                    </ul>
+                </div>
+
+                <div class="caution">
+                    <strong>⚠️ Red Flag:</strong> If you spot anything suspicious, DON'T offer it. Post in #ba-promo with the question.
+                </div>
+
+                <h3>Practice Scenario 2</h3>
+                <p><strong>Task:</strong> Open <code>FT_DEP_VIP_100</code> and identify:</p>
+                <ul>
+                    <li>What's the bonus amount?</li>
+                    <li>Which tiers are eligible?</li>
+                    <li>What's the turnover?</li>
+                    <li>Any red flags?</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 4 -->
+            <h2>Module 4: Check Player Claim History</h2>
+            <div class="module">
+                <h3>Learning Objective</h3>
+                <p>Verify if a player has already claimed a promo recently.</p>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Access Player Records</strong><br>
+                    Go to: <code>Players</code> or <code>Members</code> section<br>
+                    Search for player by ID/name/email
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Open Player Profile</strong><br>
+                    Click on the player name<br>
+                    Look for tab: <code>Claim History</code> or <code>Bonuses Claimed</code>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Check If Promo Was Claimed</strong><br>
+                    Search claim history for promo code<br>
+                    If you see it listed with a date, they've already claimed it<br>
+                    <strong>Decision:</strong> If claimed recently (same month), don't offer again
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Tip:</strong> If unsure about claim rules, post in #ba-promo asking "Can this player claim this promo again?"
+                </div>
+
+                <h3>Practice Scenario 3</h3>
+                <p><strong>Task:</strong> Check if player "John123" has claimed <code>FT_DEP_VIP_100</code> before.</p>
+                <p><strong>Steps:</strong> Go to Players → Search "John123" → Open profile → Check claim history → Report findings</p>
+            </div>
+
+            <!-- MODULE 5 -->
+            <h2>Module 5: Assign Promos (WS1/WS2/QPRO1/QP2A)</h2>
+            <div class="module">
+                <h3>Learning Objective</h3>
+                <p>Assign a verified promo to a player in BO/CRM.</p>
+
+                <h3>For WS1/WS2 (CRM/Smartico)</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Open Player CRM Record</strong><br>
+                    Go to Smartico or CRM for your brand<br>
+                    Search for player
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Find Promo/Bonus Section</strong><br>
+                    Look for: <code>Assign Bonus</code>, <code>Add Promo</code>, or <code>Bonuses</code> tab
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Enter Promo Code</strong><br>
+                    Type promo code (e.g., <code>FT_DEP_VIP_100</code>)<br>
+                    System should auto-populate the bonus details
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Confirm & Save</strong><br>
+                    Review assignment details<br>
+                    Click <code>Confirm</code> or <code>Save</code><br>
+                    Player receives the bonus
+                </div>
+
+                <h3>For QPRO1/QP2A (BO Dashboard)</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Go to Assignment Section</strong><br>
+                    In BO, find: <code>Promotion Assignments</code> or <code>Manual Assignment</code>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Select Player & Promo</strong><br>
+                    Enter: Player ID, Promo Code<br>
+                    System validates both exist
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Assign & Verify</strong><br>
+                    Click <code>Assign</code><br>
+                    System confirms: "Assignment successful"<br>
+                    Note the assignment ID for records
+                </div>
+
+                <div class="caution">
+                    <strong>⚠️ Common Error:</strong> If assignment times out or fails, try again. If it persists 3+ times, post in #ba-promo with error message.
+                </div>
+
+                <h3>Practice Scenario 4</h3>
+                <p><strong>Task:</strong> Assign <code>FT_DEP_VIP_100</code> to player "TestPlayer001" in sandbox BO.</p>
+                <p><strong>Steps:</strong> Open assignment page → Enter player ID → Enter promo code → Assign → Verify success</p>
+            </div>
+
+            <!-- QUICK REFERENCE -->
+            <h2>Quick Reference Sheet</h2>
+            <div class="quick-ref">
+                <h3>Before Offering Any Bonus (Tier 1 Checklist)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Check</th>
+                            <th>Where to Look</th>
+                            <th>What You're Looking For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Promo exists?</td>
+                            <td>Promotions List</td>
+                            <td>Search by code → Found = YES</td>
+                        </tr>
+                        <tr>
+                            <td>Is ACTIVE?</td>
+                            <td>Promotions List</td>
+                            <td>Status = "ACTIVE"</td>
+                        </tr>
+                        <tr>
+                            <td>Player tier matches?</td>
+                            <td>Promo Details</td>
+                            <td>Check eligible tiers vs player tier</td>
+                        </tr>
+                        <tr>
+                            <td>Not expired?</td>
+                            <td>Promo Details</td>
+                            <td>Valid Until date > today</td>
+                        </tr>
+                        <tr>
+                            <td>Already claimed?</td>
+                            <td>Player Claim History</td>
+                            <td>Promo code NOT in recent claims</td>
+                        </tr>
+                        <tr>
+                            <td>Red flags?</td>
+                            <td>Promo Details</td>
+                            <td>TO <20x, Min Dep reasonable, Amount >10%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Common BO Paths (by Platform)</h3>
+
+                <strong>QPRO1–19:</strong>
+                <ul>
+                    <li><strong>Promo Codes:</strong> Menu 3.2 → Search Code</li>
+                    <li><strong>Message Template:</strong> Menu 6.6 → Promotions → Message</li>
+                    <li><strong>Dialog Popup:</strong> Menu 14.1.2 → Create/Edit</li>
+                </ul>
+
+                <strong>QP2A/B/C/D:</strong>
+                <ul>
+                    <li><strong>Promo Codes:</strong> Menu 3.2 → Search Code</li>
+                    <li><strong>Message Template:</strong> Menu 6.6 → Promotions → Message</li>
+                    <li><strong>Dialog Popup:</strong> Menu 15.1.2 → Create/Edit</li>
+                </ul>
+
+                <strong>WS1/WS2 (IGMP):</strong>
+                <ul>
+                    <li><strong>Deposit Bonus:</strong> iGMP 3.1 → Select Bonus</li>
+                    <li><strong>Free Credit:</strong> iGMP 3.3 → Select Credit</li>
+                    <li><strong>Free Spins:</strong> iGMP 3.15 → Select Spins</li>
+                </ul>
+            </div>
+
+            <!-- PRACTICE EXERCISES -->
+            <h2>Practice Exercises (Hands-On)</h2>
+            <div class="module">
+                <h3>Exercise 1: Complete Promo Lookup (15 min)</h3>
+                <p><strong>Scenario:</strong> Sales VM wants to offer a Gold player promo <code>GLD_DEP_150</code>.</p>
+                <p><strong>Your Tasks:</strong></p>
+                <ol>
+                    <li>Find the promo in BO</li>
+                    <li>Verify it's ACTIVE</li>
+                    <li>Check bonus details (amount, TO, eligible tiers)</li>
+                    <li>Verify player tier matches</li>
+                    <li>Check player hasn't claimed recently</li>
+                    <li>Spot any red flags</li>
+                    <li>Decide: Offer or Escalate?</li>
+                </ol>
+
+                <h3>Exercise 2: Complete Assignment (15 min)</h3>
+                <p><strong>Scenario:</strong> You've decided to offer promo <code>FT_DEP_VIP_100</code> to player "SandboxPlayer".</p>
+                <p><strong>Your Tasks:</strong></p>
+                <ol>
+                    <li>Query BO to confirm promo is ACTIVE</li>
+                    <li>Check player claim history (no recent claims)</li>
+                    <li>Assign the promo in BO/CRM</li>
+                    <li>Verify assignment successful</li>
+                    <li>Document the assignment ID</li>
+                </ol>
+
+                <h3>Exercise 3: Spot Red Flags (10 min)</h3>
+                <p><strong>Scenario:</strong> You find promo <code>TEST_DEP_RISKY</code> with these terms:</p>
+                <ul>
+                    <li>Amount: 100% up to MYR 1000</li>
+                    <li>Turnover: 25x</li>
+                    <li>Eligible: Gold only</li>
+                    <li>Status: ACTIVE</li>
+                </ul>
+                <p><strong>Question:</strong> What red flags do you see? Would you offer this?</p>
+                <p><strong>Answer:</strong> TO is 25x (>20x threshold) = very hard to clear. Post in #ba-promo before offering.</p>
+            </div>
+
+            <!-- TROUBLESHOOTING -->
+            <h2>Troubleshooting</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Problem</th>
+                        <th>Likely Cause</th>
+                        <th>Solution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"Promo not found"</td>
+                        <td>Code doesn't exist or is on different brand</td>
+                        <td>Ask in #ba-promo: "Is [code] active?"</td>
+                    </tr>
+                    <tr>
+                        <td>"Assignment times out"</td>
+                        <td>BO lag or network issue</td>
+                        <td>Retry 1–2 times. If persists, post in #ba-promo</td>
+                    </tr>
+                    <tr>
+                        <td>"Player not found"</td>
+                        <td>Wrong player ID or spelled wrong</td>
+                        <td>Double-check player ID in CRM</td>
+                    </tr>
+                    <tr>
+                        <td>"Permission denied"</td>
+                        <td>Your account lacks assignment rights</td>
+                        <td>Contact Jascinta for access upgrade</td>
+                    </tr>
+                    <tr>
+                        <td>"Can't see player claim history"</td>
+                        <td>Different menu path per brand</td>
+                        <td>Ask trainer where claim history is for your brand</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- SIGN-OFF -->
+            <h2>Training Sign-Off</h2>
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 4px; margin: 20px 0;">
+                <h3>By End of Training (Jun 11), You Should:</h3>
+                <ul>
+                    <li>☑️ Access BO and navigate to Promotions section</li>
+                    <li>☑️ Query promos by code and verify ACTIVE status</li>
+                    <li>☑️ Read promo details (bonus, TO, eligible tiers, dates)</li>
+                    <li>☑️ Check player claim history</li>
+                    <li>☑️ Spot red flags (high TO, low amounts, expired dates)</li>
+                    <li>☑️ Assign promos in BO/CRM for your brands</li>
+                    <li>☑️ Know when to escalate to #ba-promo (Tier 2)</li>
+                </ul>
+
+                <p style="margin-top: 20px;"><strong>Trainer Signature:</strong> __________________ <strong>Date:</strong> __________</p>
+                <p><strong>Sales Team Lead Signature:</strong> __________________ <strong>Date:</strong> __________</p>
+            </div>
+
+            <div class="nav">
+                <a href="index.html">← Back to Index</a>
+                <a href="implementation_guide.html">Back to Implementation Guide →</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>BO Training Guide v1.0</strong></p>
+            <p>Owner: Jascinta | Created: 2026-06-09 | Duration: 1 day (4–6 hours)</p>
+        </div>
+    </div>
+</body>
+</html>

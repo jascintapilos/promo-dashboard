@@ -1,0 +1,36 @@
+{"kind":"deck","id":"pr/j669d9","name":"Deck"}
+{"kind":"layout","layoutId":"5b74de1b-93c2-43cc-9882-e932f20bd6a5","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"8ef4aad5-7b94-40ef-998e-1fd030bdad0d","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/pio6jr","slide":1,"title":"W H E R E   W E ’ R E   G O I N G","textShapes":16}
+{"kind":"shape","id":"sh/ormhg76l","slide":1,"name":"location-icon-bg","bbox":[60,58,74,74]}
+{"kind":"shape","id":"sh/nqtgn2p0","slide":1,"name":"location-pin-head","bbox":[87,78,20,20]}
+{"kind":"shape","id":"sh/2pkzexof","slide":1,"name":"location-pin-tail","bbox":[87,91,20,22]}
+{"kind":"textbox","id":"sh/1obyls7u","slide":1,"name":"eyebrow","text":"W H E R E   W E ’ R E   G O I N G","textPreview":"W H E R E   W E ’ R E   G O I N G","textChars":33,"textLines":1,"bbox":[162,55,470,25]}
+{"kind":"textbox","id":"sh/0n2hcn69","slide":1,"name":"title","text":"Project Location","textPreview":"Project Location","textChars":16,"textLines":1,"bbox":[158,79,570,65]}
+{"kind":"shape","id":"sh/fmtgjip4","slide":1,"name":"location-pill","bbox":[70,196,54,54]}
+{"kind":"shape","id":"sh/elkzadoj","slide":1,"name":"location-dot","bbox":[91,213,14,14]}
+{"kind":"textbox","id":"sh/lkfixw7e","slide":1,"name":"location-text","text":"SK Ulu Sebetan & Rh Flora, Sebetan area, Saratok district, Sarawak","textPreview":"SK Ulu Sebetan & Rh Flora, Sebetan area, Saratok district, Sarawak","textChars":66,"textLines":1,"bbox":[144,194,585,58]}
+{"kind":"shape","id":"sh/kj6hor6t","slide":1,"name":"airport-card","bbox":[62,294,670,164]}
+{"kind":"shape","id":"sh/y94fap4n","slide":1,"name":"airport-number","bbox":[84,318,48,48]}
+{"kind":"textbox","id":"sh/zadw3ul8","slide":1,"name":"airport-number-text","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[84,318,48,48]}
+{"kind":"textbox","id":"sh/0bmxcz2t","slide":1,"name":"airport-route","text":"Sibu Airport → SK Ulu Sebetan","textPreview":"Sibu Airport → SK Ulu Sebetan","textChars":29,"textLines":1,"bbox":[153,310,540,38]}
+{"kind":"textbox","id":"sh/lwve543y","slide":1,"name":"airport-distance","text":"118 km  ·  ~1 hr 30 min","textPreview":"118 km  ·  ~1 hr 30 min","textChars":23,"textLines":1,"bbox":[153,351,510,35]}
+{"kind":"textbox","id":"sh/q5kv6p4b","slide":1,"name":"airport-note","text":"Fastest route via Route 1 / AH150","textPreview":"Fastest route via Route 1 / AH150","textChars":33,"textLines":1,"bbox":[153,395,510,30]}
+{"kind":"shape","id":"sh/r6dwzulw","slide":1,"name":"petron-card","bbox":[62,480,670,190]}
+{"kind":"shape","id":"sh/c7mx8zmh","slide":1,"name":"petron-number","bbox":[84,504,48,48]}
+{"kind":"textbox","id":"sh/d8ve1k32","slide":1,"name":"petron-number-text","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[84,504,48,48]}
+{"kind":"textbox","id":"sh/a1ofi9kv","slide":1,"name":"petron-route","text":"Petron Pakan → SK Ulu Sebetan → Petron Debak","textPreview":"Petron Pakan → SK Ulu Sebetan → Petron Debak","textChars":44,"textLines":1,"bbox":[153,496,545,55]}
+{"kind":"textbox","id":"sh/v2xwbelg","slide":1,"name":"petron-distance","text":"103 km  ·  ~1 hr 26 min","textPreview":"103 km  ·  ~1 hr 26 min","textChars":23,"textLines":1,"bbox":[153,556,510,35]}
+{"kind":"textbox","id":"sh/76pc361s","slide":1,"name":"petron-note","text":"Pakan–school 52.7 km  ·  School–Debak 50.0 km","textPreview":"Pakan–school 52.7 km  ·  School–Debak 50.0 km","textChars":45,"textLines":1,"bbox":[153,602,520,30]}
+{"kind":"shape","id":"sh/6lgba1k7","slide":1,"name":"airport-map-frame","bbox":[785,181,755,294]}
+{"kind":"shape","id":"sh/s7itcb2d","slide":1,"name":"airport-caption","bbox":[797,424,731,39]}
+{"kind":"textbox","id":"sh/fa9c7q1o","slide":1,"name":"airport-caption-text","text":"SIBU AIRPORT → SK ULU SEBETAN   |   118 KM · ~1 HR 30 MIN","textPreview":"SIBU AIRPORT → SK ULU SEBETAN   |   118 KM · ~1 HR 30 MIN","textChars":57,"textLines":1,"bbox":[815,424,695,39]}
+{"kind":"shape","id":"sh/u90belk3","slide":1,"name":"petron-map-frame","bbox":[785,496,755,294]}
+{"kind":"shape","id":"sh/gbitgv29","slide":1,"name":"petron-caption","bbox":[797,739,731,39]}
+{"kind":"textbox","id":"sh/3e9cbq10","slide":1,"name":"petron-caption-text","text":"PETRON PAKAN → SK ULU SEBETAN → PETRON DEBAK   |   103 KM","textPreview":"PETRON PAKAN → SK ULU SEBETAN → PETRON DEBAK   |   103 KM","textChars":57,"textLines":1,"bbox":[815,739,695,39]}
+{"kind":"textbox","id":"sh/2d0bil0f","slide":1,"name":"footer-left","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[60,847,230,24]}
+{"kind":"textbox","id":"sh/0j2tsvyd","slide":1,"name":"footer-center","text":"Project Location","textPreview":"Project Location","textChars":16,"textLines":1,"bbox":[690,847,220,24]}
+{"kind":"textbox","id":"sh/14ba10zy","slide":1,"name":"footer-right","text":"3 / 20","textPreview":"3 / 20","textChars":6,"textLines":1,"bbox":[1450,847,90,24]}
+{"kind":"image","id":"im/ql8vi1sr","slide":1,"name":"","geometry":"rect","alt":"Google Maps route from Sibu Airport to SK Ulu Sebetan","bbox":[797,193,731,231]}
+{"kind":"image","id":"im/e98vmlsn","slide":1,"name":"","geometry":"rect","alt":"Google Maps route from Petron Pakan through SK Ulu Sebetan to Petron Debak","bbox":[797,508,731,231]}
+{"kind":"notes","id":"nt/pio6jr","slide":1,"text":""}

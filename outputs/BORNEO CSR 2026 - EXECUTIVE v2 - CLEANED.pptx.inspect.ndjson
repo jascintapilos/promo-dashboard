@@ -1,0 +1,523 @@
+{"kind":"deck","id":"pr/s90ont","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"DEFAULT"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"CORPORATE SOCIAL RESPONSIBILITY","textShapes":9}
+{"kind":"shape","id":"sh/k3yl0zql","slide":1,"name":"Shape 0","bbox":[57.6,48,163.2,129.6]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"Text 1","text":"CORPORATE SOCIAL RESPONSIBILITY","textPreview":"CORPORATE SOCIAL RESPONSIBILITY","textChars":31,"textLines":1,"bbox":[57.6,244.8,960,33.6]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"name":"Text 2","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[52.8,273.6,1104,110.4]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"Text 3","text":"SK Ulu Sebetan & Rh Flora, Saratok, Sarawak","textPreview":"SK Ulu Sebetan & Rh Flora, Saratok, Sarawak","textChars":43,"textLines":1,"bbox":[57.6,376.32,1056,52.8]}
+{"kind":"shape","id":"sh/fu94fe98","slide":1,"name":"Shape 4","bbox":[57.6,456,40.32,40.32]}
+{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"Text 5","text":"22 August 2026","textPreview":"22 August 2026","textChars":14,"textLines":1,"bbox":[110.4,454.08,331.2,44.16]}
+{"kind":"shape","id":"sh/hofulsf2","slide":1,"name":"Shape 6","bbox":[451.2,456,40.32,40.32]}
+{"kind":"textbox","id":"sh/vmdcj2xw","slide":1,"name":"Text 7","text":"8.30 AM – 2.00 PM","textPreview":"8.30 AM – 2.00 PM","textChars":17,"textLines":1,"bbox":[504,454.08,331.2,44.16]}
+{"kind":"shape","id":"sh/4r6dg7et","slide":1,"name":"Shape 8","bbox":[844.8,456,40.32,40.32]}
+{"kind":"textbox","id":"sh/ipovexwn","slide":1,"name":"Text 9","text":"SK Ulu Sebetan & Rh Flora, Saratok","textPreview":"SK Ulu Sebetan & Rh Flora, Saratok","textChars":34,"textLines":1,"bbox":[897.6,454.08,331.2,44.16]}
+{"kind":"shape","id":"sh/3qxwn2x8","slide":1,"name":"Shape 10","bbox":[57.6,590.4,1161.6,0]}
+{"kind":"textbox","id":"sh/sfqdkrep","slide":1,"name":"Text 11","text":"Borneo Unity, Community Sustainability","textPreview":"Borneo Unity, Community Sustainability","textChars":38,"textLines":1,"bbox":[57.6,609.6,1104,48]}
+{"kind":"textbox","id":"sh/dgzetcfa","slide":1,"name":"Text 12","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/1cvuxc7e","slide":1,"name":"Text 13","text":"1 / 22","textPreview":"1 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/rudgbyx4","slide":1,"name":"Image 0","bbox":[835.2,48,412.8,269.76]}
+{"kind":"image","id":"im/cfmxk3yp","slide":1,"name":"Image 1","bbox":[74.88,59.52,128.64,106.56]}
+{"kind":"image","id":"im/dgvyd8fa","slide":1,"name":"Image 2","bbox":[66.24,464.64,23.04,23.04]}
+{"kind":"image","id":"im/eh4fmdgv","slide":1,"name":"Image 3","bbox":[459.84,464.64,23.04,23.04]}
+{"kind":"image","id":"im/zidgfixg","slide":1,"name":"Image 4","bbox":[853.44,464.64,23.04,23.04]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":""}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"AGENDA","textShapes":27}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"name":"Text 0","text":"AGENDA","textPreview":"AGENDA","textChars":6,"textLines":1,"bbox":[57.6,52.8,576,33.6]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"name":"Text 1","text":"What We Will Cover","textPreview":"What We Will Cover","textChars":18,"textLines":1,"bbox":[52.8,81.6,960,67.2]}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"name":"Shape 2","bbox":[57.6,187.2,48,48]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"name":"Text 3","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[57.6,187.2,48,48]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"Text 4","text":"Project Location","textPreview":"Project Location","textChars":16,"textLines":1,"bbox":[158.4,187.2,451.2,48]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"name":"Shape 5","bbox":[57.6,256.32,48,48]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"name":"Text 6","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[57.6,256.32,48,48]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"Text 7","text":"Community Background & Challenges","textPreview":"Community Background & Challenges","textChars":33,"textLines":1,"bbox":[158.4,256.32,451.2,48]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"name":"Shape 8","bbox":[57.6,325.44,48,48]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"Text 9","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[57.6,325.44,48,48]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"Text 10","text":"Rh Spencer Biju — Fire Recovery","textPreview":"Rh Spencer Biju — Fire Recovery","textChars":31,"textLines":1,"bbox":[158.4,325.44,451.2,48]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"name":"Shape 11","bbox":[57.6,394.56,48,48]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"name":"Text 12","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[57.6,394.56,48,48]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"Text 13","text":"Project Objectives","textPreview":"Project Objectives","textChars":18,"textLines":1,"bbox":[158.4,394.56,451.2,48]}
+{"kind":"shape","id":"sh/t8byxkn2","slide":2,"name":"Shape 14","bbox":[57.6,463.68,48,48]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"name":"Text 15","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[57.6,463.68,48,48]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"Text 16","text":"Proposed CSR Initiatives","textPreview":"Proposed CSR Initiatives","textChars":24,"textLines":1,"bbox":[158.4,463.68,451.2,48]}
+{"kind":"shape","id":"sh/hcvy14ne","slide":2,"name":"Shape 17","bbox":[57.6,532.8,48,48]}
+{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"name":"Text 18","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[57.6,532.8,48,48]}
+{"kind":"textbox","id":"sh/u94fqp4n","slide":2,"name":"Text 19","text":"Water System Technical Assessment","textPreview":"Water System Technical Assessment","textChars":33,"textLines":1,"bbox":[158.4,532.8,451.2,48]}
+{"kind":"shape","id":"sh/p0vy54na","slide":2,"name":"Shape 20","bbox":[662.4,187.2,48,48]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"name":"Text 21","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[662.4,187.2,48,48]}
+{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"name":"Text 22","text":"Roles & Responsibilities","textPreview":"Roles & Responsibilities","textChars":24,"textLines":1,"bbox":[763.2,187.2,451.2,48]}
+{"kind":"shape","id":"sh/onydsbmd","slide":2,"name":"Shape 23","bbox":[662.4,256.32,48,48]}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"name":"Text 24","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[662.4,256.32,48,48]}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"name":"Text 25","text":"Cost Estimation & Funding Plan","textPreview":"Cost Estimation & Funding Plan","textChars":30,"textLines":1,"bbox":[763.2,256.32,451.2,48]}
+{"kind":"shape","id":"sh/wbidwb29","slide":2,"name":"Shape 26","bbox":[662.4,325.44,48,48]}
+{"kind":"textbox","id":"sh/xcrupg3u","slide":2,"name":"Text 27","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[662.4,325.44,48,48]}
+{"kind":"textbox","id":"sh/je9crql0","slide":2,"name":"Text 28","text":"Timeline / Itinerary","textPreview":"Timeline / Itinerary","textChars":20,"textLines":1,"bbox":[763.2,325.44,451.2,48]}
+{"kind":"shape","id":"sh/ru5cbqd4","slide":2,"name":"Shape 29","bbox":[662.4,394.56,48,48]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"name":"Text 30","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[662.4,394.56,48,48]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"name":"Text 31","text":"Expected Outcomes","textPreview":"Expected Outcomes","textChars":17,"textLines":1,"bbox":[763.2,394.56,451.2,48]}
+{"kind":"shape","id":"sh/fypcfqdg","slide":2,"name":"Shape 32","bbox":[662.4,463.68,48,48]}
+{"kind":"textbox","id":"sh/exgvmlcv","slide":2,"name":"Text 33","text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[662.4,463.68,48,48]}
+{"kind":"textbox","id":"sh/gzydovul","slide":2,"name":"Text 34","text":"Q&A","textPreview":"Q&A","textChars":3,"textLines":1,"bbox":[763.2,463.68,451.2,48]}
+{"kind":"shape","id":"sh/v2lc36dw","slide":2,"name":"Shape 35","bbox":[662.4,537.6,561.6,96]}
+{"kind":"textbox","id":"sh/0vq1o36x","slide":2,"name":"Text 36","text":"Supporting detail, full itineraries and site photos are available in the Appendix.","textPreview":"Supporting detail, full itineraries and site photos are available in the Appendix.","textChars":82,"textLines":1,"bbox":[734.4,542.4,480,86.4]}
+{"kind":"textbox","id":"sh/1wzix87i","slide":2,"name":"Text 37","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/et8zmto7","slide":2,"name":"Text 38","text":"2 / 22","textPreview":"2 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/wbax8ful","slide":2,"name":"Image 0","bbox":[117.12,195.84,30.72,30.72]}
+{"kind":"image","id":"im/je1g3adc","slide":2,"name":"Image 1","bbox":[117.12,264.96,30.72,30.72]}
+{"kind":"image","id":"im/idsfa5cr","slide":2,"name":"Image 2","bbox":[117.12,334.08,30.72,30.72]}
+{"kind":"image","id":"im/5g3y5kvi","slide":2,"name":"Image 3","bbox":[117.12,403.2,30.72,30.72]}
+{"kind":"image","id":"im/4fuxcfux","slide":2,"name":"Image 4","bbox":[117.12,472.32,30.72,30.72]}
+{"kind":"image","id":"im/zihwrqd8","slide":2,"name":"Image 5","bbox":[117.12,541.44,30.72,30.72]}
+{"kind":"image","id":"im/yh8fylcn","slide":2,"name":"Image 6","bbox":[721.92,195.84,30.72,30.72]}
+{"kind":"image","id":"im/2xwz6twb","slide":2,"name":"Image 7","bbox":[721.92,264.96,30.72,30.72]}
+{"kind":"image","id":"im/3yp0zyxg","slide":2,"name":"Image 8","bbox":[721.92,334.08,30.72,30.72]}
+{"kind":"image","id":"im/ozyh83e1","slide":2,"name":"Image 9","bbox":[721.92,403.2,30.72,30.72]}
+{"kind":"image","id":"im/p07i18fm","slide":2,"name":"Image 10","bbox":[721.92,472.32,30.72,30.72]}
+{"kind":"image","id":"im/e9wz29wz","slide":2,"name":"Image 11","bbox":[681.6,561.6,38.4,38.4]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":""}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"WHERE WE'RE GOING","textShapes":10}
+{"kind":"shape","id":"sh/cza94vmx","slide":3,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"Text 1","text":"WHERE WE'RE GOING","textPreview":"WHERE WE'RE GOING","textChars":17,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"Text 2","text":"Project Location","textPreview":"Project Location","textChars":16,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/obq90bml","slide":3,"name":"Shape 3","bbox":[57.6,177.6,44.16,44.16]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"name":"Text 4","text":"SK Ulu Sebetan & Rh Flora, Sebetan area, Saratok district, Sarawak","textPreview":"SK Ulu Sebetan & Rh Flora, Sebetan area, Saratok district, Sarawak","textChars":66,"textLines":1,"bbox":[115.2,172.8,537.6,72]}
+{"kind":"shape","id":"sh/n6ls3alk","slide":3,"name":"Shape 5","bbox":[57.6,312,44.16,44.16]}
+{"kind":"textbox","id":"sh/m1c3mlsn","slide":3,"name":"Text 6","text":"≈119 km (1 hr 25 min) from Sibu Airport","textPreview":"≈119 km (1 hr 25 min) from Sibu Airport","textChars":39,"textLines":1,"bbox":[115.2,307.2,537.6,72]}
+{"kind":"shape","id":"sh/943mhgre","slide":3,"name":"Shape 7","bbox":[57.6,446.4,44.16,44.16]}
+{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"name":"Text 8","text":"115 km highway + 3.9 km tar road — accessible to most vehicle types with minimal challenge","textPreview":"115 km highway + 3.9 km tar road — accessible to most vehicle types with minimal challenge","textChars":90,"textLines":1,"bbox":[115.2,441.6,537.6,72]}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"Shape 9","bbox":[57.6,580.8,44.16,44.16]}
+{"kind":"textbox","id":"sh/w7ulsvqp","slide":3,"name":"Text 10","text":"Nearest Petron stations: Pakan (53 km) & Debak (47 km)","textPreview":"Nearest Petron stations: Pakan (53 km) & Debak (47 km)","textChars":54,"textLines":1,"bbox":[115.2,576,537.6,72]}
+{"kind":"shape","id":"sh/i9w3u58v","slide":3,"name":"Shape 11","bbox":[681.6,144,537.6,427.2]}
+{"kind":"shape","id":"sh/e10f2twf","slide":3,"name":"Shape 12","bbox":[681.6,537.6,537.6,34.56]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"name":"Text 13","text":"Route from Sibu Airport to SK Ulu Sebetan","textPreview":"Route from Sibu Airport to SK Ulu Sebetan","textChars":41,"textLines":1,"bbox":[691.2,537.6,518.4,34.56]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"name":"Text 14","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/14ryd8fq","slide":3,"name":"Text 15","text":"Project Location","textPreview":"Project Location","textChars":16,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"Text 16","text":"3 / 22","textPreview":"3 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/0z2ds325","slide":3,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/fytczylk","slide":3,"name":"Image 1","bbox":[68.16,188.16,23.04,23.04]}
+{"kind":"image","id":"im/ed0vqtkz","slide":3,"name":"Image 2","bbox":[68.16,322.56,23.04,23.04]}
+{"kind":"image","id":"im/lwvexsju","slide":3,"name":"Image 3","bbox":[68.16,456.96,23.04,23.04]}
+{"kind":"image","id":"im/kvmd4n29","slide":3,"name":"Image 4","bbox":[68.16,591.36,23.04,23.04]}
+{"kind":"image","id":"im/ihgryp0r","slide":3,"name":"Image 5","bbox":[681.6,144,537.6,427.2]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":""}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"WHO WE'RE SERVING","textShapes":16}
+{"kind":"shape","id":"sh/1cj2d8b6","slide":4,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"Text 1","text":"WHO WE'RE SERVING","textPreview":"WHO WE'RE SERVING","textChars":17,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"Text 2","text":"Community Background & Challenges","textPreview":"Community Background & Challenges","textChars":33,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"name":"Shape 3","bbox":[57.6,148.8,244.8,144]}
+{"kind":"shape","id":"sh/sna103ap","slide":4,"name":"Shape 4","bbox":[155.04,162.24,49.92,49.92]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"Text 5","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[57.6,212.16,244.8,42.24]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"name":"Text 6","text":"Longhouses","textPreview":"Longhouses","textChars":10,"textLines":1,"bbox":[67.2,254.4,225.6,30.72]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"Shape 7","bbox":[312,148.8,244.8,144]}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"name":"Shape 8","bbox":[409.44,162.24,49.92,49.92]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"name":"Text 9","text":"~700","textPreview":"~700","textChars":4,"textLines":1,"bbox":[312,212.16,244.8,42.24]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"name":"Text 10","text":"Residents","textPreview":"Residents","textChars":9,"textLines":1,"bbox":[321.6,254.4,225.6,30.72]}
+{"kind":"shape","id":"sh/a5kr2xg3","slide":4,"name":"Shape 11","bbox":[566.4,148.8,244.8,144]}
+{"kind":"shape","id":"sh/v6tsv2xo","slide":4,"name":"Shape 12","bbox":[663.84,162.24,49.92,49.92]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"Text 13","text":"31","textPreview":"31","textChars":2,"textLines":1,"bbox":[566.4,212.16,244.8,42.24]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"name":"Text 14","text":"Students (SK Ulu Sebetan)","textPreview":"Students (SK Ulu Sebetan)","textChars":25,"textLines":1,"bbox":[576,254.4,225.6,30.72]}
+{"kind":"shape","id":"sh/3ytsrmpw","slide":4,"name":"Shape 15","bbox":[840,148.8,379.2,417.6]}
+{"kind":"shape","id":"sh/2xkrih8b","slide":4,"name":"Shape 16","bbox":[840,531.84,379.2,34.56]}
+{"kind":"textbox","id":"sh/1wbapc7q","slide":4,"name":"Text 17","text":"Longhouse community, Ulu Sebetan","textPreview":"Longhouse community, Ulu Sebetan","textChars":32,"textLines":1,"bbox":[849.6,531.84,360,34.56]}
+{"kind":"textbox","id":"sh/gv29g7q5","slide":4,"name":"Text 18","text":"Longhouse Communities","textPreview":"Longhouse Communities","textChars":21,"textLines":1,"bbox":[57.6,316.8,758.4,33.6]}
+{"kind":"textbox","id":"sh/fu9sn2p0","slide":4,"name":"Text 19","text":"Rh Spencer Biju anak Nyambang\nRh Flora Ngayak anak Jugi\nRh Langan anak Limping\nRh Kumbong anak Sabok","textPreview":"Rh Spencer Biju anak Nyambang | Rh Flora Ngayak anak Jugi | Rh Langan anak Limping | Rh Kumbong anak Sabok","textChars":100,"textLines":4,"bbox":[57.6,355.2,758.4,129.6]}
+{"kind":"textbox","id":"sh/et0reh8f","slide":4,"name":"Text 20","text":"Key Challenges","textPreview":"Key Challenges","textChars":14,"textLines":1,"bbox":[57.6,494.4,758.4,33.6]}
+{"kind":"textbox","id":"sh/tsrqlc7u","slide":4,"name":"Text 21","text":"Water supply reliability and storage capacity\nLimited access to healthcare services\nCommunity infrastructure and public facilities\nRh Spencer Biju still recovering from the 2024 fire","textPreview":"Water supply reliability and storage capacity | Limited access to healthcare services | Community infrastructure and public facilities | ...","textChars":182,"textLines":4,"bbox":[57.6,532.8,758.4,124.8]}
+{"kind":"textbox","id":"sh/sri9s7q9","slide":4,"name":"Text 22","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/ilwf69kv","slide":4,"name":"Text 23","text":"Community Background","textPreview":"Community Background","textChars":20,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/jm5gze1g","slide":4,"name":"Text 24","text":"4 / 22","textPreview":"4 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/725s3il8","slide":4,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/61wbax4n","slide":4,"name":"Image 1","bbox":[166.56,173.76,26.88,26.88]}
+{"kind":"image","id":"im/hs7u9c3a","slide":4,"name":"Image 2","bbox":[420.96,173.76,26.88,26.88]}
+{"kind":"image","id":"im/grytg7mp","slide":4,"name":"Image 3","bbox":[675.36,173.76,26.88,26.88]}
+{"kind":"image","id":"im/fqps72l4","slide":4,"name":"Image 4","alt":"Residents gathered inside a longhouse community space","bbox":[840,148.8,379.2,417.6]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":""}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"URGENT NEED","textShapes":11}
+{"kind":"shape","id":"sh/dgbulwnm","slide":5,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"Text 1","text":"URGENT NEED","textPreview":"URGENT NEED","textChars":11,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"name":"Text 2","text":"Rh Spencer Biju — Fire Recovery","textPreview":"Rh Spencer Biju — Fire Recovery","textChars":31,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/032tgr6d","slide":5,"name":"Shape 3","bbox":[57.6,153.6,590.4,436.8]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"name":"Shape 4","bbox":[57.6,555.84,590.4,34.56]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"Text 5","text":"2024 fire at Rh Spencer Biju longhouse","textPreview":"2024 fire at Rh Spencer Biju longhouse","textChars":38,"textLines":1,"bbox":[67.2,555.84,571.2,34.56]}
+{"kind":"shape","id":"sh/w32dkbuh","slide":5,"name":"Shape 6","bbox":[691.2,168,42.24,42.24]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"Text 7","text":"26 families lost their homes in the 2024 fire","textPreview":"26 families lost their homes in the 2024 fire","textChars":45,"textLines":1,"bbox":[746.88,164.16,475.2,81.6]}
+{"kind":"shape","id":"sh/v2twb6dw","slide":5,"name":"Shape 8","bbox":[691.2,264,42.24,42.24]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"Text 9","text":"No electricity — villagers rely on generators, gas lamps and candles","textPreview":"No electricity — villagers rely on generators, gas lamps and candles","textChars":68,"textLines":1,"bbox":[746.88,260.16,475.2,81.6]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"Shape 10","bbox":[691.2,360,42.24,42.24]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"name":"Text 11","text":"Rebuilding is ongoing and currently self-funded","textPreview":"Rebuilding is ongoing and currently self-funded","textChars":47,"textLines":1,"bbox":[746.88,356.16,475.2,81.6]}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"name":"Shape 12","bbox":[691.2,465.6,530.88,168]}
+{"kind":"shape","id":"sh/hgrmpwj2","slide":5,"name":"Shape 13","bbox":[712.32,486.72,46.08,46.08]}
+{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"name":"Text 14","text":"Proposed Solution","textPreview":"Proposed Solution","textChars":17,"textLines":1,"bbox":[772.8,484.8,432,38.4]}
+{"kind":"textbox","id":"sh/ud0ne10b","slide":5,"name":"Text 15","text":"Solar streetlight installation across all 4 longhouses — improving night-time safety, visibility and accessibility for residents.","textPreview":"Solar streetlight installation across all 4 longhouses — improving night-time safety, visibility and accessibility for residents.","textChars":129,"textLines":1,"bbox":[712.32,528,489.6,96]}
+{"kind":"textbox","id":"sh/pkr6tgjy","slide":5,"name":"Text 16","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"name":"Text 17","text":"Fire Recovery","textPreview":"Fire Recovery","textChars":13,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"name":"Text 18","text":"5 / 22","textPreview":"5 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/9kbyhg7e","slide":5,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/ulkfaloz","slide":5,"name":"Image 1","bbox":[57.6,153.6,590.4,436.8]}
+{"kind":"image","id":"im/vmdgjqpk","slide":5,"name":"Image 2","bbox":[701.76,177.6,23.04,23.04]}
+{"kind":"image","id":"im/5gfi9krm","slide":5,"name":"Image 3","bbox":[701.76,273.6,23.04,23.04]}
+{"kind":"image","id":"im/4f6hgfq1","slide":5,"name":"Image 4","bbox":[701.76,369.6,23.04,23.04]}
+{"kind":"image","id":"im/jex07a9g","slide":5,"name":"Image 5","bbox":[723.84,498.24,23.04,23.04]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":""}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"WHY WE'RE HERE","textShapes":14}
+{"kind":"shape","id":"sh/yhg7epsj","slide":6,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"Text 1","text":"WHY WE'RE HERE","textPreview":"WHY WE'RE HERE","textChars":14,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"name":"Text 2","text":"Project Objectives","textPreview":"Project Objectives","textChars":18,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"Shape 3","bbox":[57.6,158.4,1164.48,148.8]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"name":"Text 4","text":"“Guided by ESG and community sustainability principles, this CSR programme focuses on improving water accessibility, healthcare, safety and community resilience for approximately 700 residents and 31 students of SK Ulu Sebetan.”","textPreview":"“Guided by ESG and community sustainability principles, this CSR programme focuses on improving water accessibility, healthcare, safety a...","textChars":228,"textLines":1,"bbox":[96,172.8,1089.6,120]}
+{"kind":"shape","id":"sh/oryp8fah","slide":6,"name":"Shape 5","bbox":[57.6,340.8,275.52,192]}
+{"kind":"shape","id":"sh/pc76hkr2","slide":6,"name":"Shape 6","bbox":[76.8,360,46.08,46.08]}
+{"kind":"textbox","id":"sh/w32twb6l","slide":6,"name":"Text 7","text":"Water Accessibility","textPreview":"Water Accessibility","textChars":19,"textLines":1,"bbox":[136.32,358.08,179.52,53.76]}
+{"kind":"textbox","id":"sh/v2tcn650","slide":6,"name":"Text 8","text":"Reliable, sustainable water supply for school & community","textPreview":"Reliable, sustainable water supply for school & community","textChars":57,"textLines":1,"bbox":[86.4,419.52,217.92,96]}
+{"kind":"shape","id":"sh/u1kbu1ov","slide":6,"name":"Shape 9","bbox":[356.16,340.8,275.52,192]}
+{"kind":"shape","id":"sh/5svutgni","slide":6,"name":"Shape 10","bbox":[375.36,360,46.08,46.08]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"Text 11","text":"Healthcare","textPreview":"Healthcare","textChars":10,"textLines":1,"bbox":[434.88,358.08,179.52,53.76]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"name":"Text 12","text":"Basic screening & awareness for ~700 residents","textPreview":"Basic screening & awareness for ~700 residents","textChars":46,"textLines":1,"bbox":[384.96,419.52,217.92,96]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"name":"Shape 13","bbox":[654.72,340.8,275.52,192]}
+{"kind":"shape","id":"sh/svmt4v6t","slide":6,"name":"Shape 14","bbox":[673.92,360,46.08,46.08]}
+{"kind":"textbox","id":"sh/dcnm98zm","slide":6,"name":"Text 15","text":"Safety","textPreview":"Safety","textChars":6,"textLines":1,"bbox":[733.44,358.08,179.52,53.76]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"name":"Text 16","text":"Solar lighting and safer community infrastructure","textPreview":"Solar lighting and safer community infrastructure","textChars":49,"textLines":1,"bbox":[683.52,419.52,217.92,96]}
+{"kind":"shape","id":"sh/bq547yhw","slide":6,"name":"Shape 17","bbox":[953.28,340.8,275.52,192]}
+{"kind":"shape","id":"sh/0fy5k3id","slide":6,"name":"Shape 18","bbox":[972.48,360,46.08,46.08]}
+{"kind":"textbox","id":"sh/ydgnit07","slide":6,"name":"Text 19","text":"Community Resilience","textPreview":"Community Resilience","textChars":20,"textLines":1,"bbox":[1032,358.08,179.52,53.76]}
+{"kind":"textbox","id":"sh/zep4byhs","slide":6,"name":"Text 20","text":"Supporting recovery, identity and self-sufficiency","textPreview":"Supporting recovery, identity and self-sufficiency","textChars":50,"textLines":1,"bbox":[982.08,419.52,217.92,96]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"name":"Text 21","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/1k3mhozu","slide":6,"name":"Text 22","text":"Project Objectives","textPreview":"Project Objectives","textChars":18,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/jet8nm1c","slide":6,"name":"Text 23","text":"6 / 22","textPreview":"6 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/tob6lc7u","slide":6,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/6l0nax83","slide":6,"name":"Image 1","bbox":[88.32,371.52,23.04,23.04]}
+{"kind":"image","id":"im/7mtoj2po","slide":6,"name":"Image 2","bbox":[386.88,371.52,23.04,23.04]}
+{"kind":"image","id":"im/kji587qd","slide":6,"name":"Image 3","bbox":[685.44,371.52,23.04,23.04]}
+{"kind":"image","id":"im/lkr6hc7i","slide":6,"name":"Image 4","bbox":[984,371.52,23.04,23.04]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":""}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"THE PROGRAMME","textShapes":5}
+{"kind":"shape","id":"sh/cb2tkvap","slide":7,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"Text 1","text":"THE PROGRAMME","textPreview":"THE PROGRAMME","textChars":13,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"Text 2","text":"Proposed CSR Initiatives","textPreview":"Proposed CSR Initiatives","textChars":24,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/l0vuh0rm","slide":7,"name":"Shape 3","bbox":[57.6,222.1,42.24,42.24]}
+{"kind":"shape","id":"sh/fi9c369c","slide":7,"name":"Shape 4","bbox":[57.6,286.13,42.24,42.24]}
+{"kind":"shape","id":"sh/a9ojq5kz","slide":7,"name":"Shape 5","bbox":[57.6,350.16,42.24,42.24]}
+{"kind":"shape","id":"sh/cbq1sv25","slide":7,"name":"Shape 6","bbox":[57.6,414.19,42.24,42.24]}
+{"kind":"shape","id":"sh/25ojml43","slide":7,"name":"Shape 7","bbox":[57.6,478.22,42.24,42.24]}
+{"kind":"shape","id":"sh/o761ov2t","slide":7,"name":"Shape 8","bbox":[57.6,542.26,42.24,42.24]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"Text 9","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/id4ju1oz","slide":7,"name":"Text 10","text":"Proposed CSR Initiatives","textPreview":"Proposed CSR Initiatives","textChars":24,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"name":"Text 11","text":"7 / 22","textPreview":"7 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"table","id":"tb/mx0bm94b","slide":7,"name":"Table 0","rows":7,"cols":3,"preview":"Initiative | Lead | Beneficiaries","bbox":[129.6,163.2,1056,432]}
+{"kind":"image","id":"im/vat4ne5o","slide":7,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/50v6tonq","slide":7,"name":"Image 1","bbox":[68.16,231.7,23.04,23.04]}
+{"kind":"image","id":"im/4zm50365","slide":7,"name":"Image 2","bbox":[68.16,295.73,23.04,23.04]}
+{"kind":"image","id":"im/3ydory5k","slide":7,"name":"Image 3","bbox":[68.16,359.76,23.04,23.04]}
+{"kind":"image","id":"im/ix4nytoz","slide":7,"name":"Image 4","bbox":[68.16,423.79,23.04,23.04]}
+{"kind":"image","id":"im/l4rmh4n6","slide":7,"name":"Image 5","bbox":[68.16,487.82,23.04,23.04]}
+{"kind":"image","id":"im/k3i5oz61","slide":7,"name":"Image 6","bbox":[68.16,551.86,23.04,23.04]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":""}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"TECHNICAL FINDINGS","textShapes":15}
+{"kind":"shape","id":"sh/18byd4zy","slide":8,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"Text 1","text":"TECHNICAL FINDINGS","textPreview":"TECHNICAL FINDINGS","textChars":18,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"Text 2","text":"Water System Technical Assessment","textPreview":"Water System Technical Assessment","textChars":33,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/sjix0zy1","slide":8,"name":"Shape 3","bbox":[57.6,153.6,547.2,244.8]}
+{"kind":"shape","id":"sh/je9g3ahk","slide":8,"name":"Shape 4","bbox":[57.6,388.8,547.2,34.56]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"Text 5","text":"Existing water storage tanks, SK Ulu Sebetan","textPreview":"Existing water storage tanks, SK Ulu Sebetan","textChars":44,"textLines":1,"bbox":[67.2,388.8,528,34.56]}
+{"kind":"shape","id":"sh/98rehwve","slide":8,"name":"Shape 6","bbox":[57.6,436.8,547.2,182.4]}
+{"kind":"shape","id":"sh/m5gvmhwn","slide":8,"name":"Shape 7","bbox":[57.6,609.6,547.2,34.56]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"name":"Text 8","text":"Cracked section of existing gravity piping","textPreview":"Cracked section of existing gravity piping","textChars":42,"textLines":1,"bbox":[67.2,609.6,528,34.56]}
+{"kind":"textbox","id":"sh/0jydkreh","slide":8,"name":"Text 9","text":"Existing Condition","textPreview":"Existing Condition","textChars":18,"textLines":1,"bbox":[638.4,158.4,585.6,30.72]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"Text 10","text":"Gravity-fed system sourced from upstream catchment\nTwo usable tanks identified (~10,000L each); not linked to any storage","textPreview":"Gravity-fed system sourced from upstream catchment | Two usable tanks identified (~10,000L each); not linked to any storage","textChars":121,"textLines":2,"bbox":[638.4,192,585.6,96]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"name":"Text 11","text":"Findings","textPreview":"Findings","textChars":8,"textLines":1,"bbox":[638.4,285.12,585.6,30.72]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"name":"Text 12","text":"Cracks and deterioration on existing piping\nSusceptible to weather, fallen branches and wear","textPreview":"Cracks and deterioration on existing piping | Susceptible to weather, fallen branches and wear","textChars":92,"textLines":2,"bbox":[638.4,318.72,585.6,96]}
+{"kind":"textbox","id":"sh/kfixwbe1","slide":8,"name":"Text 13","text":"Proposed Solution","textPreview":"Proposed Solution","textChars":17,"textLines":1,"bbox":[638.4,411.84,585.6,30.72]}
+{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"name":"Text 14","text":"Upgrade gravity system, Rh Biju to SK Ulu Sebetan (3km)\nReplace with HDPE piping; add 4 storage tanks + rainwater harvesting","textPreview":"Upgrade gravity system, Rh Biju to SK Ulu Sebetan (3km) | Replace with HDPE piping; add 4 storage tanks + rainwater harvesting","textChars":124,"textLines":2,"bbox":[638.4,445.44,585.6,96]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"name":"Text 15","text":"Expected Benefits","textPreview":"Expected Benefits","textChars":17,"textLines":1,"bbox":[638.4,538.56,585.6,30.72]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"name":"Text 16","text":"Improved reliability & storage capacity\nReduced supply disruptions for school & longhouses","textPreview":"Improved reliability & storage capacity | Reduced supply disruptions for school & longhouses","textChars":90,"textLines":2,"bbox":[638.4,572.16,585.6,96]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"name":"Text 17","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/6twve1oz","slide":8,"name":"Text 18","text":"Water Technical Assessment","textPreview":"Water Technical Assessment","textChars":26,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/5sne5wne","slide":8,"name":"Text 19","text":"8 / 22","textPreview":"8 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/bmxs7ilg","slide":8,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/wnq9gnm1","slide":8,"name":"Image 1","bbox":[57.6,153.6,547.2,244.8]}
+{"kind":"image","id":"im/xoza9s3m","slide":8,"name":"Image 2","bbox":[57.6,436.8,547.2,182.4]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":""}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"WHO'S DOING WHAT","textShapes":5}
+{"kind":"shape","id":"sh/1cfmhgne","slide":9,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"name":"Text 1","text":"WHO'S DOING WHAT","textPreview":"WHO'S DOING WHAT","textChars":16,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"name":"Text 2","text":"Roles & Responsibilities","textPreview":"Roles & Responsibilities","textChars":24,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"name":"Text 3","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"name":"Text 4","text":"Roles & Responsibilities","textPreview":"Roles & Responsibilities","textChars":24,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"name":"Text 5","text":"9 / 22","textPreview":"9 / 22","textChars":6,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"table","id":"tb/2pw3ytsv","slide":9,"name":"Table 0","rows":18,"cols":3,"preview":"Category | Name(s) | Task / Role","bbox":[48,136.32,1183.68,532.8]}
+{"kind":"image","id":"im/faho3ad0","slide":9,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":""}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"INVESTMENT","textShapes":11}
+{"kind":"shape","id":"sh/xc3mho32","slide":10,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"name":"Text 1","text":"INVESTMENT","textPreview":"INVESTMENT","textChars":10,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"name":"Text 2","text":"Cost Estimation & Funding Plan","textPreview":"Cost Estimation & Funding Plan","textChars":30,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"name":"Text 3","text":"Priority 1 — Essential","textPreview":"Priority 1 — Essential","textChars":22,"textLines":1,"bbox":[48,144,729.6,28.8]}
+{"kind":"textbox","id":"sh/725onyl4","slide":10,"name":"Text 4","text":"Priority 2 — Subject to Funding","textPreview":"Priority 2 — Subject to Funding","textChars":31,"textLines":1,"bbox":[48,443.52,729.6,28.8]}
+{"kind":"shape","id":"sh/s7yt4b21","slide":10,"name":"Shape 5","bbox":[801.6,144,430.08,326.4]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"name":"Text 6","text":"Proposed Funding Plan","textPreview":"Proposed Funding Plan","textChars":21,"textLines":1,"bbox":[825.6,158.4,384,33.6]}
+{"kind":"textbox","id":"sh/q5gb21kb","slide":10,"name":"Text 7","text":"Petron HQ Contribution: RM10,000\nSarawak Dealers: RM800 minimum / station (per dealer survey)\nSabah Dealers: RM600 minimum / station (per dealer survey)\nCommunity Gotong-Royong labour contribution (in-kind)","textPreview":"Petron HQ Contribution: RM10,000 | Sarawak Dealers: RM800 minimum / station (per dealer survey) | Sabah Dealers: RM600 minimum / station ...","textChars":206,"textLines":4,"bbox":[825.6,196.8,384,168]}
+{"kind":"shape","id":"sh/r6pcv6lw","slide":10,"name":"Shape 8","bbox":[825.6,369.6,384,86.4]}
+{"kind":"textbox","id":"sh/1cru1g3y","slide":10,"name":"Text 9","text":"If funds raised fall short, priority goes to Priority 1 (Essential) projects — particularly the Water Gravity System.","textPreview":"If funds raised fall short, priority goes to Priority 1 (Essential) projects — particularly the Water Gravity System.","textChars":117,"textLines":1,"bbox":[873.6,374.4,326.4,78.72]}
+{"kind":"shape","id":"sh/e9gb61k7","slide":10,"name":"Shape 10","bbox":[48,635.52,1183.68,44.16]}
+{"kind":"textbox","id":"sh/fapcz6ls","slide":10,"name":"Text 11","text":"Total CSR Investment: RM63,000  (Priority 1 + Priority 2, excl. Medical Camp)      Medical Camp: RM15,000 — separately funded via KKM","textPreview":"Total CSR Investment: RM63,000  (Priority 1 + Priority 2, excl. Medical Camp)      Medical Camp: RM15,000 — separately funded via KKM","textChars":133,"textLines":1,"bbox":[67.2,635.52,1152,44.16]}
+{"kind":"textbox","id":"sh/ozitcv29","slide":10,"name":"Text 12","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/p0ru503u","slide":10,"name":"Text 13","text":"Cost & Funding","textPreview":"Cost & Funding","textChars":14,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/xwnupgvy","slide":10,"name":"Text 14","text":"10 / 22","textPreview":"10 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"table","id":"tb/8v6h03ix","slide":10,"name":"Table 0","rows":7,"cols":3,"preview":"Project | RM | Lead","bbox":[48,175.68,729.6,244.8]}
+{"kind":"table","id":"tb/twfi9ozi","slide":10,"name":"Table 1","rows":5,"cols":3,"preview":"Project | RM | Lead","bbox":[48,475.2,729.6,148.8]}
+{"kind":"image","id":"im/nidcv6po","slide":10,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/u5obql8f","slide":10,"name":"Image 1","bbox":[837.12,382.08,24.96,24.96]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":""}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"SCHEDULE","textShapes":28}
+{"kind":"shape","id":"sh/xcryxg7y","slide":11,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"name":"Text 1","text":"SCHEDULE","textPreview":"SCHEDULE","textChars":8,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"name":"Text 2","text":"Timeline / Itinerary","textPreview":"Timeline / Itinerary","textChars":20,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/98rytw72","slide":11,"name":"Shape 3","bbox":[81.6,168,345.6,177.6]}
+{"kind":"textbox","id":"sh/o7ih0r6h","slide":11,"name":"Text 4","text":"Phase 1","textPreview":"Phase 1","textChars":7,"textLines":1,"bbox":[81.6,182.4,345.6,33.6]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"Text 5","text":"Jun – Jul 2026","textPreview":"Jun – Jul 2026","textChars":14,"textLines":1,"bbox":[81.6,216,345.6,30.72]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"name":"Text 6","text":"Planning, Engagement & Budgeting","textPreview":"Planning, Engagement & Budgeting","textChars":32,"textLines":1,"bbox":[105.6,254.4,297.6,81.6]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"name":"Text 7","text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[427.2,206.4,72,100.8]}
+{"kind":"shape","id":"sh/9gza9sze","slide":11,"name":"Shape 8","bbox":[499.2,168,345.6,177.6]}
+{"kind":"textbox","id":"sh/mdobedg3","slide":11,"name":"Text 9","text":"Phase 2","textPreview":"Phase 2","textChars":7,"textLines":1,"bbox":[499.2,182.4,345.6,33.6]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"Text 10","text":"Jul – Aug 2026","textPreview":"Jul – Aug 2026","textChars":14,"textLines":1,"bbox":[499.2,216,345.6,30.72]}
+{"kind":"textbox","id":"sh/0b6tc3yx","slide":11,"name":"Text 11","text":"Procurement & Coordination","textPreview":"Procurement & Coordination","textChars":26,"textLines":1,"bbox":[523.2,254.4,297.6,81.6]}
+{"kind":"textbox","id":"sh/1cfa58zi","slide":11,"name":"Text 12","text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[844.8,206.4,72,100.8]}
+{"kind":"shape","id":"sh/epobatgr","slide":11,"name":"Shape 13","bbox":[916.8,168,345.6,177.6]}
+{"kind":"textbox","id":"sh/zaxs3yhc","slide":11,"name":"Text 14","text":"Phase 3","textPreview":"Phase 3","textChars":7,"textLines":1,"bbox":[916.8,182.4,345.6,33.6]}
+{"kind":"textbox","id":"sh/cn6t83y1","slide":11,"name":"Text 15","text":"22 Aug 2026","textPreview":"22 Aug 2026","textChars":11,"textLines":1,"bbox":[916.8,216,345.6,30.72]}
+{"kind":"textbox","id":"sh/dofa18z6","slide":11,"name":"Text 16","text":"CSR Execution Day","textPreview":"CSR Execution Day","textChars":17,"textLines":1,"bbox":[940.8,254.4,297.6,81.6]}
+{"kind":"textbox","id":"sh/tsnip0ny","slide":11,"name":"Text 17","text":"Event Day Snapshot — 22 August 2026","textPreview":"Event Day Snapshot — 22 August 2026","textChars":35,"textLines":1,"bbox":[57.6,388.8,768,30.72]}
+{"kind":"shape","id":"sh/87ehgv6d","slide":11,"name":"Shape 18","bbox":[57.6,432,100.8,40.32]}
+{"kind":"textbox","id":"sh/7650nq5s","slide":11,"name":"Text 19","text":"0830","textPreview":"0830","textChars":4,"textLines":1,"bbox":[57.6,432,100.8,40.32]}
+{"kind":"textbox","id":"sh/65wzelo7","slide":11,"name":"Text 20","text":"Arrival at CSR Site","textPreview":"Arrival at CSR Site","textChars":19,"textLines":1,"bbox":[172.8,432,1036.8,40.32]}
+{"kind":"shape","id":"sh/l43ilgn2","slide":11,"name":"Shape 21","bbox":[57.6,474.24,100.8,40.32]}
+{"kind":"textbox","id":"sh/k3uhcb6h","slide":11,"name":"Text 22","text":"0915","textPreview":"0915","textChars":4,"textLines":1,"bbox":[57.6,474.24,100.8,40.32]}
+{"kind":"textbox","id":"sh/j2lgjq5w","slide":11,"name":"Text 23","text":"Parallel workstreams — Medical Camp, Water Gravity, Solar Lights, Signboards, Kids Activities","textPreview":"Parallel workstreams — Medical Camp, Water Gravity, Solar Lights, Signboards, Kids Activities","textChars":93,"textLines":1,"bbox":[172.8,474.24,1036.8,40.32]}
+{"kind":"shape","id":"sh/y1czalob","slide":11,"name":"Shape 24","bbox":[57.6,516.48,100.8,40.32]}
+{"kind":"textbox","id":"sh/p07ixkn6","slide":11,"name":"Text 25","text":"1030","textPreview":"1030","textChars":4,"textLines":1,"bbox":[57.6,516.48,100.8,40.32]}
+{"kind":"textbox","id":"sh/4zyhofml","slide":11,"name":"Text 26","text":"Rh Flora Visit — Gathering & Traditional Performances","textPreview":"Rh Flora Visit — Gathering & Traditional Performances","textChars":53,"textLines":1,"bbox":[172.8,516.48,1036.8,40.32]}
+{"kind":"shape","id":"sh/m58fih43","slide":11,"name":"Shape 27","bbox":[57.6,558.72,100.8,40.32]}
+{"kind":"textbox","id":"sh/n61wbmlo","slide":11,"name":"Text 28","text":"1100","textPreview":"1100","textChars":4,"textLines":1,"bbox":[57.6,558.72,100.8,40.32]}
+{"kind":"textbox","id":"sh/o7axk7m9","slide":11,"name":"Text 29","text":"Closing Ceremony & Group Photo","textPreview":"Closing Ceremony & Group Photo","textChars":30,"textLines":1,"bbox":[172.8,558.72,1036.8,40.32]}
+{"kind":"shape","id":"sh/98jedc3u","slide":11,"name":"Shape 30","bbox":[57.6,600.96,100.8,40.32]}
+{"kind":"textbox","id":"sh/eh8fex47","slide":11,"name":"Text 31","text":"1200","textPreview":"1200","textChars":4,"textLines":1,"bbox":[57.6,600.96,100.8,40.32]}
+{"kind":"textbox","id":"sh/z2hw72lc","slide":11,"name":"Text 32","text":"Lunch, then Programme Ends","textPreview":"Lunch, then Programme Ends","textChars":26,"textLines":1,"bbox":[172.8,600.96,1036.8,40.32]}
+{"kind":"textbox","id":"sh/03qxg7mx","slide":11,"name":"Text 33","text":"Full hour-by-hour itinerary and Area Meeting (Option 2) travel plan — see Appendix.","textPreview":"Full hour-by-hour itinerary and Area Meeting (Option 2) travel plan — see Appendix.","textChars":83,"textLines":1,"bbox":[57.6,650.88,1056,24]}
+{"kind":"textbox","id":"sh/14ze9c3i","slide":11,"name":"Text 34","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/ydcfq1kb","slide":11,"name":"Text 35","text":"Timeline","textPreview":"Timeline","textChars":8,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/jylwj6lw","slide":11,"name":"Text 36","text":"11 / 22","textPreview":"11 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/wfu5gbut","slide":11,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":""}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"THE IMPACT","textShapes":17}
+{"kind":"shape","id":"sh/1gbm9s3a","slide":12,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/ra943il8","slide":12,"name":"Text 1","text":"THE IMPACT","textPreview":"THE IMPACT","textChars":10,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/q903ad4n","slide":12,"name":"Text 2","text":"Expected Outcomes","textPreview":"Expected Outcomes","textChars":17,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/dcbm583y","slide":12,"name":"Shape 3","bbox":[57.6,168,379.2,192]}
+{"kind":"shape","id":"sh/sb2lcnmd","slide":12,"name":"Shape 4","bbox":[76.8,187.2,46.08,46.08]}
+{"kind":"textbox","id":"sh/a543mx4r","slide":12,"name":"Text 5","text":"~700 Residents","textPreview":"~700 Residents","textChars":14,"textLines":1,"bbox":[136.32,185.28,283.2,53.76]}
+{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"name":"Text 6","text":"Improved healthcare access & enhanced community facilities","textPreview":"Improved healthcare access & enhanced community facilities","textChars":58,"textLines":1,"bbox":[86.4,246.72,321.6,96]}
+{"kind":"shape","id":"sh/xw3q94ne","slide":12,"name":"Shape 7","bbox":[459.84,168,379.2,192]}
+{"kind":"shape","id":"sh/atc7epon","slide":12,"name":"Shape 8","bbox":[479.04,187.2,46.08,46.08]}
+{"kind":"textbox","id":"sh/orapcf6h","slide":12,"name":"Text 9","text":"4 Longhouses","textPreview":"4 Longhouses","textChars":12,"textLines":1,"bbox":[538.56,185.28,283.2,53.76]}
+{"kind":"textbox","id":"sh/9sj65kn2","slide":12,"name":"Text 10","text":"Better water resilience & improved safety and visibility","textPreview":"Better water resilience & improved safety and visibility","textChars":56,"textLines":1,"bbox":[488.64,246.72,321.6,96]}
+{"kind":"shape","id":"sh/mps7a5or","slide":12,"name":"Shape 11","bbox":[862.08,168,379.2,192]}
+{"kind":"shape","id":"sh/nq1o3a5w","slide":12,"name":"Shape 12","bbox":[881.28,187.2,46.08,46.08]}
+{"kind":"textbox","id":"sh/1oj61kn6","slide":12,"name":"Text 13","text":"31 Students & Staff","textPreview":"31 Students & Staff","textChars":19,"textLines":1,"bbox":[940.8,185.28,283.2,53.76]}
+{"kind":"textbox","id":"sh/hkbm5wzu","slide":12,"name":"Text 14","text":"Reliable backup water supply & better learning environment","textPreview":"Reliable backup water supply & better learning environment","textChars":58,"textLines":1,"bbox":[890.88,246.72,321.6,96]}
+{"kind":"shape","id":"sh/gj25cry9","slide":12,"name":"Shape 15","bbox":[57.6,388.8,379.2,192]}
+{"kind":"shape","id":"sh/fit436ho","slide":12,"name":"Shape 16","bbox":[76.8,408,46.08,46.08]}
+{"kind":"textbox","id":"sh/tgrm1wzy","slide":12,"name":"Text 17","text":"Medical Camp","textPreview":"Medical Camp","textChars":12,"textLines":1,"bbox":[136.32,406.08,283.2,53.76]}
+{"kind":"textbox","id":"sh/sfi58ryd","slide":12,"name":"Text 18","text":"Basic health screening & awareness for the community","textPreview":"Basic health screening & awareness for the community","textChars":52,"textLines":1,"bbox":[86.4,467.52,321.6,96]}
+{"kind":"shape","id":"sh/7u94zmhs","slide":12,"name":"Shape 19","bbox":[459.84,388.8,379.2,192]}
+{"kind":"shape","id":"sh/6t0n6hg7","slide":12,"name":"Shape 20","bbox":[479.04,408,46.08,46.08]}
+{"kind":"textbox","id":"sh/cbm5kbyh","slide":12,"name":"Text 21","text":"Water Sustainability","textPreview":"Water Sustainability","textChars":20,"textLines":1,"bbox":[538.56,406.08,283.2,53.76]}
+{"kind":"textbox","id":"sh/alwbitsn","slide":12,"name":"Text 22","text":"Rainwater harvesting plus improved storage & distribution","textPreview":"Rainwater harvesting plus improved storage & distribution","textChars":57,"textLines":1,"bbox":[488.64,467.52,321.6,96]}
+{"kind":"shape","id":"sh/bm5sryt8","slide":12,"name":"Shape 23","bbox":[862.08,388.8,379.2,192]}
+{"kind":"shape","id":"sh/wnetkjat","slide":12,"name":"Shape 24","bbox":[881.28,408,46.08,46.08]}
+{"kind":"textbox","id":"sh/mhcbe9sr","slide":12,"name":"Text 25","text":"Community Safety","textPreview":"Community Safety","textChars":16,"textLines":1,"bbox":[940.8,406.08,283.2,53.76]}
+{"kind":"textbox","id":"sh/nilsnetc","slide":12,"name":"Text 26","text":"12 solar streetlights installed across 4 longhouses","textPreview":"12 solar streetlights installed across 4 longhouses","textChars":51,"textLines":1,"bbox":[890.88,467.52,321.6,96]}
+{"kind":"textbox","id":"sh/ojutgjah","slide":12,"name":"Text 27","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/9k3apob2","slide":12,"name":"Text 28","text":"Expected Outcomes","textPreview":"Expected Outcomes","textChars":17,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/6dgbqdsv","slide":12,"name":"Text 29","text":"12 / 22","textPreview":"12 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/8zulk7u1","slide":12,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/8rml47ql","slide":12,"name":"Image 1","bbox":[88.32,198.72,23.04,23.04]}
+{"kind":"image","id":"im/9cv2xc76","slide":12,"name":"Image 2","bbox":[490.56,198.72,23.04,23.04]}
+{"kind":"image","id":"im/mpk32x8v","slide":12,"name":"Image 3","bbox":[892.8,198.72,23.04,23.04]}
+{"kind":"image","id":"im/nqdkv2pg","slide":12,"name":"Image 4","bbox":[88.32,419.52,23.04,23.04]}
+{"kind":"image","id":"im/wfml8rqx","slide":12,"name":"Image 5","bbox":[490.56,419.52,23.04,23.04]}
+{"kind":"image","id":"im/xgvm1w7i","slide":12,"name":"Image 6","bbox":[892.8,419.52,23.04,23.04]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":""}
+{"kind":"slide","id":"sl/hgzapcr6","slide":13,"title":"Questions & Discussion","textShapes":7}
+{"kind":"shape","id":"sh/bq9orito","slide":13,"name":"Shape 0","bbox":[86.4,192,86.4,86.4]}
+{"kind":"textbox","id":"sh/p4r6p8by","slide":13,"name":"Text 1","text":"Questions & Discussion","textPreview":"Questions & Discussion","textChars":22,"textLines":1,"bbox":[196.8,196.8,960,76.8]}
+{"kind":"textbox","id":"sh/21gnuts7","slide":13,"name":"Text 2","text":"Thank you for your time and support.","textPreview":"Thank you for your time and support.","textChars":36,"textLines":1,"bbox":[196.8,273.6,864,48]}
+{"kind":"shape","id":"sh/32ponyts","slide":13,"name":"Shape 3","bbox":[86.4,355.2,1104,0]}
+{"kind":"textbox","id":"sh/gzy5s3a1","slide":13,"name":"Text 4","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[86.4,379.2,768,48]}
+{"kind":"textbox","id":"sh/1076lobm","slide":13,"name":"Text 5","text":"Borneo Unity, Community Sustainability","textPreview":"Borneo Unity, Community Sustainability","textChars":38,"textLines":1,"bbox":[86.4,422.4,768,43.2]}
+{"kind":"textbox","id":"sh/hcfy9k3u","slide":13,"name":"Text 6","text":"CSR Committee — Sarawak & Sabah Dealers","textPreview":"CSR Committee — Sarawak & Sabah Dealers","textChars":39,"textLines":1,"bbox":[86.4,480,672,38.4]}
+{"kind":"textbox","id":"sh/gb6x0zm9","slide":13,"name":"Text 7","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/vaxg7ulo","slide":13,"name":"Text 8","text":"13 / 22","textPreview":"13 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/x0ji10bi","slide":13,"name":"Image 0","bbox":[854.4,470.4,384,250.56]}
+{"kind":"image","id":"im/m98jmlcv","slide":13,"name":"Image 1","bbox":[108.48,214.08,42.24,42.24]}
+{"kind":"notes","id":"nt/hgzapcr6","slide":13,"text":""}
+{"kind":"slide","id":"sl/6lsnupw7","slide":14,"title":"Appendix","textShapes":4}
+{"kind":"shape","id":"sh/xc7eds76","slide":14,"name":"Shape 0","bbox":[563.52,211.2,153.6,153.6]}
+{"kind":"textbox","id":"sh/jepwf2pc","slide":14,"name":"Text 1","text":"Appendix","textPreview":"Appendix","textChars":8,"textLines":1,"bbox":[0,388.8,1279.97,86.4]}
+{"kind":"textbox","id":"sh/idgvmx8r","slide":14,"name":"Text 2","text":"Supporting Detail & Reference Material","textPreview":"Supporting Detail & Reference Material","textChars":38,"textLines":1,"bbox":[0,465.6,1279.97,48]}
+{"kind":"textbox","id":"sh/5grehs7i","slide":14,"name":"Text 3","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/kfidonqx","slide":14,"name":"Text 4","text":"14 / 22","textPreview":"14 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/69gj2hwj","slide":14,"name":"Image 0","bbox":[601.92,249.6,76.8,76.8]}
+{"kind":"notes","id":"nt/6lsnupw7","slide":14,"text":""}
+{"kind":"slide","id":"sl/vaxsvy10","slide":15,"title":"APPENDIX · LOCATION","textShapes":9}
+{"kind":"shape","id":"sh/547mhg3m","slide":15,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/76p4jqls","slide":15,"name":"Text 1","text":"APPENDIX · LOCATION","textPreview":"APPENDIX · LOCATION","textChars":19,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/65gnqlk7","slide":15,"name":"Text 2","text":"Road Condition Detail","textPreview":"Road Condition Detail","textChars":21,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/s7y5sv2x","slide":15,"name":"Shape 3","bbox":[57.6,153.6,369.6,451.2]}
+{"kind":"shape","id":"sh/na5476l8","slide":15,"name":"Shape 4","bbox":[57.6,608.64,369.6,34.56]}
+{"kind":"textbox","id":"sh/m9c3e1kn","slide":15,"name":"Text 5","text":"Junction to Rh Flora & SK Ulu Sebetan","textPreview":"Junction to Rh Flora & SK Ulu Sebetan","textChars":37,"textLines":1,"bbox":[67.2,608.64,350.4,34.56]}
+{"kind":"shape","id":"sh/hsvat0fa","slide":15,"name":"Shape 6","bbox":[446.4,153.6,369.6,451.2]}
+{"kind":"shape","id":"sh/upkrilwj","slide":15,"name":"Shape 7","bbox":[446.4,608.64,369.6,34.56]}
+{"kind":"textbox","id":"sh/vqdsrqx4","slide":15,"name":"Text 8","text":"Entrance to SK Ulu Sebetan, tar road","textPreview":"Entrance to SK Ulu Sebetan, tar road","textChars":36,"textLines":1,"bbox":[456,608.64,350.4,34.56]}
+{"kind":"textbox","id":"sh/4vm9ovel","slide":15,"name":"Text 9","text":"Road Access","textPreview":"Road Access","textChars":11,"textLines":1,"bbox":[835.2,163.2,374.4,33.6]}
+{"kind":"textbox","id":"sh/5wvax0f6","slide":15,"name":"Text 10","text":"115 km of main road access from Sibu Airport via Pan Borneo Highway\n3.9 km tar road access from the main junction to the CSR location\nAccessible to most vehicle types with minimal challenge","textPreview":"115 km of main road access from Sibu Airport via Pan Borneo Highway | 3.9 km tar road access from the main junction to the CSR location |...","textChars":189,"textLines":3,"bbox":[835.2,206.4,374.4,240]}
+{"kind":"textbox","id":"sh/it4rm5wv","slide":15,"name":"Text 11","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/judsvqxg","slide":15,"name":"Text 12","text":"Appendix · Location","textPreview":"Appendix · Location","textChars":19,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/0z29cbyh","slide":15,"name":"Text 13","text":"15 / 22","textPreview":"15 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/yh8369s3","slide":15,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/2xwnehsr","slide":15,"name":"Image 1","bbox":[57.6,153.6,369.6,451.2]}
+{"kind":"image","id":"im/3ypo7mtw","slide":15,"name":"Image 2","bbox":[446.4,153.6,369.6,451.2]}
+{"kind":"notes","id":"nt/vaxsvy10","slide":15,"text":""}
+{"kind":"slide","id":"sl/gny5sjyp","slide":16,"title":"APPENDIX · FIRE RECOVERY","textShapes":13}
+{"kind":"shape","id":"sh/8z2h8bq1","slide":16,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/ytkf2h8j","slide":16,"name":"Text 1","text":"APPENDIX · FIRE RECOVERY","textPreview":"APPENDIX · FIRE RECOVERY","textChars":24,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/zutgvm94","slide":16,"name":"Text 2","text":"Life at Rh Spencer Biju — Day vs Night","textPreview":"Life at Rh Spencer Biju — Day vs Night","textChars":38,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/lwbyxwra","slide":16,"name":"Shape 3","bbox":[57.6,153.6,566.4,249.6]}
+{"kind":"shape","id":"sh/ip4zel83","slide":16,"name":"Shape 4","bbox":[57.6,368.64,566.4,34.56]}
+{"kind":"textbox","id":"sh/3qdg7qpo","slide":16,"name":"Text 5","text":"Daytime — temporary shelters & rebuilt kitchen areas","textPreview":"Daytime — temporary shelters & rebuilt kitchen areas","textChars":52,"textLines":1,"bbox":[67.2,368.64,547.2,34.56]}
+{"kind":"shape","id":"sh/e1sf65o3","slide":16,"name":"Shape 6","bbox":[57.6,417.6,566.4,249.6]}
+{"kind":"shape","id":"sh/1ojy10ne","slide":16,"name":"Shape 7","bbox":[57.6,632.64,566.4,34.56]}
+{"kind":"textbox","id":"sh/gnax8v6t","slide":16,"name":"Text 8","text":"Nighttime — no street lighting","textPreview":"Nighttime — no street lighting","textChars":30,"textLines":1,"bbox":[67.2,632.64,547.2,34.56]}
+{"kind":"textbox","id":"sh/nqlg3a5k","slide":16,"name":"Text 9","text":"Daytime","textPreview":"Daytime","textChars":7,"textLines":1,"bbox":[657.6,158.4,547.2,28.8]}
+{"kind":"textbox","id":"sh/2pcfa5oz","slide":16,"name":"Text 10","text":"26 families lost their homes in the fire\nTemporary shelters and rebuilt kitchens seen during the day\nCommunity activities continue despite limited facilities","textPreview":"26 families lost their homes in the fire | Temporary shelters and rebuilt kitchens seen during the day | Community activities continue de...","textChars":157,"textLines":3,"bbox":[657.6,192,547.2,129.6]}
+{"kind":"textbox","id":"sh/ps3y5knq","slide":16,"name":"Text 11","text":"Nighttime — Without Street Lighting","textPreview":"Nighttime — Without Street Lighting","textChars":35,"textLines":1,"bbox":[657.6,336,547.2,28.8]}
+{"kind":"textbox","id":"sh/oruhcf65","slide":16,"name":"Text 12","text":"No electricity supply to the longhouse area\nVillagers rely on generators, gas lamps and candles\nMovement after dark is difficult, especially for children & the elderly","textPreview":"No electricity supply to the longhouse area | Villagers rely on generators, gas lamps and candles | Movement after dark is difficult, esp...","textChars":167,"textLines":3,"bbox":[657.6,369.6,547.2,129.6]}
+{"kind":"shape","id":"sh/bulg7u5g","slide":16,"name":"Shape 13","bbox":[657.6,513.6,547.2,144]}
+{"kind":"textbox","id":"sh/atczepob","slide":16,"name":"Text 14","text":"Proposed Solution: Solar Streetlights","textPreview":"Proposed Solution: Solar Streetlights","textChars":37,"textLines":1,"bbox":[681.6,526.08,499.2,28.8]}
+{"kind":"textbox","id":"sh/mpgj6t8j","slide":16,"name":"Text 15","text":"Improved visibility at night\nEnhanced community safety\nReduced dependence on generators\nBetter accessibility for residents","textPreview":"Improved visibility at night | Enhanced community safety | Reduced dependence on generators | Better accessibility for residents","textChars":122,"textLines":4,"bbox":[681.6,556.8,499.2,96]}
+{"kind":"textbox","id":"sh/7qp0zepo","slide":16,"name":"Text 16","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/8by18jq9","slide":16,"name":"Text 17","text":"Appendix · Fire Recovery","textPreview":"Appendix · Fire Recovery","textChars":24,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/9c7i1o7u","slide":16,"name":"Text 18","text":"16 / 22","textPreview":"16 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/p87alkjm","slide":16,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/o7y9sf2h","slide":16,"name":"Image 1","bbox":[57.6,153.6,566.4,249.6]}
+{"kind":"image","id":"im/36psju1w","slide":16,"name":"Image 2","bbox":[57.6,417.6,566.4,249.6]}
+{"kind":"notes","id":"nt/gny5sjyp","slide":16,"text":""}
+{"kind":"slide","id":"sl/14bup87q","slide":17,"title":"APPENDIX · COMMUNITY DEVELOPMENT","textShapes":10}
+{"kind":"shape","id":"sh/1c7e50ni","slide":17,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/rm5czq50","slide":17,"name":"Text 1","text":"APPENDIX · COMMUNITY DEVELOPMENT","textPreview":"APPENDIX · COMMUNITY DEVELOPMENT","textChars":32,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/6lwvql4v","slide":17,"name":"Text 2","text":"Community Signboards — Design Concepts","textPreview":"Community Signboards — Design Concepts","textChars":38,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/snedsvml","slide":17,"name":"Shape 3","bbox":[57.6,153.6,369.6,288]}
+{"kind":"shape","id":"sh/jilcvq54","slide":17,"name":"Shape 4","bbox":[57.6,445.44,369.6,34.56]}
+{"kind":"textbox","id":"sh/ihcvml4j","slide":17,"name":"Text 5","text":"Incomplete signboard at longhouse entrance","textPreview":"Incomplete signboard at longhouse entrance","textChars":42,"textLines":1,"bbox":[67.2,445.44,350.4,34.56]}
+{"kind":"shape","id":"sh/pc7qhwn6","slide":17,"name":"Shape 6","bbox":[446.4,153.6,369.6,288]}
+{"kind":"shape","id":"sh/29grm1of","slide":17,"name":"Shape 7","bbox":[446.4,445.44,369.6,34.56]}
+{"kind":"textbox","id":"sh/3ap8fm50","slide":17,"name":"Text 8","text":"Signboard example — to be placed at school","textPreview":"Signboard example — to be placed at school","textChars":42,"textLines":1,"bbox":[456,445.44,350.4,34.56]}
+{"kind":"shape","id":"sh/honqdwnu","slide":17,"name":"Shape 9","bbox":[835.2,153.6,374.4,288]}
+{"kind":"shape","id":"sh/ulw7ihoj","slide":17,"name":"Shape 10","bbox":[835.2,445.44,374.4,34.56]}
+{"kind":"textbox","id":"sh/fm58bm54","slide":17,"name":"Text 11","text":"AI-generated concept — longhouse signboard","textPreview":"AI-generated concept — longhouse signboard","textChars":42,"textLines":1,"bbox":[844.8,445.44,355.2,34.56]}
+{"kind":"shape","id":"sh/0ji9wb6t","slide":17,"name":"Shape 12","bbox":[57.6,499.2,1154.88,148.8]}
+{"kind":"textbox","id":"sh/14rqpgne","slide":17,"name":"Text 13","text":"Job Scope","textPreview":"Job Scope","textChars":9,"textLines":1,"bbox":[81.6,513.6,384,30.72]}
+{"kind":"textbox","id":"sh/90nq9gfi","slide":17,"name":"Text 14","text":"Fabricate and install 5 signboards (4 longhouses & SK Ulu Sebetan). Signboards are currently unavailable due to lack of funding, which causes confusion for visitors and emergency responders entering the area.","textPreview":"Fabricate and install 5 signboards (4 longhouses & SK Ulu Sebetan). Signboards are currently unavailable due to lack of funding, which ca...","textChars":208,"textLines":1,"bbox":[81.6,545.28,1104,96]}
+{"kind":"textbox","id":"sh/8ze9gbyx","slide":17,"name":"Text 15","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/ny5876xc","slide":17,"name":"Text 16","text":"Appendix · Signboards","textPreview":"Appendix · Signboards","textChars":21,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/mxw7e1gr","slide":17,"name":"Text 17","text":"17 / 22","textPreview":"17 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/6t8bmto3","slide":17,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/7uhsvypo","slide":17,"name":"Image 1","bbox":[57.6,153.6,369.6,288]}
+{"kind":"image","id":"im/svqto369","slide":17,"name":"Image 2","bbox":[446.4,153.6,369.6,288]}
+{"kind":"image","id":"im/twzaxonu","slide":17,"name":"Image 3","bbox":[835.2,153.6,374.4,288]}
+{"kind":"notes","id":"nt/14bup87q","slide":17,"text":""}
+{"kind":"slide","id":"sl/y5wne50z","slide":18,"title":"APPENDIX · WATER ASSESSMENT","textShapes":8}
+{"kind":"shape","id":"sh/wrelszu9","slide":18,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/itw3upcf","slide":18,"name":"Text 1","text":"APPENDIX · WATER ASSESSMENT","textPreview":"APPENDIX · WATER ASSESSMENT","textChars":27,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/je5knut0","slide":18,"name":"Text 2","text":"Site Visit — Additional Detail","textPreview":"Site Visit — Additional Detail","textChars":30,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/5gnmp4bq","slide":18,"name":"Shape 3","bbox":[57.6,153.6,566.4,273.6]}
+{"kind":"shape","id":"sh/6hw3y9sb","slide":18,"name":"Shape 4","bbox":[57.6,392.64,566.4,34.56]}
+{"kind":"textbox","id":"sh/rip4retw","slide":18,"name":"Text 5","text":"Technical site assessment with J.C. (Construction Lead) and community leaders","textPreview":"Technical site assessment with J.C. (Construction Lead) and community leaders","textChars":77,"textLines":1,"bbox":[67.2,392.64,547.2,34.56]}
+{"kind":"shape","id":"sh/upg3i18r","slide":18,"name":"Shape 6","bbox":[57.6,441.6,566.4,225.6]}
+{"kind":"shape","id":"sh/1cr2tg72","slide":18,"name":"Shape 7","bbox":[57.6,632.64,566.4,34.56]}
+{"kind":"textbox","id":"sh/gbylkbqh","slide":18,"name":"Text 8","text":"Assessing existing tanks for reuse","textPreview":"Assessing existing tanks for reuse","textChars":34,"textLines":1,"bbox":[67.2,632.64,547.2,34.56]}
+{"kind":"textbox","id":"sh/7mpknmp0","slide":18,"name":"Text 9","text":"Site visit conducted with J.C. (Construction Lead), community leaders and local residents of Ulu Sebetan\nAssessment focused on the existing gravity-fed system, pipeline alignment and supporting infrastructure\nTwo existing tanks identified — both unused, each ~10,000 litres (10KL) capacity\nReusing existing tanks improves storage capacity while minimising overall project cost\nFindings will determine upgrade scope, material specifications and implementation approach","textPreview":"Site visit conducted with J.C. (Construction Lead), community leaders and local residents of Ulu Sebetan | Assessment focused on the exis...","textChars":467,"textLines":5,"bbox":[657.6,168,566.4,470.4]}
+{"kind":"textbox","id":"sh/6lg3e18f","slide":18,"name":"Text 10","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/to72pw76","slide":18,"name":"Text 11","text":"Appendix · Water Assessment","textPreview":"Appendix · Water Assessment","textChars":27,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/snylgrql","slide":18,"name":"Text 12","text":"18 / 22","textPreview":"18 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/sfulo3yx","slide":18,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/dg3mx8fi","slide":18,"name":"Image 1","bbox":[57.6,153.6,566.4,273.6]}
+{"kind":"image","id":"im/1wz21o7m","slide":18,"name":"Image 2","bbox":[57.6,441.6,566.4,225.6]}
+{"kind":"notes","id":"nt/y5wne50z","slide":18,"text":""}
+{"kind":"slide","id":"sl/nid43ytk","slide":19,"title":"APPENDIX · TIMELINE","textShapes":7}
+{"kind":"shape","id":"sh/9gb6xgbi","slide":19,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/vitozqt8","slide":19,"name":"Text 1","text":"APPENDIX · TIMELINE","textPreview":"APPENDIX · TIMELINE","textChars":19,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/ahk7qls3","slide":19,"name":"Text 2","text":"Detailed Project Timeline","textPreview":"Detailed Project Timeline","textChars":25,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"textbox","id":"sh/xkbq10be","slide":19,"name":"Text 3","text":"Phase 2: Preparation & Procurement  ·  July – August 2026","textPreview":"Phase 2: Preparation & Procurement  ·  July – August 2026","textChars":57,"textLines":1,"bbox":[48,144,1180.8,30.72]}
+{"kind":"textbox","id":"sh/jmd83atk","slide":19,"name":"Text 4","text":"Phase 3: CSR Execution  ·  22 August 2026","textPreview":"Phase 3: CSR Execution  ·  22 August 2026","textChars":41,"textLines":1,"bbox":[48,398.4,1180.8,30.72]}
+{"kind":"textbox","id":"sh/cri1gnql","slide":19,"name":"Text 5","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/dsri9sr6","slide":19,"name":"Text 6","text":"Appendix · Timeline","textPreview":"Appendix · Timeline","textChars":19,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/qpgjex8f","slide":19,"name":"Text 7","text":"19 / 22","textPreview":"19 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"table","id":"tb/n6t0j2tg","slide":19,"name":"Table 0","rows":6,"cols":2,"preview":"Activity | Lead","bbox":[48,177.6,1180.8,196.8]}
+{"kind":"table","id":"tb/m50zqxsv","slide":19,"name":"Table 1","rows":8,"cols":2,"preview":"Activity | Lead","bbox":[48,432,1180.8,225.6]}
+{"kind":"image","id":"im/0v65432t","slide":19,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"notes","id":"nt/nid43ytk","slide":19,"text":""}
+{"kind":"slide","id":"sl/zyxsni5k","slide":20,"title":"APPENDIX · ITINERARY","textShapes":10}
+{"kind":"shape","id":"sh/qpwjmh8n","slide":20,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/4nu1krqh","slide":20,"name":"Text 1","text":"APPENDIX · ITINERARY","textPreview":"APPENDIX · ITINERARY","textChars":20,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/po3itc72","slide":20,"name":"Text 2","text":"Event Day Itinerary & Travel Options","textPreview":"Event Day Itinerary & Travel Options","textChars":36,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"textbox","id":"sh/3ml0rmpw","slide":20,"name":"Text 3","text":"Option 2: Borneo CSR + Area Meeting","textPreview":"Option 2: Borneo CSR + Area Meeting","textChars":35,"textLines":1,"bbox":[758.4,144,475.2,28.8]}
+{"kind":"textbox","id":"sh/gjuhg7ql","slide":20,"name":"Text 4","text":"22-Aug-26: Borneo CSR Main Event\n23-Aug-26: Travel to Kuching\n24-Aug-26: Area Meeting 2H 2026","textPreview":"22-Aug-26: Borneo CSR Main Event | 23-Aug-26: Travel to Kuching | 24-Aug-26: Area Meeting 2H 2026","textChars":93,"textLines":3,"bbox":[758.4,177.6,475.2,96]}
+{"kind":"textbox","id":"sh/hk3ipcr6","slide":20,"name":"Text 5","text":"Travel Flow","textPreview":"Travel Flow","textChars":11,"textLines":1,"bbox":[758.4,283.2,475.2,28.8]}
+{"kind":"textbox","id":"sh/dkfmp4zy","slide":20,"name":"Text 6","text":"CSR + Area Meeting: KK → Kuching → Sibu/Sarikei → CSR → Kuching\nCSR + Area Meeting: KL → Sibu → CSR → Kuching\nSibu Convoy: Lanang | Deshon | Sibu Jaya\nKuching Convoy: Lingga | Siburan | Lundu\nArea Meeting Only: KK/KL ↔ Kuching (optional van / rental car)","textPreview":"CSR + Area Meeting: KK → Kuching → Sibu/Sarikei → CSR → Kuching | CSR + Area Meeting: KL → Sibu → CSR → Kuching | Sibu Convoy: Lanang | D...","textChars":254,"textLines":5,"bbox":[758.4,316.8,475.2,211.2]}
+{"kind":"textbox","id":"sh/cj65wzyd","slide":20,"name":"Text 7","text":"Construction work costing covers materials & machinery only — construction is carried out by villagers and teachers at the school.","textPreview":"Construction work costing covers materials & machinery only — construction is carried out by villagers and teachers at the school.","textChars":130,"textLines":1,"bbox":[758.4,552,475.2,91.2]}
+{"kind":"textbox","id":"sh/rid4nuhs","slide":20,"name":"Text 8","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/qh4nupg7","slide":20,"name":"Text 9","text":"Appendix · Itinerary","textPreview":"Appendix · Itinerary","textChars":20,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/pwvmlkzm","slide":20,"name":"Text 10","text":"20 / 22","textPreview":"20 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"table","id":"tb/snux87ux","slide":20,"name":"Table 0","rows":10,"cols":2,"preview":"Time | Activity","bbox":[48,144,681.6,508.8]}
+{"kind":"image","id":"im/vadonqxk","slide":20,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"notes","id":"nt/zyxsni5k","slide":20,"text":""}
+{"kind":"slide","id":"sl/m1wvqtk3","slide":21,"title":"APPENDIX · COMMUNITY DEVELOPMENT","textShapes":9}
+{"kind":"shape","id":"sh/1gbmxs7a","slide":21,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/ra9kryp8","slide":21,"name":"Text 1","text":"APPENDIX · COMMUNITY DEVELOPMENT","textPreview":"APPENDIX · COMMUNITY DEVELOPMENT","textChars":32,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/qp03yt8n","slide":21,"name":"Text 2","text":"Rh Langan — Site Visit","textPreview":"Rh Langan — Site Visit","textChars":22,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/sb2lk36t","slide":21,"name":"Shape 3","bbox":[57.6,153.6,369.6,417.6]}
+{"kind":"shape","id":"sh/b6d432pc","slide":21,"name":"Shape 4","bbox":[57.6,536.64,369.6,34.56]}
+{"kind":"textbox","id":"sh/al43uxor","slide":21,"name":"Text 5","text":"Rh Langan longhouse","textPreview":"Rh Langan longhouse","textChars":19,"textLines":1,"bbox":[67.2,536.64,350.4,34.56]}
+{"kind":"shape","id":"sh/5kjydsri","slide":21,"name":"Shape 6","bbox":[446.4,153.6,369.6,417.6]}
+{"kind":"shape","id":"sh/ixsf2d87","slide":21,"name":"Shape 7","bbox":[446.4,536.64,369.6,34.56]}
+{"kind":"textbox","id":"sh/jy1gbi9s","slide":21,"name":"Text 8","text":"Road access at Rh Langan","textPreview":"Road access at Rh Langan","textChars":24,"textLines":1,"bbox":[456,536.64,350.4,34.56]}
+{"kind":"shape","id":"sh/hwjy98rm","slide":21,"name":"Shape 9","bbox":[835.2,153.6,374.4,417.6]}
+{"kind":"shape","id":"sh/utsfyt8v","slide":21,"name":"Shape 10","bbox":[835.2,536.64,374.4,34.56]}
+{"kind":"textbox","id":"sh/vu1w7y9g","slide":21,"name":"Text 11","text":"Community building at Rh Langan","textPreview":"Community building at Rh Langan","textChars":31,"textLines":1,"bbox":[844.8,536.64,355.2,34.56]}
+{"kind":"textbox","id":"sh/8rqxw3q5","slide":21,"name":"Text 12","text":"Rh Langan is one of the 4 longhouse communities covered by this CSR programme — included in the solar streetlight, water security and community signboard initiatives.","textPreview":"Rh Langan is one of the 4 longhouse communities covered by this CSR programme — included in the solar streetlight, water security and com...","textChars":166,"textLines":1,"bbox":[57.6,595.2,1152,57.6]}
+{"kind":"textbox","id":"sh/9sze58rq","slide":21,"name":"Text 13","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/porutkje","slide":21,"name":"Text 14","text":"Appendix · Rh Langan","textPreview":"Appendix · Rh Langan","textChars":20,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/onid0f2t","slide":21,"name":"Text 15","text":"21 / 22","textPreview":"21 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/w765s7i9","slide":21,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/x8f6lsje","slide":21,"name":"Image 1","bbox":[57.6,153.6,369.6,417.6]}
+{"kind":"image","id":"im/mh4nmd0r","slide":21,"name":"Image 2","bbox":[446.4,153.6,369.6,417.6]}
+{"kind":"image","id":"im/nixofi1c","slide":21,"name":"Image 3","bbox":[835.2,153.6,374.4,417.6]}
+{"kind":"notes","id":"nt/m1wvqtk3","slide":21,"text":""}
+{"kind":"slide","id":"sl/5onypobq","slide":22,"title":"APPENDIX · FIRE RECOVERY","textShapes":8}
+{"kind":"shape","id":"sh/6987itcr","slide":22,"name":"Shape 0","bbox":[48,48,59.52,59.52]}
+{"kind":"textbox","id":"sh/k7qpgjul","slide":22,"name":"Text 1","text":"APPENDIX · FIRE RECOVERY","textPreview":"APPENDIX · FIRE RECOVERY","textChars":24,"textLines":1,"bbox":[129.6,40.32,1008,26.88]}
+{"kind":"textbox","id":"sh/58zqpov6","slide":22,"name":"Text 2","text":"Rh Biju — Rebuilding in Progress","textPreview":"Rh Biju — Rebuilding in Progress","textChars":32,"textLines":1,"bbox":[126.72,65.28,1075.2,52.8]}
+{"kind":"shape","id":"sh/jmh8nyd0","slide":22,"name":"Shape 3","bbox":[57.6,153.6,571.2,398.4]}
+{"kind":"shape","id":"sh/43u9snu5","slide":22,"name":"Shape 4","bbox":[57.6,517.44,571.2,34.56]}
+{"kind":"textbox","id":"sh/p43q1sva","slide":22,"name":"Text 5","text":"Reconstruction site, Rh Spencer Biju","textPreview":"Reconstruction site, Rh Spencer Biju","textChars":36,"textLines":1,"bbox":[67.2,517.44,552,34.56]}
+{"kind":"shape","id":"sh/436507qx","slide":22,"name":"Shape 6","bbox":[648,153.6,571.2,398.4]}
+{"kind":"shape","id":"sh/3ixor29c","slide":22,"name":"Shape 7","bbox":[648,517.44,571.2,34.56]}
+{"kind":"textbox","id":"sh/2honyx8r","slide":22,"name":"Text 8","text":"Reconstruction site, Rh Spencer Biju — alternate angle","textPreview":"Reconstruction site, Rh Spencer Biju — alternate angle","textChars":54,"textLines":1,"bbox":[657.6,517.44,552,34.56]}
+{"kind":"textbox","id":"sh/hgf6pcr6","slide":22,"name":"Text 9","text":"Site visit photos from 20 July 2026 showing self-funded rebuilding of longhouse units following the 2024 fire. Reconstruction is community-led, using materials and labour funded by residents to date.","textPreview":"Site visit photos from 20 July 2026 showing self-funded rebuilding of longhouse units following the 2024 fire. Reconstruction is communit...","textChars":199,"textLines":1,"bbox":[57.6,576,1156.8,76.8]}
+{"kind":"textbox","id":"sh/gf65w7ql","slide":22,"name":"Text 10","text":"CSR Borneo 2026","textPreview":"CSR Borneo 2026","textChars":15,"textLines":1,"bbox":[48,684.48,384,26.88]}
+{"kind":"textbox","id":"sh/fexon290","slide":22,"name":"Text 11","text":"Appendix · Fire Recovery","textPreview":"Appendix · Fire Recovery","textChars":24,"textLines":1,"bbox":[364.8,684.48,547.2,26.88]}
+{"kind":"textbox","id":"sh/udonux8v","slide":22,"name":"Text 12","text":"22 / 22","textPreview":"22 / 22","textChars":7,"textLines":1,"bbox":[1113.6,684.48,115.2,26.88]}
+{"kind":"image","id":"im/29gjqdkn","slide":22,"name":"Image 0","bbox":[62.88,62.88,29.76,29.76]}
+{"kind":"image","id":"im/napkzil8","slide":22,"name":"Image 1","bbox":[57.6,153.6,571.2,398.4]}
+{"kind":"image","id":"im/relg7e10","slide":22,"name":"Image 2","bbox":[648,153.6,571.2,398.4]}
+{"kind":"notes","id":"nt/5onypobq","slide":22,"text":""}

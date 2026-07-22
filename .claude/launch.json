@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".", "-l", "3000", "--no-clipboard", "--no-port-switching"],
+      "port": 3000
+    },
+    {
+      "name": "qc-hub",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd promo-automation && set AUTH_MODE=dev&& set DEV_USER_EMAIL=jascinta@thebrandingpeople.co&& node bin/qc-dashboard.mjs"],
+      "port": 4321
+    }
+  ]
+}

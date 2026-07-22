@@ -1,0 +1,440 @@
+{"kind":"deck","id":"pr/bfr3xn","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"DEFAULT"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"PROMO DEPARTMENT  ·  MANAGEMENT REVIEW  ·  JULY 2026","textShapes":6}
+{"kind":"shape","id":"sh/ul4vaxgb","slide":1,"name":"Google Shape;12;p1","bbox":[585.6,67.2,326.4,326.4]}
+{"kind":"shape","id":"sh/vmdcj2xw","slide":1,"name":"Google Shape;13;p1","bbox":[700.8,182.4,230.4,230.4]}
+{"kind":"shape","id":"sh/4r6dg7et","slide":1,"name":"Google Shape;14;p1","bbox":[782.4,273.6,129.6,129.6]}
+{"kind":"textbox","id":"sh/5sfepcfe","slide":1,"name":"Google Shape;15;p1","text":"PROMO DEPARTMENT  ·  MANAGEMENT REVIEW  ·  JULY 2026","textPreview":"PROMO DEPARTMENT  ·  MANAGEMENT REVIEW  ·  JULY 2026","textChars":52,"textLines":1,"bbox":[52.8,129.6,624,28.8]}
+{"kind":"textbox","id":"sh/ipovexwn","slide":1,"name":"Google Shape;16;p1","text":"Value Creation Framework","textPreview":"Value Creation Framework","textChars":24,"textLines":1,"bbox":[52.8,165.12,614.4,96]}
+{"kind":"textbox","id":"sh/3qxwn2x8","slide":1,"name":"Google Shape;17;p1","text":"How Promo supports Sales and business growth through better targeting,\ncost control, measurable tracking, and execution discipline.","textPreview":"How Promo supports Sales and business growth through better targeting, | cost control, measurable tracking, and execution discipline.","textChars":131,"textLines":2,"bbox":[52.8,266.88,566.4,72]}
+{"kind":"shape","id":"sh/sfqdkrep","slide":1,"name":"Google Shape;18;p1","bbox":[52.8,398.4,172.42,40.32]}
+{"kind":"shape","id":"sh/dgzetcfa","slide":1,"name":"Google Shape;19;p1","bbox":[66.24,414.72,7.68,7.68]}
+{"kind":"textbox","id":"sh/1cvuxc7e","slide":1,"name":"Google Shape;20;p1","text":"PROMOTION EFFECTIVENESS","textPreview":"PROMOTION EFFECTIVENESS","textChars":23,"textLines":1,"bbox":[78.72,398.4,143.62,40.32]}
+{"kind":"shape","id":"sh/0bmd476t","slide":1,"name":"Google Shape;21;p1","bbox":[242.5,398.4,180.29,40.32]}
+{"kind":"shape","id":"sh/zadcv2p8","slide":1,"name":"Google Shape;22;p1","bbox":[255.94,414.72,7.68,7.68]}
+{"kind":"textbox","id":"sh/e94v2hon","slide":1,"name":"Google Shape;23;p1","text":"DECREASE PROMO COST","textPreview":"DECREASE PROMO COST","textChars":19,"textLines":1,"bbox":[268.42,398.4,151.49,40.32]}
+{"kind":"shape","id":"sh/90ve1w7q","slide":1,"name":"Google Shape;24;p1","bbox":[440.06,398.4,156.67,40.32]}
+{"kind":"shape","id":"sh/ozmd8r65","slide":1,"name":"Google Shape;25;p1","bbox":[453.5,414.72,7.68,7.68]}
+{"kind":"textbox","id":"sh/nydczmpk","slide":1,"name":"Google Shape;26;p1","text":"INCREASE REVENUE","textPreview":"INCREASE REVENUE","textChars":16,"textLines":1,"bbox":[465.98,398.4,127.87,40.32]}
+{"kind":"shape","id":"sh/mx4v6hoz","slide":1,"name":"Google Shape;27;p1","bbox":[52.8,484.8,480,28.8]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Frame: Promo moved under Sales — this session is about how Promo contributes to business outcomes, not just task execution. Three goals: increase promotion effectiveness, decrease promo cost, increase revenue."}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"1 · EXECUTIVE SUMMARY","textShapes":14}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"name":"Google Shape;33;p2","text":"1 · EXECUTIVE SUMMARY","textPreview":"1 · EXECUTIVE SUMMARY","textChars":21,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"name":"Google Shape;34;p2","text":"From execution support to business partner","textPreview":"From execution support to business partner","textChars":42,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"name":"Google Shape;35;p2","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[48,122.88,36.48,43.2]}
+{"kind":"textbox","id":"sh/wbidwb29","slide":2,"name":"Google Shape;36;p2","text":"Beyond request execution.  Promo can help Sales improve campaign effectiveness — the right offer, to the right player, at the right time and channel.","textPreview":"Beyond request execution.  Promo can help Sales improve campaign effectiveness — the right offer, to the right player, at the right time ...","textChars":149,"textLines":1,"bbox":[96,126.72,816,49.92]}
+{"kind":"textbox","id":"sh/xcrupg3u","slide":2,"name":"Google Shape;37;p2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[48,182.4,36.48,43.2]}
+{"kind":"textbox","id":"sh/id0vylkf","slide":2,"name":"Google Shape;38;p2","text":"Reduce waste.  Better QC, cap reviews, duplicate cleanup, and abuse control can cut bonus cost and overhead without cutting campaign volume.","textPreview":"Reduce waste.  Better QC, cap reviews, duplicate cleanup, and abuse control can cut bonus cost and overhead without cutting campaign volume.","textChars":140,"textLines":1,"bbox":[96,186.24,816,49.92]}
+{"kind":"textbox","id":"sh/je9crql0","slide":2,"name":"Google Shape;39;p2","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[48,241.92,36.48,43.2]}
+{"kind":"textbox","id":"sh/ru5cbqd4","slide":2,"name":"Google Shape;40;p2","text":"Support revenue growth.  Improve reactivation, enable segmentation, support cross-product offers, and build the tracking needed to validate what works.","textPreview":"Support revenue growth.  Improve reactivation, enable segmentation, support cross-product offers, and build the tracking needed to valida...","textChars":151,"textLines":1,"bbox":[96,245.76,816,49.92]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"name":"Google Shape;41;p2","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[48,301.44,36.48,43.2]}
+{"kind":"textbox","id":"sh/tw7ud0va","slide":2,"name":"Google Shape;42;p2","text":"Control before scale.  Automation is useful, but June showed that QC, SOP, and dashboard visibility must be strengthened before full scaling.","textPreview":"Control before scale.  Automation is useful, but June showed that QC, SOP, and dashboard visibility must be strengthened before full scal...","textChars":141,"textLines":1,"bbox":[96,305.28,816,49.92]}
+{"kind":"textbox","id":"sh/svedkvup","slide":2,"name":"Google Shape;43;p2","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[48,360.96,36.48,43.2]}
+{"kind":"textbox","id":"sh/fypcfqdg","slide":2,"name":"Google Shape;44;p2","text":"A measurable operating system.  Request quality → setup accuracy → campaign performance → cost and revenue review. This framework sets out how we get there.","textPreview":"A measurable operating system.  Request quality → setup accuracy → campaign performance → cost and revenue review. This framework sets ou...","textChars":156,"textLines":1,"bbox":[96,364.8,816,49.92]}
+{"kind":"shape","id":"sh/exgvmlcv","slide":2,"name":"Google Shape;45;p2","bbox":[48,432,864,69.12]}
+{"kind":"textbox","id":"sh/107uh0v6","slide":2,"name":"Google Shape;46;p2","text":"On June:  positioned as automation stabilisation and control-building. Issues surfaced gaps in QC, exception tracking, and legacy records — cleanup is underway (WS1 dedupe, QC checklists, SOP documentation).","textPreview":"On June:  positioned as automation stabilisation and control-building. Issues surfaced gaps in QC, exception tracking, and legacy records...","textChars":207,"textLines":1,"bbox":[69.12,437.76,825.6,57.6]}
+{"kind":"textbox","id":"sh/gzydovul","slide":2,"name":"Google Shape;47;p2","text":"02 / 12","textPreview":"02 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Five-point story: broader role, less waste, revenue support, control before scale, and a measurable operating system. Be honest on June — it was the trigger to strengthen controls, and cleanup is already underway."}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"2 · VALUE PILLARS","textShapes":33}
+{"kind":"textbox","id":"sh/w3it8zit","slide":3,"name":"Google Shape;53;p3","text":"2 · VALUE PILLARS","textPreview":"2 · VALUE PILLARS","textChars":17,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/nypcba1c","slide":3,"name":"Google Shape;54;p3","text":"Three business goals, one operating model","textPreview":"Three business goals, one operating model","textChars":41,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"shape","id":"sh/mxgb250r","slide":3,"name":"Google Shape;55;p3","bbox":[48,122.88,286.08,376.32]}
+{"kind":"textbox","id":"sh/90rudkji","slide":3,"name":"Google Shape;56;p3","text":"GOAL A","textPreview":"GOAL A","textChars":6,"textLines":1,"bbox":[69.12,140.16,243.84,21.12]}
+{"kind":"textbox","id":"sh/8zit4fix","slide":3,"name":"Google Shape;57;p3","text":"Increase Promotion\nEffectiveness","textPreview":"Increase Promotion | Effectiveness","textChars":32,"textLines":2,"bbox":[69.12,161.28,243.84,59.52]}
+{"kind":"textbox","id":"sh/7utcne1g","slide":3,"name":"Google Shape;58;p3","text":"Right player, right offer, right time and channel.","textPreview":"Right player, right offer, right time and channel.","textChars":50,"textLines":1,"bbox":[69.12,224.64,243.84,40.32]}
+{"kind":"shape","id":"sh/uxkj2xgz","slide":3,"name":"Google Shape;59;p3","bbox":[69.12,270.72,243.84,0]}
+{"kind":"shape","id":"sh/2p4f6dk3","slide":3,"name":"Google Shape;60;p3","bbox":[69.12,288.48,6.72,6.72]}
+{"kind":"textbox","id":"sh/3qxwfilo","slide":3,"name":"Google Shape;61;p3","text":"Segment-triggered campaigns","textPreview":"Segment-triggered campaigns","textChars":27,"textLines":1,"bbox":[84.48,282.24,232.32,23.04]}
+{"kind":"shape","id":"sh/or6x8329","slide":3,"name":"Google Shape;62;p3","bbox":[69.12,313.44,6.72,6.72]}
+{"kind":"textbox","id":"sh/psfeh83u","slide":3,"name":"Google Shape;63;p3","text":"Peak-timing deployment","textPreview":"Peak-timing deployment","textChars":22,"textLines":1,"bbox":[84.48,307.2,232.32,23.04]}
+{"kind":"shape","id":"sh/qtofadkf","slide":3,"name":"Google Shape;64;p3","bbox":[69.12,338.4,6.72,6.72]}
+{"kind":"textbox","id":"sh/bexwjil0","slide":3,"name":"Google Shape;65;p3","text":"Multi-channel delivery","textPreview":"Multi-channel delivery","textChars":22,"textLines":1,"bbox":[84.48,332.16,232.32,23.04]}
+{"kind":"shape","id":"sh/cf6xcn2l","slide":3,"name":"Google Shape;66;p3","bbox":[69.12,363.36,6.72,6.72]}
+{"kind":"textbox","id":"sh/dgfyls3q","slide":3,"name":"Google Shape;67;p3","text":"Monthly reactivation pipeline","textPreview":"Monthly reactivation pipeline","textChars":29,"textLines":1,"bbox":[84.48,357.12,232.32,23.04]}
+{"kind":"shape","id":"sh/6xkvytkb","slide":3,"name":"Google Shape;68;p3","bbox":[69.12,388.32,6.72,6.72]}
+{"kind":"textbox","id":"sh/7idw7ylg","slide":3,"name":"Google Shape;69;p3","text":"Calendar-based planning","textPreview":"Calendar-based planning","textChars":23,"textLines":1,"bbox":[84.48,382.08,232.32,23.04]}
+{"kind":"shape","id":"sh/9cjidwny","slide":3,"name":"Google Shape;70;p3","bbox":[69.12,413.28,6.72,6.72]}
+{"kind":"textbox","id":"sh/8bahkrmt","slide":3,"name":"Google Shape;71;p3","text":"Standardised request structure","textPreview":"Standardised request structure","textChars":30,"textLines":1,"bbox":[84.48,407.04,232.32,23.04]}
+{"kind":"textbox","id":"sh/na10bm58","slide":3,"name":"Google Shape;72;p3","text":"Measured by  Claim rate · channel performance · request completeness","textPreview":"Measured by  Claim rate · channel performance · request completeness","textChars":68,"textLines":1,"bbox":[69.12,443.52,243.84,48]}
+{"kind":"shape","id":"sh/m9szih4n","slide":3,"name":"Google Shape;73;p3","bbox":[346.56,122.88,286.08,376.32]}
+{"kind":"textbox","id":"sh/xg3ihwna","slide":3,"name":"Google Shape;74;p3","text":"GOAL B","textPreview":"GOAL B","textChars":6,"textLines":1,"bbox":[367.68,140.16,243.84,21.12]}
+{"kind":"textbox","id":"sh/wfahormp","slide":3,"name":"Google Shape;75;p3","text":"Decrease\nPromo Cost","textPreview":"Decrease | Promo Cost","textChars":19,"textLines":2,"bbox":[367.68,161.28,243.84,59.52]}
+{"kind":"textbox","id":"sh/ve10fm54","slide":3,"name":"Google Shape;76;p3","text":"Cut bonus waste, leakage, duplicates, and maintenance.","textPreview":"Cut bonus waste, leakage, duplicates, and maintenance.","textChars":54,"textLines":1,"bbox":[367.68,224.64,243.84,40.32]}
+{"kind":"shape","id":"sh/ulwfitor","slide":3,"name":"Google Shape;77;p3","bbox":[367.68,270.72,243.84,0]}
+{"kind":"shape","id":"sh/dkzy5cn6","slide":3,"name":"Google Shape;78;p3","bbox":[367.68,288.48,6.72,6.72]}
+{"kind":"textbox","id":"sh/cjqhc7ml","slide":3,"name":"Google Shape;79;p3","text":"Promo cap audit","textPreview":"Promo cap audit","textChars":15,"textLines":1,"bbox":[383.04,282.24,232.32,23.04]}
+{"kind":"shape","id":"sh/436lcve1","slide":3,"name":"Google Shape;80;p3","bbox":[367.68,313.44,6.72,6.72]}
+{"kind":"textbox","id":"sh/54fm50vm","slide":3,"name":"Google Shape;81;p3","text":"Promo sunset list","textPreview":"Promo sunset list","textChars":17,"textLines":1,"bbox":[383.04,307.2,232.32,23.04]}
+{"kind":"shape","id":"sh/ih43alwv","slide":3,"name":"Google Shape;82;p3","bbox":[367.68,338.4,6.72,6.72]}
+{"kind":"textbox","id":"sh/3id43qdg","slide":3,"name":"Google Shape;83;p3","text":"Duplicate promo cleanup","textPreview":"Duplicate promo cleanup","textChars":23,"textLines":1,"bbox":[383.04,332.16,232.32,23.04]}
+{"kind":"shape","id":"sh/gfml8ve5","slide":3,"name":"Google Shape;84;p3","bbox":[367.68,363.36,6.72,6.72]}
+{"kind":"textbox","id":"sh/hgvm1gvq","slide":3,"name":"Google Shape;85;p3","text":"Bonus hunter / abuse control","textPreview":"Bonus hunter / abuse control","textChars":28,"textLines":1,"bbox":[383.04,357.12,232.32,23.04]}
+{"kind":"shape","id":"sh/ud436lwz","slide":3,"name":"Google Shape;86;p3","bbox":[367.68,388.32,6.72,6.72]}
+{"kind":"textbox","id":"sh/ved4zqdk","slide":3,"name":"Google Shape;87;p3","text":"Minimum effective bonus testing","textPreview":"Minimum effective bonus testing","textChars":31,"textLines":1,"bbox":[383.04,382.08,232.32,23.04]}
+{"kind":"shape","id":"sh/0bq5kfu9","slide":3,"name":"Google Shape;88;p3","bbox":[367.68,413.28,6.72,6.72]}
+{"kind":"textbox","id":"sh/1czmdkvu","slide":3,"name":"Google Shape;89;p3","text":"Pre-live QC + exception tracking","textPreview":"Pre-live QC + exception tracking","textChars":32,"textLines":1,"bbox":[383.04,407.04,232.32,23.04]}
+{"kind":"textbox","id":"sh/b61o3exw","slide":3,"name":"Google Shape;90;p3","text":"Measured by  Bonus cost · cap vs deposit · QC error log","textPreview":"Measured by  Bonus cost · cap vs deposit · QC error log","textChars":55,"textLines":1,"bbox":[367.68,443.52,243.84,48]}
+{"kind":"shape","id":"sh/a5s7a9gb","slide":3,"name":"Google Shape;91;p3","bbox":[645.12,122.88,286.08,376.32]}
+{"kind":"textbox","id":"sh/x8jq5of2","slide":3,"name":"Google Shape;92;p3","text":"GOAL C","textPreview":"GOAL C","textChars":6,"textLines":1,"bbox":[666.24,140.16,243.84,21.12]}
+{"kind":"textbox","id":"sh/w7apcjyh","slide":3,"name":"Google Shape;93;p3","text":"Increase\nRevenue","textPreview":"Increase | Revenue","textChars":16,"textLines":2,"bbox":[666.24,161.28,243.84,59.52]}
+{"kind":"textbox","id":"sh/jul87yx8","slide":3,"name":"Google Shape;94;p3","text":"From promo creation support to revenue enablement.","textPreview":"From promo creation support to revenue enablement.","textChars":50,"textLines":1,"bbox":[666.24,224.64,243.84,40.32]}
+{"kind":"shape","id":"sh/y543qlsf","slide":3,"name":"Google Shape;95;p3","bbox":[666.24,270.72,243.84,0]}
+{"kind":"shape","id":"sh/lw3q9ofy","slide":3,"name":"Google Shape;96;p3","bbox":[666.24,288.48,6.72,6.72]}
+{"kind":"textbox","id":"sh/kvupg3ed","slide":3,"name":"Google Shape;97;p3","text":"Reactivation revenue campaigns","textPreview":"Reactivation revenue campaigns","textChars":30,"textLines":1,"bbox":[681.6,282.24,232.32,23.04]}
+{"kind":"shape","id":"sh/fyhovuxo","slide":3,"name":"Google Shape;98;p3","bbox":[666.24,313.44,6.72,6.72]}
+{"kind":"textbox","id":"sh/ex872pg3","slide":3,"name":"Google Shape;99;p3","text":"Cross-product bridging","textPreview":"Cross-product bridging","textChars":22,"textLines":1,"bbox":[681.6,307.2,232.32,23.04]}
+{"kind":"shape","id":"sh/fuhcnq50","slide":3,"name":"Google Shape;100;p3","bbox":[666.24,338.4,6.72,6.72]}
+{"kind":"textbox","id":"sh/et8vel4f","slide":3,"name":"Google Shape;101;p3","text":"VIP progression ladder","textPreview":"VIP progression ladder","textChars":22,"textLines":1,"bbox":[681.6,332.16,232.32,23.04]}
+{"kind":"shape","id":"sh/1wzup0nq","slide":3,"name":"Google Shape;102;p3","bbox":[666.24,363.36,6.72,6.72]}
+{"kind":"textbox","id":"sh/0vqdgvml","slide":3,"name":"Google Shape;103;p3","text":"Promo attribution model","textPreview":"Promo attribution model","textChars":23,"textLines":1,"bbox":[681.6,357.12,232.32,23.04]}
+{"kind":"shape","id":"sh/r6xcjq5o","slide":3,"name":"Google Shape;104;p3","bbox":[666.24,388.32,6.72,6.72]}
+{"kind":"textbox","id":"sh/q5oval43","slide":3,"name":"Google Shape;105;p3","text":"Sweet-spot cap strategy","textPreview":"Sweet-spot cap strategy","textChars":23,"textLines":1,"bbox":[681.6,382.08,232.32,23.04]}
+{"kind":"shape","id":"sh/d8zul0nu","slide":3,"name":"Google Shape;106;p3","bbox":[666.24,413.28,6.72,6.72]}
+{"kind":"textbox","id":"sh/s7qdcvm9","slide":3,"name":"Google Shape;107;p3","text":"Post-mortems + dashboards","textPreview":"Post-mortems + dashboards","textChars":25,"textLines":1,"bbox":[681.6,407.04,232.32,23.04]}
+{"kind":"textbox","id":"sh/b21wva58","slide":3,"name":"Google Shape;108;p3","text":"Measured by  Promo → claim → deposit · 24/72h · cost per reactivation","textPreview":"Measured by  Promo → claim → deposit · 24/72h · cost per reactivation","textChars":69,"textLines":1,"bbox":[666.24,443.52,243.84,48]}
+{"kind":"textbox","id":"sh/a1svm54n","slide":3,"name":"Google Shape;109;p3","text":"03 / 12","textPreview":"03 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"One slide view of the whole framework. Goal A = effectiveness, Goal B = cost, Goal C = revenue. Each pillar has practical actions and a measurement basis — nothing here is theoretical."}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"3 · PRACTICAL INITIATIVES","textShapes":35}
+{"kind":"textbox","id":"sh/g3mdw76l","slide":4,"name":"Google Shape;115;p4","text":"3 · PRACTICAL INITIATIVES","textPreview":"3 · PRACTICAL INITIATIVES","textChars":25,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/v2dw3250","slide":4,"name":"Google Shape;116;p4","text":"Ten realistic initiatives — 1 to 5","textPreview":"Ten realistic initiatives — 1 to 5","textChars":34,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"textbox","id":"sh/u14vuxof","slide":4,"name":"Google Shape;117;p4","text":"EFFORT / IMPACT","textPreview":"EFFORT / IMPACT","textChars":15,"textLines":1,"bbox":[566.4,117.12,144,19.2]}
+{"kind":"textbox","id":"sh/10zehwna","slide":4,"name":"Google Shape;118;p4","text":"MEASUREMENT","textPreview":"MEASUREMENT","textChars":11,"textLines":1,"bbox":[720,117.12,192,19.2]}
+{"kind":"shape","id":"sh/0zqd8rmp","slide":4,"name":"Google Shape;119;p4","bbox":[48,146.88,34.56,34.56]}
+{"kind":"textbox","id":"sh/kfip0zyd","slide":4,"name":"Google Shape;120;p4","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[48,146.88,34.56,34.56]}
+{"kind":"textbox","id":"sh/lgr6t4zy","slide":4,"name":"Google Shape;121;p4","text":"Promo Request Quality Gate","textPreview":"Promo Request Quality Gate","textChars":26,"textLines":1,"bbox":[97.92,140.16,441.6,24.96]}
+{"kind":"textbox","id":"sh/ytg7ypg7","slide":4,"name":"Google Shape;122;p4","text":"Required fields — objective, segment, timing, reward logic — before Promo proceeds. Incomplete briefs are returned for clarification.","textPreview":"Required fields — objective, segment, timing, reward logic — before Promo proceeds. Incomplete briefs are returned for clarification.","textChars":133,"textLines":1,"bbox":[97.92,165.12,441.6,43.2]}
+{"kind":"textbox","id":"sh/je9oruhs","slide":4,"name":"Google Shape;123;p4","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,144,144,21.12]}
+{"kind":"textbox","id":"sh/wrypwzy1","slide":4,"name":"Google Shape;124;p4","text":"Impact  MED","textPreview":"Impact  MED","textChars":11,"textLines":1,"bbox":[566.4,168,144,21.12]}
+{"kind":"textbox","id":"sh/xs76p4zm","slide":4,"name":"Google Shape;125;p4","text":"% complete first-pass · clarification loops · turnaround time","textPreview":"% complete first-pass · clarification loops · turnaround time","textChars":61,"textLines":1,"bbox":[720,144,192,59.52]}
+{"kind":"shape","id":"sh/f69ofupg","slide":4,"name":"Google Shape;126;p4","bbox":[48,208.32,864,0]}
+{"kind":"shape","id":"sh/bqponuhg","slide":4,"name":"Google Shape;127;p4","bbox":[48,221.76,34.56,34.56]}
+{"kind":"textbox","id":"sh/onypsfy5","slide":4,"name":"Google Shape;128;p4","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[48,221.76,34.56,34.56]}
+{"kind":"textbox","id":"sh/9o76lkzq","slide":4,"name":"Google Shape;129;p4","text":"Segment-Triggered Campaigns","textPreview":"Segment-Triggered Campaigns","textChars":27,"textLines":1,"bbox":[97.92,215.04,441.6,24.96]}
+{"kind":"textbox","id":"sh/ri58ba1c","slide":4,"name":"Google Shape;130;p4","text":"Sales provides the target segment; Promo matches bonus mechanics and channel to that audience.","textPreview":"Sales provides the target segment; Promo matches bonus mechanics and channel to that audience.","textChars":94,"textLines":1,"bbox":[97.92,240,441.6,43.2]}
+{"kind":"textbox","id":"sh/qhw725kr","slide":4,"name":"Google Shape;131;p4","text":"Effort  MED","textPreview":"Effort  MED","textChars":11,"textLines":1,"bbox":[566.4,218.88,144,21.12]}
+{"kind":"textbox","id":"sh/dknqdkji","slide":4,"name":"Google Shape;132;p4","text":"Impact  HIGH","textPreview":"Impact  HIGH","textChars":12,"textLines":1,"bbox":[566.4,242.88,144,21.12]}
+{"kind":"textbox","id":"sh/cjep4f2x","slide":4,"name":"Google Shape;133;p4","text":"Claim rate by segment · deposit conversion · response rate","textPreview":"Claim rate by segment · deposit conversion · response rate","textChars":58,"textLines":1,"bbox":[720,218.88,192,59.52]}
+{"kind":"shape","id":"sh/byt87epo","slide":4,"name":"Google Shape;134;p4","bbox":[48,283.2,864,0]}
+{"kind":"shape","id":"sh/elw76pk3","slide":4,"name":"Google Shape;135;p4","bbox":[48,296.64,34.56,34.56]}
+{"kind":"textbox","id":"sh/1o7qhkje","slide":4,"name":"Google Shape;136;p4","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[48,296.64,34.56,34.56]}
+{"kind":"textbox","id":"sh/0nyp8z29","slide":4,"name":"Google Shape;137;p4","text":"Monthly Reactivation Pipeline","textPreview":"Monthly Reactivation Pipeline","textChars":29,"textLines":1,"bbox":[97.92,289.92,441.6,24.96]}
+{"kind":"textbox","id":"sh/nqp8ju1k","slide":4,"name":"Google Shape;138;p4","text":"Scheduled win-back Free Credit for 30-day lapsed players, from a monthly Sales export.","textPreview":"Scheduled win-back Free Credit for 30-day lapsed players, from a monthly Sales export.","textChars":86,"textLines":1,"bbox":[97.92,314.88,441.6,43.2]}
+{"kind":"textbox","id":"sh/mpg7apkz","slide":4,"name":"Google Shape;139;p4","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,293.76,144,21.12]}
+{"kind":"textbox","id":"sh/mtor6d8b","slide":4,"name":"Google Shape;140;p4","text":"Impact  HIGH","textPreview":"Impact  HIGH","textChars":12,"textLines":1,"bbox":[566.4,317.76,144,21.12]}
+{"kind":"textbox","id":"sh/7uxsfy9w","slide":4,"name":"Google Shape;141;p4","text":"Reactivated players · deposit within 14 days · cost per reactivation","textPreview":"Reactivated players · deposit within 14 days · cost per reactivation","textChars":68,"textLines":1,"bbox":[720,293.76,192,59.52]}
+{"kind":"shape","id":"sh/07idora5","slide":4,"name":"Google Shape;142;p4","bbox":[48,358.08,864,0]}
+{"kind":"shape","id":"sh/9wfah8rm","slide":4,"name":"Google Shape;143;p4","bbox":[48,371.52,34.56,34.56]}
+{"kind":"textbox","id":"sh/uxobad87","slide":4,"name":"Google Shape;144;p4","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[48,371.52,34.56,34.56]}
+{"kind":"textbox","id":"sh/vyhsji9s","slide":4,"name":"Google Shape;145;p4","text":"Promo Cap Audit","textPreview":"Promo Cap Audit","textChars":15,"textLines":1,"bbox":[97.92,364.8,441.6,24.96]}
+{"kind":"textbox","id":"sh/wjqtcnqd","slide":4,"name":"Google Shape;146;p4","text":"Compare max bonus cap vs average claimant deposit; flag promos where cap exceeds 2× average.","textPreview":"Compare max bonus cap vs average claimant deposit; flag promos where cap exceeds 2× average.","textChars":92,"textLines":1,"bbox":[97.92,389.76,441.6,43.2]}
+{"kind":"textbox","id":"sh/hkzalsry","slide":4,"name":"Google Shape;147;p4","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,368.64,144,21.12]}
+{"kind":"textbox","id":"sh/a14ryt83","slide":4,"name":"Google Shape;148;p4","text":"Impact  MED","textPreview":"Impact  MED","textChars":11,"textLines":1,"bbox":[566.4,392.64,144,21.12]}
+{"kind":"textbox","id":"sh/b2ds7e9o","slide":4,"name":"Google Shape;149;p4","text":"Bonus cost saved · cap utilisation · deposit impact after change","textPreview":"Bonus cost saved · cap utilisation · deposit impact after change","textChars":64,"textLines":1,"bbox":[720,368.64,192,59.52]}
+{"kind":"shape","id":"sh/58vyt0bu","slide":4,"name":"Google Shape;150;p4","bbox":[48,432.96,864,0]}
+{"kind":"shape","id":"sh/srul0bex","slide":4,"name":"Google Shape;151;p4","bbox":[48,446.4,34.56,34.56]}
+{"kind":"textbox","id":"sh/rql4r6xc","slide":4,"name":"Google Shape;152;p4","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[48,446.4,34.56,34.56]}
+{"kind":"textbox","id":"sh/qpc3ylwr","slide":4,"name":"Google Shape;153;p4","text":"Promo Sunset List","textPreview":"Promo Sunset List","textChars":17,"textLines":1,"bbox":[97.92,439.68,441.6,24.96]}
+{"kind":"textbox","id":"sh/1wnmx0fe","slide":4,"name":"Google Shape;154;p4","text":"Monthly review to retire low-uptake, duplicate, or risky promos — with management sign-off.","textPreview":"Monthly review to retire low-uptake, duplicate, or risky promos — with management sign-off.","textChars":91,"textLines":1,"bbox":[97.92,464.64,441.6,43.2]}
+{"kind":"textbox","id":"sh/0vel4vet","slide":4,"name":"Google Shape;155;p4","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,443.52,144,21.12]}
+{"kind":"textbox","id":"sh/zul4vqx8","slide":4,"name":"Google Shape;156;p4","text":"Impact  MED","textPreview":"Impact  MED","textChars":11,"textLines":1,"bbox":[566.4,467.52,144,21.12]}
+{"kind":"textbox","id":"sh/etc32lw3","slide":4,"name":"Google Shape;157;p4","text":"Promos retired · duplicates reduced · T&C issues cleared","textPreview":"Promos retired · duplicates reduced · T&C issues cleared","textChars":56,"textLines":1,"bbox":[720,443.52,192,59.52]}
+{"kind":"textbox","id":"sh/h0jmlwfa","slide":4,"name":"Google Shape;158;p4","text":"04 / 12","textPreview":"04 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Initiatives 1–5: quality gate, segmentation, reactivation, cap audit, sunset list. Note the effort/impact balance — most are low effort. Metrics are defined upfront for every initiative."}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"3 · PRACTICAL INITIATIVES","textShapes":35}
+{"kind":"textbox","id":"sh/4z6l8rmd","slide":5,"name":"Google Shape;164;p5","text":"3 · PRACTICAL INITIATIVES","textPreview":"3 · PRACTICAL INITIATIVES","textChars":25,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/50f2hwny","slide":5,"name":"Google Shape;165;p5","text":"Ten realistic initiatives — 6 to 10","textPreview":"Ten realistic initiatives — 6 to 10","textChars":35,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"textbox","id":"sh/ixo36h47","slide":5,"name":"Google Shape;166;p5","text":"EFFORT / IMPACT","textPreview":"EFFORT / IMPACT","textChars":15,"textLines":1,"bbox":[566.4,117.12,144,19.2]}
+{"kind":"textbox","id":"sh/3yxkfm5s","slide":5,"name":"Google Shape;167;p5","text":"MEASUREMENT","textPreview":"MEASUREMENT","textChars":11,"textLines":1,"bbox":[720,117.12,192,19.2]}
+{"kind":"shape","id":"sh/gv6l4rm1","slide":5,"name":"Google Shape;168;p5","bbox":[48,146.88,34.56,34.56]}
+{"kind":"textbox","id":"sh/hwf2dcnm","slide":5,"name":"Google Shape;169;p5","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[48,146.88,34.56,34.56]}
+{"kind":"textbox","id":"sh/jqd4n2po","slide":5,"name":"Google Shape;170;p5","text":"Bonus Hunter / Abuse Control","textPreview":"Bonus Hunter / Abuse Control","textChars":28,"textLines":1,"bbox":[97.92,140.16,441.6,24.96]}
+{"kind":"textbox","id":"sh/yp43uh83","slide":5,"name":"Google Shape;171;p5","text":"Flag bonus-heavy, low-retention players; exclude from campaigns or shift to lower-bonus mechanics.","textPreview":"Flag bonus-heavy, low-retention players; exclude from campaigns or shift to lower-bonus mechanics.","textChars":98,"textLines":1,"bbox":[97.92,165.12,441.6,43.2]}
+{"kind":"textbox","id":"sh/lsvmpc7e","slide":5,"name":"Google Shape;172;p5","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,144,144,21.12]}
+{"kind":"textbox","id":"sh/krmlw7qt","slide":5,"name":"Google Shape;173;p5","text":"Impact  MED","textPreview":"Impact  MED","textChars":11,"textLines":1,"bbox":[566.4,168,144,21.12]}
+{"kind":"textbox","id":"sh/7ud4rmpk","slide":5,"name":"Google Shape;174;p5","text":"Bonus cost reduced · repeat abuse cases · retention after claim","textPreview":"Bonus cost reduced · repeat abuse cases · retention after claim","textChars":63,"textLines":1,"bbox":[720,144,192,59.52]}
+{"kind":"shape","id":"sh/rq58va9o","slide":5,"name":"Google Shape;175;p5","bbox":[48,208.32,864,0]}
+{"kind":"shape","id":"sh/twfmtw7q","slide":5,"name":"Google Shape;176;p5","bbox":[48,221.76,34.56,34.56]}
+{"kind":"textbox","id":"sh/8v650rq5","slide":5,"name":"Google Shape;177;p5","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[48,221.76,34.56,34.56]}
+{"kind":"textbox","id":"sh/vyx4v6pg","slide":5,"name":"Google Shape;178;p5","text":"Promo Calendar + Peak Timing","textPreview":"Promo Calendar + Peak Timing","textChars":28,"textLines":1,"bbox":[97.92,215.04,441.6,24.96]}
+{"kind":"textbox","id":"sh/uxon218b","slide":5,"name":"Google Shape;179;p5","text":"Monthly calendar with Sales around paydays, sports events, holidays — planned, not reactive.","textPreview":"Monthly calendar with Sales around paydays, sports events, holidays — planned, not reactive.","textChars":92,"textLines":1,"bbox":[97.92,240,441.6,43.2]}
+{"kind":"textbox","id":"sh/2547ql4f","slide":5,"name":"Google Shape;180;p5","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,218.88,144,21.12]}
+{"kind":"textbox","id":"sh/36d8jql0","slide":5,"name":"Google Shape;181;p5","text":"Impact  MED","textPreview":"Impact  MED","textChars":11,"textLines":1,"bbox":[566.4,242.88,144,21.12]}
+{"kind":"textbox","id":"sh/47mpsvml","slide":5,"name":"Google Shape;182;p5","text":"Claim rate by timing window · planned vs reactive ratio","textPreview":"Claim rate by timing window · planned vs reactive ratio","textChars":55,"textLines":1,"bbox":[720,218.88,192,59.52]}
+{"kind":"shape","id":"sh/0re5of65","slide":5,"name":"Google Shape;183;p5","bbox":[48,283.2,864,0]}
+{"kind":"shape","id":"sh/q9o7u54b","slide":5,"name":"Google Shape;184;p5","bbox":[48,296.64,34.56,34.56]}
+{"kind":"textbox","id":"sh/rax8nalw","slide":5,"name":"Google Shape;185;p5","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[48,296.64,34.56,34.56]}
+{"kind":"textbox","id":"sh/cb6pwvmh","slide":5,"name":"Google Shape;186;p5","text":"Dashboard Reporting","textPreview":"Dashboard Reporting","textChars":19,"textLines":1,"bbox":[97.92,289.92,441.6,24.96]}
+{"kind":"textbox","id":"sh/dcfqp032","slide":5,"name":"Google Shape;187;p5","text":"Live view of promo volume, SLA, QC pass rate, automation issues, and campaign status for management.","textPreview":"Live view of promo volume, SLA, QC pass rate, automation issues, and campaign status for management.","textChars":100,"textLines":1,"bbox":[97.92,314.88,441.6,43.2]}
+{"kind":"textbox","id":"sh/edo7y54n","slide":5,"name":"Google Shape;188;p5","text":"Effort  MED","textPreview":"Effort  MED","textChars":11,"textLines":1,"bbox":[566.4,293.76,144,21.12]}
+{"kind":"textbox","id":"sh/zyx8ral8","slide":5,"name":"Google Shape;189;p5","text":"Impact  HIGH","textPreview":"Impact  HIGH","textChars":12,"textLines":1,"bbox":[566.4,317.76,144,21.12]}
+{"kind":"textbox","id":"sh/9szax4na","slide":5,"name":"Google Shape;190;p5","text":"Dashboard usage · report automation rate · decisions supported","textPreview":"Dashboard usage · report automation rate · decisions supported","textChars":62,"textLines":1,"bbox":[720,293.76,192,59.52]}
+{"kind":"shape","id":"sh/5wjmpg3i","slide":5,"name":"Google Shape;191;p5","bbox":[48,358.08,864,0]}
+{"kind":"shape","id":"sh/n6hsvu54","slide":5,"name":"Google Shape;192;p5","bbox":[48,371.52,34.56,34.56]}
+{"kind":"textbox","id":"sh/m58bm9oj","slide":5,"name":"Google Shape;193;p5","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[48,371.52,34.56,34.56]}
+{"kind":"textbox","id":"sh/xwja1on6","slide":5,"name":"Google Shape;194;p5","text":"Automation QC + Exception Log","textPreview":"Automation QC + Exception Log","textChars":29,"textLines":1,"bbox":[97.92,364.8,441.6,24.96]}
+{"kind":"textbox","id":"sh/wvatsj61","slide":5,"name":"Google Shape;195;p5","text":"Log every automation error and QC failure; review weekly; update rules so known issues never repeat.","textPreview":"Log every automation error and QC failure; review weekly; update rules so known issues never repeat.","textChars":100,"textLines":1,"bbox":[97.92,389.76,441.6,43.2]}
+{"kind":"textbox","id":"sh/bu1sze5g","slide":5,"name":"Google Shape;196;p5","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,368.64,144,21.12]}
+{"kind":"textbox","id":"sh/atsbq9ov","slide":5,"name":"Google Shape;197;p5","text":"Impact  HIGH","textPreview":"Impact  HIGH","textChars":12,"textLines":1,"bbox":[566.4,392.64,144,21.12]}
+{"kind":"textbox","id":"sh/l03a5oni","slide":5,"name":"Google Shape;198;p5","text":"Automation error rate · repeat-error reduction · QC first-pass rate","textPreview":"Automation error rate · repeat-error reduction · QC first-pass rate","textChars":67,"textLines":1,"bbox":[720,368.64,192,59.52]}
+{"kind":"shape","id":"sh/q5k3y18j","slide":5,"name":"Google Shape;199;p5","bbox":[48,432.96,864,0]}
+{"kind":"shape","id":"sh/lwrih8f2","slide":5,"name":"Google Shape;200;p5","bbox":[48,446.4,34.56,34.56]}
+{"kind":"textbox","id":"sh/0vi183eh","slide":5,"name":"Google Shape;201;p5","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[48,446.4,34.56,34.56]}
+{"kind":"textbox","id":"sh/zu90fyxc","slide":5,"name":"Google Shape;202;p5","text":"Campaign Post-Mortem","textPreview":"Campaign Post-Mortem","textChars":20,"textLines":1,"bbox":[97.92,439.68,441.6,24.96]}
+{"kind":"textbox","id":"sh/ytgj6twr","slide":5,"name":"Google Shape;203;p5","text":"After each campaign: objective, cost, claims, deposits, issues, and next action — shared with Sales.","textPreview":"After each campaign: objective, cost, claims, deposits, issues, and next action — shared with Sales.","textChars":100,"textLines":1,"bbox":[97.92,464.64,441.6,43.2]}
+{"kind":"textbox","id":"sh/9kr2lsfe","slide":5,"name":"Google Shape;204;p5","text":"Effort  LOW","textPreview":"Effort  LOW","textChars":11,"textLines":1,"bbox":[566.4,443.52,144,21.12]}
+{"kind":"textbox","id":"sh/8ji1cnet","slide":5,"name":"Google Shape;205;p5","text":"Impact  HIGH","textPreview":"Impact  HIGH","textChars":12,"textLines":1,"bbox":[566.4,467.52,144,21.12]}
+{"kind":"textbox","id":"sh/ni9kjix8","slide":5,"name":"Google Shape;206;p5","text":"% campaigns reviewed · action items done · repeat performance","textPreview":"% campaigns reviewed · action items done · repeat performance","textChars":61,"textLines":1,"bbox":[720,443.52,192,59.52]}
+{"kind":"textbox","id":"sh/mh0jadwn","slide":5,"name":"Google Shape;207;p5","text":"05 / 12","textPreview":"05 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Initiatives 6–10: abuse control, calendar timing, dashboard, automation exception log, post-mortems. The exception log responds directly to June. Post-mortems close the loop so campaign learnings compound."}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"4 · PRIORITY ROADMAP","textShapes":29}
+{"kind":"textbox","id":"sh/61kryd4n","slide":6,"name":"Google Shape;213;p6","text":"4 · PRIORITY ROADMAP","textPreview":"4 · PRIORITY ROADMAP","textChars":20,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/h8vads3a","slide":6,"name":"Google Shape;214;p6","text":"Quick wins first, strategic plays in sequence","textPreview":"Quick wins first, strategic plays in sequence","textChars":45,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"shape","id":"sh/g7m94n2p","slide":6,"name":"Google Shape;215;p6","bbox":[48,122.88,286.08,78.72]}
+{"kind":"textbox","id":"sh/v6t8bil4","slide":6,"name":"Google Shape;216;p6","text":"NOW — QUICK WINS","textPreview":"NOW — QUICK WINS","textChars":16,"textLines":1,"bbox":[65.28,132.48,251.52,21.12]}
+{"kind":"textbox","id":"sh/u5kr2d4j","slide":6,"name":"Google Shape;217;p6","text":"July 2026   Current data and process. No new systems.","textPreview":"July 2026   Current data and process. No new systems.","textChars":53,"textLines":1,"bbox":[65.28,155.52,251.52,40.32]}
+{"kind":"shape","id":"sh/5wvahc36","slide":6,"name":"Google Shape;218;p6","bbox":[65.28,225.6,6.72,6.72]}
+{"kind":"textbox","id":"sh/4vm9872l","slide":6,"name":"Google Shape;219;p6","text":"Promo Request Quality Gate   Promotion","textPreview":"Promo Request Quality Gate   Promotion","textChars":38,"textLines":1,"bbox":[80.64,218.88,238.08,23.04]}
+{"kind":"shape","id":"sh/orel0ve9","slide":6,"name":"Google Shape;220;p6","bbox":[65.28,257.76,6.72,6.72]}
+{"kind":"textbox","id":"sh/9cn2t0fu","slide":6,"name":"Google Shape;221;p6","text":"Promo Cap Audit   Cost","textPreview":"Promo Cap Audit   Cost","textChars":22,"textLines":1,"bbox":[80.64,251.04,238.08,23.04]}
+{"kind":"shape","id":"sh/mpwjy5w3","slide":6,"name":"Google Shape;222;p6","bbox":[65.28,289.92,6.72,6.72]}
+{"kind":"textbox","id":"sh/nq5kraxo","slide":6,"name":"Google Shape;223;p6","text":"Promo Sunset List   Cost","textPreview":"Promo Sunset List   Cost","textChars":24,"textLines":1,"bbox":[80.64,283.2,238.08,23.04]}
+{"kind":"shape","id":"sh/wfel4fe5","slide":6,"name":"Google Shape;224;p6","bbox":[65.28,322.08,6.72,6.72]}
+{"kind":"textbox","id":"sh/xg72xkfq","slide":6,"name":"Google Shape;225;p6","text":"Bonus Hunter / Abuse Control   Cost","textPreview":"Bonus Hunter / Abuse Control   Cost","textChars":35,"textLines":1,"bbox":[80.64,315.36,238.08,23.04]}
+{"kind":"shape","id":"sh/adw325wz","slide":6,"name":"Google Shape;226;p6","bbox":[65.28,354.24,6.72,6.72]}
+{"kind":"textbox","id":"sh/be5kvaxk","slide":6,"name":"Google Shape;227;p6","text":"Monthly Reactivation Pipeline   Promotion","textPreview":"Monthly Reactivation Pipeline   Promotion","textChars":41,"textLines":1,"bbox":[80.64,347.52,238.08,23.04]}
+{"kind":"shape","id":"sh/cju1sbe1","slide":6,"name":"Google Shape;228;p6","bbox":[65.28,386.4,6.72,6.72]}
+{"kind":"textbox","id":"sh/dk32lgfm","slide":6,"name":"Google Shape;229;p6","text":"Duplicate Promo Cleanup   Cost","textPreview":"Duplicate Promo Cleanup   Cost","textChars":30,"textLines":1,"bbox":[80.64,379.68,238.08,23.04]}
+{"kind":"shape","id":"sh/ve9oreh4","slide":6,"name":"Google Shape;230;p6","bbox":[65.28,418.56,6.72,6.72]}
+{"kind":"textbox","id":"sh/ud0nytgj","slide":6,"name":"Google Shape;231;p6","text":"Automation QC Exception Log   Cost","textPreview":"Automation QC Exception Log   Cost","textChars":34,"textLines":1,"bbox":[80.64,411.84,238.08,23.04]}
+{"kind":"shape","id":"sh/hgb6toza","slide":6,"name":"Google Shape;232;p6","bbox":[346.56,122.88,286.08,78.72]}
+{"kind":"textbox","id":"sh/gf250jyp","slide":6,"name":"Google Shape;233;p6","text":"MONTH 1 — MEDIUM-TERM","textPreview":"MONTH 1 — MEDIUM-TERM","textChars":21,"textLines":1,"bbox":[363.84,132.48,251.52,21.12]}
+{"kind":"textbox","id":"sh/7a94nehs","slide":6,"name":"Google Shape;234;p6","text":"August 2026   Needs Sales alignment or shared data.","textPreview":"August 2026   Needs Sales alignment or shared data.","textChars":51,"textLines":1,"bbox":[363.84,155.52,251.52,40.32]}
+{"kind":"shape","id":"sh/690nu9g7","slide":6,"name":"Google Shape;235;p6","bbox":[363.84,225.6,6.72,6.72]}
+{"kind":"textbox","id":"sh/tcrmpozy","slide":6,"name":"Google Shape;236;p6","text":"Segment-Triggered Campaigns   Promotion","textPreview":"Segment-Triggered Campaigns   Promotion","textChars":39,"textLines":1,"bbox":[379.2,218.88,238.08,23.04]}
+{"kind":"shape","id":"sh/8bi5wjyd","slide":6,"name":"Google Shape;237;p6","bbox":[363.84,257.76,6.72,6.72]}
+{"kind":"textbox","id":"sh/j6p4juhw","slide":6,"name":"Google Shape;238;p6","text":"Cross-Product Bridging   Revenue","textPreview":"Cross-Product Bridging   Revenue","textChars":32,"textLines":1,"bbox":[379.2,251.04,238.08,23.04]}
+{"kind":"shape","id":"sh/ylgnq9gb","slide":6,"name":"Google Shape;239;p6","bbox":[363.84,289.92,6.72,6.72]}
+{"kind":"textbox","id":"sh/etkruxcv","slide":6,"name":"Google Shape;240;p6","text":"Event Calendar Sync   Promotion","textPreview":"Event Calendar Sync   Promotion","textChars":31,"textLines":1,"bbox":[379.2,283.2,238.08,23.04]}
+{"kind":"shape","id":"sh/zet8n2dg","slide":6,"name":"Google Shape;241;p6","bbox":[363.84,322.08,6.72,6.72]}
+{"kind":"textbox","id":"sh/0f29w7u1","slide":6,"name":"Google Shape;242;p6","text":"Broader Deduplication   Cost","textPreview":"Broader Deduplication   Cost","textChars":28,"textLines":1,"bbox":[379.2,315.36,238.08,23.04]}
+{"kind":"shape","id":"sh/lgbqpcvm","slide":6,"name":"Google Shape;243;p6","bbox":[363.84,354.24,6.72,6.72]}
+{"kind":"textbox","id":"sh/qp0rqxcz","slide":6,"name":"Google Shape;244;p6","text":"Min Effective Bonus Testing   Cost","textPreview":"Min Effective Bonus Testing   Cost","textChars":34,"textLines":1,"bbox":[379.2,347.52,238.08,23.04]}
+{"kind":"shape","id":"sh/rq98j2dk","slide":6,"name":"Google Shape;245;p6","bbox":[363.84,386.4,6.72,6.72]}
+{"kind":"textbox","id":"sh/cri9snup","slide":6,"name":"Google Shape;246;p6","text":"Multi-Channel Delivery   Promotion","textPreview":"Multi-Channel Delivery   Promotion","textChars":34,"textLines":1,"bbox":[379.2,379.68,238.08,23.04]}
+{"kind":"shape","id":"sh/dsrqlsva","slide":6,"name":"Google Shape;247;p6","bbox":[363.84,418.56,6.72,6.72]}
+{"kind":"textbox","id":"sh/2lgrmdcn","slide":6,"name":"Google Shape;248;p6","text":"Dashboard Reporting   Promotion","textPreview":"Dashboard Reporting   Promotion","textChars":31,"textLines":1,"bbox":[379.2,411.84,238.08,23.04]}
+{"kind":"shape","id":"sh/3m98fid8","slide":6,"name":"Google Shape;249;p6","bbox":[363.84,450.72,6.72,6.72]}
+{"kind":"textbox","id":"sh/5gfu1gfq","slide":6,"name":"Google Shape;250;p6","text":"Campaign Post-Mortem   Revenue","textPreview":"Campaign Post-Mortem   Revenue","textChars":30,"textLines":1,"bbox":[379.2,444,238.08,23.04]}
+{"kind":"shape","id":"sh/kf6tsbe5","slide":6,"name":"Google Shape;251;p6","bbox":[645.12,122.88,286.08,78.72]}
+{"kind":"textbox","id":"sh/jexcz6xk","slide":6,"name":"Google Shape;252;p6","text":"PHASE 3 — STRATEGIC","textPreview":"PHASE 3 — STRATEGIC","textChars":19,"textLines":1,"bbox":[662.4,132.48,251.52,21.12]}
+{"kind":"textbox","id":"sh/idobqlwf","slide":6,"name":"Google Shape;253;p6","text":"Sep – Dec 2026   Needs integration, attribution, cross-team agreement.","textPreview":"Sep – Dec 2026   Needs integration, attribution, cross-team agreement.","textChars":70,"textLines":1,"bbox":[662.4,155.52,251.52,40.32]}
+{"kind":"shape","id":"sh/xcvuxgfu","slide":6,"name":"Google Shape;254;p6","bbox":[662.4,225.6,6.72,6.72]}
+{"kind":"textbox","id":"sh/wbmtobe9","slide":6,"name":"Google Shape;255;p6","text":"Promo Attribution Model   Revenue","textPreview":"Promo Attribution Model   Revenue","textChars":33,"textLines":1,"bbox":[677.76,218.88,238.08,23.04]}
+{"kind":"shape","id":"sh/vadcv6xo","slide":6,"name":"Google Shape;256;p6","bbox":[662.4,257.76,6.72,6.72]}
+{"kind":"textbox","id":"sh/a94bm1w3","slide":6,"name":"Google Shape;257;p6","text":"VIP Progression Ladder   Revenue","textPreview":"VIP Progression Ladder   Revenue","textChars":32,"textLines":1,"bbox":[677.76,251.04,238.08,23.04]}
+{"kind":"shape","id":"sh/98vutwfi","slide":6,"name":"Google Shape;258;p6","bbox":[662.4,289.92,6.72,6.72]}
+{"kind":"textbox","id":"sh/8nmtkrex","slide":6,"name":"Google Shape;259;p6","text":"Real-Time Deposit Triggers   Revenue","textPreview":"Real-Time Deposit Triggers   Revenue","textChars":36,"textLines":1,"bbox":[677.76,283.2,238.08,23.04]}
+{"kind":"shape","id":"sh/0rqt0bmt","slide":6,"name":"Google Shape;260;p6","bbox":[662.4,322.08,6.72,6.72]}
+{"kind":"textbox","id":"sh/1szu9wne","slide":6,"name":"Google Shape;261;p6","text":"End-to-End Revenue Tracking   Revenue","textPreview":"End-to-End Revenue Tracking   Revenue","textChars":37,"textLines":1,"bbox":[677.76,315.36,238.08,23.04]}
+{"kind":"shape","id":"sh/epoby143","slide":6,"name":"Google Shape;262;p6","bbox":[662.4,354.24,6.72,6.72]}
+{"kind":"textbox","id":"sh/zqhc7658","slide":6,"name":"Google Shape;263;p6","text":"Campaign ROI Review   Revenue","textPreview":"Campaign ROI Review   Revenue","textChars":29,"textLines":1,"bbox":[677.76,347.52,238.08,23.04]}
+{"kind":"textbox","id":"sh/c36twr6x","slide":6,"name":"Google Shape;264;p6","text":"06 / 12","textPreview":"06 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Sequencing logic: control and cleanup first (all seven Now items use existing data), campaign work once Sales alignment is in place, and revenue tracking last because it depends on a data-sharing agreement. Q2 items are deliberately not promised early."}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"5 · WHAT PROMO NEEDS FROM SALES","textShapes":31}
+{"kind":"textbox","id":"sh/9o3upoju","slide":7,"name":"Google Shape;270;p7","text":"5 · WHAT PROMO NEEDS FROM SALES","textPreview":"5 · WHAT PROMO NEEDS FROM SALES","textChars":31,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/8nutgj29","slide":7,"name":"Google Shape;271;p7","text":"Better input, better campaigns","textPreview":"Better input, better campaigns","textChars":30,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"textbox","id":"sh/nmlcne1o","slide":7,"name":"Google Shape;272;p7","text":"Start with objective, target segment, and timing; the remaining fields form the full campaign standard.","textPreview":"Start with objective, target segment, and timing; the remaining fields form the full campaign standard.","textChars":103,"textLines":1,"bbox":[48,105.6,864,24]}
+{"kind":"shape","id":"sh/mlcbe9k3","slide":7,"name":"Google Shape;273;p7","bbox":[48,136.32,286.08,113.28]}
+{"kind":"textbox","id":"sh/lkjul4jy","slide":7,"name":"Google Shape;274;p7","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[61.44,145.92,32.64,38.4]}
+{"kind":"textbox","id":"sh/0jatcj2d","slide":7,"name":"Google Shape;275;p7","text":"Campaign objective","textPreview":"Campaign objective","textChars":18,"textLines":1,"bbox":[97.92,147.84,222.72,23.04]}
+{"kind":"textbox","id":"sh/zi1cje1s","slide":7,"name":"Google Shape;276;p7","text":"Reactivation, first deposit, cross-product, or retention — defines the mechanics.","textPreview":"Reactivation, first deposit, cross-product, or retention — defines the mechanics.","textChars":81,"textLines":1,"bbox":[97.92,172.8,222.72,67.2]}
+{"kind":"shape","id":"sh/yhsba9k7","slide":7,"name":"Google Shape;277;p7","bbox":[346.56,136.32,286.08,113.28]}
+{"kind":"textbox","id":"sh/5gnux8j2","slide":7,"name":"Google Shape;278;p7","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[360,145.92,32.64,38.4]}
+{"kind":"textbox","id":"sh/4fedo3ih","slide":7,"name":"Google Shape;279;p7","text":"Target segment","textPreview":"Target segment","textChars":14,"textLines":1,"bbox":[396.48,147.84,222.72,23.04]}
+{"kind":"textbox","id":"sh/gbyxg72p","slide":7,"name":"Google Shape;280;p7","text":"Activity, deposit range, platform. “All players” is not a segment.","textPreview":"Activity, deposit range, platform. “All players” is not a segment.","textChars":66,"textLines":1,"bbox":[396.48,172.8,222.72,67.2]}
+{"kind":"shape","id":"sh/1crepc3a","slide":7,"name":"Google Shape;281;p7","bbox":[645.12,136.32,286.08,113.28]}
+{"kind":"textbox","id":"sh/e9gfexkj","slide":7,"name":"Google Shape;282;p7","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[658.56,145.92,32.64,38.4]}
+{"kind":"textbox","id":"sh/fapwn2l4","slide":7,"name":"Google Shape;283;p7","text":"Player list or criteria","textPreview":"Player list or criteria","textChars":23,"textLines":1,"bbox":[695.04,147.84,222.72,23.04]}
+{"kind":"textbox","id":"sh/ozixkr2l","slide":7,"name":"Google Shape;284;p7","text":"A list, or clear rules to generate one.","textPreview":"A list, or clear rules to generate one.","textChars":39,"textLines":1,"bbox":[695.04,172.8,222.72,67.2]}
+{"kind":"shape","id":"sh/p0rytc36","slide":7,"name":"Google Shape;285;p7","bbox":[48,260.16,286.08,113.28]}
+{"kind":"textbox","id":"sh/2d0fihkv","slide":7,"name":"Google Shape;286;p7","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[61.44,269.76,32.64,38.4]}
+{"kind":"textbox","id":"sh/3e9grmlg","slide":7,"name":"Google Shape;287;p7","text":"Expected player action","textPreview":"Expected player action","textChars":22,"textLines":1,"bbox":[97.92,271.68,222.72,23.04]}
+{"kind":"textbox","id":"sh/43ex8nmh","slide":7,"name":"Google Shape;288;p7","text":"Deposit, log in, try a product — defines bonus type and turnover.","textPreview":"Deposit, log in, try a product — defines bonus type and turnover.","textChars":65,"textLines":1,"bbox":[97.92,296.64,222.72,67.2]}
+{"kind":"shape","id":"sh/54nehs32","slide":7,"name":"Google Shape;289;p7","bbox":[346.56,260.16,286.08,113.28]}
+{"kind":"textbox","id":"sh/7ax83u9w","slide":7,"name":"Google Shape;290;p7","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[360,269.76,32.64,38.4]}
+{"kind":"textbox","id":"sh/m9orap8b","slide":7,"name":"Google Shape;291;p7","text":"Budget / max bonus direction","textPreview":"Budget / max bonus direction","textChars":28,"textLines":1,"bbox":[396.48,271.68,222.72,23.04]}
+{"kind":"textbox","id":"sh/9cfq5kr2","slide":7,"name":"Google Shape;292;p7","text":"Cap or total budget, so amounts and TO are configured right.","textPreview":"Cap or total budget, so amounts and TO are configured right.","textChars":60,"textLines":1,"bbox":[396.48,296.64,222.72,67.2]}
+{"kind":"shape","id":"sh/8b69cfqh","slide":7,"name":"Google Shape;293;p7","bbox":[645.12,260.16,286.08,113.28]}
+{"kind":"textbox","id":"sh/z6d8za9k","slide":7,"name":"Google Shape;294;p7","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[658.56,269.76,32.64,38.4]}
+{"kind":"textbox","id":"sh/y54r658z","slide":7,"name":"Google Shape;295;p7","text":"Timing and deadline","textPreview":"Timing and deadline","textChars":19,"textLines":1,"bbox":[695.04,271.68,222.72,23.04]}
+{"kind":"textbox","id":"sh/l8vq1krq","slide":7,"name":"Google Shape;296;p7","text":"Earlier notice enables proper preparation, coordination, and QC.","textPreview":"Earlier notice enables proper preparation, coordination, and QC.","textChars":64,"textLines":1,"bbox":[695.04,296.64,222.72,67.2]}
+{"kind":"shape","id":"sh/k7m98fq5","slide":7,"name":"Google Shape;297;p7","bbox":[48,384,286.08,113.28]}
+{"kind":"textbox","id":"sh/bid8va9o","slide":7,"name":"Google Shape;298;p7","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[61.44,393.6,32.64,38.4]}
+{"kind":"textbox","id":"sh/ah4r25s3","slide":7,"name":"Google Shape;299;p7","text":"Priority level","textPreview":"Priority level","textChars":14,"textLines":1,"bbox":[97.92,395.52,222.72,23.04]}
+{"kind":"textbox","id":"sh/dczqtgjm","slide":7,"name":"Google Shape;300;p7","text":"Sequence work correctly and flag conflicts early.","textPreview":"Sequence work correctly and flag conflicts early.","textChars":49,"textLines":1,"bbox":[97.92,420.48,222.72,67.2]}
+{"kind":"shape","id":"sh/cbqp0bi1","slide":7,"name":"Google Shape;301;p7","bbox":[346.56,384,286.08,113.28]}
+{"kind":"textbox","id":"sh/bah8r61g","slide":7,"name":"Google Shape;302;p7","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[360,393.6,32.64,38.4]}
+{"kind":"textbox","id":"sh/q987y10v","slide":7,"name":"Google Shape;303;p7","text":"Success metric","textPreview":"Success metric","textChars":14,"textLines":1,"bbox":[396.48,395.52,222.72,23.04]}
+{"kind":"textbox","id":"sh/lgjqxgji","slide":7,"name":"Google Shape;304;p7","text":"A shared definition of success to report against.","textPreview":"A shared definition of success to report against.","textChars":49,"textLines":1,"bbox":[396.48,420.48,222.72,67.2]}
+{"kind":"shape","id":"sh/0fa94vix","slide":7,"name":"Google Shape;305;p7","bbox":[645.12,384,286.08,113.28]}
+{"kind":"textbox","id":"sh/ze18vq1s","slide":7,"name":"Google Shape;306;p7","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[658.56,393.6,32.64,38.4]}
+{"kind":"textbox","id":"sh/ydsr2l07","slide":7,"name":"Google Shape;307;p7","text":"Post-campaign results","textPreview":"Post-campaign results","textChars":21,"textLines":1,"bbox":[695.04,395.52,222.72,23.04]}
+{"kind":"textbox","id":"sh/1kfqlwje","slide":7,"name":"Google Shape;308;p7","text":"Who deposited, when, how much. Without this we cannot measure or improve.","textPreview":"Who deposited, when, how much. Without this we cannot measure or improve.","textChars":73,"textLines":1,"bbox":[695.04,420.48,222.72,67.2]}
+{"kind":"textbox","id":"sh/gj6psrit","slide":7,"name":"Google Shape;309;p7","text":"07 / 12","textPreview":"07 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"The ask of Sales, framed constructively: nine inputs. Emphasise #9 — post-campaign result sharing is the single input that unlocks all revenue measurement. Numbers 1, 2 and 6 fix most of the rework today."}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"6 · HOW WE MEASURE SUCCESS","textShapes":25}
+{"kind":"textbox","id":"sh/i9wz2tcb","slide":8,"name":"Google Shape;315;p8","text":"6 · HOW WE MEASURE SUCCESS","textPreview":"6 · HOW WE MEASURE SUCCESS","textChars":26,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/5cnyd8b2","slide":8,"name":"Google Shape;316;p8","text":"Operational discipline, cost control, revenue signal","textPreview":"Operational discipline, cost control, revenue signal","textChars":52,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"shape","id":"sh/4beh43uh","slide":8,"name":"Google Shape;317;p8","bbox":[48,122.88,286.08,318.72]}
+{"kind":"textbox","id":"sh/je1gzeds","slide":8,"name":"Google Shape;318;p8","text":"Operational","textPreview":"Operational","textChars":11,"textLines":1,"bbox":[67.2,134.4,247.68,26.88]}
+{"kind":"shape","id":"sh/i5k7yx4f","slide":8,"name":"Google Shape;319;p8","bbox":[67.2,167.04,247.68,0]}
+{"kind":"textbox","id":"sh/m5kru107","slide":8,"name":"Google Shape;320;p8","text":"Request completeness\n% complete on first submission","textPreview":"Request completeness | % complete on first submission","textChars":51,"textLines":2,"bbox":[67.2,178.56,247.68,42.24]}
+{"kind":"textbox","id":"sh/n6tsn6hc","slide":8,"name":"Google Shape;321;p8","text":"SLA / turnaround\nRequest received → promo live","textPreview":"SLA / turnaround | Request received → promo live","textChars":46,"textLines":2,"bbox":[67.2,222.24,247.68,42.24]}
+{"kind":"textbox","id":"sh/o72twbix","slide":8,"name":"Google Shape;322;p8","text":"QC first-pass rate\nPassing checklist without correction","textPreview":"QC first-pass rate | Passing checklist without correction","textChars":55,"textLines":2,"bbox":[67.2,265.92,247.68,42.24]}
+{"kind":"textbox","id":"sh/98bapgzi","slide":8,"name":"Google Shape;323;p8","text":"Automation error rate\nErrors per run, weekly trend","textPreview":"Automation error rate | Errors per run, weekly trend","textChars":50,"textLines":2,"bbox":[67.2,309.6,247.68,42.24]}
+{"kind":"textbox","id":"sh/eh0rq10v","slide":8,"name":"Google Shape;324;p8","text":"Duplicates cleared\nLegacy issues resolved per month","textPreview":"Duplicates cleared | Legacy issues resolved per month","textChars":51,"textLines":2,"bbox":[67.2,353.28,247.68,42.24]}
+{"kind":"textbox","id":"sh/zi9sj6hg","slide":8,"name":"Google Shape;325;p8","text":"Campaigns reviewed\n% closed with a post-mortem","textPreview":"Campaigns reviewed | % closed with a post-mortem","textChars":46,"textLines":2,"bbox":[67.2,396.96,247.68,42.24]}
+{"kind":"shape","id":"sh/0ji9sbi1","slide":8,"name":"Google Shape;326;p8","bbox":[346.56,122.88,286.08,318.72]}
+{"kind":"textbox","id":"sh/14balwzm","slide":8,"name":"Google Shape;327;p8","text":"Cost","textPreview":"Cost","textChars":4,"textLines":1,"bbox":[365.76,134.4,247.68,26.88]}
+{"kind":"shape","id":"sh/a9g72dof","slide":8,"name":"Google Shape;328;p8","bbox":[365.76,167.04,247.68,0]}
+{"kind":"textbox","id":"sh/re9sfmhk","slide":8,"name":"Google Shape;329;p8","text":"Bonus cost / active player\nMonth-on-month trend","textPreview":"Bonus cost / active player | Month-on-month trend","textChars":47,"textLines":2,"bbox":[365.76,178.56,247.68,42.24]}
+{"kind":"textbox","id":"sh/t8fulkj2","slide":8,"name":"Google Shape;330;p8","text":"Cost per claim\nBonus paid ÷ claims per campaign","textPreview":"Cost per claim | Bonus paid ÷ claims per campaign","textChars":47,"textLines":2,"bbox":[365.76,222.24,247.68,42.24]}
+{"kind":"textbox","id":"sh/s76dsz2h","slide":8,"name":"Google Shape;331;p8","text":"Cost per reactivated player\nCampaign bonus ÷ re-depositors","textPreview":"Cost per reactivated player | Campaign bonus ÷ re-depositors","textChars":58,"textLines":2,"bbox":[365.76,265.92,247.68,42.24]}
+{"kind":"textbox","id":"sh/76xcju1w","slide":8,"name":"Google Shape;332;p8","text":"Cap utilisation\nAverage claim vs max cap","textPreview":"Cap utilisation | Average claim vs max cap","textChars":40,"textLines":2,"bbox":[365.76,309.6,247.68,42.24]}
+{"kind":"textbox","id":"sh/65ovqpkb","slide":8,"name":"Google Shape;333;p8","text":"Promos retired\nSunset list output per quarter","textPreview":"Promos retired | Sunset list output per quarter","textChars":45,"textLines":2,"bbox":[365.76,353.28,247.68,42.24]}
+{"kind":"textbox","id":"sh/54fuhkjq","slide":8,"name":"Google Shape;334;p8","text":"Abuse cases actioned\nPlayers excluded per period","textPreview":"Abuse cases actioned | Players excluded per period","textChars":48,"textLines":2,"bbox":[365.76,396.96,247.68,42.24]}
+{"kind":"shape","id":"sh/k36dof25","slide":8,"name":"Google Shape;335;p8","bbox":[645.12,122.88,286.08,318.72]}
+{"kind":"textbox","id":"sh/j2dcfa1k","slide":8,"name":"Google Shape;336;p8","text":"Revenue","textPreview":"Revenue","textChars":7,"textLines":1,"bbox":[664.32,134.4,247.68,26.88]}
+{"kind":"shape","id":"sh/7298325s","slide":8,"name":"Google Shape;337;p8","bbox":[664.32,167.04,247.68,0]}
+{"kind":"textbox","id":"sh/x0vud0ju","slide":8,"name":"Google Shape;338;p8","text":"Claim-to-deposit rate\nDeposit within 24/72h of claim","textPreview":"Claim-to-deposit rate | Deposit within 24/72h of claim","textChars":52,"textLines":2,"bbox":[664.32,178.56,247.68,42.24]}
+{"kind":"textbox","id":"sh/wzmdkf29","slide":8,"name":"Google Shape;339;p8","text":"Reactivated players\nDeposits after win-back campaign","textPreview":"Reactivated players | Deposits after win-back campaign","textChars":52,"textLines":2,"bbox":[664.32,222.24,247.68,42.24]}
+{"kind":"textbox","id":"sh/crud4fyt","slide":8,"name":"Google Shape;340;p8","text":"Avg deposit after promo\nVs pre-promo baseline","textPreview":"Avg deposit after promo | Vs pre-promo baseline","textChars":45,"textLines":2,"bbox":[664.32,265.92,247.68,42.24]}
+{"kind":"textbox","id":"sh/xs3udkfe","slide":8,"name":"Google Shape;341;p8","text":"Cross-product conversion\nSports-only → casino deposit","textPreview":"Cross-product conversion | Sports-only → casino deposit","textChars":53,"textLines":2,"bbox":[664.32,309.6,247.68,42.24]}
+{"kind":"textbox","id":"sh/q5cv25g3","slide":8,"name":"Google Shape;342;p8","text":"VIP tier progression\nTier movement after milestone promo","textPreview":"VIP tier progression | Tier movement after milestone promo","textChars":56,"textLines":2,"bbox":[664.32,353.28,247.68,42.24]}
+{"kind":"textbox","id":"sh/bqlcbaxo","slide":8,"name":"Google Shape;343;p8","text":"Revenue contribution\nWhere GGR/NGR is available","textPreview":"Revenue contribution | Where GGR/NGR is available","textChars":47,"textLines":2,"bbox":[664.32,396.96,247.68,42.24]}
+{"kind":"shape","id":"sh/kved8zy5","slide":8,"name":"Google Shape;344;p8","bbox":[48,455.04,864,46.08]}
+{"kind":"textbox","id":"sh/lwnuhkfq","slide":8,"name":"Google Shape;345;p8","text":"Baselines set in Month 1.  Revenue metrics require post-campaign deposit data from Sales — directional until attribution is live (Phase 3). ROI cannot be substantiated without it.","textPreview":"Baselines set in Month 1.  Revenue metrics require post-campaign deposit data from Sales — directional until attribution is live (Phase 3...","textChars":179,"textLines":1,"bbox":[67.2,458.88,825.6,38.4]}
+{"kind":"textbox","id":"sh/ytwv6pgz","slide":8,"name":"Google Shape;346;p8","text":"08 / 12","textPreview":"08 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Three metric families. Operational metrics we can start measuring immediately; cost metrics as audits are approved; revenue metrics only become credible once Sales shares deposit data. Say clearly: no ROI claims until attribution is live."}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"7 · RISKS AND MITIGATION","textShapes":3}
+{"kind":"textbox","id":"sh/xgjyd4z6","slide":9,"name":"Google Shape;352;p9","text":"7 · RISKS AND MITIGATION","textPreview":"7 · RISKS AND MITIGATION","textChars":24,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/cvahkzyl","slide":9,"name":"Google Shape;353;p9","text":"Known risks, owned openly","textPreview":"Known risks, owned openly","textChars":25,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"textbox","id":"sh/yhszm9gr","slide":9,"name":"Google Shape;355;p9","text":"09 / 12","textPreview":"09 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"table","id":"tb/ojylsjat","slide":9,"name":"Google Shape;354;p9","rows":10,"cols":3,"preview":"RISK | WHY IT MATTERS | MITIGATION","bbox":[48,124.8,314.96,314.96]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Purpose of this slide: show management the risks are already understood and each has a concrete mitigation. Highlight the automation and overpromising rows — those two demonstrate self-awareness after June."}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"8 · RECOMMENDED NEXT 30 DAYS","textShapes":31}
+{"kind":"textbox","id":"sh/vm5gn25o","slide":10,"name":"Google Shape;361;p10","text":"8 · RECOMMENDED NEXT 30 DAYS","textPreview":"8 · RECOMMENDED NEXT 30 DAYS","textChars":28,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/gnexw769","slide":10,"name":"Google Shape;362;p10","text":"Control-building first, pilots by week three","textPreview":"Control-building first, pilots by week three","textChars":44,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"shape","id":"sh/honypcnu","slide":10,"name":"Google Shape;363;p10","bbox":[48,122.88,211.2,63.36]}
+{"kind":"textbox","id":"sh/mxcfqdo7","slide":10,"name":"Google Shape;364;p10","text":"WEEK 1","textPreview":"WEEK 1","textChars":6,"textLines":1,"bbox":[62.4,130.56,182.4,19.2]}
+{"kind":"textbox","id":"sh/7y5wji5c","slide":10,"name":"Google Shape;365;p10","text":"Align and Identify","textPreview":"Align and Identify","textChars":18,"textLines":1,"bbox":[62.4,149.76,182.4,24.96]}
+{"kind":"shape","id":"sh/8jexsn6x","slide":10,"name":"Google Shape;366;p10","bbox":[62.4,206.4,5.76,5.76]}
+{"kind":"textbox","id":"sh/9knylsni","slide":10,"name":"Google Shape;367;p10","text":"Request template + objectives with Sales","textPreview":"Request template + objectives with Sales","textChars":40,"textLines":1,"bbox":[75.84,201.6,170.88,49.92]}
+{"kind":"shape","id":"sh/ytcfmdov","slide":10,"name":"Google Shape;368;p10","bbox":[62.4,262.56,5.76,5.76]}
+{"kind":"textbox","id":"sh/zulwfi5g","slide":10,"name":"Google Shape;369;p10","text":"Map internal vs Sales data sources","textPreview":"Map internal vs Sales data sources","textChars":34,"textLines":1,"bbox":[75.84,257.76,170.88,49.92]}
+{"kind":"shape","id":"sh/1orilg7y","slide":10,"name":"Google Shape;370;p10","bbox":[62.4,318.72,5.76,5.76]}
+{"kind":"textbox","id":"sh/0ni1sbqd","slide":10,"name":"Google Shape;371;p10","text":"Start automation QC exception log","textPreview":"Start automation QC exception log","textChars":33,"textLines":1,"bbox":[75.84,313.92,170.88,49.92]}
+{"kind":"shape","id":"sh/fm90j6ps","slide":10,"name":"Google Shape;372;p10","bbox":[62.4,374.88,5.76,5.76]}
+{"kind":"textbox","id":"sh/el0zq187","slide":10,"name":"Google Shape;373;p10","text":"List legacy / duplicate promo issues","textPreview":"List legacy / duplicate promo issues","textChars":36,"textLines":1,"bbox":[75.84,370.08,170.88,49.92]}
+{"kind":"shape","id":"sh/dkrihw72","slide":10,"name":"Google Shape;374;p10","bbox":[62.4,431.04,5.76,5.76]}
+{"kind":"textbox","id":"sh/sjihobqh","slide":10,"name":"Google Shape;375;p10","text":"Confirm lapsed-list owner in Sales","textPreview":"Confirm lapsed-list owner in Sales","textChars":34,"textLines":1,"bbox":[75.84,426.24,170.88,49.92]}
+{"kind":"shape","id":"sh/ri90f6pw","slide":10,"name":"Google Shape;376;p10","bbox":[265.63,122.88,211.2,63.36]}
+{"kind":"textbox","id":"sh/qh0zm18b","slide":10,"name":"Google Shape;377;p10","text":"WEEK 2","textPreview":"WEEK 2","textChars":6,"textLines":1,"bbox":[280.03,130.56,182.4,19.2]}
+{"kind":"textbox","id":"sh/5g7idw7q","slide":10,"name":"Google Shape;378;p10","text":"Audit and Build","textPreview":"Audit and Build","textChars":15,"textLines":1,"bbox":[280.03,149.76,182.4,24.96]}
+{"kind":"shape","id":"sh/4fyhkrq5","slide":10,"name":"Google Shape;379;p10","bbox":[280.03,206.4,5.76,5.76]}
+{"kind":"textbox","id":"sh/gva5w72d","slide":10,"name":"Google Shape;380;p10","text":"Cap audit sample — claimants, 90 days","textPreview":"Cap audit sample — claimants, 90 days","textChars":37,"textLines":1,"bbox":[293.47,201.6,170.88,49.92]}
+{"kind":"shape","id":"sh/hwjm5cjy","slide":10,"name":"Google Shape;381;p10","bbox":[280.03,262.56,5.76,5.76]}
+{"kind":"textbox","id":"sh/utsnuxkn","slide":10,"name":"Google Shape;382;p10","text":"Draft promo sunset list","textPreview":"Draft promo sunset list","textChars":23,"textLines":1,"bbox":[293.47,257.76,170.88,49.92]}
+{"kind":"shape","id":"sh/vu143218","slide":10,"name":"Google Shape;383;p10","bbox":[280.03,318.72,5.76,5.76]}
+{"kind":"textbox","id":"sh/4zu5072p","slide":10,"name":"Google Shape;384;p10","text":"Basic dashboard: volume, QC, SLA","textPreview":"Basic dashboard: volume, QC, SLA","textChars":32,"textLines":1,"bbox":[293.47,313.92,170.88,49.92]}
+{"kind":"shape","id":"sh/5k369cja","slide":10,"name":"Google Shape;385;p10","bbox":[280.03,374.88,5.76,5.76]}
+{"kind":"textbox","id":"sh/ixsnyhkj","slide":10,"name":"Google Shape;386;p10","text":"Define post-mortem template","textPreview":"Define post-mortem template","textChars":27,"textLines":1,"bbox":[293.47,370.08,170.88,49.92]}
+{"kind":"shape","id":"sh/3y1o7214","slide":10,"name":"Google Shape;387;p10","bbox":[280.03,431.04,5.76,5.76]}
+{"kind":"textbox","id":"sh/snu54r2l","slide":10,"name":"Google Shape;388;p10","text":"Submit audits for approval","textPreview":"Submit audits for approval","textChars":26,"textLines":1,"bbox":[293.47,426.24,170.88,49.92]}
+{"kind":"shape","id":"sh/do36dwj6","slide":10,"name":"Google Shape;389;p10","bbox":[483.26,122.88,211.2,63.36]}
+{"kind":"textbox","id":"sh/ni583ql8","slide":10,"name":"Google Shape;390;p10","text":"WEEK 3","textPreview":"WEEK 3","textChars":6,"textLines":1,"bbox":[497.66,130.56,182.4,19.2]}
+{"kind":"textbox","id":"sh/2hw7al43","slide":10,"name":"Google Shape;391;p10","text":"Pilot and Strengthen","textPreview":"Pilot and Strengthen","textChars":20,"textLines":1,"bbox":[497.66,149.76,182.4,24.96]}
+{"kind":"shape","id":"sh/9k7q503e","slide":10,"name":"Google Shape;392;p10","bbox":[497.66,206.4,5.76,5.76]}
+{"kind":"textbox","id":"sh/ojypwvmt","slide":10,"name":"Google Shape;393;p10","text":"Pilot first reactivation pipeline","textPreview":"Pilot first reactivation pipeline","textChars":33,"textLines":1,"bbox":[511.1,201.6,170.88,49.92]}
+{"kind":"shape","id":"sh/fe58z6lc","slide":10,"name":"Google Shape;394;p10","bbox":[497.66,262.56,5.76,5.76]}
+{"kind":"textbox","id":"sh/etw7614r","slide":10,"name":"Google Shape;395;p10","text":"Pilot first segment campaign","textPreview":"Pilot first segment campaign","textChars":28,"textLines":1,"bbox":[511.1,257.76,170.88,49.92]}
+{"kind":"shape","id":"sh/1gnq1g3i","slide":10,"name":"Google Shape;396;p10","bbox":[497.66,318.72,5.76,5.76]}
+{"kind":"textbox","id":"sh/0fep8bmx","slide":10,"name":"Google Shape;397;p10","text":"Sales promo knowledge sharing","textPreview":"Sales promo knowledge sharing","textChars":29,"textLines":1,"bbox":[511.1,313.92,170.88,49.92]}
+{"kind":"shape","id":"sh/ja98balg","slide":10,"name":"Google Shape;398;p10","bbox":[497.66,374.88,5.76,5.76]}
+{"kind":"textbox","id":"sh/y9gr254v","slide":10,"name":"Google Shape;399;p10","text":"Update automation rules from log","textPreview":"Update automation rules from log","textChars":32,"textLines":1,"bbox":[511.1,370.08,170.88,49.92]}
+{"kind":"shape","id":"sh/nq9k3qlw","slide":10,"name":"Google Shape;400;p10","bbox":[497.66,431.04,5.76,5.76]}
+{"kind":"textbox","id":"sh/mp03u54b","slide":10,"name":"Google Shape;401;p10","text":"Apply approved cap / sunset changes","textPreview":"Apply approved cap / sunset changes","textChars":35,"textLines":1,"bbox":[511.1,426.24,170.88,49.92]}
+{"kind":"shape","id":"sh/9cr2503m","slide":10,"name":"Google Shape;402;p10","bbox":[700.9,122.88,211.2,63.36]}
+{"kind":"textbox","id":"sh/8rilwvm1","slide":10,"name":"Google Shape;403;p10","text":"WEEK 4","textPreview":"WEEK 4","textChars":6,"textLines":1,"bbox":[715.3,130.56,182.4,19.2]}
+{"kind":"textbox","id":"sh/zm9kzqlk","slide":10,"name":"Google Shape;404;p10","text":"Review and Confirm","textPreview":"Review and Confirm","textChars":18,"textLines":1,"bbox":[715.3,149.76,182.4,24.96]}
+{"kind":"shape","id":"sh/elg3ql4z","slide":10,"name":"Google Shape;405;p10","bbox":[715.3,206.4,5.76,5.76]}
+{"kind":"textbox","id":"sh/1or2103q","slide":10,"name":"Google Shape;406;p10","text":"Review pilot results","textPreview":"Review pilot results","textChars":20,"textLines":1,"bbox":[728.74,201.6,170.88,49.92]}
+{"kind":"shape","id":"sh/0nilsvm5","slide":10,"name":"Google Shape;407;p10","bbox":[715.3,262.56,5.76,5.76]}
+{"kind":"textbox","id":"sh/jitkbulo","slide":10,"name":"Google Shape;408;p10","text":"First management snapshot","textPreview":"First management snapshot","textChars":25,"textLines":1,"bbox":[728.74,257.76,170.88,49.92]}
+{"kind":"shape","id":"sh/ihk32p4j","slide":10,"name":"Google Shape;409;p10","bbox":[715.3,318.72,5.76,5.76]}
+{"kind":"textbox","id":"sh/gbu9gnyp","slide":10,"name":"Google Shape;410;p10","text":"Confirm next month's promo calendar","textPreview":"Confirm next month's promo calendar","textChars":35,"textLines":1,"bbox":[728.74,313.92,170.88,49.92]}
+{"kind":"shape","id":"sh/hc3q9sfa","slide":10,"name":"Google Shape;411;p10","bbox":[715.3,374.88,5.76,5.76]}
+{"kind":"textbox","id":"sh/upcredgj","slide":10,"name":"Google Shape;412;p10","text":"Lock monthly operating rhythm","textPreview":"Lock monthly operating rhythm","textChars":29,"textLines":1,"bbox":[728.74,370.08,170.88,49.92]}
+{"kind":"shape","id":"sh/vql87ix4","slide":10,"name":"Google Shape;413;p10","bbox":[715.3,431.04,5.76,5.76]}
+{"kind":"textbox","id":"sh/4fu9knyl","slide":10,"name":"Google Shape;414;p10","text":"Document SOP updates","textPreview":"Document SOP updates","textChars":20,"textLines":1,"bbox":[728.74,426.24,170.88,49.92]}
+{"kind":"textbox","id":"sh/5g3qdsf6","slide":10,"name":"Google Shape;415;p10","text":"10 / 12","textPreview":"10 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Realistic 30-day plan. Weeks 1–2 are alignment, audits and the dashboard skeleton; pilots only start week 3 once the quality gate and exception log exist. Week 4 ends with a management snapshot and a decision on what becomes monthly rhythm."}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"9 · THE 10-SECOND VIEW","textShapes":23}
+{"kind":"textbox","id":"sh/8jyt0ve1","slide":11,"name":"Google Shape;421;p11","text":"9 · THE 10-SECOND VIEW","textPreview":"9 · THE 10-SECOND VIEW","textChars":22,"textLines":1,"bbox":[48,32.64,864,26.88]}
+{"kind":"textbox","id":"sh/nipc7qxw","slide":11,"name":"Google Shape;422;p11","text":"If you only remember four things","textPreview":"If you only remember four things","textChars":32,"textLines":1,"bbox":[48,55.68,864,52.8]}
+{"kind":"shape","id":"sh/mhgbylgb","slide":11,"name":"Google Shape;423;p11","bbox":[48,124.8,425.28,182.4]}
+{"kind":"textbox","id":"sh/lg7u50fq","slide":11,"name":"Google Shape;424;p11","text":"WHAT VALUE DOES PROMO BRING?","textPreview":"WHAT VALUE DOES PROMO BRING?","textChars":28,"textLines":1,"bbox":[69.12,138.24,383.04,21.12]}
+{"kind":"shape","id":"sh/0fytwvy5","slide":11,"name":"Google Shape;425;p11","bbox":[69.12,174.72,6.72,6.72]}
+{"kind":"textbox","id":"sh/zepc3qxk","slide":11,"name":"Google Shape;426;p11","text":"Targeted campaign execution across platforms","textPreview":"Targeted campaign execution across platforms","textChars":44,"textLines":1,"bbox":[84.48,168.96,369.6,23.04]}
+{"kind":"shape","id":"sh/ytgbulgz","slide":11,"name":"Google Shape;427;p11","bbox":[69.12,206.88,6.72,6.72]}
+{"kind":"textbox","id":"sh/5cbuhkfu","slide":11,"name":"Google Shape;428;p11","text":"QC and governance before promos go live","textPreview":"QC and governance before promos go live","textChars":39,"textLines":1,"bbox":[84.48,201.12,369.6,23.04]}
+{"kind":"shape","id":"sh/4bid8fe9","slide":11,"name":"Google Shape;429;p11","bbox":[69.12,239.04,6.72,6.72]}
+{"kind":"textbox","id":"sh/2xcr2hwr","slide":11,"name":"Google Shape;430;p11","text":"Automation with control — not just speed","textPreview":"Automation with control — not just speed","textChars":40,"textLines":1,"bbox":[84.48,233.28,369.6,23.04]}
+{"kind":"shape","id":"sh/3yl8vmdc","slide":11,"name":"Google Shape;431;p11","bbox":[69.12,271.2,6.72,6.72]}
+{"kind":"textbox","id":"sh/ozu94rex","slide":11,"name":"Google Shape;432;p11","text":"Promo data and visibility for management","textPreview":"Promo data and visibility for management","textChars":40,"textLines":1,"bbox":[84.48,265.44,369.6,23.04]}
+{"kind":"shape","id":"sh/pk3qxwvi","slide":11,"name":"Google Shape;433;p11","bbox":[485.76,124.8,425.28,182.4]}
+{"kind":"textbox","id":"sh/etsryxwv","slide":11,"name":"Google Shape;434;p11","text":"HOW DOES PROMO REDUCE COST?","textPreview":"HOW DOES PROMO REDUCE COST?","textChars":27,"textLines":1,"bbox":[506.88,138.24,383.04,21.12]}
+{"kind":"shape","id":"sh/ful8r2dg","slide":11,"name":"Google Shape;435;p11","bbox":[506.88,174.72,6.72,6.72]}
+{"kind":"textbox","id":"sh/gvu907el","slide":11,"name":"Google Shape;436;p11","text":"Cap audit cuts over-capped bonus liability","textPreview":"Cap audit cuts over-capped bonus liability","textChars":42,"textLines":1,"bbox":[522.24,168.96,369.6,23.04]}
+{"kind":"shape","id":"sh/1w3qtcv6","slide":11,"name":"Google Shape;437;p11","bbox":[506.88,206.88,6.72,6.72]}
+{"kind":"textbox","id":"sh/ypwra1cz","slide":11,"name":"Google Shape;438;p11","text":"Abuse control removes low-value claims","textPreview":"Abuse control removes low-value claims","textChars":38,"textLines":1,"bbox":[522.24,201.12,369.6,23.04]}
+{"kind":"shape","id":"sh/zq5s36dk","slide":11,"name":"Google Shape;439;p11","bbox":[506.88,239.04,6.72,6.72]}
+{"kind":"textbox","id":"sh/jil4zyh0","slide":11,"name":"Google Shape;440;p11","text":"Duplicate and legacy cleanup","textPreview":"Duplicate and legacy cleanup","textChars":28,"textLines":1,"bbox":[522.24,233.28,369.6,23.04]}
+{"kind":"shape","id":"sh/ihcn6tgf","slide":11,"name":"Google Shape;441;p11","bbox":[506.88,271.2,6.72,6.72]}
+{"kind":"textbox","id":"sh/5k3618z6","slide":11,"name":"Google Shape;442;p11","text":"Stronger QC reduces live errors","textPreview":"Stronger QC reduces live errors","textChars":31,"textLines":1,"bbox":[522.24,265.44,369.6,23.04]}
+{"kind":"shape","id":"sh/kju583yl","slide":11,"name":"Google Shape;443;p11","bbox":[48,319.68,425.28,182.4]}
+{"kind":"textbox","id":"sh/ve14vyho","slide":11,"name":"Google Shape;444;p11","text":"HOW DOES PROMO SUPPORT REVENUE?","textPreview":"HOW DOES PROMO SUPPORT REVENUE?","textChars":31,"textLines":1,"bbox":[69.12,333.12,383.04,21.12]}
+{"kind":"shape","id":"sh/adsn2tgj","slide":11,"name":"Google Shape;445;p11","bbox":[69.12,369.6,6.72,6.72]}
+{"kind":"textbox","id":"sh/xg3mx8zu","slide":11,"name":"Google Shape;446;p11","text":"Monthly reactivation of lapsed players","textPreview":"Monthly reactivation of lapsed players","textChars":38,"textLines":1,"bbox":[84.48,363.84,369.6,23.04]}
+{"kind":"shape","id":"sh/wfa543y9","slide":11,"name":"Google Shape;447;p11","bbox":[69.12,401.76,6.72,6.72]}
+{"kind":"textbox","id":"sh/fa5o7ih8","slide":11,"name":"Google Shape;448;p11","text":"Segment campaigns matched to behaviour","textPreview":"Segment campaigns matched to behaviour","textChars":38,"textLines":1,"bbox":[84.48,396,369.6,23.04]}
+{"kind":"shape","id":"sh/u9wnedgn","slide":11,"name":"Google Shape;449;p11","bbox":[69.12,433.92,6.72,6.72]}
+{"kind":"textbox","id":"sh/cv618fe5","slide":11,"name":"Google Shape;450;p11","text":"Cross-product bridging","textPreview":"Cross-product bridging","textChars":22,"textLines":1,"bbox":[84.48,428.16,369.6,23.04]}
+{"kind":"shape","id":"sh/dwz21kfq","slide":11,"name":"Google Shape;451;p11","bbox":[69.12,466.08,6.72,6.72]}
+{"kind":"textbox","id":"sh/qtoj65wz","slide":11,"name":"Google Shape;452;p11","text":"Attribution model (Phase 3) to prove impact","textPreview":"Attribution model (Phase 3) to prove impact","textChars":43,"textLines":1,"bbox":[84.48,460.32,369.6,23.04]}
+{"kind":"shape","id":"sh/ruxkzaxk","slide":11,"name":"Google Shape;453;p11","bbox":[485.76,319.68,425.28,182.4]}
+{"kind":"textbox","id":"sh/0jqlcze1","slide":11,"name":"Google Shape;454;p11","text":"WHAT IS THE NEXT STEP?","textPreview":"WHAT IS THE NEXT STEP?","textChars":22,"textLines":1,"bbox":[506.88,333.12,383.04,21.12]}
+{"kind":"shape","id":"sh/1kz254fm","slide":11,"name":"Google Shape;455;p11","bbox":[506.88,369.6,6.72,6.72]}
+{"kind":"textbox","id":"sh/eh83apwb","slide":11,"name":"Google Shape;456;p11","text":"Approve request template + quality gate","textPreview":"Approve request template + quality gate","textChars":39,"textLines":1,"bbox":[522.24,363.84,369.6,23.04]}
+{"kind":"shape","id":"sh/zihk3uxg","slide":11,"name":"Google Shape;457;p11","bbox":[506.88,401.76,6.72,6.72]}
+{"kind":"textbox","id":"sh/onqlgzed","slide":11,"name":"Google Shape;458;p11","text":"Approve cap audit + sunset review","textPreview":"Approve cap audit + sunset review","textChars":33,"textLines":1,"bbox":[522.24,396,369.6,23.04]}
+{"kind":"shape","id":"sh/9oj294fy","slide":11,"name":"Google Shape;459;p11","bbox":[506.88,433.92,6.72,6.72]}
+{"kind":"textbox","id":"sh/h4f2t472","slide":11,"name":"Google Shape;460;p11","text":"Support two controlled pilots in week three","textPreview":"Support two controlled pilots in week three","textChars":43,"textLines":1,"bbox":[522.24,428.16,369.6,23.04]}
+{"kind":"shape","id":"sh/w361kz6h","slide":11,"name":"Google Shape;461;p11","bbox":[506.88,466.08,6.72,6.72]}
+{"kind":"textbox","id":"sh/v2dkrupw","slide":11,"name":"Google Shape;462;p11","text":"Commit to post-campaign data sharing","textPreview":"Commit to post-campaign data sharing","textChars":36,"textLines":1,"bbox":[522.24,460.32,369.6,23.04]}
+{"kind":"textbox","id":"sh/ah4jipob","slide":11,"name":"Google Shape;463;p11","text":"11 / 12","textPreview":"11 / 12","textChars":7,"textLines":1,"bbox":[854.4,508.8,81.6,24]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Closing summary — usable as the leave-behind. Four questions management will ask: value, cost, revenue, next step. Each answer is four lines."}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"IN THE ROOM","textShapes":7}
+{"kind":"textbox","id":"sh/0j65ozyh","slide":12,"name":"Google Shape;469;p12","text":"IN THE ROOM","textPreview":"IN THE ROOM","textChars":11,"textLines":1,"bbox":[52.8,48,768,26.88]}
+{"kind":"textbox","id":"sh/qp43y5wf","slide":12,"name":"Google Shape;470;p12","text":"Talking points","textPreview":"Talking points","textChars":14,"textLines":1,"bbox":[52.8,74.88,768,57.6]}
+{"kind":"shape","id":"sh/rqdk7qx0","slide":12,"name":"Google Shape;471;p12","bbox":[55.68,166.08,8.64,8.64]}
+{"kind":"textbox","id":"sh/crml0vel","slide":12,"name":"Google Shape;472;p12","text":"“Promo adds more value when we are involved in campaign structure, QC, cost control, and performance review — not just execution.”","textPreview":"“Promo adds more value when we are involved in campaign structure, QC, cost control, and performance review — not just execution.”","textChars":130,"textLines":1,"bbox":[81.6,155.52,806.4,69.12]}
+{"kind":"shape","id":"sh/dsv290f6","slide":12,"name":"Google Shape;473;p12","bbox":[55.68,250.56,8.64,8.64]}
+{"kind":"textbox","id":"sh/et4325wb","slide":12,"name":"Google Shape;474;p12","text":"“June showed that speed without control creates risk. Our next focus is stronger QC, exception tracking, and dashboard visibility — before we scale further.”","textPreview":"“June showed that speed without control creates risk. Our next focus is stronger QC, exception tracking, and dashboard visibility — befor...","textChars":157,"textLines":1,"bbox":[81.6,240,806.4,69.12]}
+{"kind":"shape","id":"sh/zudkbaxw","slide":12,"name":"Google Shape;475;p12","bbox":[55.68,335.04,8.64,8.64]}
+{"kind":"textbox","id":"sh/0v6l4feh","slide":12,"name":"Google Shape;476;p12","text":"“The goal is not more promos. It is promos that are measurable, less wasteful, and connected to deposit behaviour.”","textPreview":"“The goal is not more promos. It is promos that are measurable, less wasteful, and connected to deposit behaviour.”","textChars":115,"textLines":1,"bbox":[81.6,324.48,806.4,69.12]}
+{"kind":"shape","id":"sh/nexcnm90","slide":12,"name":"Google Shape;477;p12","bbox":[52.8,424.32,854.4,0]}
+{"kind":"textbox","id":"sh/uxk3qlg7","slide":12,"name":"Google Shape;478;p12","text":"Volume → value.  That starts with clearer briefs from Sales and a post-campaign data-sharing agreement.","textPreview":"Volume → value.  That starts with clearer briefs from Sales and a post-campaign data-sharing agreement.","textChars":103,"textLines":1,"bbox":[52.8,439.68,854.4,33.6]}
+{"kind":"textbox","id":"sh/fytkz6xs","slide":12,"name":"Google Shape;479;p12","text":"Promo Department · Value Creation Framework · July 2026","textPreview":"Promo Department · Value Creation Framework · July 2026","textChars":55,"textLines":1,"bbox":[52.8,491.52,854.4,24]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":"Close with the ask: (1) agree the request template and campaign objectives, (2) commit to post-campaign deposit data sharing, (3) support the Now-phase audits. Everything else in the plan follows from those three."}

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonus Assignment Routing Matrix</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; }
+        .content { padding: 40px; }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tbody tr:hover { background: #f5f5f5; }
+        .green { background: #c8e6c9; font-weight: bold; }
+        .red { background: #ffcdd2; font-weight: bold; }
+        .yellow { background: #fff9c4; font-weight: bold; }
+        .highlight {
+            background: #e8f4f8;
+            border-left: 4px solid #00bcd4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .nav {
+            text-align: center;
+            margin: 40px 0 20px 0;
+        }
+        .nav a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover { background: #764ba2; }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Bonus Assignment Routing Matrix</h1>
+            <p>Which Team Assigns Bonuses for Which Brands?</p>
+        </div>
+
+        <div class="content">
+            <h2>Quick Reference: Where to Send Each Brand</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Brand</th>
+                        <th>Sales Can Assign?</th>
+                        <th>Route</th>
+                        <th>Contact</th>
+                        <th>Turnaround</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>WS1</td>
+                        <td class="green">✅ YES</td>
+                        <td>Direct in CRM</td>
+                        <td>Self-serve</td>
+                        <td>Immediate</td>
+                    </tr>
+                    <tr>
+                        <td>WS2</td>
+                        <td class="green">✅ YES</td>
+                        <td>Direct in CRM</td>
+                        <td>Self-serve</td>
+                        <td>Immediate</td>
+                    </tr>
+                    <tr>
+                        <td>QPRO1</td>
+                        <td class="green">✅ YES</td>
+                        <td>Direct in BO Dashboard</td>
+                        <td>Self-serve</td>
+                        <td>Immediate</td>
+                    </tr>
+                    <tr>
+                        <td>QP2A</td>
+                        <td class="green">✅ YES</td>
+                        <td>Direct in BO Dashboard</td>
+                        <td>Self-serve</td>
+                        <td>Immediate</td>
+                    </tr>
+                    <tr>
+                        <td>QPRO2–19 (17 brands)</td>
+                        <td class="red">❌ NO</td>
+                        <td>BO via Promo Team</td>
+                        <td>#ba-promo</td>
+                        <td>1–2 hours</td>
+                    </tr>
+                    <tr>
+                        <td>QP2B/C/D (3 merchants)</td>
+                        <td class="red">❌ NO</td>
+                        <td>BO via Promo Team</td>
+                        <td>#ba-promo</td>
+                        <td>1–2 hours</td>
+                    </tr>
+                    <tr>
+                        <td>WS3, QPLAY, NX, UG</td>
+                        <td class="yellow">❓ TBD</td>
+                        <td>TBD</td>
+                        <td>Jascinta</td>
+                        <td>TBD</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Self-Serve Brands (4 Total)</h2>
+            <div class="highlight">
+                <h3>✅ You can assign directly:</h3>
+                <ul>
+                    <li><strong>WS1 & WS2:</strong> Via CRM/Smartico (FastTrack for WS1)</li>
+                    <li><strong>QPRO1 & QP2A:</strong> Via BO Dashboard</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>You have direct access, authority, and control.</strong> No waiting. Assign immediately.</p>
+            </div>
+
+            <h2>Promo Team Routes (26 Brands)</h2>
+            <div class="highlight">
+                <h3>❌ Promo team assigns these:</h3>
+                <ul>
+                    <li><strong>QPRO2–19:</strong> 17 other QPRO brands (not QPRO1)</li>
+                    <li><strong>QP2B/C/D:</strong> 3 other QP2 merchants (not QP2A)</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Post in #ba-promo with player name, tier, desired bonus.</strong> Promo team assigns in 1–2 hours.</p>
+            </div>
+
+            <h2>Request Format for #ba-promo</h2>
+            <div class="code">
+🎯 BONUS ASSIGNMENT REQUEST
+
+Brand: [Brand code, e.g., QPRO5]
+Player Name/ID: [Player identifier]
+Player Tier: [Bronze/Silver/Gold/Platinum/Diamond]
+Desired Bonus: [Code or description, e.g., FT_DEP_VIP_100 or "100% deposit bonus up to SGD 500"]
+Urgency: Regular [or HIGH if time-sensitive]
+            </div>
+
+            <h2>Decision Tree: "Where Do I Send This?"</h2>
+            <ol style="line-height: 2;">
+                <li><strong>What's the brand?</strong>
+                    <ul>
+                        <li>WS1 or WS2? → Assign directly in CRM (Self-serve) ✅</li>
+                        <li>QPRO1 or QP2A? → Assign directly in BO (Self-serve) ✅</li>
+                        <li>QPRO2–19 or QP2B/C/D? → Post in #ba-promo (Promo team, 1–2 hrs) ❌</li>
+                        <li>Other? → Ask Jascinta first ❓</li>
+                    </ul>
+                </li>
+                <li><strong>Do I have the promo code?</strong>
+                    <ul>
+                        <li>YES → Check Weekly Promo List, follow brand SOP, assign</li>
+                        <li>NO → Ask in #ba-promo for the code</li>
+                    </ul>
+                </li>
+                <li><strong>Is this self-serve or promo team?</strong>
+                    <ul>
+                        <li>Self-serve → Assign now</li>
+                        <li>Promo team → Post in #ba-promo, wait 1–2 hours</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h2>Scenario Examples</h2>
+
+            <h3>Scenario 1: WS1 player wants free credit</h3>
+            <p><strong>Brand:</strong> WS1 (self-serve) | <strong>Action:</strong> Assign directly in CRM | <strong>Time:</strong> Immediate</p>
+
+            <h3>Scenario 2: QPRO7 player wants VIP bonus</h3>
+            <p><strong>Brand:</strong> QPRO7 (not in self-serve list) | <strong>Action:</strong> Post in #ba-promo | <strong>Time:</strong> 1–2 hours</p>
+
+            <h3>Scenario 3: QP2C bulk assignment</h3>
+            <p><strong>Brand:</strong> QP2C (not in self-serve list) | <strong>Action:</strong> Post in #ba-promo with HIGH urgency | <strong>Time:</strong> 1–2 hours</p>
+
+            <h2>Key Rule</h2>
+            <div class="highlight">
+                <p><strong>If a brand is NOT in the self-serve list (WS1, WS2, QPRO1, QP2A), you CANNOT assign directly.</strong></p>
+                <p style="margin-top: 10px;">Stop and post in #ba-promo. Promo team will handle it.</p>
+            </div>
+
+            <div class="nav">
+                <a href="index.html">← Back to Index</a>
+                <a href="implementation_guide.html">Next: Implementation Guide →</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Routing Matrix v1.0</strong></p>
+            <p>Owner: Jascinta | Created: 2026-06-09</p>
+        </div>
+    </div>
+</body>
+</html>

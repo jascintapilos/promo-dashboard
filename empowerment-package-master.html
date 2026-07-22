@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales ↔ Promo Team Empowerment Package</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .page {
+            background: white;
+            margin: 20px auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            page-break-after: always;
+        }
+        @media print {
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+            body {
+                background: white;
+            }
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            margin: 10px 0;
+        }
+        .header .subtitle {
+            font-size: 0.95em;
+            opacity: 0.9;
+            margin-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 15px;
+        }
+        .content {
+            padding: 40px;
+        }
+        h1 {
+            color: #667eea;
+            font-size: 2.2em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin: 25px 0 15px 0;
+        }
+        .tier {
+            background: #f9f9f9;
+            border-left: 4px solid;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .tier-1 { border-left-color: #28a745; }
+        .tier-2 { border-left-color: #ffc107; }
+        .tier-3 { border-left-color: #dc3545; }
+        .principle {
+            background: #e8f4f8;
+            border-left: 4px solid #00bcd4;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .highlight {
+            background: #e8f4f8;
+            border-left: 4px solid #00bcd4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .checklist {
+            background: #f0f7ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .checklist ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 40px;
+        }
+        .toc-page {
+            background: white;
+            padding: 60px 40px;
+        }
+        .toc-page h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .toc-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        .toc-list li {
+            margin: 20px 0;
+            padding-left: 30px;
+            position: relative;
+            font-size: 1.1em;
+        }
+        .toc-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .document-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .document-card h3 {
+            color: #667eea;
+        }
+        .emoji {
+            font-size: 1.8em;
+            margin-right: 10px;
+        }
+        .green { background: #c8e6c9; font-weight: bold; padding: 2px 8px; border-radius: 3px; }
+        .red { background: #ffcdd2; font-weight: bold; padding: 2px 8px; border-radius: 3px; }
+        .yellow { background: #fff9c4; font-weight: bold; padding: 2px 8px; border-radius: 3px; }
+        p {
+            margin-bottom: 15px;
+        }
+        strong {
+            font-weight: 600;
+            color: #333;
+        }
+        .page-break {
+            page-break-after: always;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="page">
+    <div class="header">
+        <h1>📋 Sales ↔ Promo Team Empowerment</h1>
+        <p>Complete Package to Reduce Bottlenecks & Enable Autonomy</p>
+        <div class="subtitle">
+            <p><strong>Created:</strong> 2026-06-09</p>
+            <p><strong>For:</strong> Jascinta, Wai Yip, Sales Team Lead</p>
+            <p><strong>Goal:</strong> Empower sales team lead; reduce Wai Yip escalations by 80%</p>
+        </div>
+    </div>
+    <div class="content" style="text-align: center; padding: 80px 40px;">
+        <p style="font-size: 1.2em; line-height: 2;">
+            <strong>This package transforms how your sales and promo teams work together.</strong><br><br>
+            5 comprehensive documents + 4-week implementation plan<br>
+            BO Training • Decision Framework • Routing Guide<br>
+            Implementation Schedule • Success Metrics
+        </p>
+        <p style="margin-top: 60px; color: #999;">Version 1.0 | Ready to Share</p>
+    </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="page toc-page">
+    <h1>📖 Table of Contents</h1>
+    <ul class="toc-list">
+        <li><strong>Section 1: Gap Closure Summary</strong> — The problem, solution, expected impact</li>
+        <li><strong>Section 2: Decision Framework</strong> — Tier 1/2/3 playbook + 5 shared principles</li>
+        <li><strong>Section 3: Routing Matrix</strong> — Which brands route where</li>
+        <li><strong>Section 4: Implementation Guide</strong> — 4-week rollout plan (Jun 12–Jul 9)</li>
+        <li><strong>Section 5: BO Training Guide</strong> — 5 modules + practice scenarios</li>
+    </ul>
+    <div style="margin-top: 60px; padding: 30px; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #667eea;">
+        <h3 style="margin-top: 0;">How to Use This Document</h3>
+        <ul>
+            <li><strong>Wai Yip:</strong> Start with Section 1 (Gap Closure). Takes 2–3 min. Decide on pilot approval.</li>
+            <li><strong>Jascinta:</strong> Read all sections. You're the project lead for the 4-week rollout.</li>
+            <li><strong>Sales Team Lead:</strong> Read Sections 2–3 first (framework + routing). Then do Section 5 training.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- SECTION 1: GAP CLOSURE SUMMARY -->
+<div class="page">
+    <div class="content">
+        <h1>🎯 Section 1: Gap Closure Summary</h1>
+
+        <h2>The Problem</h2>
+        <h3>Sales Team Lead's Current Situation</h3>
+        <ul>
+            <li>No BO (Back Office) access or training</li>
+            <li>Makes ~10+ decisions/day about bonuses</li>
+            <li>Can't verify anything independently → escalates EVERYTHING to Wai Yip</li>
+            <li>Wai Yip (Promo Team Lead) spends 20–25 hrs/week answering routine questions</li>
+            <li>Bottleneck: 2–3 hour wait for yes/no decisions</li>
+            <li>Frustration: "Why can't they just check BO and decide?"</li>
+        </ul>
+
+        <h3>The Root Cause</h3>
+        <p>Three gaps:</p>
+        <ul>
+            <li><strong>1. No BO Access/Skills:</strong> Sales team lead doesn't know how to query promos, verify tiers, check claim history</li>
+            <li><strong>2. No Decision Framework:</strong> No playbook for "what can I decide vs. what needs approval"</li>
+            <li><strong>3. No Cultural Alignment:</strong> Sales team sees promo work as "Wai Yip's job", not shared responsibility</li>
+        </ul>
+
+        <h2>The Solution</h2>
+        <p>A 4-week pilot to empower the sales team lead:</p>
+        <ol>
+            <li><strong>BO Training (1 day):</strong> 5 modules covering query, verify, assign</li>
+            <li><strong>Decision Framework:</strong> Tier 1 (decide alone) / Tier 2 (ask async) / Tier 3 (escalate to Wai Yip)</li>
+            <li><strong>Weekly Promo List:</strong> Reference of active promos posted to #ba-promo</li>
+            <li><strong>Culture Bridge:</strong> 5 shared principles to align sales + promo teams</li>
+        </ol>
+
+        <h2>Expected Impact</h2>
+
+        <h3>For Sales Team Lead</h3>
+        <ul>
+            <li>✅ Make decisions in 5–15 min (vs. 2–3 hrs waiting)</li>
+            <li>✅ 80% autonomy by Jul 9</li>
+            <li>✅ Learn bonus mechanics through doing</li>
+            <li>✅ Own routine assignments end-to-end</li>
+        </ul>
+
+        <h3>For Wai Yip</h3>
+        <ul>
+            <li>✅ 20–25 hrs/week freed from routine Qs</li>
+            <li>✅ See only ~2 strategic escalations/week (vs. 10+)</li>
+            <li>✅ Focus on strategy, not routine decisions</li>
+        </ul>
+
+        <h3>For Promo Team</h3>
+        <ul>
+            <li>✅ Systematic weekly promo list (not ad-hoc)</li>
+            <li>✅ Answer Tier 2 Qs in #ba-promo async (1–2 hrs)</li>
+            <li>✅ Monitor team learning; coach gaps</li>
+        </ul>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content">
+        <h2>Success Criteria (Jul 9)</h2>
+        <div class="alert">
+            <strong>By the end of the 4-week pilot, these should all be true:</strong>
+        </div>
+        <ul style="margin-left: 20px; line-height: 2;">
+            <li>☑️ Sales team lead makes Tier 1 decisions without prompting (≥80% of routine Qs)</li>
+            <li>☑️ Zero Tier 1/2 questions escalated to Wai Yip (filtered by framework)</li>
+            <li>☑️ Wai Yip receives <2 Tier 3 escalations per week (down from 10+)</li>
+            <li>☑️ Weekly Active Promo List is consistently used by sales team</li>
+            <li>☑️ Sales team lead can explain 5 Promo Team Principles from memory</li>
+            <li>☑️ #ba-promo becomes the default Q&A channel (not DMs to Wai Yip)</li>
+        </ul>
+
+        <h2>Quick Start: This Week</h2>
+
+        <div class="highlight">
+            <h3 style="margin-top: 0;">Step 1 (Today): Get Wai Yip's Buy-In</h3>
+            <p>Email him this Gap Closure Summary. Highlight: <strong>"This frees 20–25 hrs/week from routine questions."</strong></p>
+        </div>
+
+        <div class="highlight">
+            <h3 style="margin-top: 0;">Step 2 (Jun 12): Sales Team Lead Kickoff</h3>
+            <p>Share the Decision Framework. Walk through Tier 1/2/3 with examples (30 min). Have them sign the checklist.</p>
+        </div>
+
+        <div class="highlight">
+            <h3 style="margin-top: 0;">Step 3 (Jun 12): Launch Weekly Promo List</h3>
+            <p>Promo team extracts active promos from BO. Fill the template. Post to #ba-promo & pin it.</p>
+        </div>
+
+        <div class="highlight">
+            <h3 style="margin-top: 0;">Step 4 (Ongoing): Weekly Syncs with Sales Team Lead</h3>
+            <p>15-min check-in every Tuesday 10:30 AM. Discuss decisions made, blockers, learning gaps.</p>
+        </div>
+
+        <h2>Impact Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>For Sales Team Lead</th>
+                    <th>For Wai Yip</th>
+                    <th>For Promo Team</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>✅ Make decisions in 5–15 min (vs. 2–3 hrs waiting)</td>
+                    <td>✅ 20–25 hrs/week freed from routine Qs</td>
+                    <td>✅ Systematic weekly promo list (not ad-hoc)</td>
+                </tr>
+                <tr>
+                    <td>✅ Learn bonus mechanics through doing</td>
+                    <td>✅ Focus on strategy, not routine decisions</td>
+                    <td>✅ Monitor team learning; coach gaps</td>
+                </tr>
+                <tr>
+                    <td>✅ 80% autonomy by Jul 9</td>
+                    <td>✅ See only ~2 strategic escalations/week (vs. 10+)</td>
+                    <td>✅ Answer Tier 2 Qs in #ba-promo async</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SECTION 2: DECISION FRAMEWORK -->
+<div class="page">
+    <div class="content">
+        <h1>🎯 Section 2: Decision Framework</h1>
+
+        <h2>Overview</h2>
+        <p>This framework gives you clear guidance on what decisions you can make <strong>INDEPENDENTLY</strong>. It assumes you have <strong>BO access and basic training</strong>. It breaks decisions into 3 tiers:</p>
+        <ul>
+            <li><strong>Tier 1:</strong> You decide alone using BO (80%+ of questions) — Immediate</li>
+            <li><strong>Tier 2:</strong> Post in #ba-promo Slack (policy/operational decisions) — 2–4 hours</li>
+            <li><strong>Tier 3:</strong> Escalate to @Wai Yip (strategic only) — Rare</li>
+        </ul>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content">
+        <div class="tier tier-1">
+            <h2>✅ TIER 1: You Decide Alone (BO-Trained)</h2>
+            <p>You have BO access. Check everything yourself. No escalation needed for these operational decisions.</p>
+
+            <h3>Step 1: Check Promo in BO</h3>
+            <div class="checklist">
+                <p><strong>Before offering any bonus, navigate to the correct menu:</strong></p>
+                <ul>
+                    <li><strong>QPRO/QP2:</strong> Go to <code>Menu 3.2</code> (Promotion Codes)</li>
+                    <li><strong>WS1/WS2:</strong> Go to <code>iGMP 3.1</code> (Deposit), <code>3.3</code> (Free Credit), or <code>3.15</code> (Free Spins)</li>
+                </ul>
+
+                <p style="margin-top: 15px;"><strong>Then verify:</strong></p>
+                <ul>
+                    <li>Query BO for promo code → Is it ACTIVE?</li>
+                    <li>Check eligible tiers → Does player's tier match?</li>
+                    <li>Check validity dates → Is it still valid (not expired)?</li>
+                    <li>Check claim history → Has player already claimed recently?</li>
+                </ul>
+            </div>
+            <p><strong>Result:</strong> ✅ All checks pass? Offer it. ❌ Any fail? Go to TIER 2.</p>
+
+            <h3>Step 2: Evaluate Bonus Terms</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Check This</th>
+                        <th>Red Flag?</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Turnover >20x?</td>
+                        <td>Yes → hard to clear</td>
+                        <td>Ask in #ba-promo if OK</td>
+                    </tr>
+                    <tr>
+                        <td>Min deposit >player's usual?</td>
+                        <td>Yes → they won't use</td>
+                        <td>Ask in #ba-promo if OK</td>
+                    </tr>
+                    <tr>
+                        <td>Free credit <10% deposit?</td>
+                        <td>Yes → seems low</td>
+                        <td>Ask in #ba-promo if OK</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Step 3: Which Bonus Type Fits?</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Best Bonus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Player says "want to play longer"</td>
+                        <td>→ Deposit Bonus</td>
+                    </tr>
+                    <tr>
+                        <td>Low balance / at-risk player</td>
+                        <td>→ Free Credit</td>
+                    </tr>
+                    <tr>
+                        <td>Slot player / specific game lover</td>
+                        <td>→ Free Spins</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Step 4: Assign in BO</h3>
+            <p>Once you've verified the promo and checked terms:</p>
+            <ul>
+                <li><strong>WS1/WS2:</strong> Assign in CRM directly</li>
+                <li><strong>QPRO1/QP2A:</strong> Assign in BO Dashboard</li>
+                <li><strong>Other brands:</strong> Check Routing Matrix → post in #ba-promo if needed</li>
+            </ul>
+            <p><strong>You own this end-to-end.</strong> No waiting on promo team for routine assignments.</p>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content">
+        <div class="tier tier-2">
+            <h2>❓ TIER 2: Ask in #ba-promo (2–4 Hours)</h2>
+            <p>Post these in #ba-promo Slack (NOT to Wai Yip's DMs). Expected response: 2–4 hours during work hours (10 AM–7 PM).</p>
+
+            <h3>Policy & Operational Decisions</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Request Type</th>
+                        <th>What To Ask</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Create New Promo</strong></td>
+                        <td>"Can we create [bonus type] with [terms]?"</td>
+                        <td>"Create 100% deposit bonus up to MYR 1000, 8x TO, valid 7 days"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exception Request</strong></td>
+                        <td>"Can we lower TO / extend date?"</td>
+                        <td>"Reduce TO to 6x for this VIP?"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bulk Assignment</strong></td>
+                        <td>"Can we assign [promo] to [group]?"</td>
+                        <td>"Assign FT_DEP_100 to top 50 VIP players"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Red Flag</strong></td>
+                        <td>"This bonus seems [risky]. Is it OK?"</td>
+                        <td>"MYR 500 with 25x TO—sustainable?"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>How to Post in #ba-promo</h3>
+            <p style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                <strong>Format:</strong> [Request Type] | Context | Question<br>
+                <strong>Example:</strong> "Exception Request | QPRO1 Gold VIP | Can we lower TO from 8x to 6x for FT_DEP_VIP_100?"
+            </p>
+        </div>
+
+        <div class="tier tier-3">
+            <h2>🔴 TIER 3: Escalate to @Wai Yip (Strategic Only)</h2>
+            <p><strong>Very rare.</strong> Tag @Wai Yip in Slack #ba-promo for high-level strategy decisions only.</p>
+
+            <h3>Strategic Escalation Triggers</h3>
+            <ul>
+                <li><strong>Promo Cost / ROI:</strong> "This bonus costs too much—should we revise the structure?"</li>
+                <li><strong>Strategic Updates:</strong> "Should we pause deposits and focus on Free Spins for Q3?"</li>
+                <li><strong>High-Level Decisions:</strong> "Should we invest more in VIP retention promos?"</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content">
+        <h2>5 Shared Principles (Culture)</h2>
+        <p>These guide decisions for BOTH Sales and Promo teams:</p>
+
+        <div class="principle">
+            <h3>1. Player Protection First</h3>
+            <p>Every bonus should be <strong>sustainable for the player</strong>—not a trap. Reasonable TO (8–12x is standard). Clear terms.</p>
+        </div>
+
+        <div class="principle">
+            <h3>2. Transparency</h3>
+            <p>Players should understand the bonus before claiming. <strong>"100% up to MYR 500, 8x turnover, valid 7 days" = clear.</strong></p>
+        </div>
+
+        <div class="principle">
+            <h3>3. Speed & Autonomy</h3>
+            <p>Move fast without bottlenecks. <strong>If it fits the framework, offer it. Don't wait for approval on every offer.</strong></p>
+        </div>
+
+        <div class="principle">
+            <h3>4. Continuous Learning</h3>
+            <p><strong>If you don't understand something, ask in #ba-promo (not DMs).</strong> Share answers with the team.</p>
+        </div>
+
+        <div class="principle">
+            <h3>5. Compliance Always Wins</h3>
+            <p><strong>If there's any risk (fraud, regulation, player harm), escalate.</strong> Don't try to figure it out alone.</p>
+        </div>
+
+        <h2>Sign-Off Checklist</h2>
+        <div class="checklist">
+            <p><strong>Before using this framework, verify you can:</strong></p>
+            <ul>
+                <li>Access BO and query promo details (codes, terms, eligible tiers, validity dates)</li>
+                <li>Check player tier in BO/CRM and match to promo eligibility</li>
+                <li>Review claim history to verify player hasn't already claimed</li>
+                <li>Identify red flags in bonus terms (high TO, low amounts, etc.)</li>
+                <li>Assign promos in BO/CRM for WS1/WS2/QPRO1/QP2A</li>
+                <li>Make Tier 1 decisions independently (no waiting on promo team)</li>
+                <li>Post Tier 2 requests in #ba-promo (not DMs to Wai Yip)</li>
+                <li>Understand the 5 Shared Principles</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 30px; padding: 15px; background: #e8f5e9; border-radius: 4px;">
+            <strong>By signing this, you commit to: (1) completing BO training, (2) making decisions independently, and (3) using #ba-promo for policy questions only.</strong>
+        </p>
+
+        <p style="margin-top: 30px;">
+            Signed: _________________ Date: _____________
+        </p>
+    </div>
+</div>
+
+<!-- SECTION 3: ROUTING MATRIX -->
+<div class="page">
+    <div class="content">
+        <h1>📊 Section 3: Routing Matrix</h1>
+
+        <h2>Quick Reference: Where to Send Each Brand</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Sales Can Assign?</th>
+                    <th>Route</th>
+                    <th>Contact</th>
+                    <th>Turnaround</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>WS1</td>
+                    <td><span class="green">✅ YES</span></td>
+                    <td>Direct in CRM</td>
+                    <td>Self-serve</td>
+                    <td>Immediate</td>
+                </tr>
+                <tr>
+                    <td>WS2</td>
+                    <td><span class="green">✅ YES</span></td>
+                    <td>Direct in CRM</td>
+                    <td>Self-serve</td>
+                    <td>Immediate</td>
+                </tr>
+                <tr>
+                    <td>QPRO1</td>
+                    <td><span class="green">✅ YES</span></td>
+                    <td>Direct in BO Dashboard</td>
+                    <td>Self-serve</td>
+                    <td>Immediate</td>
+                </tr>
+                <tr>
+                    <td>QP2A</td>
+                    <td><span class="green">✅ YES</span></td>
+                    <td>Direct in BO Dashboard</td>
+                    <td>Self-serve</td>
+                    <td>Immediate</td>
+                </tr>
+                <tr>
+                    <td>QPRO2–19 (17 brands)</td>
+                    <td><span class="red">❌ NO</span></td>
+                    <td>BO via Promo Team</td>
+                    <td>#ba-promo</td>
+                    <td>1–2 hours</td>
+                </tr>
+                <tr>
+                    <td>QP2B/C/D (3 merchants)</td>
+                    <td><span class="red">❌ NO</span></td>
+                    <td>BO via Promo Team</td>
+                    <td>#ba-promo</td>
+                    <td>1–2 hours</td>
+                </tr>
+                <tr>
+                    <td>WS3, QPLAY, NX, UG</td>
+                    <td><span class="yellow">❓ TBD</span></td>
+                    <td>TBD</td>
+                    <td>Jascinta</td>
+                    <td>TBD</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Self-Serve Brands (4 Total)</h2>
+        <div class="highlight">
+            <h3 style="margin-top: 0;">✅ You can assign directly:</h3>
+            <ul>
+                <li><strong>WS1 & WS2:</strong> Via CRM/Smartico (FastTrack for WS1)</li>
+                <li><strong>QPRO1 & QP2A:</strong> Via BO Dashboard</li>
+            </ul>
+            <p style="margin-top: 15px;"><strong>You have direct access, authority, and control.</strong> No waiting. Assign immediately.</p>
+        </div>
+
+        <h2>Promo Team Routes (26 Brands)</h2>
+        <div class="highlight">
+            <h3 style="margin-top: 0;">❌ Promo team assigns these:</h3>
+            <ul>
+                <li><strong>QPRO2–19:</strong> 17 other QPRO brands (not QPRO1)</li>
+                <li><strong>QP2B/C/D:</strong> 3 other QP2 merchants (not QP2A)</li>
+            </ul>
+            <p style="margin-top: 15px;"><strong>Post in #ba-promo with player name, tier, desired bonus.</strong> Promo team assigns in 1–2 hours.</p>
+        </div>
+
+        <h2>Request Format for #ba-promo</h2>
+        <div class="code">
+🎯 BONUS ASSIGNMENT REQUEST
+
+Brand: [Brand code, e.g., QPRO5]
+Player Name/ID: [Player identifier]
+Player Tier: [Bronze/Silver/Gold/Platinum/Diamond]
+Desired Bonus: [Code or description, e.g., FT_DEP_VIP_100 or "100% deposit bonus up to SGD 500"]
+Urgency: Regular [or HIGH if time-sensitive]
+        </div>
+
+        <h2>Key Rule</h2>
+        <div class="highlight">
+            <p><strong>If a brand is NOT in the self-serve list (WS1, WS2, QPRO1, QP2A), you CANNOT assign directly.</strong></p>
+            <p style="margin-top: 10px;">Stop and post in #ba-promo. Promo team will handle it.</p>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 4: IMPLEMENTATION GUIDE -->
+<div class="page">
+    <div class="content">
+        <h1>🚀 Section 4: Implementation Guide</h1>
+
+        <h2>4-Week Rollout Plan: JUN 12 – JUL 9</h2>
+
+        <h3>PHASE 0: PREPARATION (JUN 9–11)</h3>
+
+        <h4>Week Ending Jun 10</h4>
+        <div class="checklist">
+            <ul>
+                <li><strong>Get Wai Yip's buy-in:</strong> Share Gap Closure Summary via email. Highlight: "This frees 20–25 hrs/week"</li>
+                <li><strong>Prep BO training schedule:</strong> Book 1 day (Jun 10 or 11): 4–6 hours</li>
+                <li><strong>Prep Decision Framework & Routing Matrix:</strong> Print or share digitally</li>
+            </ul>
+        </div>
+
+        <h3>PHASE 1: TRAINING & KICKOFF (WEEK 1: JUN 12–18)</h3>
+
+        <h4>Monday Jun 12 (Kickoff Day)</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Activity</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>08:00 AM</td>
+                    <td>Wai Yip one-on-one: Share Decision Framework + sign checklist</td>
+                    <td>30 min</td>
+                </tr>
+                <tr>
+                    <td>09:00 AM</td>
+                    <td>BO Training Module 1 & 2 (Login & Navigation, Query Promos)</td>
+                    <td>2–3 hours</td>
+                </tr>
+                <tr>
+                    <td>12:00 PM</td>
+                    <td>LUNCH BREAK</td>
+                    <td>1 hour</td>
+                </tr>
+                <tr>
+                    <td>01:00 PM</td>
+                    <td>BO Training Module 3 & 4 (Check Details, Claim History)</td>
+                    <td>2–3 hours</td>
+                </tr>
+                <tr>
+                    <td>03:30 PM</td>
+                    <td>BO Training Module 5 (Assign in BO)</td>
+                    <td>1 hour</td>
+                </tr>
+                <tr>
+                    <td>04:30 PM</td>
+                    <td>Debrief + schedule follow-up</td>
+                    <td>30 min</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Tuesday Jun 13</h4>
+        <ul>
+            <li>09:00 AM: Follow-up 1-on-1 (30 min) — Refresh confusing modules</li>
+            <li>12:00 PM: Post Week 1 Active Promo List in #ba-promo (pin it)</li>
+        </ul>
+
+        <h4>Wednesday Jun 15 – Friday Jun 18</h4>
+        <ul>
+            <li>Sales team lead shadows real work (5 bonus requests)</li>
+            <li>For each: check BO, verify tiers, make decision</li>
+            <li>Track in coaching log: # of Tier 1 decisions, # of Tier 2 posts, any blockers</li>
+        </ul>
+
+        <h3>PHASE 2: SUPERVISED AUTONOMY (WEEK 2–3: JUN 19 – JUL 2)</h3>
+
+        <p>Sales team lead now makes decisions. Jascinta spot-checks weekly.</p>
+
+        <h4>Weekly Sync (Every Monday)</h4>
+        <ul>
+            <li>Review: How many Tier 1 decisions this week? (target: ≥80%)</li>
+            <li>Review: Any Tier 2 posts? Feedback on quality</li>
+            <li>Refine any confusions</li>
+            <li>Celebrate wins</li>
+        </ul>
+
+        <h4>Mid-Week Check (Wednesday)</h4>
+        <ul>
+            <li>Promo team posts weekly Active Promo List</li>
+        </ul>
+
+        <h4>Friday Spot-Check</h4>
+        <ul>
+            <li>Jascinta reviews 2–3 random Tier 1 decisions (verify tier match, no issues)</li>
+        </ul>
+
+        <h3>PHASE 3: FULL AUTONOMY (WEEK 4: JUL 3–9)</h3>
+
+        <p>Sales team lead operates fully independently. Minimal coaching.</p>
+
+        <h4>Monday Jul 7 (Final Sync)</h4>
+        <ul>
+            <li>Review: Autonomy metrics (target: ≥80% Tier 1, <2 escalations)</li>
+            <li>Review: #ba-promo engagement (is it the default?)</li>
+            <li>Plan: Continued support beyond Jul 9</li>
+        </ul>
+
+        <h4>Friday Jul 9 (PILOT ENDS)</h4>
+        <ul>
+            <li>Final assessment against success criteria</li>
+            <li>Decide: Continue model? Expand to other brands?</li>
+        </ul>
+
+        <h2>Success Metrics (Check on JUL 9)</h2>
+        <div class="alert">
+            <strong>All of these should be true:</strong>
+            <ul style="margin-top: 15px;">
+                <li>☑️ Sales team lead makes Tier 1 decisions without prompting (≥80% of routine Qs)</li>
+                <li>☑️ Zero Tier 1/2 questions escalated to Wai Yip (filtered by framework)</li>
+                <li>☑️ Wai Yip receives <2 Tier 3 escalations per week (down from 10+)</li>
+                <li>☑️ Weekly Active Promo List is consistently used by sales team</li>
+                <li>☑️ Sales team lead can explain 5 Promo Team Principles from memory</li>
+                <li>☑️ #ba-promo becomes the default Q&A channel (not DMs to Wai Yip)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 5: BO TRAINING GUIDE (SUMMARY) -->
+<div class="page">
+    <div class="content">
+        <h1>📚 Section 5: BO Training Guide</h1>
+
+        <h2>Overview</h2>
+        <p>Sales team learns to query promos, verify eligibility, and assign bonuses. <strong>5 modules, 1 day (4–6 hours).</strong></p>
+
+        <h3>Learning Outcomes</h3>
+        <ul>
+            <li>✅ Log into BO for each platform (QPRO, QP2, WS1, WS2)</li>
+            <li>✅ Query promos by brand and code</li>
+            <li>✅ Read promo details (tiers, terms, validity)</li>
+            <li>✅ Check player claim history</li>
+            <li>✅ Assign promos independently (WS1/WS2/QPRO1/QP2A)</li>
+            <li>✅ Spot red flags (expired promos, tier mismatch, high TO)</li>
+        </ul>
+
+        <h2>5 Training Modules</h2>
+
+        <div class="document-card">
+            <h3><span class="emoji">🔓</span> Module 1: Login & Navigation</h3>
+            <p><strong>Duration:</strong> 30–45 min | <strong>Goal:</strong> Learn how to access each platform</p>
+            <p><strong>Content:</strong> Credentials, login steps, main menu structure for QPRO/QP2/WS1/WS2</p>
+            <p><strong>Practice:</strong> Log into each platform; navigate to Promotion Codes menu</p>
+        </div>
+
+        <div class="document-card">
+            <h3><span class="emoji">🔍</span> Module 2: Query Promos by Brand</h3>
+            <p><strong>Duration:</strong> 1–1.5 hours | <strong>Goal:</strong> Find active promos</p>
+            <p><strong>Content:</strong> Filter by brand/merchant, read promo lists, check status (active/inactive)</p>
+            <p><strong>Practice:</strong> Query QPRO1 for all Deposit bonuses; query WS1 for Free Credit promos</p>
+        </div>
+
+        <div class="document-card">
+            <h3><span class="emoji">📋</span> Module 3: Check Promo Details</h3>
+            <p><strong>Duration:</strong> 1 hour | <strong>Goal:</strong> Verify promo terms & eligibility</p>
+            <p><strong>Content:</strong> Read detail page (amount, TO, min deposit, eligible tiers, validity dates, quota)</p>
+            <p><strong>Practice:</strong> Open 3 promos; spot red flags (expired, high TO, no quota)</p>
+        </div>
+
+        <div class="document-card">
+            <h3><span class="emoji">📊</span> Module 4: Check Player Claim History</h3>
+            <p><strong>Duration:</strong> 45 min | <strong>Goal:</strong> Avoid duplicate claims</p>
+            <p><strong>Content:</strong> Find claim history, read claim records, make claim/no-claim decisions</p>
+            <p><strong>Practice:</strong> Check 5 players; determine if they can claim again</p>
+        </div>
+
+        <div class="document-card">
+            <h3><span class="emoji">✅</span> Module 5: Assign Promos in BO</h3>
+            <p><strong>Duration:</strong> 1–1.5 hours | <strong>Goal:</strong> Assign bonus end-to-end</p>
+            <p><strong>Content:</strong> Navigate to assign form, fill in player details, submit, confirm</p>
+            <p><strong>Practice:</strong> Assign 3 bonuses (WS1, QPRO1, QP2A); capture confirmations</p>
+        </div>
+
+        <h2>BO Menu Reference</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Platform</th>
+                    <th>Page</th>
+                    <th>Menu Path</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>QPRO</td>
+                    <td>Promotion Codes</td>
+                    <td><strong>Menu 3.2</strong></td>
+                </tr>
+                <tr>
+                    <td>QPRO</td>
+                    <td>Deposit Bonus</td>
+                    <td><strong>Menu 3.1</strong></td>
+                </tr>
+                <tr>
+                    <td>QPRO</td>
+                    <td>Free Credit</td>
+                    <td><strong>Menu 3.3</strong></td>
+                </tr>
+                <tr>
+                    <td>QPRO</td>
+                    <td>Free Spins</td>
+                    <td><strong>Menu 3.15</strong></td>
+                </tr>
+                <tr>
+                    <td>QP2</td>
+                    <td>Promotion Codes</td>
+                    <td><strong>Menu 2.1</strong></td>
+                </tr>
+                <tr>
+                    <td>WS1</td>
+                    <td>Promos</td>
+                    <td><strong>Promos section</strong> (FastTrack CRM)</td>
+                </tr>
+                <tr>
+                    <td>WS2</td>
+                    <td>Promos</td>
+                    <td><strong>Promos section</strong> (FastTrack CRM)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Practice Scenarios (Do These Now)</h2>
+
+        <h3>Scenario 1: Full Query Workflow</h3>
+        <p><strong>"QPRO5 Gold player (MYR 300 deposits) wants a bonus. What can you offer?"</strong></p>
+        <ul>
+            <li>Log into QPRO BO → Filter by Brand = QPRO5</li>
+            <li>Look for ACTIVE promos for Gold tier</li>
+            <li>Pick one; read details; check claim history</li>
+            <li>Decision: Offer it? Or red flag?</li>
+            <li><strong>Time: 10–15 min</strong></li>
+        </ul>
+
+        <h3>Scenario 2: Claim History Check</h3>
+        <p><strong>"WS1 Silver player wants FT_FC_SIL_50. Did they already claim it?"</strong></p>
+        <ul>
+            <li>Log into WS1 FastTrack → Find Promos</li>
+            <li>Click FT_FC_SIL_50 → Find claim history</li>
+            <li>Decision: Offer it? Or say "Already claimed recently"?</li>
+            <li><strong>Time: 5–10 min</strong></li>
+        </ul>
+
+        <h3>Scenario 3: Full End-to-End</h3>
+        <p><strong>"Assign FT_DEP_NRM_100 to QPRO1 Bronze player who deposits MYR 300+."</strong></p>
+        <ul>
+            <li>Find & verify the promo (details, eligibility)</li>
+            <li>Check player claim history</li>
+            <li>Assign the bonus</li>
+            <li>Screenshot confirmation</li>
+            <li><strong>Time: 15–20 min</strong></li>
+        </ul>
+    </div>
+</div>
+
+<!-- BACK COVER / CLOSING -->
+<div class="page">
+    <div class="header">
+        <h1>Ready to Launch!</h1>
+        <p>Your 4-week empowerment journey starts Jun 12</p>
+    </div>
+    <div class="content" style="text-align: center; padding: 80px 40px;">
+        <h2 style="border: none; color: #333;">Next Steps</h2>
+        <div style="background: #f0f7ff; padding: 40px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #667eea;">
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Today (Jun 9):</strong><br>
+                Share Gap Closure Summary with Wai Yip. Get buy-in.
+            </p>
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Jun 10–11:</strong><br>
+                Prepare training schedule. Print/share Decision Framework & Routing Matrix.
+            </p>
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Jun 12:</strong><br>
+                Kickoff: Decision Framework talk + BO Training Day 1.
+            </p>
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Jun 13–Jul 9:</strong><br>
+                4-week pilot: Supervised autonomy → full autonomy.
+            </p>
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                <strong>Jul 9:</strong><br>
+                Final assessment. Decision: Continue? Expand?
+            </p>
+        </div>
+
+        <h3 style="margin-top: 40px; color: #667eea;">Questions?</h3>
+        <p><strong>Contact Jascinta in Slack</strong></p>
+
+        <p style="margin-top: 60px; color: #999;">
+            Sales ↔ Promo Team Empowerment Package v1.0<br>
+            Created: 2026-06-09 | Owner: Jascinta
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

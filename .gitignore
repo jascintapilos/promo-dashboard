@@ -1,0 +1,29 @@
+# Secrets
+clickup-token.local.json
+*.local.json
+
+# Dependencies
+node_modules/
+qpro-promotion-hub/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Mac metadata
+__MACOSX/
+.DS_Store
+
+# Temp / session
+.session/
+chunk_*.txt
+
+# Binary / encoded
+*.b64
+qpro-promotion-hub/*.tar.gz
+
+# Temp Office lock files
+~$*
+
+# Separate repo — tracked independently
+promo-automation/
