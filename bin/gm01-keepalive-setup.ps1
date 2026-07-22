@@ -5,10 +5,10 @@
 
 $TaskName   = 'GM01-Keepalive'
 $NodeExe    = 'C:\Program Files\nodejs\node.exe'
-$ScriptPath = 'C:\Users\vdiuser\Downloads\promo-automation\promo-automation\bin\gm01-keepalive.mjs'
-$WorkDir    = 'C:\Users\vdiuser\Downloads\promo-automation\promo-automation'
-$LogFile    = 'C:\Users\vdiuser\Downloads\promo-automation\promo-automation\captures\gm01-keepalive.log'
-$User       = 'VDI-14142\vdiuser'
+$ScriptPath = 'C:\Users\vdiuser\promo-automation\bin\gm01-keepalive.mjs'
+$WorkDir    = 'C:\Users\vdiuser\promo-automation'
+$LogFile    = 'C:\Users\vdiuser\promo-automation\captures\gm01-keepalive.log'
+$User       = "$env:COMPUTERNAME\$env:USERNAME"   # resolves to the current machine\user
 
 # Remove existing task if present
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -17,7 +17,7 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
 }
 
 # Action: run the wrapper batch file (handles logging and session-missing guard)
-$WrapperScript = 'C:\Users\vdiuser\Downloads\promo-automation\promo-automation\bin\gm01-keepalive.cmd'
+$WrapperScript = 'C:\Users\vdiuser\promo-automation\bin\gm01-keepalive.cmd'
 $action = New-ScheduledTaskAction `
     -Execute 'cmd.exe' `
     -Argument "/c `"$WrapperScript`"" `

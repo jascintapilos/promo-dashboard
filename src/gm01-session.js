@@ -37,7 +37,10 @@ export function hasSavedState() {
  * Caller is responsible for closing `browser`.
  */
 export async function openAuthedContext({ headless = true } = {}) {
-  const browser = await chromium.launch({ headless });
+  // Use the installed system Chrome (channel: 'chrome') so we don't depend on
+  // Playwright's separately-downloaded headless-shell binary, which may be
+  // absent on the VDI. Chrome supports headless mode natively.
+  const browser = await chromium.launch({ headless, channel: 'chrome' });
   const context = await browser.newContext(
     hasSavedState() ? { storageState: STORAGE_STATE_FILE } : {}
   );
