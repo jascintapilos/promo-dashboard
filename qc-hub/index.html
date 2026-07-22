@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Promo QC Hub</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://accounts.google.com/gsi/client" defer></script>
+  </head>
+  <body>
+    <div id="loginOverlay" class="login-overlay hidden">
+      <div class="login-box">
+        <h2 style="margin-bottom:8px">Promo QC Hub</h2>
+        <p class="muted" style="margin:0 0 20px">Sign in with your @thebrandingpeople.co account</p>
+        <div id="googleBtn"></div>
+        <p id="loginError" class="login-error hidden"></p>
+      </div>
+    </div>
+    <header class="topbar">
+      <h1>Promo QC Hub</h1>
+      <span id="signedIn" class="signed-in">Signed out</span>
+    </header>
+
+    <main>
+      <section>
+        <div id="brandGrid" class="brand-grid"></div>
+      </section>
+
+      <section class="search-row">
+        <label class="code-label">
+          <span>Promo Codes</span>
+          <span class="code-boxes">
+            <input id="promoCode1" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 1" aria-label="Promo code 1">
+            <input id="promoCode2" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 2" aria-label="Promo code 2">
+            <input id="promoCode3" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 3" aria-label="Promo code 3">
+            <input id="promoCode4" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 4" aria-label="Promo code 4">
+            <input id="promoCode5" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 5" aria-label="Promo code 5">
+          </span>
+        </label>
+        <button id="searchBtn">Search</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+        <a id="openBo" class="button secondary disabled" target="_blank" rel="noreferrer">Open BO</a>
+        <a id="openModule" class="button secondary disabled" target="_blank" rel="noreferrer">Open Module</a>
+        <button id="runQc" class="primary">Run QC</button>
+      </section>
+
+      <section id="resultPills" class="result-pills"></section>
+
+      <section id="verdictPanel" class="verdict hidden">
+        <div id="verdictText" class="verdict-text"></div>
+        <div id="mechanics" class="mechanics"></div>
+        <div id="findings" class="findings"></div>
+      </section>
+
+      <section>
+        <h2>Promo Details</h2>
+        <div class="details-table-wrap">
+          <table class="details-table">
+            <thead id="detailsHead"></thead>
+            <tbody id="detailsRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="form-grid">
+        <h2>Error & Remarks</h2>
+        <label>Category <input id="errorCategory"></label>
+        <label>Description <textarea id="description"></textarea></label>
+        <label>Expected <textarea id="expected"></textarea></label>
+        <label>Actual <textarea id="actual"></textarea></label>
+        <label>Action <textarea id="actionRequired"></textarea></label>
+        <label>Person <input id="personResponsible"></label>
+        <label>Evidence <input id="evidenceLink"></label>
+        <button id="manualFix" class="secondary" type="button">Fix with Claude</button>
+      </section>
+
+      <section class="result-row">
+        <button data-result="PASS" id="passBtn" disabled>Pass</button>
+        <button data-result="FAIL">Fail</button>
+        <button data-result="REQUIRES_REVIEW">Requires Review</button>
+        <button data-result="RECHECK_AFTER_AMENDMENT">Recheck After Amendment</button>
+        <button id="saveRecord" class="primary">Save</button>
+        <button id="saveAll" class="primary">Save All</button>
+        <button id="copySummary" class="secondary">Copy QC Summary</button>
+      </section>
+
+      <section>
+        <h2>Recent QC History</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Brand</th><th>Code</th><th>Result</th><th>Checked By</th><th>Action</th></tr></thead>
+          <tbody id="historyRows"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <div id="promptModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
+      <div class="modal-box">
+        <h2 id="promptModalTitle" style="margin-bottom:8px">Fix with Claude</h2>
+        <p class="muted" style="margin:0 0 12px">Copy this prompt and paste it into a new Claude conversation.</p>
+        <pre id="promptText" class="prompt-text"></pre>
+        <div class="modal-actions">
+          <button id="copyPromptBtn" class="primary" type="button">Copy Prompt</button>
+          <button id="closePromptBtn" class="secondary" type="button">Close</button>
+        </div>
+        <p id="copiedConfirm" class="copy-confirm hidden">Copied to clipboard.</p>
+      </div>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
