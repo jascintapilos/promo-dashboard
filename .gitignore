@@ -8,11 +8,14 @@ qpro-promotion-hub/node_modules/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 
 # Mac metadata
 __MACOSX/
 .DS_Store
+
+# Windows
+Thumbs.db
 
 # Temp / session
 .session/
@@ -27,3 +30,12 @@ qpro-promotion-hub/*.tar.gz
 
 # Separate repo — tracked independently
 promo-automation/
+
+# IDE
+.idea/
+
+# Logs & compiled
+*.log
+*.class
+*.jar
+TEST*.xml
