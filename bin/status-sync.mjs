@@ -1,11 +1,15 @@
 /**
- * Reads Pending / In Progress Telegram rows from the tracker sheet,
- * scans recent messages in each chat for replies that signal completion,
- * and updates the Status column automatically.
+ * Syncs Status for Pending / In Progress rows in the tracker sheet:
+ *
+ *  Telegram — source link: tg://msg/{dialogId}/{msgId}
+ *    → scans recent messages in each chat for replies that signal completion
+ *
+ *  Slack — source link: https://*.slack.com/archives/{channelId}/p{ts}
+ *    → reads the thread for that message and checks replies
+ *    → requires SLACK_TOKEN env var (xoxb- or xoxp- token)
  *
  * Usage: node bin/status-sync.mjs [--dry-run]
- *
- * Source link format stored by telegram-capture: tg://msg/{dialogId}/{msgId}
+ *        SLACK_TOKEN=xoxb-... node bin/status-sync.mjs
  */
 
 import { TelegramClient } from 'telegram';
@@ -57,11 +61,30 @@ function getSheetsAuth() {
   return auth;
 }
 
-// Parse "tg://msg/{dialogId}/{msgId}" → { dialogId: string, msgId: number }
+// Parse "tg://msg/{dialogId}/{msgId}" → { dialogIdStr, msgId }
 function parseTgLink(link) {
   const m = (link || '').match(/^tg:\/\/msg\/(-?\d+)\/(\d+)$/);
   if (!m) return null;
   return { dialogIdStr: m[1], msgId: parseInt(m[2]) };
+}
+
+// Parse Slack thread permalink → { channelId, threadTs }
+// e.g. https://*.slack.com/archives/C09LT8W2D70/p1784258995243069
+function parseSlackLink(link) {
+  const m = (link || '').match(/\/archives\/([A-Z0-9]+)\/p(\d{10})(\d{6})/);
+  if (!m) return null;
+  const channelId = m[1];
+  const threadTs  = `${m[2]}.${m[3]}`;
+  return { channelId, threadTs };
+}
+
+// Call Slack Web API to get thread replies (requires SLACK_TOKEN env)
+async function fetchSlackThread(channelId, threadTs, slackToken) {
+  const url = `https://slack.com/api/conversations.replies?channel=${channelId}&ts=${threadTs}&limit=50`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${slackToken}` } });
+  const json = await res.json();
+  if (!json.ok) throw new Error(`Slack API error: ${json.error}`);
+  return json.messages || [];
 }
 
 // Columns: [0]=Date [1]=Seq [2]=Topic [3]=Cat [4]=Item [5]=Assignee
@@ -82,32 +105,70 @@ const getRes = await sheets.spreadsheets.values.get({
 const allRows = getRes.data.values || [];
 const dataRows = allRows.slice(1); // skip header
 
-// 2. Find Telegram rows that are Pending or In Progress and have a tg:// link
-const targets = [];
+const slackToken = process.env.SLACK_TOKEN || '';
+
+// 2. Find Telegram + Slack rows that are Pending or In Progress and have a parseable link
+const tgTargets    = [];
+const slackTargets = [];
+
 dataRows.forEach((row, idx) => {
   const src    = (row[9] || '').trim();
   const status = (row[8] || '').trim();
   const link   = (row[10] || '').trim();
 
-  if (src !== 'Telegram') return;
   if (!['Pending', 'In Progress'].includes(status)) return;
-  const parsed = parseTgLink(link);
-  if (!parsed) return;
 
-  targets.push({ rowIndex: idx + 2, row, ...parsed, currentStatus: status }); // rowIndex is 1-based sheet row
+  if (src === 'Telegram') {
+    const parsed = parseTgLink(link);
+    if (parsed) tgTargets.push({ rowIndex: idx + 2, row, ...parsed, currentStatus: status });
+  } else if (src === 'Slack' && slackToken) {
+    const parsed = parseSlackLink(link);
+    if (parsed) slackTargets.push({ rowIndex: idx + 2, row, ...parsed, currentStatus: status });
+  }
 });
 
-log(`Found ${targets.length} Telegram row(s) to check`);
-if (targets.length === 0) { log('Nothing to sync.'); process.exit(0); }
+log(`Found ${tgTargets.length} Telegram + ${slackTargets.length} Slack row(s) to check`);
+if (tgTargets.length + slackTargets.length === 0) { log('Nothing to sync.'); process.exit(0); }
 
-// 3. Group targets by dialogId
+// ── Slack status check ────────────────────────────────────────────────────────
+if (slackTargets.length > 0) {
+  log('Checking Slack threads...');
+  for (const t of slackTargets) {
+    try {
+      const msgs = await fetchSlackThread(t.channelId, t.threadTs, slackToken);
+      const replies = msgs.slice(1); // skip parent
+      let newStatus = null;
+      for (const r of replies) {
+        const text = r.text || '';
+        if (DONE_RX.test(text)) { newStatus = 'Completed'; break; }
+        if (IN_PROGRESS_RX.test(text) && t.currentStatus !== 'In Progress') newStatus = 'In Progress';
+      }
+      if (newStatus && newStatus !== t.currentStatus) {
+        log(`  → Row ${t.rowIndex}: "${(t.row[4] || '').slice(0, 60)}" → ${newStatus}`);
+        updates.push({ rowIndex: t.rowIndex, newStatus });
+      } else {
+        log(`  Row ${t.rowIndex}: no change (${t.currentStatus})`);
+      }
+    } catch (e) {
+      log(`  Slack thread error row ${t.rowIndex}: ${e.message}`);
+    }
+  }
+}
+
+// 3. Group Telegram targets by dialogId
 const byDialog = new Map();
-for (const t of targets) {
+for (const t of tgTargets) {
   if (!byDialog.has(t.dialogIdStr)) byDialog.set(t.dialogIdStr, []);
   byDialog.get(t.dialogIdStr).push(t);
 }
 
-// 4. Connect to Telegram
+// 4. Connect to Telegram (only if there are TG rows)
+if (tgTargets.length === 0) {
+  log(`Found ${updates.length} status update(s)`);
+  if (updates.length === 0) { log('No changes.'); process.exit(0); }
+  if (dryRun) { updates.forEach(u => console.log(`  Row ${u.rowIndex} → ${u.newStatus}`)); process.exit(0); }
+}
+
 const config = JSON.parse(fs.readFileSync(TG_CONFIG, 'utf8'));
 const client = new TelegramClient(
   new StringSession(config.session),
@@ -134,6 +195,7 @@ for await (const dialog of client.iterDialogs({ limit: 300 })) {
     for await (const msg of client.iterMessages(dialog.inputEntity, { limit: 80 })) {
       const replyToId = msg.replyTo?.replyToMsgId;
       if (!replyToId || !pendingMsgIds.has(replyToId)) continue;
+      if (msg.out) continue; // skip Jascinta's own replies
       if (!msg.message) continue;
 
       // Found a reply to one of our tracked messages
