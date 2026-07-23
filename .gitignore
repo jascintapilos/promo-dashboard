@@ -9,6 +9,10 @@ qpro-promotion-hub/node_modules/
 # Python
 __pycache__/
 *.py[cod]
+.venv-csir/
+
+# Local CSIR connection binary
+bin/cloudflared.exe
 
 # Mac metadata
 __MACOSX/

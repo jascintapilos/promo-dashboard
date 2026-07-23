@@ -105,7 +105,18 @@ const getRes = await sheets.spreadsheets.values.get({
 const allRows = getRes.data.values || [];
 const dataRows = allRows.slice(1); // skip header
 
-const slackToken = process.env.SLACK_TOKEN || '';
+// Load Slack token from env or slack-config.local.json
+let slackToken = process.env.SLACK_TOKEN || '';
+if (!slackToken) {
+  const slackConfigFile = path.join(ROOT, 'slack-config.local.json');
+  if (fs.existsSync(slackConfigFile)) {
+    try {
+      slackToken = JSON.parse(fs.readFileSync(slackConfigFile, 'utf8')).bot_token || '';
+    } catch (_) {}
+  }
+}
+
+const updates = []; // { rowIndex, newStatus }
 
 // 2. Find Telegram + Slack rows that are Pending or In Progress and have a parseable link
 const tgTargets    = [];
@@ -166,7 +177,19 @@ for (const t of tgTargets) {
 if (tgTargets.length === 0) {
   log(`Found ${updates.length} status update(s)`);
   if (updates.length === 0) { log('No changes.'); process.exit(0); }
-  if (dryRun) { updates.forEach(u => console.log(`  Row ${u.rowIndex} → ${u.newStatus}`)); process.exit(0); }
+  if (dryRun) { updates.forEach(u => console.log(`  Row ${u.rowIndex} → ${u.newStatus}`)); log('[dry-run] no writes.'); process.exit(0); }
+  // Write Slack-only updates and exit
+  for (const { rowIndex, newStatus } of updates) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${tabName}!I${rowIndex}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[newStatus]] },
+    });
+    log(`  ✓ Updated row ${rowIndex} → ${newStatus}`);
+  }
+  log('Done.');
+  process.exit(0);
 }
 
 const config = JSON.parse(fs.readFileSync(TG_CONFIG, 'utf8'));
@@ -178,8 +201,6 @@ const client = new TelegramClient(
 );
 await client.connect();
 log('Connected to Telegram');
-
-const updates = []; // { rowIndex, newStatus }
 
 // 5. For each dialog that has pending items, scan recent messages for replies
 for await (const dialog of client.iterDialogs({ limit: 300 })) {
