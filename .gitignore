@@ -41,6 +41,7 @@ promo-automation/
 # Logs & compiled
 *.log
 logs/
+outputs/csir_connection_qc/
 *.class
 *.jar
 TEST*.xml
