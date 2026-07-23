@@ -18,7 +18,16 @@
 //   --memberLevel=all  --bonusType=turnover  --submissionType=API,FISH
 //   --checkDeposit=yes  --startDate=<yesterday 00:00>  --endDate=<yesterday 23:59>
 
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { BASE, ensureAuthenticated, failScreenshot } from '../src/gm01-session.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Local ledger of what has already been submitted (gitignored via *.local.json).
+// Guards against submitting the same bonus type + date range twice, which would
+// create duplicate approval-queue entries.
+const LEDGER_FILE = path.join(ROOT, 'gm01-submit-ledger.local.json');
 
 // ── CLI args ────────────────────────────────────────────────────────────────
 const cliArgs = {};
@@ -60,6 +69,32 @@ const submitTypeCodes = submitTypes.map(t => SUBTYPE_MAP[t.toLowerCase()] ?? t);
 
 const LEVEL_LABELS = { '0': 'Normal', '10': 'VIP', '20': 'Silver', '30': 'Gold', '40': 'Platinum' };
 const SUBTYPE_LABELS = { '100': 'API', '150': 'Fish', '120': 'Poker G1', '130': 'Poker G2' };
+
+// ── Duplicate-submission guard ────────────────────────────────────────────────
+const force = !!cliArgs.force;
+const ledgerKey = `${bonusType}|${startDate}|${endDate}|${submitTypeCodes.join(',')}`;
+
+function loadLedger() {
+  if (!existsSync(LEDGER_FILE)) return {};
+  try { return JSON.parse(readFileSync(LEDGER_FILE, 'utf8')); } catch { return {}; }
+}
+function recordLedger(key) {
+  const l = loadLedger();
+  l[key] = new Date().toISOString();
+  writeFileSync(LEDGER_FILE, JSON.stringify(l, null, 2));
+}
+
+const ledger = loadLedger();
+if (ledger[ledgerKey] && !force) {
+  const when = ledger[ledgerKey].replace('T', ' ').slice(0, 19);
+  console.log('⚠ ALREADY SUBMITTED — refusing to run to avoid duplicate queue entries.');
+  console.log(`  ${bonusType} | ${startDate} → ${endDate} | ${submitTypes.join(', ')}`);
+  console.log(`  Last submitted: ${when} (UTC)`);
+  console.log('\n  This exact bonus type + date range was already submitted. Re-running');
+  console.log('  would create duplicate approval-queue entries. If you really intend to');
+  console.log('  submit again, re-run with --force.');
+  process.exit(2);
+}
 
 // ── Authenticate (reuse saved state; pause for manual login if expired) ───────
 const { browser, context } = await ensureAuthenticated({ user: USER, pass: PASS });
@@ -119,6 +154,10 @@ try {
   console.log(`\n  ${passed}/${results.length} submissions confirmed successful.`);
   if (passed < results.length) {
     console.log('\n  ⚠ Some submissions failed. Ensure the date range is in the past.');
+  } else {
+    // Record only a fully successful run so this range is guarded from re-submission.
+    recordLedger(ledgerKey);
+    console.log(`\n  ✓ Recorded in ledger — this range is now guarded against re-submission.`);
   }
 } catch (err) {
   console.error(`\n✗ Submission run failed: ${err.message}`);
