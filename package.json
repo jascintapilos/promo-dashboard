@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "googleapis": "^171.4.0",
+    "input": "^1.0.1",
+    "playwright": "^1.60.0",
+    "pptxgenjs": "^4.0.1",
+    "telegram": "^2.26.22"
+  }
+}
