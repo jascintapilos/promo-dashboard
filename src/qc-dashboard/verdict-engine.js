@@ -8,6 +8,10 @@ export const REQUIRED_FIELDS = [
   'status',
 ];
 
+// Terminal-state checks already carry a single root-cause finding.
+// Appending required-field failures on top of these is noise.
+const TERMINAL_CHECKS = new Set(['code-not-found', 'bo-unreachable']);
+
 export function unavailableRequiredFields(details = {}, required = REQUIRED_FIELDS) {
   return required.filter((field) => details[field] === 'unavailable' || details[field] == null || details[field] === '');
 }
@@ -28,15 +32,18 @@ export function buildMechanics(details = {}) {
 }
 
 export function computeVerdict({ findings = [], details = {}, requiredFields = REQUIRED_FIELDS } = {}) {
-  const unavailable = unavailableRequiredFields(details, requiredFields);
   const mergedFindings = [...findings];
-  for (const field of unavailable) {
-    mergedFindings.push({
-      severity: 'FAIL',
-      check: 'required-field-unavailable',
-      field,
-      message: `Required field "${field}" is unavailable`,
-    });
+  const isTerminal = findings.some((f) => TERMINAL_CHECKS.has(f.check));
+  if (!isTerminal) {
+    const unavailable = unavailableRequiredFields(details, requiredFields);
+    for (const field of unavailable) {
+      mergedFindings.push({
+        severity: 'FAIL',
+        check: 'required-field-unavailable',
+        field,
+        message: `Required field "${field}" is unavailable`,
+      });
+    }
   }
   if (mergedFindings.some((f) => f.severity === 'FAIL')) return { verdict: 'NOT_SAFE', findings: mergedFindings };
   if (mergedFindings.some((f) => f.severity === 'WARNING')) return { verdict: 'REVIEW', findings: mergedFindings };

@@ -177,9 +177,13 @@ Two tasks are needed in addition to the existing `IGMP-Session-Keepalive`. Docum
 
 #### Interactive vs non-interactive
 
-The existing `IGMP-Session-Keepalive` task is set to **run only while `vdiuser` is interactively logged in**. When the VDI locks (screen locked but session active) these tasks still fire. When the session is fully logged off or rebooted, they do not.
+The existing `IGMP-Session-Keepalive` task is set to **"Run only when user is logged on"** in Task Scheduler.
 
-Changing to "Run whether user is logged on or not" requires Task Scheduler to store the user's Windows password — a security trade-off. **This requires Wai Yip's approval and potentially IT sign-off before changing any task's run context.**
+**What this means in practice:**
+- Tasks **continue to fire** while the VDI screen is locked — a locked screen does not end the Windows logon session.
+- Tasks **stop** only when `vdiuser` fully logs off, the session is terminated by the remote-desktop host, or the VDI is rebooted before login.
+
+Changing to "Run whether user is logged on or not" allows tasks to fire even after a full logoff or reboot, but requires Task Scheduler to store `vdiuser`'s Windows password — a security trade-off. **This requires Wai Yip's approval and potentially IT sign-off before changing any task's run context.**
 
 #### Task C — Health monitor
 
@@ -234,7 +238,7 @@ Or, if run as a scheduled task: right-click → End Task → right-click → Run
 | Task name | `IGMP-Session-Keepalive` |
 | Command | `cmd.exe /c "...bin\igmp-keepalive.cmd"` |
 | Schedule | Every 30 minutes |
-| Run context | **Interactive only** — only fires while `vdiuser` is logged in |
+| Run context | **"Run only when user is logged on"** — fires while the session exists (including locked screen); stops on full logoff or reboot before login |
 | Coverage | ws1-v3-my, ws1-v3-sg, ws1-v3-id, ws1-v3-th, ws1-v3-kh, ws2 |
 | Session file | `igmp-sessions.local.json` (updated automatically) |
 | Mechanism | Lightweight PM API ping; Playwright browser re-login only if stale |
