@@ -1,8 +1,73 @@
-# Promo Automation
+# QC Dashboard
 
-CLI + library for automating QPRO-family Back Office sites. Add as many BO deployments as you need; each gets its own credentials and an isolated, file-locked session cache. Ships with a Claude Code skill so teammates can trigger automations conversationally.
+Two tools served from a single Node.js server.
 
-Works identically on **macOS, Linux, and Windows** (cmd, PowerShell, WSL). Pure Node — no shell-specific scripts.
+---
+
+## What's included
+
+**QC Hub** — web app for running QC checks on promo codes, logging results, and generating fix prompts for Claude.
+
+**Ops Dashboard** — read-only reporting page showing team utilisation, coverage, and weekly promo stats. Pulls live data from Google Sheets.
+
+---
+
+## Server setup
+
+Requirements: Node.js 22+
+
+```bash
+git clone https://bitbucket.org/aiodintech/qc-dashboard.git
+cd qc-dashboard
+npm install
+node bin/qc-dashboard.mjs
+```
+
+Server runs on port 4321 by default. To use a different port:
+
+```bash
+PORT=8080 node bin/qc-dashboard.mjs
+```
+
+---
+
+## URLs once running
+
+| Page | URL |
+|---|---|
+| QC Hub | `http://yourserver:4321/` |
+| Ops Dashboard | `http://yourserver:4321/dashboard` |
+
+---
+
+## What's pre-configured
+
+- Google login — users must sign in with a `@thebrandingpeople.co` Google account
+- Allowed users — see `admitted-users.json`
+- Brand list — see `data/qc-dashboard-brands.json`
+- Session secret — auto-generated on first run
+
+---
+
+## What's needed from Jascinta before QC checks work
+
+Drop `bo-sites.local.json` in the project root, then restart the server. This file contains BO passwords and is not stored in the repo. Everything else works without it — only the Run QC button requires it.
+
+---
+
+## File structure
+
+```
+bin/qc-dashboard.mjs       server entry point
+src/qc-dashboard/          QC engine (checks, verdict, auth, history)
+public/qc-hub/             QC Hub frontend
+public/dashboard.html      Ops Dashboard
+data/                      brand config and directory
+admitted-users.json        Google login allowlist
+qc-hub-config.json         Google Client ID
+bo-sites.json              BO URLs and signing keys (no passwords)
+bo-sites.local.json        BO passwords — not in repo, get from Jascinta
+```
 
 ---
 
