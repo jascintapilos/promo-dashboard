@@ -42,8 +42,8 @@ PORT=8080 node bin/qc-dashboard.mjs
 
 ## What's pre-configured
 
-- Google login — users must sign in with a `@thebrandingpeople.co` Google account
-- Allowed users — see `admitted-users.json`
+- Google login — any Google account; access is controlled by `admitted-users.json`
+- Allowed users — see `admitted-users.json` (add email addresses here to grant access)
 - Brand list — see `data/qc-dashboard-brands.json`
 - Session secret — auto-generated on first run
 
@@ -51,7 +51,7 @@ PORT=8080 node bin/qc-dashboard.mjs
 
 ## What's needed from Jascinta before QC checks work
 
-Drop `bo-sites.local.json` in the project root, then restart the server. This file contains BO passwords and is not stored in the repo. Everything else works without it — only the Run QC button requires it.
+`bo-sites.local.json` — get this file directly from Jascinta (via Telegram or any secure channel). It is not in the repo and will never be — it contains BO passwords. Drop it in the project root, then restart the server. Everything else works without it — only the Run QC button requires it.
 
 ---
 
