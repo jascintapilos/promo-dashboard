@@ -173,6 +173,12 @@ async function handle(req, res) {
       if (!user) return;
       return await handleApi(req, res, user);
     }
+    if (url.pathname === '/dashboard' || url.pathname === '/dashboard.html') {
+      const file = path.join(ROOT, 'public', 'dashboard.html');
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      createReadStream(file).pipe(res);
+      return;
+    }
     if (serveStatic(req, res)) return;
     const index = await readFile(path.join(PUBLIC, 'index.html'));
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
