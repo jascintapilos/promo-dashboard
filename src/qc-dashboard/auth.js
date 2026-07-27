@@ -101,9 +101,6 @@ export function validateTokenData(data, allowSet, clientId) {
   if (String(data.aud) !== String(clientId)) {
     throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
   }
-  if (!String(data.email).toLowerCase().endsWith('@thebrandingpeople.co')) {
-    throw new Error('Email is outside admitted workspace domain');
-  }
   if (!allowSet.has(String(data.email).toLowerCase())) {
     throw new Error('Email is not in admitted-users allowlist');
   }
