@@ -1,11 +1,19 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 const COOKIE = 'qc_hub_session';
 const ALLOWLIST = 'admitted-users.json';
 const SECRET_FILE = 'qc-dashboard-session-secret.local.json';
+const CONFIG_FILE = 'qc-hub-config.json';
 
 export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+export function loadQcHubConfig() {
+  if (existsSync(CONFIG_FILE)) {
+    try { return JSON.parse(readFileSync(CONFIG_FILE, 'utf8')); } catch {}
+  }
+  return {};
+}
 
 function sessionSecret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
@@ -14,7 +22,11 @@ function sessionSecret() {
     if (parsed.secret) return parsed.secret;
   }
   if (process.env.AUTH_MODE === 'dev') return 'dev-only-qc-hub-secret';
-  throw new Error('SESSION_SECRET or qc-dashboard-session-secret.local.json is required');
+  // Auto-generate and persist so the server works without manual setup.
+  const secret = randomBytes(32).toString('hex');
+  writeFileSync(SECRET_FILE, JSON.stringify({ secret }, null, 2));
+  console.log(`SESSION_SECRET auto-generated → ${SECRET_FILE}`);
+  return secret;
 }
 
 function admittedEmails() {
@@ -68,12 +80,16 @@ export function isLocalhost(req) {
   return ['localhost', '127.0.0.1', '::1'].includes(host) || ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote);
 }
 
+export function getGoogleClientId() {
+  return process.env.GOOGLE_CLIENT_ID || loadQcHubConfig().googleClientId || null;
+}
+
 export function validateProductionConfig() {
   if (process.env.AUTH_MODE === 'dev') return;
-  if (!process.env.GOOGLE_CLIENT_ID) {
+  if (!getGoogleClientId()) {
     throw new Error(
       'GOOGLE_CLIENT_ID is required outside AUTH_MODE=dev.\n' +
-      'Set it via the GOOGLE_CLIENT_ID environment variable.\n' +
+      'Set it via the GOOGLE_CLIENT_ID environment variable or qc-hub-config.json.\n' +
       'To run locally without OAuth, set AUTH_MODE=dev.',
     );
   }
@@ -98,7 +114,7 @@ export async function verifyGoogleIdToken(idToken) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
   if (!res.ok) throw new Error(`Google tokeninfo rejected token (${res.status})`);
   const data = await res.json();
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientId = getGoogleClientId();
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID must be set in production — cannot verify token audience');
   return validateTokenData(data, admittedEmails(), clientId);
 }
