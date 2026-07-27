@@ -27,6 +27,7 @@
 - [QPRO PUT wipes promotion_currency](project_qpro_put_currency_wipe.md) — Never re-send promotion_currency. Archive leaves code reserved — bump suffix.
 - [QPRO promo_type/sub_type to Bonus Type label](project_qpro_promo_type_subtype_map.md) — (2,1)=Dep-Reload, (2,2)=Dep-Welcome, (3,1)=FC, (4,1)=FS-Welcome, (4,2)=FS-Reload.
 - [QPRO4-17 have no SG region](feedback_qpro5plus_no_sg_region.md) — missing SGD currency there is confirmed expected, not a bug; reconfirmed 2026-07-10 across 12 brands in one batch.
+- [VM category wipe 2026-07-08](project_vm_cat_wipe_2026-07-08.md) — bulk VM amend wiped promotion_category on 414 VM_* promos (missing GET→PUT field rename); restored 2026-07-21; bulk amends must use a rename-aware PUT builder.
 
 ## QP2 Rules & Dialogs
 - [QP2 FS GOOSS = vs20olympgold](feedback_qp2_fs_gooss_vs20olympgold.md) — Gates of Olympus Super Scatter resolves to vs20olympgold on QP2.
@@ -40,6 +41,7 @@
 - [QP2 conditions divergence](feedback_qp2_conditions_divergence.md) — auto_reward fixed post-save; freespin_check needs live probe.
 - [QP2 promotion PUT semantics](project_qp2_promotion_put_semantics.md) — Omit black_list_sub_categories; re-assert dialog_popup_list; omit promotion_currency.
 - [QP2 blacklist derivation is scoped](feedback_qp2_blacklist_scoped_derivation.md) — promo blacklist_sub_categories = template ∩ promo categories ∩ selected providers; full-template QC compare gives false MISMATCH.
+- [QP2 provider catalog unreadable on ibc22](project_qp2_provider_catalog_ibc22.md) — /api/bo/gameprovider 500s; authoritative 50-code all-providers list + mapper's category map is incomplete.
 - [QP2 promotioncurrency PUT scales bonus_rate ×100](feedback_qp2_promotioncurrency_put_rate_scaling.md) — standalone PUT re-scales like POST; echo-PUT corrupts deposit rows (120→12000). Send rate/100 + verify after.
 - [QP2 target.game_provider_codes is authoritative](feedback_qp2_target_gp_codes_authoritative.md) — provider changes must rewrite target (string codes), not just top-level numeric ids.
 - [QP2 blacklist template create API](project_qp2_blacklist_template_create_api.md) — POST /gameprovider/updateBlacklistTemplate; promo_testbot view-only, use jascinta login; id=11 = "Live Casino and Sports Only".
