@@ -10,7 +10,7 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
-import { isLocalhost, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
+import { getGoogleClientId, isLocalhost, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 
@@ -156,7 +156,7 @@ async function handle(req, res) {
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/api/config') {
       return send(res, 200, {
-        googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+        googleClientId: getGoogleClientId(),
         devMode: process.env.AUTH_MODE === 'dev',
       });
     }
