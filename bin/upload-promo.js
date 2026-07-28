@@ -304,9 +304,13 @@ async function readScheduleRows(client) {
     const cellLinks = [];
     for (const cell of (row.values || [])) {
       cellVals.push(cell.formattedValue ?? '');
-      const link = cell.hyperlink
-                || cell.textFormatRuns?.[0]?.format?.link?.uri
-                || null;
+      // Iterate ALL textFormatRuns — the hyperlink may not be in [0] when the
+      // cell contains leading plain text (e.g. "TEST [BP9] Campaign…" where
+      // "[BP9]" is the linked span but "TEST " is an unlinked first run).
+      const tfRunLink = (cell.textFormatRuns || []).reduce(
+        (found, r) => found || r.format?.link?.uri || null, null
+      );
+      const link = cell.hyperlink || tfRunLink || null;
       cellLinks.push(link);
     }
     rows.push(cellVals);

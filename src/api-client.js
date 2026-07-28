@@ -268,9 +268,10 @@ export async function getAllCategories(site) {
 // Installed game providers on this site/merchant. The endpoint is
 // `/api/bo/gameprovider` (no separator). Paginated; we walk every page so
 // the caller can intersect with Layer-1 exclusions without surprise drift.
-export async function getAllGameProviders(site, { perPage = 100 } = {}) {
+export async function getAllGameProviders(site, { perPage = 100, siteId = null } = {}) {
+  const siteFilter = siteId == null ? '' : `&site_id=${encodeURIComponent(siteId)}`;
   const fetchPage = (page) =>
-    authedFetch(site, `/api/bo/gameprovider?per_page=${perPage}&page=${page}`);
+    authedFetch(site, `/api/bo/gameprovider?perPage=${perPage}&page=${page}${siteFilter}`);
   const first = await fetchPage(1);
   const total = first.data.paginations?.total ?? first.data.rows.length;
   const lastPage = first.data.paginations?.last_page ?? 1;
