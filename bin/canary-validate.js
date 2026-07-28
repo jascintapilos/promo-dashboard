@@ -17,20 +17,21 @@
 //   T&C hyperlink format, QPRO promo_type/sub_type pair correctness.
 //
 // Usage:
-//   node bin/canary-validate.js <handle>          # triage only (after ingest)
-//   node bin/canary-validate.js <handle> --plan   # plan check only (after dry-run)
-//   node bin/canary-validate.js <handle> --all    # triage + plan check
+//   node bin/canary-validate.js <handle> [--ft-prefix|--no-ft-prefix]        # triage only (after ingest)
+//   node bin/canary-validate.js <handle> --plan [--ft-prefix|--no-ft-prefix] # plan check only (after dry-run)
+//   node bin/canary-validate.js <handle> --all [--ft-prefix|--no-ft-prefix]  # triage + plan check
 
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
+import { isIgmpRequest, resolveIgmpFtPrefixDecision } from '../src/igmp-ft-prefix.js';
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
 const userInput = positional[0];
 if (!userInput) {
-  console.error('usage: canary-validate.js <handle|P###> [--plan] [--all]');
+  console.error('usage: canary-validate.js <handle|P###> [--plan] [--all] [--ft-prefix|--no-ft-prefix]');
   process.exit(2);
 }
 
@@ -168,6 +169,22 @@ if (doTriage) {
   if (!request.promo_code)      reject('promo_code', 'promo_code missing', 'Set promo_code in col W');
   if (!request.promotion_name_en) reject('promotion_name_en', 'promotion_name_en missing', 'Set promo name in col X');
   if (!request.requestor)       note('requestor', 'requestor not set', 'Set requestor field');
+
+  if (isIgmpRequest(request)) {
+    const ft = resolveIgmpFtPrefixDecision(request, {
+      forceFt: flags['ft-prefix'] === true,
+      forceNoFt: flags['no-ft-prefix'] === true,
+    });
+    if (ft.error) {
+      reject('instructions.ft_prefix_decision', ft.error, 'Choose exactly one FT prefix option');
+    } else if (ft.decision === null) {
+      reject(
+        'instructions.ft_prefix_decision',
+        'WS1/WS2 FT prefix decision is unanswered',
+        'Ask the operator: “Does this WS1/WS2 promo need the FT_ prefix?” Then rerun with --ft-prefix or --no-ft-prefix, or record the answer in the source remark'
+      );
+    }
+  }
 
   if (hasStandaloneTestIntent(request) && !/^TEST_/i.test(firstCodeLine(request.promo_code))) {
     reject(
@@ -442,6 +459,31 @@ if (doPlan) {
         const gpField = prom.game_provider_codes || prom.game_provider_ids;
         if (!gpField || Object.keys(gpField).length === 0) {
           pFail('game_provider_codes', 'categories_only set but game_provider_codes is empty — bonus unscoped to category');
+        }
+      }
+    }
+
+    // QP2 all-games promos must include the operator-required providers in
+    // both PUT fields. This catches stale or cross-merchant provider catalogs
+    // before save (P166-P171 incident, 2026-07-23).
+    if (platform === 'qp2' && bt !== 'free spin') {
+      const catOnly = src.instructions?.categories_only || src.instructions?.category_only;
+      const hasCatRestriction = catOnly && (!Array.isArray(catOnly) || catOnly.length > 0);
+      if (!hasCatRestriction) {
+        const required = ['BTI', 'SBO2', 'SPRIBE2', 'WF'];
+        const topValues = Object.values(prom.game_provider_codes || {}).map(String);
+        const target = Array.isArray(prom.target) ? prom.target[0] : (prom.target?.['0'] || prom.target || {});
+        const targetValues = Object.values(target.game_provider_codes || {}).map(String);
+        for (const code of required) {
+          if (!targetValues.includes(code)) {
+            pFail('target.game_provider_codes', `required QP2 all-games provider ${code} is missing`);
+          }
+        }
+        if (topValues.length < targetValues.length) {
+          pFail(
+            'game_provider_codes',
+            `top-level provider count ${topValues.length} is smaller than target count ${targetValues.length}`,
+          );
         }
       }
     }

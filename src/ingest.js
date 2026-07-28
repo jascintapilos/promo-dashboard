@@ -916,6 +916,24 @@ export function parseInstructions(remark, nameDetails, changeDetails, inboxMessa
     const norm = PREFIX_ALIAS[raw] || raw;
     if (!codePrefixes.includes(norm)) codePrefixes.push(norm);
   }
+  // WS1/WS2 FT prefix is a required operator choice. Preserve an explicit
+  // negative answer instead of treating an absent positive instruction as no.
+  const noFtPrefix =
+    /\b(?:no|without)\s+FT_?(?:\s+(?:prefix|code))?\b/i.test(all)
+    || /\b(?:do\s+not|don['’]?t)\s+(?:add|include|use|apply)\s+(?:the\s+)?FT_?(?:\s+(?:prefix|code))?\b/i.test(all)
+    || /\bFT_?(?:\s+(?:prefix|code))?\s+(?:is\s+)?not\s+(?:needed|required)\b/i.test(all);
+  const yesFtPrefix =
+    codePrefixes.includes('FT')
+    || /\bFT_?(?:\s+(?:prefix|code))?\s+(?:is\s+)?(?:needed|required)\b/i.test(all)
+    || /\b(?:need|require)\s+(?:the\s+)?FT_?(?:\s+(?:prefix|code))?\b/i.test(all);
+  if (noFtPrefix) {
+    const ftIndex = codePrefixes.indexOf('FT');
+    if (ftIndex >= 0) codePrefixes.splice(ftIndex, 1);
+  } else if (yesFtPrefix && !codePrefixes.includes('FT')) {
+    codePrefixes.push('FT');
+  }
+  const ftPrefixDecision = noFtPrefix ? false : yesFtPrefix ? true : null;
+  if (ftPrefixDecision !== null) signals.push(`L:ft_prefix_${ftPrefixDecision ? 'yes' : 'no'}`);
   if (codePrefixes.length) signals.push('L:code_prefixes');
 
   // F. External Drive URLs.
@@ -1115,6 +1133,7 @@ export function parseInstructions(remark, nameDetails, changeDetails, inboxMessa
     refer_to:             referTo,
     add_test_prefix:      addTestPrefix,
     code_prefixes:        codePrefixes,
+    ft_prefix_decision:   ftPrefixDecision,
     external_refs:        externalRefs,
     one_time_claim:       oneTimeClaim,
     multiple_claims_allowed: multipleClaimsAllowed,

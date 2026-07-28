@@ -19,7 +19,7 @@
 // Cross-merchant (QP2B/C/D) needs different merchant_ids — also TODO.
 
 import { renderBody, renderDialogBody, localeDocKey } from './message-template-renderer.js';
-import { getAllCategories, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups, getAllMerchantBankIds } from './api-client.js';
+import { getAllCategories, getAllGameProviders, getFreeSpinGames, getGameProviderDetail, getAllMemberGroups, getAllMerchantBankIds } from './api-client.js';
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { gameAcronym, splitDualPromoName } from './promo-namer.js';
 import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
@@ -229,6 +229,55 @@ const {
   putIds: QP2A_PUT_GAME_PROVIDER_IDS,
   targetCodes: QP2A_TARGET_GAME_PROVIDER_CODES,
 } = buildAllowedQp2ProviderSet();
+
+// Operator-approved QP2 "all games" provider set. QP2 provider IDs are
+// merchant/site-specific even though their string codes are shared. The old
+// mapper reused QP2A numeric IDs for QP2B/C/D, which made recently-added
+// providers disappear silently on save. Resolve these codes against the live
+// site_id-scoped catalog for every plan instead of reusing QP2A IDs.
+const QP2_ALL_GAME_PROVIDER_CODES = [
+  '9W', 'AP', 'AVI', 'BG', 'BOOM', 'BNG', 'BTG', 'CMD', 'CQ9', 'EVOK',
+  'EZ', 'FS', 'FP', 'FC', 'HSG', 'IM', '2BC', 'JDB', 'JILI', 'JK', 'KA',
+  'LIVE', 'LUCKY', 'MAHA', 'MGP', 'MONKEY', 'NET2', 'NEXT', 'NLC', 'AG',
+  'PTI', 'PP2', 'RT2', 'RG', 'SA', 'MAX', 'SEXY', 'SIMPLE', 'SG', 'TF',
+  'VIVO', 'WBET', 'WM', 'XE', 'YB', 'WF', 'SPRIBE2', 'SBO2', 'COSMO', 'BTI',
+];
+
+export const QP2_REQUIRED_ALL_GAME_PROVIDER_CODES = ['BTI', 'SBO2', 'SPRIBE2', 'WF'];
+
+async function resolveQp2ProviderSet(site, brand, categoriesOnly = null) {
+  const siteId = QP2_BRAND_TO_IDS[brand]?.siteId;
+  if (!siteId) throw new Error(`api-mapper-qp2: brand "${brand}" site_id not configured`);
+
+  const { rows } = await getAllGameProviders(site, { perPage: 999, siteId });
+  const byCode = new Map(rows.map((row) => [String(row.code || '').toUpperCase(), row]));
+  let codes = [...QP2_ALL_GAME_PROVIDER_CODES];
+
+  if (Array.isArray(categoriesOnly) && categoriesOnly.length) {
+    const allowed = new Set();
+    for (const category of categoriesOnly) {
+      for (const code of QP2_CATEGORY_PROVIDER_CODES[String(category).toUpperCase()] || []) {
+        allowed.add(code === 'SPRIBE' ? 'SPRIBE2' : code);
+      }
+    }
+    codes = codes.filter((code) => allowed.has(code));
+  }
+
+  const missing = codes.filter((code) => !byCode.has(code));
+  if (missing.length) {
+    throw new Error(
+      `api-mapper-qp2: live provider catalog for ${brand} is missing required code(s): ${missing.join(', ')}`,
+    );
+  }
+
+  const putIds = {};
+  const targetCodes = {};
+  codes.forEach((code, index) => {
+    putIds[String(index)] = byCode.get(code).id;
+    targetCodes[String(index)] = code;
+  });
+  return { putIds, targetCodes };
+}
 
 // Category membership for QP2's providers, derived from QPRO gameprovider
 // catalog (probed 2026-07-02 on QPRO1 /api/bo/gameprovider, intersected with
@@ -1144,9 +1193,14 @@ export async function buildApiPlan(resolved, { brand, site, merchantIds = null }
   const tierConstraint = resolved.instructions?.tier_constraint || null;
   // Category-restricted non-FS promos: filter game_provider_codes to the
   // subset matching the requested wallet categories.
-  const categoryProviders = !isFs && Array.isArray(categoriesOnly) && categoriesOnly.length
-    ? filterQp2ProvidersByCat(categoriesOnly)
-    : null;
+  let categoryProviders = null;
+  if (!isFs) {
+    categoryProviders = site
+      ? await resolveQp2ProviderSet(site, brand, categoriesOnly)
+      : (Array.isArray(categoriesOnly) && categoriesOnly.length
+        ? filterQp2ProvidersByCat(categoriesOnly)
+        : null);
+  }
   const catRes = site ? await resolveQp2CategoryIds(site, { isFs, categoriesOnly }) : null;
   const catIdsForBrand = catRes?.ids ?? null;
   const catNamesForBrand = catRes?.names ?? null;
