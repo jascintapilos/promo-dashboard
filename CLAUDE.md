@@ -86,6 +86,49 @@ The plan file is the handoff contract. Write all task-specific context into it; 
 
 ---
 
+## WS1/WS2 workbook clone flow (MUST follow)
+
+When the operator asks to probe an OLD Promo Code from a workbook and create a
+NEW Promo Code with the same persisted mechanics, this is a BO clone/migration
+request — it is **not** a Promo Request `P###` canary.
+
+Use only:
+
+```bash
+# Read-only planning; explicit rows/numbers are mandatory
+node bin/clone-igmp-from-workbook.mjs --rows=<sheet-row-selector>
+node bin/clone-igmp-from-workbook.mjs --numbers=<manifest-number-selector> --tab=WS1
+
+# Create exactly one approved destination inactive
+node bin/clone-igmp-from-workbook.mjs --commit --plan=<plan-file> --approve=<exact-plan-hash>
+
+# Separate approved activation after persisted verification
+node bin/clone-igmp-from-workbook.mjs --activate --plan=<plan-file> --approve=<exact-plan-hash>
+```
+
+Mandatory rules:
+
+1. Never route workbook clones through `ingest-requests.js` or synthesize a
+   `P###` request.
+2. Never issue improvised raw `/PM/Add*` calls for a workbook clone.
+3. The workbook's NEW Promo Code is exact. Do not infer, add, remove, or rewrite
+   a prefix.
+4. Source and destination region/site must be explicit for every row. Never
+   fill down a visually grouped blank Region cell.
+5. Planning is read-only and must retrieve the complete source promotion,
+   type-specific detail, RewardId, and all reward-content locales.
+6. Stop if the source is incomplete, the destination exists, the source changes
+   after approval, or any lookup is inconclusive.
+7. Live creation starts inactive. Missing reward, missing content, or any
+   persisted diff is a hard failure and the partial destination is quarantined.
+8. Activation is a separate approval. Never deactivate the old promotion as a
+   side effect of cloning.
+9. Do not mark the workbook row Done/QC Completed from a create response.
+
+Full runbook: `docs/igmp-workbook-clone-workflow.md`.
+
+---
+
 ## Git workflow
 
 ### Branch strategy
