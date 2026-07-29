@@ -47,6 +47,48 @@ async function login() {
   return cookie.split(';')[0];
 }
 
+async function waitReadyFor(base, child, stderrRef) {
+  for (let i = 0; i < 40; i++) {
+    try {
+      const r = await fetch(`${base}/api/config`);
+      if (r.ok) return;
+    } catch {}
+    await sleep(150);
+  }
+  child.kill();
+  throw new Error(`Server not ready. stderr:\n${stderrRef.value}`);
+}
+
+async function withDevServer({ port, role }, fn) {
+  const base = `http://127.0.0.1:${port}`;
+  const child = spawn(process.execPath, ['bin/qc-dashboard.mjs'], {
+    env: {
+      ...process.env,
+      PORT: String(port),
+      AUTH_MODE: 'dev',
+      DEV_USER_EMAIL: 'test@localhost',
+      DEV_USER_ROLE: role,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const stderrRef = { value: '' };
+  child.stderr.on('data', (d) => (stderrRef.value += d.toString()));
+  try {
+    await waitReadyFor(base, child, stderrRef);
+    const r = await fetch(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    });
+    assert.equal(r.status, 200);
+    const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+    assert.ok(cookie.includes('qc_hub_session='));
+    return await fn({ base, cookie });
+  } finally {
+    child.kill();
+  }
+}
+
 const cases = [];
 function test(name, fn) { cases.push({ name, fn }); }
 
@@ -84,10 +126,37 @@ test('unauthenticated /api/me → 401', async () => {
   assert.equal(r.status, 401);
 });
 
-test('authenticated /api/me → 200', async () => {
+test('authenticated /api/me → 200 with role', async () => {
   const cookie = await login();
   const r = await fetchNoRedirect('/api/me', { headers: { cookie } });
   assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.user.email, 'test@localhost');
+  assert.equal(body.user.role, 'admin');
+});
+
+test('unauthenticated /api/admin/users → 401', async () => {
+  const r = await fetchNoRedirect('/api/admin/users');
+  assert.equal(r.status, 401);
+});
+
+test('authenticated admin /api/admin/users → 200 with users', async () => {
+  const cookie = await login();
+  const r = await fetchNoRedirect('/api/admin/users', { headers: { cookie } });
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.ok(Array.isArray(body.users));
+  assert.ok(body.users.length > 0);
+  assert.ok(body.users.every((user) => user.email && user.role));
+});
+
+test('authenticated promo-team /api/admin/users → 403', async () => {
+  await withDevServer({ port: 4400, role: 'promo-team' }, async ({ base, cookie }) => {
+    const r = await fetch(`${base}/api/admin/users`, { headers: { cookie }, redirect: 'manual' });
+    assert.equal(r.status, 403);
+    const body = await r.json();
+    assert.match(body.error, /admin role required/i);
+  });
 });
 
 test('unauthenticated /api/brands → 401', async () => {
