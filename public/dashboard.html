@@ -9,6 +9,7 @@
 <title>Promo Team Operations</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+<link rel="stylesheet" href="/dashboard-switcher.css">
 <style>
   :root{
     --bg:#f5f6f8; --card:#ffffff; --ink:#13161c; --ink2:#5b6472; --ink3:#9aa1ad;
@@ -35,6 +36,14 @@
   .head-right{display:flex;gap:8px;align-items:center;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
+
+  /* Shared dashboard switcher CSS is loaded separately via
+     <link rel="stylesheet" href="/dashboard-switcher.css"> in the <head>. */
+  .head-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -.03em; color: var(--ink); }
+  @media (max-width: 640px) {
+    .head-left h1 { font-size: 18px; }
+    .brand-eyebrow { font-size: 9.5px; }
+  }
   .btn:hover{background:#fafbfc;} .btn:disabled{opacity:.5;cursor:default;}
 
   /* ── SECTION LABELS ── */
@@ -426,7 +435,8 @@
 
   <div class="head">
     <div class="head-left">
-      <h1>Promo Team Operations</h1>
+      <span class="brand-eyebrow">Promo Operations</span>
+      <h1>Ops Dashboard</h1>
       <p class="sub" id="sub">Loading…</p>
       <div class="source-strip" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
@@ -437,6 +447,20 @@
     <div class="head-right">
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
+      <nav class="dashboard-switcher" aria-label="Switch dashboard">
+        <a href="/" class="tab">QC Hub</a>
+        <a href="/dashboard" class="tab" aria-current="page">Ops Dashboard</a>
+      </nav>
+      <div class="switcher-menu">
+        <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-ops">
+          Ops Dashboard
+          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </button>
+        <ul id="switcher-menu-panel-ops" class="switcher-panel" role="menu" hidden>
+          <li role="none"><a href="/" role="menuitem" class="switcher-menu-item">QC Hub</a></li>
+          <li role="none"><a href="/dashboard" role="menuitem" aria-current="page" class="switcher-menu-item">Ops Dashboard</a></li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -2623,6 +2647,18 @@ function loadData(){
     });
 }
 loadData();
+
+// Dashboard switcher — mobile dropdown
+document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
+  const panelId = toggle.getAttribute('aria-controls');
+  const panel = panelId && document.getElementById(panelId);
+  if (!panel) return;
+  const open = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); };
+  const close = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); };
+  toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
+  document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>

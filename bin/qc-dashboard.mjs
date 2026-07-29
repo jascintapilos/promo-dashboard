@@ -173,7 +173,23 @@ async function handle(req, res) {
       if (!user) return;
       return await handleApi(req, res, user);
     }
-    if (url.pathname === '/dashboard' || url.pathname === '/dashboard.html') {
+    if (url.pathname === '/dashboard-switcher.css') {
+      const file = path.join(ROOT, 'public', 'dashboard-switcher.css');
+      res.writeHead(200, { 'content-type': 'text/css; charset=utf-8' });
+      createReadStream(file).pipe(res);
+      return;
+    }
+    if (url.pathname === '/dashboard.html') {
+      res.writeHead(301, { location: '/dashboard' });
+      res.end();
+      return;
+    }
+    if (url.pathname === '/dashboard') {
+      if (!readSession(req)) {
+        res.writeHead(302, { location: `/?return=${encodeURIComponent(url.pathname)}` });
+        res.end();
+        return;
+      }
       const file = path.join(ROOT, 'public', 'dashboard.html');
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       createReadStream(file).pipe(res);

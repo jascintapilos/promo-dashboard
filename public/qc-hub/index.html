@@ -5,20 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Promo QC Hub</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/dashboard-switcher.css">
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
     <div id="loginOverlay" class="login-overlay hidden">
       <div class="login-box">
         <h2 style="margin-bottom:8px">Promo QC Hub</h2>
-        <p class="muted" style="margin:0 0 20px">Sign in with your @thebrandingpeople.co account</p>
+        <p class="muted" style="margin:0 0 20px">Sign in with your approved company account</p>
         <div id="googleBtn"></div>
         <p id="loginError" class="login-error hidden"></p>
       </div>
     </div>
     <header class="topbar">
-      <h1>Promo QC Hub</h1>
-      <span id="signedIn" class="signed-in">Signed out</span>
+      <div class="topbar-brand">
+        <span class="brand-eyebrow">Promo Operations</span>
+        <h1>QC Hub</h1>
+      </div>
+      <div class="topbar-actions">
+        <nav class="dashboard-switcher" aria-label="Switch dashboard">
+          <a href="/" class="tab" aria-current="page">QC Hub</a>
+          <a href="/dashboard" class="tab">Ops Dashboard</a>
+        </nav>
+        <div class="switcher-menu">
+          <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-qc">
+            QC Hub
+            <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <ul id="switcher-menu-panel-qc" class="switcher-panel" role="menu" hidden>
+            <li role="none"><a href="/" role="menuitem" aria-current="page" class="switcher-menu-item">QC Hub</a></li>
+            <li role="none"><a href="/dashboard" role="menuitem" class="switcher-menu-item">Ops Dashboard</a></li>
+          </ul>
+        </div>
+        <span id="signedIn" class="signed-in">Signed out</span>
+      </div>
     </header>
 
     <main>
