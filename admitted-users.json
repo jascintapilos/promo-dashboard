@@ -1,13 +1,13 @@
 {
-  "emails": [
-    "muhammad.ridwan@alphaiotabpo.com",
-    "kasturi.vadiveloo@thebrandingpeople.co",
-    "bangun.priambodo@alphaiotabpo.com",
-    "gabrielle.tiffany@alphaiotabpo.com",
-    "booninn.wang@thebrandingpeople.co",
-    "menhua.foong@thebrandingpeople.co",
-    "elyssa.mae@thebrandingpeople.co",
-    "jascinta.pilos@thebrandingpeople.co",
-    "waiyip@thebrandingpeople.co"
+  "users": [
+    { "email": "waiyip@thebrandingpeople.co", "role": "admin" },
+    { "email": "jascinta.pilos@thebrandingpeople.co", "role": "admin" },
+    { "email": "booninn.wang@thebrandingpeople.co", "role": "promo-team" },
+    { "email": "menhua.foong@thebrandingpeople.co", "role": "promo-team" },
+    { "email": "elyssa.mae@thebrandingpeople.co", "role": "promo-team" },
+    { "email": "kasturi.vadiveloo@thebrandingpeople.co", "role": "promo-team" },
+    { "email": "muhammad.ridwan@alphaiotabpo.com", "role": "promo-team" },
+    { "email": "bangun.priambodo@alphaiotabpo.com", "role": "promo-team" },
+    { "email": "gabrielle.tiffany@alphaiotabpo.com", "role": "promo-team" }
   ]
 }
