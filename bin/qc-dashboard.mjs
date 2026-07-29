@@ -10,7 +10,7 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
-import { getGoogleClientId, isLocalhost, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
+import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 
@@ -120,6 +120,10 @@ function checkCsrf(req, res) {
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
+  if (req.method === 'GET' && url.pathname === '/api/admin/users') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    return send(res, 200, { users: loadAdmittedUsers() });
+  }
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
   if (req.method === 'GET' && url.pathname === '/api/history') {
