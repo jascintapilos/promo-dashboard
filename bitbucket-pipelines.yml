@@ -1,0 +1,18 @@
+pipelines:
+    branches:
+      master:
+        - step:
+            name: Deploy
+            deployment: production
+            clone:
+             enabled: false
+            runs-on:
+             - self.hosted
+             - linux
+            script:
+             - pipe: atlassian/ssh-run:0.8.1
+               variables:
+                 SSH_USER: 'bitbucket'
+                 MODE: 'command'
+                 SERVER: 'build.sgrts.com'
+                 COMMAND: 'sudo -u appuser ansible-playbook /script/ansible/deploy/production/qc-dashboard.yml'
