@@ -95,13 +95,17 @@ test('unauthenticated /api/brands → 401', async () => {
   assert.equal(r.status, 401);
 });
 
-test('logout clears cookie', async () => {
+test('logout clears cookie + subsequent /dashboard blocked without cookie', async () => {
   const cookie = await login();
   const r = await fetchNoRedirect('/auth/logout', { method: 'POST', headers: { cookie } });
   assert.equal(r.status, 200);
   const setCookie = r.headers.get('set-cookie') || '';
   assert.match(setCookie, /qc_hub_session=;/);
   assert.match(setCookie, /Max-Age=0/i);
+  // Simulate browser after cookie clear: subsequent /dashboard without cookie must 302 to login.
+  const gated = await fetchNoRedirect('/dashboard');
+  assert.equal(gated.status, 302);
+  assert.equal(gated.headers.get('location'), '/?return=%2Fdashboard');
 });
 
 test('/api/config public (needs no session) and returns googleClientId + devMode', async () => {

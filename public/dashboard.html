@@ -461,6 +461,8 @@
           <li role="none"><a href="/dashboard" role="menuitem" aria-current="page" class="switcher-menu-item">Ops Dashboard</a></li>
         </ul>
       </div>
+      <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
+      <span id="logoutError" class="logout-error hidden" role="alert"></span>
     </div>
   </div>
 
@@ -2659,6 +2661,26 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 });
+
+// Logout button
+(function bindLogout(){
+  const btn = document.getElementById('logoutBtn');
+  const errEl = document.getElementById('logoutError');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    try {
+      const r = await fetch('/auth/logout', { method: 'POST' });
+      if (!r.ok) throw new Error(`Logout HTTP ${r.status}`);
+      location.href = '/';
+    } catch (e) {
+      errEl.textContent = `Logout failed: ${e.message}`;
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  });
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>

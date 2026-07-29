@@ -578,6 +578,21 @@ function bind() {
     renderBrands();
   });
   $('addCodeBtn').addEventListener('click', () => addCodeRow({ focus: true }));
+  $('logoutBtn').addEventListener('click', async () => {
+    const btn = $('logoutBtn');
+    const errEl = $('logoutError');
+    btn.disabled = true;
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    try {
+      const r = await fetch('/auth/logout', { method: 'POST' });
+      if (!r.ok) throw new Error(`Logout HTTP ${r.status}`);
+      location.href = '/';
+    } catch (e) {
+      errEl.textContent = `Logout failed: ${e.message}`;
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  });
   $('brandAddSelect').addEventListener('change', (e) => {
     if (!e.target.value) return;
     state.selectedBrands.add(e.target.value);
