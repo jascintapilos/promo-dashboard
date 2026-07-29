@@ -485,9 +485,35 @@ function bind() {
   });
 }
 
+const ALLOWED_RETURN_PATHS = new Set(['/dashboard']);
+
+function bindSwitcher() {
+  document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
+    const panelId = toggle.getAttribute('aria-controls');
+    const panel = panelId && document.getElementById(panelId);
+    if (!panel) return;
+    const open = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); };
+    const close = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); };
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.hidden ? open() : close();
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && e.target !== toggle) close();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  });
+}
+
 async function init() {
+  bindSwitcher();
   bind();
   await ensureLogin();
+  const returnTo = new URLSearchParams(location.search).get('return');
+  if (ALLOWED_RETURN_PATHS.has(returnTo)) {
+    location.replace(returnTo);
+    return;
+  }
   state.brands = (await api('/api/brands')).brands;
   renderBrands();
   await loadHistory();

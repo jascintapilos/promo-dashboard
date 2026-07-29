@@ -29,11 +29,21 @@ function sessionSecret() {
   return secret;
 }
 
+function authErr(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
 function admittedEmails() {
   if (process.env.AUTH_MODE === 'dev') return new Set([process.env.DEV_USER_EMAIL || 'dev@localhost']);
   if (!existsSync(ALLOWLIST)) throw new Error(`${ALLOWLIST} is required outside AUTH_MODE=dev`);
   const parsed = JSON.parse(readFileSync(ALLOWLIST, 'utf8'));
-  return new Set((parsed.emails || []).map((e) => String(e).toLowerCase()));
+  return new Set(
+    (parsed.emails || [])
+      .map((e) => String(e).trim().toLowerCase())
+      .filter(Boolean),
+  );
 }
 
 function sign(payload) {
@@ -93,23 +103,47 @@ export function validateProductionConfig() {
       'To run locally without OAuth, set AUTH_MODE=dev.',
     );
   }
+  validateAllowlist();
+}
+
+export function validateAllowlist() {
+  if (process.env.AUTH_MODE === 'dev') return;
+  if (!existsSync(ALLOWLIST)) {
+    throw new Error(`${ALLOWLIST} is required outside AUTH_MODE=dev — server refusing to start.`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(ALLOWLIST, 'utf8'));
+  } catch (e) {
+    throw new Error(`${ALLOWLIST} is malformed JSON: ${e.message}`);
+  }
+  if (!Array.isArray(parsed.emails)) {
+    throw new Error(`${ALLOWLIST} must contain an "emails" array.`);
+  }
+  const normalized = parsed.emails
+    .map((e) => String(e).trim().toLowerCase())
+    .filter(Boolean);
+  if (normalized.length === 0) {
+    throw new Error(`${ALLOWLIST} has an empty "emails" list — server refusing to start.`);
+  }
 }
 
 export function validateTokenData(data, allowSet, clientId) {
-  if (!data.email || data.email_verified !== 'true') throw new Error('Google token has no verified email');
+  if (!data.email || data.email_verified !== 'true') throw authErr(401, 'Google token has no verified email');
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID is required to validate token audience');
   if (String(data.aud) !== String(clientId)) {
-    throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
+    throw authErr(401, 'Google token audience mismatch');
   }
-  if (!allowSet.has(String(data.email).toLowerCase())) {
-    throw new Error('Email is not in admitted-users allowlist');
+  const email = String(data.email).trim().toLowerCase();
+  if (!allowSet.has(email)) {
+    throw authErr(403, 'Email is not in admitted-users allowlist');
   }
-  return { email: String(data.email).toLowerCase(), name: data.name || data.email };
+  return { email, name: data.name || data.email };
 }
 
 export async function verifyGoogleIdToken(idToken) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-  if (!res.ok) throw new Error(`Google tokeninfo rejected token (${res.status})`);
+  if (!res.ok) throw authErr(401, `Google tokeninfo rejected token (${res.status})`);
   const data = await res.json();
   const clientId = getGoogleClientId();
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID must be set in production — cannot verify token audience');
