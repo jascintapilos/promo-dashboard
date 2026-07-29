@@ -2,7 +2,8 @@
 *.local.json
 bo-sites.json
 google-credentials.local.json
-admitted-users.json
+# admitted-users.json is NOT a secret — it's a list of allow-listed Google
+# emails managed via git so allowlist edits auto-deploy through Bitbucket.
 
 # ─── Runtime artifacts ────────────────────────────────────────────────────────
 .session/
