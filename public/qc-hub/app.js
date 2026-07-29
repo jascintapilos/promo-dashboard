@@ -6,6 +6,7 @@ const state = {
   results: [],
   activeKey: '',
   selectedResults: {},
+  adminUsers: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -78,6 +79,78 @@ async function ensureLogin() {
     google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: onCredential });
     google.accounts.id.renderButton($('googleBtn'), { theme: 'outline', size: 'large' });
   });
+}
+
+function syncSettingsAccess() {
+  const btn = $('settingsBtn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', state.user?.role !== 'admin');
+}
+
+function normalizeAdminUsers(users) {
+  const byEmail = new Map();
+  for (const user of users || []) {
+    const email = String(user.email || '').trim().toLowerCase();
+    const role = String(user.role || 'promo-team').trim().toLowerCase();
+    if (!email) continue;
+    byEmail.set(email, { email, role });
+  }
+  return [...byEmail.values()];
+}
+
+function renderUsersModal() {
+  const table = $('usersTable');
+  table.replaceChildren();
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  for (const label of ['Email', 'Role', 'Action']) {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const [index, user] of state.adminUsers.entries()) {
+    const row = document.createElement('tr');
+
+    const emailCell = document.createElement('td');
+    emailCell.textContent = user.email;
+    row.appendChild(emailCell);
+
+    const roleCell = document.createElement('td');
+    roleCell.textContent = user.role;
+    row.appendChild(roleCell);
+
+    const actionCell = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'secondary';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => {
+      state.adminUsers.splice(index, 1);
+      renderUsersModal();
+    });
+    actionCell.appendChild(removeBtn);
+    row.appendChild(actionCell);
+
+    tbody.appendChild(row);
+  }
+  table.appendChild(tbody);
+  $('usersJson').textContent = JSON.stringify({ users: state.adminUsers }, null, 2);
+}
+
+async function openUsersModal() {
+  const data = await api('/api/admin/users');
+  state.adminUsers = normalizeAdminUsers(data.users);
+  renderUsersModal();
+  $('usersModal').classList.remove('hidden');
+}
+
+function closeUsersModal() {
+  $('usersModal').classList.add('hidden');
 }
 
 const MAX_CODES = 5;
@@ -546,6 +619,29 @@ function bind() {
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
   $('manualFix').addEventListener('click', dispatchManualFix);
+  $('settingsBtn').addEventListener('click', () => {
+    openUsersModal().catch((e) => alert(`Could not load admitted users: ${e.message}`));
+  });
+  $('usersCloseBtn').addEventListener('click', closeUsersModal);
+  $('usersModal').addEventListener('click', (e) => {
+    if (e.target === $('usersModal')) closeUsersModal();
+  });
+  $('usersAddForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = $('userEmailInput').value.trim().toLowerCase();
+    const role = $('userRoleInput').value.trim().toLowerCase();
+    if (!email) return;
+    state.adminUsers = normalizeAdminUsers([...state.adminUsers, { email, role }]);
+    $('userEmailInput').value = '';
+    renderUsersModal();
+  });
+  $('usersCopyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('usersJson').textContent);
+    } catch {
+      alert('Copy failed — select and copy the JSON manually.');
+    }
+  });
   $('closePromptBtn').addEventListener('click', closePromptModal);
   $('copyPromptBtn').addEventListener('click', async () => {
     try {
@@ -626,6 +722,7 @@ async function init() {
   bindSwitcher();
   bind();
   await ensureLogin();
+  syncSettingsAccess();
   const returnTo = new URLSearchParams(location.search).get('return');
   if (ALLOWED_RETURN_PATHS.has(returnTo)) {
     location.replace(returnTo);

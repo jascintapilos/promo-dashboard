@@ -37,6 +37,7 @@
             <li role="none"><a href="/dashboard" role="menuitem" class="switcher-menu-item">Ops Dashboard</a></li>
           </ul>
         </div>
+        <button id="settingsBtn" class="settings-btn hidden" type="button" aria-label="Manage users">⚙</button>
         <span id="signedIn" class="signed-in">Signed out</span>
         <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
         <span id="logoutError" class="logout-error hidden" role="alert"></span>
@@ -135,6 +136,29 @@
           <button id="closePromptBtn" class="secondary" type="button">Close</button>
         </div>
         <p id="copiedConfirm" class="copy-confirm hidden">Copied to clipboard.</p>
+      </div>
+    </div>
+
+    <div id="usersModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="usersTitle">
+      <div class="modal-box modal-box-lg">
+        <h2 id="usersTitle">Admitted users</h2>
+        <p class="muted" style="margin:0 0 12px">Manage who can sign in. Edits here generate a commit-ready snippet — you push it as usual.</p>
+        <table id="usersTable"></table>
+        <form id="usersAddForm" class="users-add-form">
+          <input id="userEmailInput" type="email" placeholder="email@thebrandingpeople.co" required>
+          <select id="userRoleInput">
+            <option value="promo-team">Promo team</option>
+            <option value="admin">Admin</option>
+            <option value="hod-view">HOD view</option>
+            <option value="guest">Guest</option>
+          </select>
+          <button type="submit">Add</button>
+        </form>
+        <pre id="usersJson" class="prompt-text"></pre>
+        <div class="modal-actions">
+          <button id="usersCopyBtn" class="primary" type="button">Copy JSON</button>
+          <button id="usersCloseBtn" class="secondary" type="button">Close</button>
+        </div>
       </div>
     </div>
     <script type="module" src="/app.js?v=__BUILD__"></script>

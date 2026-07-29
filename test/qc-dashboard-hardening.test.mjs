@@ -151,12 +151,12 @@ test('validateAllowlist throws when file is malformed JSON', () => {
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
-test('validateAllowlist throws when emails is missing or not an array', () => {
+test('validateAllowlist throws when emails and users arrays are both missing', () => {
   const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-noarray-'));
   try {
-    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ users: [] }) });
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ allowed: [] }) });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /"emails" array/i);
+    assert.match(result.stderr, /"emails" array or "users" array/i);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
@@ -165,7 +165,36 @@ test('validateAllowlist throws when emails array is empty (all filtered out)', (
   try {
     const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ emails: ['', '  '] }) });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /empty "emails" list/i);
+    assert.match(result.stderr, /empty admitted users list/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist accepts users shape with role', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-ok-'));
+  try {
+    const result = spawnAllowlistCheck({
+      tmp,
+      allowlistContent: JSON.stringify({ users: [{ email: 'admin@example.com', role: 'admin' }] }),
+    });
+    assert.equal(result.status, 0, `expected pass, got exit=${result.status} stderr=${result.stderr}`);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist throws when users array is empty', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-empty-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ users: [] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /empty admitted users list/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist filters malformed users and fails cleanly when none remain', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-malformed-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ users: ['bad', {}, { role: 'admin' }] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /empty admitted users list/i);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 

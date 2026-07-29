@@ -79,6 +79,21 @@ section { background: var(--panel); border: 1px solid var(--border); border-radi
 .topbar-brand { display: flex; flex-direction: column; line-height: 1.15; gap: 2px; }
 .topbar h1 { font-size: 18px; }
 .topbar-actions { display: flex; align-items: center; gap: 16px; }
+.settings-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 15px;
+}
+.settings-btn:hover { background: var(--chip); }
+.settings-btn.hidden { display: none; }
 
 /* Shared dashboard switcher CSS is loaded separately via
    <link rel="stylesheet" href="/dashboard-switcher.css"> in index.html */
@@ -338,6 +353,26 @@ th { color: var(--muted); font-weight: 600; }
   width: min(720px, 95vw);
   max-height: 85vh;
   overflow-y: auto;
+}
+.modal-box-lg { width: min(860px, 95vw); }
+.users-add-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) auto;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0;
+}
+.users-add-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 9px 10px;
+  font: inherit;
+}
+@media (max-width: 640px) {
+  .users-add-form { grid-template-columns: 1fr; }
 }
 .prompt-text {
   background: var(--bg);
