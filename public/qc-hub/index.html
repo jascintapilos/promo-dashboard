@@ -42,26 +42,36 @@
     </header>
 
     <main>
-      <section>
-        <div id="brandGrid" class="brand-grid"></div>
+      <section class="picker-panel">
+        <div class="picker-head">
+          <span class="picker-label">Brands</span>
+          <div class="picker-actions">
+            <button id="brandAllBtn" type="button" class="chip-btn">All</button>
+            <button id="brandClearBtn" type="button" class="chip-btn" disabled>Clear</button>
+            <span id="brandCount" class="picker-meta"></span>
+          </div>
+        </div>
+        <div id="brandChips" class="chip-list" role="group" aria-label="Selected brands"></div>
+        <div class="brand-adder">
+          <select id="brandAddSelect" class="brand-add-select" aria-label="Add brand"></select>
+        </div>
       </section>
 
-      <section class="search-row">
-        <label class="code-label">
-          <span>Promo Codes</span>
-          <span class="code-boxes">
-            <input id="promoCode1" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 1" aria-label="Promo code 1">
-            <input id="promoCode2" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 2" aria-label="Promo code 2">
-            <input id="promoCode3" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 3" aria-label="Promo code 3">
-            <input id="promoCode4" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 4" aria-label="Promo code 4">
-            <input id="promoCode5" class="code-input" autocomplete="off" spellcheck="false" placeholder="Code 5" aria-label="Promo code 5">
-          </span>
-        </label>
-        <button id="searchBtn">Search</button>
-        <button id="clearBtn" class="secondary">Clear</button>
-        <a id="openBo" class="button secondary disabled" target="_blank" rel="noreferrer">Open BO</a>
-        <a id="openModule" class="button secondary disabled" target="_blank" rel="noreferrer">Open Module</a>
+      <section class="picker-panel">
+        <div class="picker-head">
+          <span class="picker-label" id="codesLabel">Promo codes</span>
+          <span class="picker-meta" id="codesCount">1 of 5</span>
+        </div>
+        <div id="codeInputs" class="code-inputs-stack" aria-labelledby="codesLabel"></div>
+        <button id="addCodeBtn" type="button" class="chip-btn add-code-btn" aria-label="Add another promo code">+ Add code</button>
+      </section>
+
+      <section class="action-row">
         <button id="runQc" class="primary">Run QC</button>
+        <button id="searchBtn" class="secondary">Search</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+        <a id="openBo" class="btn-link disabled" target="_blank" rel="noreferrer">Open BO</a>
+        <a id="openModule" class="btn-link disabled" target="_blank" rel="noreferrer">Open Module</a>
       </section>
 
       <section id="resultPills" class="result-pills"></section>
