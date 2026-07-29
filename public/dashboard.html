@@ -470,9 +470,10 @@
     <nav class="side-nav">
       <div class="pg-tabs">
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
-        <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
         <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
         <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
+        <button class="pg-tab" id="pg-util" onclick="switchView('util')"><i class="ti ti-chart-histogram" aria-hidden="true"></i> Utilization</button>
+        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
         <button class="pg-tab" id="pg-at" onclick="switchView('at')"><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
       </div>
     </nav>
@@ -523,28 +524,6 @@
       </div>
     </div>
 
-    <!-- 6. TEAM CAPACITY (full width) -->
-    <p class="section-label">Coverage &amp; capacity</p>
-    <div class="card" style="margin-bottom:28px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
-        <div>
-          <div class="card-title">Team capacity</div>
-          <div class="card-hint">Utilisation against expected hours</div>
-        </div>
-        <div class="cap-tabs">
-          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
-          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
-        </div>
-      </div>
-      <div id="cap-ytd-view" style="display:none;">
-        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
-        <div id="cap-bars"></div>
-        <div class="cap-highlights" id="cap-highlights"></div>
-      </div>
-      <div id="cap-weekly-view">
-        <div class="wk-grid" id="cap-weekly-grid"></div>
-      </div>
-    </div>
 
     <!-- 7. TRENDS -->
     <p class="section-label">Deliverables trend</p>
@@ -644,194 +623,48 @@
     </div>
 
     </div><!-- /view-ops -->
-    <div id="view-esc" style="display:none;">
-
-    <!-- ── ESCALATION EXEC BANNER ── -->
-    <div class="esc-exec">
-      <div class="esc-exec-badge"><i class="ti ti-shield-exclamation"></i>Promo team · root cause analysis · Jan–Jun 2026</div>
-      <div class="esc-exec-body">
-        <strong>45 of 81 escalations (56%) are preventable promo team errors.</strong> The remaining 44% are platform or system limitations outside the team's control.
-        Three recurring patterns — T&amp;C content mismatches, missing providers, and unlinked member groups — account for <strong>34 of those 45 cases (76%)</strong> and are each fixable with a checklist step.
-      </div>
-      <div class="esc-exec-pills">
-        <span class="esc-exec-pill">19 T&amp;C / content mismatch</span>
-        <span class="esc-exec-pill">9 wrong BO setting</span>
-        <span class="esc-exec-pill">8 provider / game not added</span>
-        <span class="esc-exec-pill">7 member group missing</span>
-        <span class="esc-exec-pill">2 unclassified HE</span>
-      </div>
-      <div class="esc-exec-note">HE rate has held at 7–8 cases/month since March — not declining without process change</div>
-    </div>
-
-    <!-- ── RECOMMENDATIONS ── -->
-    <p class="section-label">Root cause &amp; recommended fixes</p>
-    <div class="esc-rec-grid">
-
-      <!-- Card 1: T&C / Content Mismatch -->
-      <div class="esc-rec-card r-tnc">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">T&amp;C ↔ BO alignment</div>
-            <div class="esc-rec-sub">Largest single category · 42% of all HE cases</div>
-          </div>
-          <span class="esc-rec-tag r-tnc">19 cases</span>
+    <div id="view-util" style="display:none;">
+    <p class="section-label">Team utilization</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
+        <div>
+          <div class="card-title">Team capacity</div>
+          <div class="card-hint">Utilisation against expected hours</div>
         </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">5×</span>Claim window: T&amp;C says 30 days, BO set to 7 days — repeated May–Jun cluster</li>
-          <li><span class="pat-ct">5×</span>Turnover or bonus amount differs between T&amp;C text and BO value (e.g. ×5 UI vs ×20 T&amp;C)</li>
-          <li><span class="pat-ct">5×</span>Game/provider restriction stated in T&amp;C does not match BO eligible list</li>
-          <li><span class="pat-ct">4×</span>Wrong locale, missing promo name, or round count differs from title</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: pre-publish T&amp;C cross-check</strong>
-          For every promo, map each claim in the T&amp;C to its exact BO field: <em>reward_validity</em> (claim window), turnover multiplier, eligible providers, and bonus cap. Any figure in the T&amp;C must have a matching BO setting verified before activation.
+        <div class="cap-tabs">
+          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab(&#39;ytd&#39;)">YTD</button>
+          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab(&#39;weekly&#39;)">Weekly</button>
         </div>
       </div>
-
-      <!-- Card 2: Provider / Game Not Added -->
-      <div class="esc-rec-card r-prov">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">Provider &amp; game checklist</div>
-            <div class="esc-rec-sub">Always caught post-escalation, never pre-launch</div>
-          </div>
-          <span class="esc-rec-tag r-prov">8 cases</span>
-        </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">4×</span>FS game provider blacklisted in error or never added to eligible list — member plays, TO doesn't count</li>
-          <li><span class="pat-ct">3×</span>Category (e.g. Live Casino) not added to BO despite being named in T&amp;C or campaign</li>
-          <li><span class="pat-ct">1×</span>Game name field left blank in FS promo — member claims but receives no spins</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: eligible provider verification step</strong>
-          Before activating any promo: confirm every provider/game named in the T&amp;C or campaign brief is in the BO eligible list and not on the blacklist. For FS promos, also confirm the game name field is populated.
-        </div>
+      <div id="cap-ytd-view" style="display:none;">
+        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+        <div id="cap-bars"></div>
+        <div class="cap-highlights" id="cap-highlights"></div>
       </div>
-
-      <!-- Card 3: Member Group Missing -->
-      <div class="esc-rec-card r-grp">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">Member group as final step</div>
-            <div class="esc-rec-sub">Jun spike: 4 of 7 total cases in one month</div>
-          </div>
-          <span class="esc-rec-tag r-grp">7 cases</span>
-        </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">4×</span>June 2026 cluster — QPRO3, QPRO2 (×2), QP2C: promo live but member group never linked</li>
-          <li><span class="pat-ct">3×</span>Jan–Feb cases: member group omitted on multi-merchant promos (QP2A/C/D)</li>
-          <li><span class="pat-ct">all</span>Always discovered only when a member tries to claim and is blocked</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: member group as final activation gate</strong>
-          Add "Link member group" as the explicit last step in the promo activation SOP — completed after all settings are verified, not at creation. For multi-merchant promos, verify each merchant's group separately.
-        </div>
-      </div>
-
-    </div><!-- /esc-rec-grid -->
-
-    <!-- ── ESCALATION TRACKER MODULE ── -->
-    <p class="section-label">Escalation tracker</p>
-    <div class="row2" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Error sub-categories</div>
-            <div class="card-hint">Jan–Jun 2026 · 81 cases · categories inferred from elaboration text</div>
-          </div>
-        </div>
-        <div style="position:relative;height:275px;margin-top:4px;"><canvas id="esc-cat-chart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Volume &amp; root cause</div>
-            <div class="card-hint">Monthly trend · snapshot 24 Jun 2026</div>
-          </div>
-        </div>
-        <div style="position:relative;height:150px;"><canvas id="esc-month-chart"></canvas></div>
-        <div class="esc-mini-row">
-          <div class="esc-mini"><div class="em-val" style="color:#ea580c;">45</div><div class="em-lbl">Human Error<br>56%</div></div>
-          <div class="esc-mini"><div class="em-val" style="color:#2563eb;">30</div><div class="em-lbl">Sys Limitation<br>37%</div></div>
-          <div class="esc-mini"><div class="em-val" style="color:#16a34a;">58</div><div class="em-lbl">Resolved<br>89% tracked</div></div>
-        </div>
+      <div id="cap-weekly-view">
+        <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
-    <div class="records" style="margin-bottom:28px;">
-      <details class="rec" id="rec-escalation">
-        <summary><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalation log <span class="cnt">81 cases · Jan–Jun 2026</span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-        <div class="rec-body">
-          <div class="rec-tools">
-            <input type="text" id="esc-q" class="esc-search-input" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
-            <select onchange="renderEscTable()" id="esc-cause"><option value="">All Root Causes</option><option>Human Error</option><option>System Limitation</option><option>Unclassified</option></select>
-            <select onchange="renderEscTable()" id="esc-cat"><option value="">All Categories</option><option>T&amp;C / Message Mismatch</option><option>Reward Not Assigned</option><option>Wrong Promo Setting</option><option>Game / Provider Not Added</option><option>Member Group Missing</option><option>Claim Restriction Bug</option><option>Duplicate Reward</option><option>Sync / Technical Issue</option><option>Unclassified</option></select>
-            <select onchange="renderEscTable()" id="esc-status"><option value="">All Statuses</option><option>Resolved</option><option>Investigating</option><option>Ongoing</option></select>
-            <select onchange="renderEscTable()" id="esc-tab"><option value="">All Months</option><option value="Jan-Feb">Jan–Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option></select>
-            <span class="esc-tbl-cnt" id="esc-cnt"></span>
-          </div>
-          <table style="table-layout:fixed;">
-            <thead><tr>
-              <th style="width:74px">Date</th>
-              <th style="width:90px">Agent</th>
-              <th style="width:170px">Promo Code</th>
-              <th style="width:82px">Platform</th>
-              <th style="width:84px">Creator</th>
-              <th style="width:110px">Root Cause</th>
-              <th style="width:155px">Error Category</th>
-              <th>Description</th>
-              <th style="width:90px">Status</th>
-            </tr></thead>
-            <tbody id="esc-tbody"></tbody>
-          </table>
+    </div><!-- /view-util -->
+    <div id="view-sop" style="display:none;">
+    <p class="section-label">Standard operating procedures</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+        <div>
+          <div class="card-title">SOP index &mdash; Team Directory</div>
+          <div class="card-hint" style="margin-top:6px;max-width:640px;">Live working files and templates for Banner, Promo Code, Game, CRM, and General Knowledge Library. Click through to the Directory sheet for the latest.</div>
         </div>
-      </details>
-    </div>
-    <!-- ── CAMPAIGN SOURCE SECTION ── -->
-    <p class="section-label" style="margin-top:28px;">Campaign source</p>
-    <div class="row2" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Escalations by department</div>
-            <div class="card-hint">Inferred from promo code prefix — click a bar to filter</div>
-          </div>
-        </div>
-        <div style="position:relative;height:200px;margin-top:6px;"><canvas id="esc-src-chart"></canvas></div>
+        <a href="https://docs.google.com/spreadsheets/d/1AKFsxkNuFILj7Ge7jlq5aYlcEDTAvVsN4zWGftxmY68/edit" target="_blank" rel="noreferrer" class="btn" style="text-decoration:none;color:var(--ink);"><i class="ti ti-external-link" aria-hidden="true"></i> Open Directory sheet</a>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Department share</div>
-            <div class="card-hint">Click a row to filter the table below</div>
-          </div>
-        </div>
-        <div id="esc-src-dept-list" style="margin-top:4px;"></div>
-      </div>
+      <ul style="margin-top:20px;line-height:1.9;color:var(--ink2);padding-left:20px;">
+        <li><strong>Banner</strong> &mdash; working files, templates, upload procedures</li>
+        <li><strong>Promo Code</strong> &mdash; naming convention, canary flow, T&amp;C</li>
+        <li><strong>Game</strong> &mdash; provider onboarding, category updates</li>
+        <li><strong>CRM</strong> &mdash; FastTrack / Smartico setup + workflows</li>
+        <li><strong>General Knowledge Library</strong> &mdash; team-wide reference docs</li>
+      </ul>
     </div>
-    <div class="records" style="margin-bottom:28px;">
-      <details class="rec" id="rec-camp-src">
-        <summary><i class="ti ti-building" aria-hidden="true"></i> Campaign source detail <span class="cnt" id="esc-src-cnt-sum"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-        <div class="rec-body">
-          <div class="rec-tools">
-            <input type="text" id="esc-src-q" class="esc-search-input" placeholder="Search code, platform…" oninput="renderEscSrcTable()">
-            <select id="esc-src-dept" onchange="renderEscSrcTable()"><option value="">All Departments</option></select>
-            <span class="esc-tbl-cnt" id="esc-src-cnt"></span>
-          </div>
-          <table style="table-layout:fixed;">
-            <thead><tr>
-              <th style="width:150px">Campaign Source</th>
-              <th style="width:120px">Brand / Platform</th>
-              <th style="width:160px">Campaign Name</th>
-              <th style="width:175px">Promo Code</th>
-              <th>Remark</th>
-            </tr></thead>
-            <tbody id="esc-src-tbody"></tbody>
-          </table>
-        </div>
-      </details>
-    </div>
-    <!-- ── /ESCALATION TRACKER MODULE ── -->
-    </div><!-- /view-esc -->
+    </div><!-- /view-sop -->
     <div id="view-hk" style="display:none;">
 
     <div class="kpis" id="hk-kpis" style="margin-bottom:24px;"></div>
@@ -1564,7 +1397,8 @@ function render(data,_skipStore){
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='block';
   document.getElementById('refresh').disabled=false;
-  if(!_escInit && document.getElementById('view-esc').style.display!=='none'){initEscalationCharts();renderEscTable();_escInit=true;}
+  const _escEl = document.getElementById('view-esc');
+  if(!_escInit && _escEl && _escEl.style.display!=='none'){initEscalationCharts();renderEscTable();_escInit=true;}
 }
 
 function openRecordSection(id){
@@ -2748,19 +2582,16 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  ['ops','esc','hk','gr','at'].forEach(n=>{
+  ['ops','sop','hk','gr','util','at'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
   const showCtrl = v==='ops';
   document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
   document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
-  if(v==='esc' && !_escInit && document.getElementById('content').style.display!=='none'){
-    initEscalationCharts(); renderEscTable(); _escInit=true;
-  }
   if(v==='hk') renderHousekeepingTab();
   if(v==='at') renderAutomationTab();
-  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='at'?'#automation':'#');}catch(e){}
+  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='util'?'#utilization':v==='sop'?'#sop':v==='at'?'#automation':'#');}catch(e){}
 }
 
 // ── Automation Tab ───────────────────────────────────────────────────────────
@@ -2846,9 +2677,10 @@ function filterAtPortfolio(){
 }
 
 (function(){
-  if(location.hash==='#escalations') switchView('esc');
-  else if(location.hash==='#housekeeping') switchView('hk');
+  if(location.hash==='#housekeeping') switchView('hk');
   else if(location.hash==='#guardrails') switchView('gr');
+  else if(location.hash==='#utilization') switchView('util');
+  else if(location.hash==='#sop') switchView('sop');
   else if(location.hash==='#automation') switchView('at');
 })();
 
