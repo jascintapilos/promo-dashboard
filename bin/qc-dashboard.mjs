@@ -19,8 +19,41 @@ const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public', 'qc-hub');
 const PORT = Number(process.env.PORT || 4321);
 
+// ── BUILD_ID for CDN cache-busting ───────────────────────────────────────────
+// Priority: explicit BUILD_ID env → Bitbucket pipeline commit → startup fallback.
+// Must be URL-safe: /^[A-Za-z0-9._-]+$/. Invalid values fall back with a warn.
+const URL_SAFE_BUILD = /^[A-Za-z0-9._-]+$/;
+function resolveBuildId() {
+  const startup = 't-' + Date.now().toString(36);
+  const candidates = [
+    { source: 'BUILD_ID env var', value: process.env.BUILD_ID },
+    { source: 'BITBUCKET_COMMIT env var', value: process.env.BITBUCKET_COMMIT },
+  ];
+  for (const { source, value } of candidates) {
+    if (!value) continue;
+    if (URL_SAFE_BUILD.test(value)) return value.length > 40 ? value.slice(0, 40) : value;
+    console.warn(`BUILD_ID rejected from ${source}: not URL-safe. Falling back.`);
+  }
+  return startup;
+}
+const BUILD_ID = resolveBuildId();
+console.log(`BUILD_ID = ${BUILD_ID}`);
+
 validateProductionConfig();
 loadQcBrandConfig();
+
+const HTML_HEADERS = { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache, must-revalidate' };
+function assetCacheHeader(url) {
+  const v = new URL(url, 'http://localhost').searchParams.get('v');
+  return v === BUILD_ID
+    ? 'public, max-age=31536000, immutable'
+    : 'no-cache, must-revalidate';
+}
+async function sendHtml(res, filePath) {
+  const raw = await readFile(filePath, 'utf8');
+  res.writeHead(200, HTML_HEADERS);
+  res.end(raw.replace(/__BUILD__/g, BUILD_ID));
+}
 
 function send(res, status, data, headers = {}) {
   const body = typeof data === 'string' ? data : JSON.stringify(data);
@@ -40,12 +73,19 @@ function contentType(file) {
   return 'application/octet-stream';
 }
 
-function serveStatic(req, res) {
+async function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const rel = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname).replace(/^\/qc-hub/, '') || '/index.html';
   const file = path.normalize(path.join(PUBLIC, rel));
   if (!file.startsWith(PUBLIC) || !existsSync(file)) return false;
-  res.writeHead(200, { 'content-type': contentType(file) });
+  if (file.endsWith('.html')) {
+    await sendHtml(res, file);
+    return true;
+  }
+  res.writeHead(200, {
+    'content-type': contentType(file),
+    'cache-control': assetCacheHeader(req.url),
+  });
   createReadStream(file).pipe(res);
   return true;
 }
@@ -175,7 +215,7 @@ async function handle(req, res) {
     }
     if (url.pathname === '/dashboard-switcher.css') {
       const file = path.join(ROOT, 'public', 'dashboard-switcher.css');
-      res.writeHead(200, { 'content-type': 'text/css; charset=utf-8' });
+      res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': assetCacheHeader(req.url) });
       createReadStream(file).pipe(res);
       return;
     }
@@ -190,15 +230,10 @@ async function handle(req, res) {
         res.end();
         return;
       }
-      const file = path.join(ROOT, 'public', 'dashboard.html');
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      createReadStream(file).pipe(res);
-      return;
+      return await sendHtml(res, path.join(ROOT, 'public', 'dashboard.html'));
     }
-    if (serveStatic(req, res)) return;
-    const index = await readFile(path.join(PUBLIC, 'index.html'));
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(index);
+    if (await serveStatic(req, res)) return;
+    return await sendHtml(res, path.join(PUBLIC, 'index.html'));
   } catch (e) {
     const status = e.status && e.status >= 400 && e.status < 600 ? e.status : 500;
     send(res, status, { error: status < 500 ? e.message : 'Internal server error' });
