@@ -245,6 +245,30 @@
 .switcher-menu-item:focus-visible { outline: 2px solid #171821; outline-offset: -1px; }
 
 /* ══════════════════════════════════════════════════════════════
+   Settings button (wrench / gear) — shared across both dashboards
+   ══════════════════════════════════════════════════════════════ */
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #d9dee7;
+  border-radius: 10px;
+  background: #fce7f3;
+  color: #171821;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: background 0.12s, border-color 0.12s;
+}
+.settings-btn:hover { background: #fbcfe8; border-color: #f9a8d4; }
+.settings-btn:focus-visible { outline: 2px solid #db2777; outline-offset: 2px; }
+.settings-btn.hidden { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
    Logout button + inline error (shared)
    ══════════════════════════════════════════════════════════════ */
 .logout-btn {

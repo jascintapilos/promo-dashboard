@@ -1114,6 +1114,15 @@ async function init() {
   // R11 fix 1: history failure no longer fatals init
   loadHistory().catch(() => {});
   renderEmptyStates();
+  // R18-lite: allow deep-linking to the Site Configs modal from Ops Dashboard
+  // (its wrench button links to /?open=site-configs). Admin-only, silent for
+  // non-admins so a shared bookmark doesn't dead-end.
+  const openParam = new URLSearchParams(location.search).get('open');
+  if (openParam === 'site-configs' && state.user?.role === 'admin') {
+    openSiteConfigsModal().catch((e) => toast(`Could not open site configs: ${e.message}`, 'error'));
+    // Clean the URL so a refresh doesn't reopen the modal every time
+    try { history.replaceState({}, '', location.pathname); } catch {}
+  }
 }
 
 init().catch((e) => {
