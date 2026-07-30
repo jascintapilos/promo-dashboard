@@ -24,10 +24,16 @@ import path from 'node:path';
 import { BASE, ensureAuthenticated, failScreenshot } from '../src/gm01-session.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-// Local ledger of what has already been submitted (gitignored via *.local.json).
-// Guards against submitting the same bonus type + date range twice, which would
-// create duplicate approval-queue entries.
 const LEDGER_FILE = path.join(ROOT, 'gm01-submit-ledger.local.json');
+const CREDS_FILE  = path.join(ROOT, 'gm01-credentials.local.json');
+
+// Load credentials from local file (gitignored); CLI args override for one-off use.
+function loadCredentials() {
+  if (existsSync(CREDS_FILE)) {
+    try { return JSON.parse(readFileSync(CREDS_FILE, 'utf8')); } catch { /* fall through */ }
+  }
+  return {};
+}
 
 // ── CLI args ────────────────────────────────────────────────────────────────
 const cliArgs = {};
@@ -50,9 +56,16 @@ const checkDeposit = (cliArgs.checkDeposit ?? 'yes') !== 'no';
 const startDate    = cliArgs.startDate ?? `${dayStr(-1)} 00:00`;
 const endDate      = cliArgs.endDate   ?? `${dayStr(-1)} 23:59`;
 
-// Login credentials for the interactive fallback (typed into the form only).
-const USER = cliArgs.user ?? '***REMOVED***';
-const PASS = cliArgs.pass ?? '***REMOVED***';
+// Credentials: local file first, CLI args override, hard-fail if neither present.
+const savedCreds = loadCredentials();
+const USER = cliArgs.user ?? savedCreds.user;
+const PASS = cliArgs.pass ?? savedCreds.pass;
+if (!USER || !PASS) {
+  console.error('✗ No credentials found.');
+  console.error(`  Create ${CREDS_FILE} with {"user":"...","pass":"..."}`);
+  console.error('  or pass --user=<u> --pass=<p> on the command line.');
+  process.exit(1);
+}
 
 const BONUS_TYPE_MAP = { turnover: '20', cashback: '10', referral: '30' };
 const bonusTypeId = BONUS_TYPE_MAP[bonusType] ?? bonusType;
@@ -70,29 +83,32 @@ const submitTypeCodes = submitTypes.map(t => SUBTYPE_MAP[t.toLowerCase()] ?? t);
 const LEVEL_LABELS = { '0': 'Normal', '10': 'VIP', '20': 'Silver', '30': 'Gold', '40': 'Platinum' };
 const SUBTYPE_LABELS = { '100': 'API', '150': 'Fish', '120': 'Poker G1', '130': 'Poker G2' };
 
-// ── Duplicate-submission guard ────────────────────────────────────────────────
+// ── Duplicate-submission guard (per-submission) ──────────────────────────────
+// Key includes bonusTypeId, dates, levelCode, typeCode, and checkDeposit so that
+// a Normal-only run never blocks an All-levels run, and partial re-runs only
+// skip the combos that already succeeded.
 const force = !!cliArgs.force;
-const ledgerKey = `${bonusType}|${startDate}|${endDate}|${submitTypeCodes.join(',')}`;
 
 function loadLedger() {
   if (!existsSync(LEDGER_FILE)) return {};
   try { return JSON.parse(readFileSync(LEDGER_FILE, 'utf8')); } catch { return {}; }
 }
-function recordLedger(key) {
+function submissionKey(levelCode, typeCode) {
+  return `${bonusTypeId}|${startDate}|${endDate}|${levelCode}|${typeCode}|${checkDeposit ? '1' : '0'}`;
+}
+function recordSubmission(key) {
   const l = loadLedger();
   l[key] = new Date().toISOString();
   writeFileSync(LEDGER_FILE, JSON.stringify(l, null, 2));
 }
 
 const ledger = loadLedger();
-if (ledger[ledgerKey] && !force) {
-  const when = ledger[ledgerKey].replace('T', ' ').slice(0, 19);
-  console.log('⚠ ALREADY SUBMITTED — refusing to run to avoid duplicate queue entries.');
+// Exit early only if every combo in this run is already recorded.
+const allKeys = levelsToRun.flatMap(lv => submitTypeCodes.map(tc => submissionKey(lv, tc)));
+if (!force && allKeys.every(k => ledger[k])) {
+  console.log('⚠ ALREADY SUBMITTED — all combos for this run are in the ledger.');
   console.log(`  ${bonusType} | ${startDate} → ${endDate} | ${submitTypes.join(', ')}`);
-  console.log(`  Last submitted: ${when} (UTC)`);
-  console.log('\n  This exact bonus type + date range was already submitted. Re-running');
-  console.log('  would create duplicate approval-queue entries. If you really intend to');
-  console.log('  submit again, re-run with --force.');
+  console.log('  Re-run with --force to submit again.');
   process.exit(2);
 }
 
@@ -115,10 +131,18 @@ try {
     for (const typeCode of submitTypeCodes) {
       const lvLabel = LEVEL_LABELS[levelCode] ?? levelCode;
       const tvLabel = SUBTYPE_LABELS[typeCode] ?? typeCode;
+      const key = submissionKey(levelCode, typeCode);
+
+      // Skip combos already in the ledger (from a previous partial run).
+      if (!force && ledger[key]) {
+        const when = ledger[key].slice(0, 10);
+        console.log(`  [${lvLabel.padEnd(8)} / ${tvLabel.padEnd(4)}] SKIPPED — already submitted ${when}`);
+        results.push({ level: lvLabel, submissionType: tvLabel, status: 'SKIPPED' });
+        continue;
+      }
+
       process.stdout.write(`  [${lvLabel.padEnd(8)} / ${tvLabel.padEnd(4)}] Submitting… `);
 
-      // Request through the authenticated context — Playwright applies the
-      // saved session cookies; we never read or attach them ourselves.
       const res = await context.request.post(
         `${BASE}/secure/credit/action/submit.incentive.xhtml`,
         {
@@ -138,6 +162,10 @@ try {
       const loc = res.headers()['location'] ?? '';
       const success = (res.status() === 302 || res.status() === 303) && !loc.includes('error');
       console.log(success ? '✓' : `✗ (${res.status()} → ${loc || 'no redirect'})`);
+
+      // Record immediately on success so a partial failure doesn't lose completed work.
+      if (success) recordSubmission(key);
+
       results.push({ level: lvLabel, submissionType: tvLabel, status: success ? 'SUCCESS' : 'ERROR' });
       await new Promise(r => setTimeout(r, 300));
     }
@@ -147,17 +175,16 @@ try {
   console.log('\n──────────────────────────────');
   console.log('Summary');
   console.log('──────────────────────────────');
-  const passed = results.filter(r => r.status === 'SUCCESS').length;
+  const passed  = results.filter(r => r.status === 'SUCCESS').length;
+  const skipped = results.filter(r => r.status === 'SKIPPED').length;
+  const failed  = results.filter(r => r.status === 'ERROR').length;
   results.forEach(r => {
-    console.log(`  ${r.status === 'SUCCESS' ? '✓' : '✗'} ${r.level.padEnd(10)} ${r.submissionType.padEnd(6)} ${r.status}`);
+    const icon = r.status === 'SUCCESS' ? '✓' : r.status === 'SKIPPED' ? '–' : '✗';
+    console.log(`  ${icon} ${r.level.padEnd(10)} ${r.submissionType.padEnd(6)} ${r.status}`);
   });
-  console.log(`\n  ${passed}/${results.length} submissions confirmed successful.`);
-  if (passed < results.length) {
-    console.log('\n  ⚠ Some submissions failed. Ensure the date range is in the past.');
-  } else {
-    // Record only a fully successful run so this range is guarded from re-submission.
-    recordLedger(ledgerKey);
-    console.log(`\n  ✓ Recorded in ledger — this range is now guarded against re-submission.`);
+  console.log(`\n  ${passed} submitted, ${skipped} skipped, ${failed} failed.`);
+  if (failed > 0) {
+    console.log('\n  ⚠ Some submissions failed. Re-run to retry only the failed combos.');
   }
 } catch (err) {
   console.error(`\n✗ Submission run failed: ${err.message}`);
