@@ -167,6 +167,35 @@ function buildSiteDiag() {
   return { sites, defaultSite: cfg.defaultSite };
 }
 
+/* R22 pre-flight: check whether Playwright + Chromium are actually available
+   on this server BEFORE we invest in wiring the relay. Reports back:
+     { playwrightPkg: version | 'missing', chromiumBinary: path | null,
+       launchOk: bool, launchError: <sanitized>, browserVersion: string | null }
+   Admin-only. Read-only — never launches long-lived processes. */
+async function checkPlaywrightReadiness() {
+  const out = { playwrightPkg: null, chromiumBinary: null, launchOk: false, launchError: null, browserVersion: null };
+  let chromium;
+  try {
+    const mod = await import('playwright');
+    chromium = mod.chromium;
+    try { out.playwrightPkg = (await import('playwright/package.json', { with: { type: 'json' } })).default.version; } catch { out.playwrightPkg = 'installed (version unknown)'; }
+  } catch (e) { out.launchError = 'playwright package missing: ' + (e?.message || 'unknown').slice(0, 120); return out; }
+  try { out.chromiumBinary = chromium.executablePath ? chromium.executablePath() : null; } catch {}
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true, timeout: 15000 });
+    const ctx = await browser.newContext();
+    out.browserVersion = browser.version();
+    out.launchOk = true;
+    await ctx.close();
+  } catch (e) {
+    out.launchError = (e?.message || 'launch failed').split('\n')[0].slice(0, 240);
+  } finally {
+    try { if (browser) await browser.close(); } catch {}
+  }
+  return out;
+}
+
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
@@ -177,6 +206,10 @@ async function handleApi(req, res, user) {
   if (req.method === 'GET' && url.pathname === '/api/diag/sites') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     return send(res, 200, buildSiteDiag());
+  }
+  if (req.method === 'GET' && url.pathname === '/api/diag/playwright') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    return send(res, 200, await checkPlaywrightReadiness());
   }
   if (req.method === 'GET' && url.pathname === '/api/admin/site-configs') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
