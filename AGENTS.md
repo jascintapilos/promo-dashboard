@@ -24,6 +24,7 @@ When the user prompts a promo request — phrasings like **"canary P172"**, **"f
    - Show one row per currency when `per_currency_overrides` has different values — never collapse differing amounts into one row.
    - Skip columns that are not applicable for the bonus type (e.g. no Spins column on a Deposit promo).
    - For batch requests (P### range), show one row per handle.
+1.6. **WS1/WS2 FT prefix decision — mandatory:** If any target is WS1 or WS2 and the source does not explicitly say whether `FT_` is required, ask the operator: **“Does this WS1/WS2 promo need the `FT_` prefix?”** Stop before validation/dry-run until answered. Pass a chat answer through as `--ft-prefix` or `--no-ft-prefix`. Source phrases such as “Add FT to code” and “No FT prefix” count as explicit answers and do not require another question.
 2. **`node bin/canary-validate.js <handle>`** — deterministic source/intent gate. If RETURN, STOP and surface what to fix.
 3. **`node bin/canary-multi-brand.js <handle> --parallel`** — dry-run (writes plan bundles and automatically runs deterministic plan validation)
 4. **Agent QC fallback only when requested or unusual** — use `/qc-engine` or `/pre-qc` for ambiguous copy/business review, not for mechanical checks already covered by `canary-validate`.
@@ -64,6 +65,49 @@ prompt: |
 ```
 
 Send all sub-agents for one skill in **a single Agent-tool message** so they run in parallel. Total wall-clock per skill should be ~5-15s, never minutes. If a sub-agent exceeds 60s, cancel and report INCONCLUSIVE — do not wait.
+
+---
+
+## WS1/WS2 workbook clone flow (MUST follow)
+
+When the operator asks to probe an OLD Promo Code from a workbook and create a
+NEW Promo Code with the same persisted mechanics, this is a BO clone/migration
+request — it is **not** a Promo Request `P###` canary.
+
+Use only:
+
+```bash
+# Read-only planning; explicit rows/numbers are mandatory
+node bin/clone-igmp-from-workbook.mjs --rows=<sheet-row-selector>
+node bin/clone-igmp-from-workbook.mjs --numbers=<manifest-number-selector> --tab=WS1
+
+# Create exactly one approved destination inactive
+node bin/clone-igmp-from-workbook.mjs --commit --plan=<plan-file> --approve=<exact-plan-hash>
+
+# Separate approved activation after persisted verification
+node bin/clone-igmp-from-workbook.mjs --activate --plan=<plan-file> --approve=<exact-plan-hash>
+```
+
+Mandatory rules:
+
+1. Never route workbook clones through `ingest-requests.js` or synthesize a
+   `P###` request.
+2. Never issue improvised raw `/PM/Add*` calls for a workbook clone.
+3. The workbook's NEW Promo Code is exact. Do not infer, add, remove, or rewrite
+   a prefix.
+4. Source and destination region/site must be explicit for every row. Never
+   fill down a visually grouped blank Region cell.
+5. Planning is read-only and must retrieve the complete source promotion,
+   type-specific detail, RewardId, and all reward-content locales.
+6. Stop if the source is incomplete, the destination exists, the source changes
+   after approval, or any lookup is inconclusive.
+7. Live creation starts inactive. Missing reward, missing content, or any
+   persisted diff is a hard failure and the partial destination is quarantined.
+8. Activation is a separate approval. Never deactivate the old promotion as a
+   side effect of cloning.
+9. Do not mark the workbook row Done/QC Completed from a create response.
+
+Full runbook: `docs/igmp-workbook-clone-workflow.md`.
 
 ---
 

@@ -1,10 +1,12 @@
 const state = {
   user: null,
   brands: [],
-  selectedBrand: null,
+  selectedBrands: new Set(),
+  activeBrand: null,
   results: [],
-  activeCode: '',
+  activeKey: '',
   selectedResults: {},
+  adminUsers: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -79,34 +81,181 @@ async function ensureLogin() {
   });
 }
 
-const CODE_BOX_IDS = ['promoCode1', 'promoCode2', 'promoCode3', 'promoCode4', 'promoCode5'];
+function syncSettingsAccess() {
+  const btn = $('settingsBtn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', state.user?.role !== 'admin');
+}
+
+function normalizeAdminUsers(users) {
+  const byEmail = new Map();
+  for (const user of users || []) {
+    const email = String(user.email || '').trim().toLowerCase();
+    const role = String(user.role || 'promo-team').trim().toLowerCase();
+    if (!email) continue;
+    byEmail.set(email, { email, role });
+  }
+  return [...byEmail.values()];
+}
+
+function renderUsersModal() {
+  const table = $('usersTable');
+  table.replaceChildren();
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  for (const label of ['Email', 'Role', 'Action']) {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const [index, user] of state.adminUsers.entries()) {
+    const row = document.createElement('tr');
+
+    const emailCell = document.createElement('td');
+    emailCell.textContent = user.email;
+    row.appendChild(emailCell);
+
+    const roleCell = document.createElement('td');
+    roleCell.textContent = user.role;
+    row.appendChild(roleCell);
+
+    const actionCell = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'secondary';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => {
+      state.adminUsers.splice(index, 1);
+      renderUsersModal();
+    });
+    actionCell.appendChild(removeBtn);
+    row.appendChild(actionCell);
+
+    tbody.appendChild(row);
+  }
+  table.appendChild(tbody);
+  $('usersJson').textContent = JSON.stringify({ users: state.adminUsers }, null, 2);
+}
+
+async function openUsersModal() {
+  const data = await api('/api/admin/users');
+  state.adminUsers = normalizeAdminUsers(data.users);
+  renderUsersModal();
+  $('usersModal').classList.remove('hidden');
+}
+
+function closeUsersModal() {
+  $('usersModal').classList.add('hidden');
+}
+
+const MAX_CODES = 5;
+
+function codeInputs() {
+  return Array.from(document.querySelectorAll('#codeInputs .code-input'));
+}
 
 function parseCodes() {
-  return CODE_BOX_IDS
-    .map((id) => $(id).value.trim().toUpperCase())
+  return codeInputs()
+    .map((el) => el.value.trim().toUpperCase())
     .filter(Boolean);
 }
 
-function renderBrands() {
-  $('brandGrid').innerHTML = state.brands.map((brand) => `
-    <button class="brand ${state.selectedBrand === brand.id ? 'selected' : ''}" data-brand="${brand.id}" ${brand.enabled ? '' : 'disabled'}>
-      <strong>${brand.label}</strong>
-      <span>${brand.enabled ? brand.displayGroup : 'coming soon'}</span>
-    </button>
-  `).join('');
-  document.querySelectorAll('.brand').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      state.selectedBrand = btn.dataset.brand;
-      const brand = state.brands.find((b) => b.id === state.selectedBrand);
-      for (const id of ['openBo', 'openModule']) {
-        const el = $(id);
-        const href = id === 'openModule' ? brand.moduleUrl : brand.baseUrl;
-        el.href = href || '#';
-        el.classList.toggle('disabled', !href);
-      }
-      renderBrands();
-    });
+function updateCodesCount() {
+  const n = codeInputs().length;
+  $('codesCount').textContent = `${n} of ${MAX_CODES}`;
+  $('addCodeBtn').disabled = n >= MAX_CODES;
+}
+
+function makeCodeRow(index, { canRemove = false } = {}) {
+  const row = document.createElement('div');
+  row.className = 'code-row';
+  row.innerHTML = `
+    <input class="code-input" autocomplete="off" spellcheck="false" placeholder="Code ${index}" aria-label="Promo code ${index}">
+    ${canRemove ? `<button type="button" class="remove-code" aria-label="Remove this code">×</button>` : ''}
+  `;
+  const removeBtn = row.querySelector('.remove-code');
+  if (removeBtn) removeBtn.addEventListener('click', () => {
+    row.remove();
+    updateCodesCount();
   });
+  return row;
+}
+
+function addCodeRow({ focus = false } = {}) {
+  const container = $('codeInputs');
+  const n = container.children.length + 1;
+  if (n > MAX_CODES) return;
+  const row = makeCodeRow(n, { canRemove: n > 1 });
+  container.appendChild(row);
+  updateCodesCount();
+  if (focus) row.querySelector('.code-input').focus();
+}
+
+function resetCodeRows() {
+  $('codeInputs').innerHTML = '';
+  addCodeRow();
+}
+
+function activeBrands() {
+  return state.brands.filter((b) => state.selectedBrands.has(b.id));
+}
+
+function updateBrandLinks() {
+  const selected = activeBrands();
+  const focus = selected.length === 1
+    ? selected[0]
+    : (state.activeBrand && selected.find((b) => b.id === state.activeBrand)) || null;
+  const clearBtn = $('brandClearBtn');
+  if (clearBtn) clearBtn.disabled = state.selectedBrands.size === 0;
+  const count = $('brandCount');
+  if (count) count.textContent = state.selectedBrands.size ? `${state.selectedBrands.size} selected` : '';
+  for (const id of ['openBo', 'openModule']) {
+    const el = $(id);
+    if (!el) continue;
+    const href = focus ? (id === 'openModule' ? focus.moduleUrl : focus.baseUrl) : null;
+    el.href = href || '#';
+    el.classList.toggle('disabled', !href);
+  }
+}
+
+function renderBrands() {
+  const enabled = state.brands.filter((b) => b.enabled);
+  const selected = enabled.filter((b) => state.selectedBrands.has(b.id));
+  const unselected = enabled.filter((b) => !state.selectedBrands.has(b.id));
+
+  const chipsEl = $('brandChips');
+  if (selected.length === 0) {
+    chipsEl.innerHTML = '<span class="chip-empty">No brands selected — pick one below.</span>';
+  } else {
+    chipsEl.innerHTML = selected.map((brand) => `
+      <span class="brand-chip selected" data-brand="${brand.id}">
+        <span>${brand.label}</span>
+        <button type="button" class="chip-x" data-remove="${brand.id}" aria-label="Remove ${brand.label}">×</button>
+      </span>
+    `).join('');
+    document.querySelectorAll('.chip-x[data-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.selectedBrands.delete(btn.dataset.remove);
+        renderBrands();
+      });
+    });
+  }
+
+  const select = $('brandAddSelect');
+  if (unselected.length === 0) {
+    select.innerHTML = '<option value="" disabled selected>All brands added</option>';
+    select.disabled = true;
+  } else {
+    select.disabled = false;
+    select.innerHTML = '<option value="" disabled selected>+ Add brand</option>' +
+      unselected.map((b) => `<option value="${b.id}">${b.label}</option>`).join('');
+  }
+  updateBrandLinks();
 }
 
 function verdictLabel(v) {
@@ -209,28 +358,33 @@ function renderCell(result, column) {
 }
 
 function renderDetailsTable() {
-  $('detailsHead').innerHTML = `<tr>${DETAIL_COLUMNS.map((column) => `<th>${column.label}</th>`).join('')}</tr>`;
+  $('detailsHead').innerHTML = `<tr><th>Brand</th>${DETAIL_COLUMNS.map((column) => `<th>${column.label}</th>`).join('')}</tr>`;
   $('detailsRows').innerHTML = state.results.map((result) => `
-    <tr class="${state.activeCode === result.code ? 'active-detail-row' : ''}">
+    <tr class="${state.activeKey === resultKey(result) ? 'active-detail-row' : ''}">
+      <td><strong>${result.brand}</strong></td>
       ${DETAIL_COLUMNS.map((column) => renderCell(result, column)).join('')}
     </tr>
-  `).join('') || `<tr><td colspan="${DETAIL_COLUMNS.length}" class="muted">Run QC to load batch details.</td></tr>`;
+  `).join('') || `<tr><td colspan="${DETAIL_COLUMNS.length + 1}" class="muted">Run QC to load batch details.</td></tr>`;
 }
 
+function resultKey(r) { return `${r.brand}:${r.code}`; }
+
 function activeResult() {
-  return state.results.find((result) => result.code === state.activeCode) || null;
+  return state.results.find((r) => resultKey(r) === state.activeKey) || null;
 }
 
 function renderPills() {
-  $('resultPills').innerHTML = state.results.map((result) => `
-    <button class="pill ${state.activeCode === result.code ? 'active' : ''}" data-code="${result.code}">
-      <code>${result.code}</code>
-      <span class="chip ${verdictClass(result.verdict)}">${verdictLabel(result.verdict)}</span>
-    </button>
-  `).join('');
-  document.querySelectorAll('[data-code]').forEach((btn) => {
+  $('resultPills').innerHTML = state.results.map((r) => {
+    const key = resultKey(r);
+    return `<button class="pill ${state.activeKey === key ? 'active' : ''}" data-key="${key}">
+      <strong>${r.brand}</strong>
+      <code>${r.code}</code>
+      <span class="chip ${verdictClass(r.verdict)}">${verdictLabel(r.verdict)}</span>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('[data-key]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.activeCode = btn.dataset.code;
+      state.activeKey = btn.dataset.key;
       renderActiveResult();
     });
   });
@@ -238,9 +392,10 @@ function renderPills() {
 
 function renderActiveResult() {
   const data = activeResult();
+  const key = data ? resultKey(data) : null;
   renderPills();
   document.querySelectorAll('[data-result]').forEach((btn) => {
-    btn.classList.toggle('primary', Boolean(data && state.selectedResults[data.code] === btn.dataset.result));
+    btn.classList.toggle('primary', Boolean(data && state.selectedResults[key] === btn.dataset.result));
   });
   if (!data) {
     $('verdictPanel').className = 'verdict hidden';
@@ -264,26 +419,28 @@ function renderActiveResult() {
   $('passBtn').disabled = data.verdict !== 'SAFE';
 }
 
-function renderRun(data) {
-  state.results = data.results || [];
-  state.activeCode = state.results[0]?.code || '';
+function renderRun(results) {
+  state.results = results;
+  state.activeKey = results[0] ? resultKey(results[0]) : '';
   state.selectedResults = {};
   renderActiveResult();
 }
 
 async function runQc() {
   const codes = parseCodes();
-  CODE_BOX_IDS.forEach((id, i) => { $(id).value = codes[i] || ''; });
-  if (!state.selectedBrand || !codes.length) return alert('Select a brand and enter one to five promo codes.');
+  const brands = [...state.selectedBrands];
+  if (!brands.length || !codes.length) return alert('Select at least one brand and enter one to five promo codes.');
   if (codes.length > 5) return alert('Run QC accepts at most 5 promo codes.');
   $('runQc').disabled = true;
   try {
-    renderRun(await api('/api/run-qc', {
-      method: 'POST',
-      body: JSON.stringify({ brand: state.selectedBrand, codes }),
-    }));
-  } catch (e) {
-    alert(e.message);
+    const batches = await Promise.all(brands.map((brand) =>
+      api('/api/run-qc', { method: 'POST', body: JSON.stringify({ brand, codes }) })
+        .then((data) => (data.results || []).map((r) => ({ ...r, brand })))
+        .catch((e) => codes.map((code) => ({
+          brand, code, verdict: 'NOT_SAFE', mechanics: '', findings: [{ severity: 'FAIL', check: 'run-qc-error', message: e.message }], details: {}, snapshotPath: '', duplicateRecent: null,
+        })))
+    ));
+    renderRun(batches.flat());
   } finally {
     $('runQc').disabled = false;
   }
@@ -298,7 +455,7 @@ async function dispatchFindingFix(index) {
       method: 'POST',
       body: JSON.stringify({
         source: 'auto-finding',
-        brand: state.selectedBrand,
+        brand: data.brand,
         code: data.code,
         finding,
         expected: finding.expected || '',
@@ -325,7 +482,7 @@ async function dispatchManualFix() {
       method: 'POST',
       body: JSON.stringify({
         source: 'manual',
-        brand: state.selectedBrand,
+        brand: data.brand,
         code: data.code,
         finding,
         expected: $('expected').value,
@@ -349,14 +506,14 @@ function compactFindings(data) {
 }
 
 function recordPayload(data) {
-  const brand = state.brands.find((b) => b.id === state.selectedBrand);
+  const brand = state.brands.find((b) => b.id === data.brand);
   return {
-    brand: state.selectedBrand,
+    brand: data.brand,
     code: data.code,
     platform: brand?.runtime?.platform || '',
     region: brand?.runtime?.region || '',
     promoType: data.details?.promoType || '',
-    result: state.selectedResults[data.code],
+    result: state.selectedResults[resultKey(data)],
     findings: compactFindings(data),
     errorCategory: $('errorCategory').value,
     description: $('description').value,
@@ -373,8 +530,9 @@ function recordPayload(data) {
 async function saveRecord() {
   const data = activeResult();
   if (!data) return alert('Run QC before saving.');
-  if (!state.selectedResults[data.code]) return alert('Choose a QC result for the active code first.');
-  if (!confirm(`Save ${state.selectedResults[data.code]} for ${state.selectedBrand} ${data.code}?`)) return;
+  const key = resultKey(data);
+  if (!state.selectedResults[key]) return alert('Choose a QC result for the active code first.');
+  if (!confirm(`Save ${state.selectedResults[key]} for ${data.brand} ${data.code}?`)) return;
   const saved = await api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(data)) });
   alert(saved.sheet.action === 'pending' ? `Saved locally; sheet pending: ${saved.sheet.error}` : 'Saved.');
   await loadHistory();
@@ -382,9 +540,9 @@ async function saveRecord() {
 
 async function saveAll() {
   if (!state.results.length) return alert('Run QC before saving.');
-  const missing = state.results.filter((result) => !state.selectedResults[result.code]).map((result) => result.code);
+  const missing = state.results.filter((r) => !state.selectedResults[resultKey(r)]).map((r) => `${r.brand} ${r.code}`);
   if (missing.length) return alert(`Choose a QC result for: ${missing.join(', ')}`);
-  if (!confirm(`Save ${state.results.length} QC records for ${state.selectedBrand}?`)) return;
+  if (!confirm(`Save ${state.results.length} QC records?`)) return;
   const saved = await Promise.all(state.results.map((result) => (
     api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(result)) })
   )));
@@ -397,7 +555,7 @@ async function copySummary() {
   const data = activeResult();
   if (!data) return;
   const text = [
-    `${state.selectedBrand} ${data.code}`,
+    `${data.brand} ${data.code}`,
     verdictWords(data.verdict, data.findings.length),
     data.mechanics,
     ...data.findings.map((f) => `- ${f.severity}: ${f.message}`),
@@ -456,11 +614,34 @@ async function loadHistory() {
 function bind() {
   $('runQc').addEventListener('click', runQc);
   $('searchBtn').addEventListener('click', runQc);
-  $('clearBtn').addEventListener('click', () => location.reload());
+  $('clearBtn').addEventListener('click', () => { resetCodeRows(); state.results = []; state.activeKey = ''; renderActiveResult(); });
   $('saveRecord').addEventListener('click', saveRecord);
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
   $('manualFix').addEventListener('click', dispatchManualFix);
+  $('settingsBtn').addEventListener('click', () => {
+    openUsersModal().catch((e) => alert(`Could not load admitted users: ${e.message}`));
+  });
+  $('usersCloseBtn').addEventListener('click', closeUsersModal);
+  $('usersModal').addEventListener('click', (e) => {
+    if (e.target === $('usersModal')) closeUsersModal();
+  });
+  $('usersAddForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = $('userEmailInput').value.trim().toLowerCase();
+    const role = $('userRoleInput').value.trim().toLowerCase();
+    if (!email) return;
+    state.adminUsers = normalizeAdminUsers([...state.adminUsers, { email, role }]);
+    $('userEmailInput').value = '';
+    renderUsersModal();
+  });
+  $('usersCopyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('usersJson').textContent);
+    } catch {
+      alert('Copy failed — select and copy the JSON manually.');
+    }
+  });
   $('closePromptBtn').addEventListener('click', closePromptModal);
   $('copyPromptBtn').addEventListener('click', async () => {
     try {
@@ -479,15 +660,74 @@ function bind() {
     btn.addEventListener('click', () => {
       const data = activeResult();
       if (!data) return alert('Run QC before choosing a result.');
-      state.selectedResults[data.code] = btn.dataset.result;
+      state.selectedResults[resultKey(data)] = btn.dataset.result;
       renderActiveResult();
     });
+  });
+  $('brandAllBtn').addEventListener('click', () => {
+    for (const b of state.brands) if (b.enabled) state.selectedBrands.add(b.id);
+    renderBrands();
+  });
+  $('brandClearBtn').addEventListener('click', () => {
+    state.selectedBrands.clear();
+    state.activeBrand = null;
+    renderBrands();
+  });
+  $('addCodeBtn').addEventListener('click', () => addCodeRow({ focus: true }));
+  $('logoutBtn').addEventListener('click', async () => {
+    const btn = $('logoutBtn');
+    const errEl = $('logoutError');
+    btn.disabled = true;
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    try {
+      const r = await fetch('/auth/logout', { method: 'POST' });
+      if (!r.ok) throw new Error(`Logout HTTP ${r.status}`);
+      location.href = '/';
+    } catch (e) {
+      errEl.textContent = `Logout failed: ${e.message}`;
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  });
+  $('brandAddSelect').addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    state.selectedBrands.add(e.target.value);
+    state.activeBrand = e.target.value;
+    renderBrands();
+  });
+  resetCodeRows();
+}
+
+const ALLOWED_RETURN_PATHS = new Set(['/dashboard']);
+
+function bindSwitcher() {
+  document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
+    const panelId = toggle.getAttribute('aria-controls');
+    const panel = panelId && document.getElementById(panelId);
+    if (!panel) return;
+    const open = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); };
+    const close = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); };
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.hidden ? open() : close();
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && e.target !== toggle) close();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
   });
 }
 
 async function init() {
+  bindSwitcher();
   bind();
   await ensureLogin();
+  syncSettingsAccess();
+  const returnTo = new URLSearchParams(location.search).get('return');
+  if (ALLOWED_RETURN_PATHS.has(returnTo)) {
+    location.replace(returnTo);
+    return;
+  }
   state.brands = (await api('/api/brands')).brands;
   renderBrands();
   await loadHistory();

@@ -2,7 +2,7 @@
 // canary-api-igmp — API-direct promo creation against iGMP BOs (WS1 V3 / WS2).
 //
 // Usage:
-//   node bin/canary-api-igmp.js <handle> [--commit] [--site=<id>]
+//   node bin/canary-api-igmp.js <handle> [--commit] [--site=<id>] [--ft-prefix|--no-ft-prefix]
 //
 //   --commit      actually hit the BO (otherwise dry-run prints the plan)
 //   --site=<id>   one of: ws1-v3-my, ws1-v3-sg, ws1-v3-id, ws1-v3-th, ws1-v3-kh, ws2
@@ -50,7 +50,7 @@ await (async () => {
   const { flags, positional } = parseArgs(process.argv.slice(2));
   const handle = positional[0];
   if (!handle) {
-    console.error('usage: canary-api-igmp.js <handle|P###> [--commit] [--test] [--site=<id>]');
+    console.error('usage: canary-api-igmp.js <handle|P###> [--commit] [--test] [--site=<id>] [--ft-prefix|--no-ft-prefix]');
     console.error('       sites: ' + listIgmpSites().join(', '));
     return bail(2);
   }
@@ -58,6 +58,8 @@ await (async () => {
   const allowDupName = flags['allow-dup-name'] === true; // operator override: save even if PromotionName already exists on the BO
   const allowRecreate = flags['allow-recreate'] === true; // operator override: proceed even if code exists but is inactive (deactivated promo)
   const testMode = flags.test === true; // prepend TEST_ to the resolved FT_ code
+  const forceFt = flags['ft-prefix'] === true;
+  const forceNoFt = flags['no-ft-prefix'] === true;
   // Resolution order: --site explicit → --brand → default ws1-v3-my.
   const brand = flags.brand;
   let siteId = flags.site;
@@ -161,11 +163,19 @@ await (async () => {
 
   let plan;
   try {
-    // FT_ is opt-in only as of 2026-07-09 — default to whatever the source
-    // row's instructions actually requested ("Add FT to code"), not always-on.
-    // --no-ft-prefix still force-suppresses it even if requested.
-    const requestedFT = Array.isArray(rec.instructions?.code_prefixes) && rec.instructions.code_prefixes.includes('FT');
-    const ftPrefix = flags['no-ft-prefix'] === true ? false : requestedFT;
+    const { resolveIgmpFtPrefixDecision } = await import('../src/igmp-ft-prefix.js');
+    const ftChoice = resolveIgmpFtPrefixDecision(rec, { forceFt, forceNoFt });
+    if (ftChoice.error) {
+      console.error(`FT prefix decision error: ${ftChoice.error}`);
+      return bail(4);
+    }
+    if (ftChoice.decision === null) {
+      console.error('FT prefix decision required for WS1/WS2. Ask the operator: “Does this promo need the FT_ prefix?”');
+      console.error('Re-run with --ft-prefix or --no-ft-prefix, or record “Add FT to code” / “No FT prefix” in the source remark.');
+      return bail(4);
+    }
+    const ftPrefix = ftChoice.decision;
+    console.log(`FT prefix decision: ${ftPrefix ? 'YES' : 'NO'} (${ftChoice.source})`);
     plan = buildIgmpPlan(rec, { siteId, ftPrefix });
   } catch (e) {
     console.error(`mapper error: ${e.message}`);
