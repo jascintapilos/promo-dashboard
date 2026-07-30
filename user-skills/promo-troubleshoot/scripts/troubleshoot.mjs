@@ -321,7 +321,10 @@ async function crossBrandCheck(promoCode, sourceSiteId) {
   const results = [];
   for (const sibId of siblings) {
     try {
-      const site = cfg.sites[sibId];
+      // R16: use getSite() so credentials are validated + injected lazily.
+      // Direct cfg.sites[sibId] access no longer returns a passworded site
+      // since credential validation moved out of readRaw() (see src/sites.js).
+      const site = getSite(sibId);
       const res = await authedFetch(site, `/api/bo/promotion?perPage=5&page=1&code=${encodeURIComponent(promoCode)}`);
       const row = (res?.data?.rows || []).find(r => r.code === promoCode);
       if (!row) { results.push({ site: sibId, found: false }); continue; }
