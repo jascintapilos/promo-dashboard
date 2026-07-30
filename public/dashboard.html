@@ -161,6 +161,33 @@
   .cap-note-item{font-size:12px;padding:5px 11px;border-radius:8px;display:flex;align-items:center;gap:6px;}
   .cap-note-item i{font-size:14px;}
 
+  /* ── UTIL SUMMARY (gauge + buckets) ── */
+  .util-summary-row{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:14px;}
+  @media(max-width:820px){.util-summary-row{grid-template-columns:1fr;}}
+  .util-gauge-card,.util-buckets-card{padding:20px 22px;}
+  .util-gauge-wrap{position:relative;width:100%;max-width:220px;height:220px;margin:14px auto 4px;}
+  .util-gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .util-gauge-val{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1;}
+  .util-gauge-lbl{font-size:11px;color:var(--ink3);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+  .util-bucket-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;}
+  @media(max-width:640px){.util-bucket-row{grid-template-columns:1fr;}}
+  .util-bucket{border:1px solid var(--line2);border-radius:10px;padding:12px 14px;background:var(--bg);}
+  .util-bucket-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;}
+  .util-bucket-count{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .util-bucket-list{list-style:none;padding:0;margin:0;font-size:12.5px;color:var(--ink);display:flex;flex-direction:column;gap:4px;}
+  .util-bucket-list li{display:flex;justify-content:space-between;align-items:center;padding:3px 0;}
+  .util-bucket-pct{font-size:11px;color:var(--ink3);font-weight:500;}
+  .util-bucket-empty{color:var(--ink3);font-style:italic;font-size:11.5px;}
+  .util-bucket-warn{border-color:#fde68a;background:#fef9e7;}
+  .util-bucket-warn .util-bucket-head{color:#b45309;}
+  .util-bucket-warn .util-bucket-count{background:#fde68a;color:#7c2d12;}
+  .util-bucket-good{border-color:#bbf7d0;background:#f0fdf4;}
+  .util-bucket-good .util-bucket-head{color:#166534;}
+  .util-bucket-good .util-bucket-count{background:#bbf7d0;color:#14532d;}
+  .util-bucket-risk{border-color:#fecaca;background:#fef2f2;}
+  .util-bucket-risk .util-bucket-head{color:#b91c1c;}
+  .util-bucket-risk .util-bucket-count{background:#fecaca;color:#7f1d1d;}
+
   /* ── TRENDS ── */
   .trend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .trend-legend{display:flex;gap:14px;}
@@ -624,6 +651,25 @@
 
     </div><!-- /view-ops -->
     <div id="view-util" style="display:none;">
+    <p class="section-label">Team health at a glance</p>
+    <div class="util-summary-row" style="margin-bottom:28px;">
+      <div class="card util-gauge-card">
+        <div class="card-title">Team utilization</div>
+        <div class="card-hint">Against 70–90% healthy target</div>
+        <div class="util-gauge-wrap">
+          <canvas id="util-gauge-canvas"></canvas>
+          <div class="util-gauge-center">
+            <div class="util-gauge-val" id="util-gauge-val">—</div>
+            <div class="util-gauge-lbl">team average</div>
+          </div>
+        </div>
+      </div>
+      <div class="card util-buckets-card">
+        <div class="card-title">Who to look at</div>
+        <div class="card-hint">Buckets by current % utilization</div>
+        <div class="util-bucket-row" id="util-buckets"></div>
+      </div>
+    </div>
     <p class="section-label">Team utilization</p>
     <div class="card" style="margin-bottom:28px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
@@ -1227,7 +1273,7 @@ let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
-let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null;
+let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null, _utilGauge=null;
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1797,6 +1843,86 @@ function renderCapacity(){
   onLeave.forEach(u=>notes.push(`<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-moon"></i><span>${u.Staff} — on leave</span></div>`));
   document.getElementById('cap-highlights').innerHTML=notes.join('');
   if(_capTab==='weekly') renderWeeklyCapacity();
+  renderUtilSummary();
+}
+
+function renderUtilSummary(){
+  const rows = UTIL.filter(u => (u.Staff||'').toLowerCase() !== 'total' && (u.Staff||'').trim() && !HIDDEN_STAFF.has(u.Staff) && !RESIGNED_STAFF.has(u.Staff));
+  const withPct = rows
+    .map(u => ({ staff: (u.Staff||'').trim(), pct: parseFloat(String(u['% Utilisation']||'').replace('%','')) }))
+    .filter(x => !isNaN(x.pct));
+  const teamAvg = withPct.length ? withPct.reduce((s,x)=>s+x.pct,0) / withPct.length : NaN;
+  renderUtilGauge(teamAvg);
+  renderUtilBuckets(withPct);
+}
+
+function renderUtilGauge(avg){
+  const canvas = document.getElementById('util-gauge-canvas');
+  const valEl = document.getElementById('util-gauge-val');
+  if (!canvas || !valEl) return;
+  const has = !isNaN(avg);
+  const safe = has ? Math.max(0, Math.min(100, avg)) : 0;
+  valEl.textContent = has ? `${avg.toFixed(0)}%` : '—';
+  const color = !has ? '#cbd5e1' : safe < 60 ? '#d97706' : safe > 90 ? '#dc2626' : '#16a34a';
+  if (_utilGauge) { _utilGauge.destroy(); _utilGauge = null; }
+  _utilGauge = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: ['Team', 'Remaining'], datasets: [{ data: has ? [safe, 100 - safe] : [0, 100], backgroundColor: [color, '#e5e7eb'], borderWidth: 0 }] },
+    options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 400 }, responsive: true, maintainAspectRatio: false },
+  });
+}
+
+function renderUtilBuckets(withPct){
+  const container = document.getElementById('util-buckets');
+  if (!container) return;
+  const under = withPct.filter(x => x.pct < 60);
+  const healthy = withPct.filter(x => x.pct >= 60 && x.pct <= 90);
+  const over = withPct.filter(x => x.pct > 90);
+  const buckets = [
+    { label: 'Under (<60%)', cls: 'warn', items: under },
+    { label: 'Healthy (60–90%)', cls: 'good', items: healthy },
+    { label: 'Over (>90%)', cls: 'risk', items: over },
+  ];
+  container.replaceChildren();
+  for (const b of buckets) {
+    const wrap = document.createElement('div');
+    wrap.className = `util-bucket util-bucket-${b.cls}`;
+
+    const head = document.createElement('div');
+    head.className = 'util-bucket-head';
+    const label = document.createElement('span');
+    label.textContent = b.label;
+    const count = document.createElement('span');
+    count.className = 'util-bucket-count';
+    count.textContent = String(b.items.length);
+    head.appendChild(label);
+    head.appendChild(count);
+
+    const list = document.createElement('ul');
+    list.className = 'util-bucket-list';
+    if (b.items.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'util-bucket-empty';
+      empty.textContent = 'no one';
+      list.appendChild(empty);
+    } else {
+      for (const item of b.items) {
+        const li = document.createElement('li');
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item.staff;
+        const pctSpan = document.createElement('span');
+        pctSpan.className = 'util-bucket-pct';
+        pctSpan.textContent = `${item.pct.toFixed(0)}%`;
+        li.appendChild(nameSpan);
+        li.appendChild(pctSpan);
+        list.appendChild(li);
+      }
+    }
+
+    wrap.appendChild(head);
+    wrap.appendChild(list);
+    container.appendChild(wrap);
+  }
 }
 
 function switchCapTab(tab){
