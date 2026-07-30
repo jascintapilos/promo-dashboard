@@ -1,14 +1,13 @@
 # GM01 Keepalive — Windows Task Scheduler setup
-# Run once as Administrator to register the task.
-#   Right-click PowerShell → "Run as administrator"
+# Run once to register the task. No admin rights required.
 #   .\bin\gm01-keepalive-setup.ps1
 
-$TaskName   = 'GM01-Keepalive'
-$NodeExe    = 'C:\Program Files\nodejs\node.exe'
-$ScriptPath = 'C:\Users\vdiuser\promo-automation\bin\gm01-keepalive.mjs'
-$WorkDir    = 'C:\Users\vdiuser\promo-automation'
-$LogFile    = 'C:\Users\vdiuser\promo-automation\captures\gm01-keepalive.log'
-$User       = "$env:COMPUTERNAME\$env:USERNAME"   # resolves to the current machine\user
+$Root          = Split-Path $PSScriptRoot -Parent
+$TaskName      = 'GM01-Keepalive'
+$WrapperScript = Join-Path $PSScriptRoot "gm01-keepalive.ps1"
+$WorkDir       = $Root
+$LogFile       = Join-Path $Root "captures\gm01-keepalive.log"
+$User          = "$env:COMPUTERNAME\$env:USERNAME"
 
 # Remove existing task if present
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -16,14 +15,13 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Write-Host "Removed existing task: $TaskName"
 }
 
-# Action: run the wrapper batch file (handles logging and session-missing guard)
-$WrapperScript = 'C:\Users\vdiuser\promo-automation\bin\gm01-keepalive.cmd'
+# Action: PowerShell wrapper (reliable $PSScriptRoot path resolution)
 $action = New-ScheduledTaskAction `
-    -Execute 'cmd.exe' `
-    -Argument "/c `"$WrapperScript`"" `
+    -Execute 'powershell.exe' `
+    -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$WrapperScript`"" `
     -WorkingDirectory $WorkDir
 
-# Trigger 1: on user logon
+# Trigger: on user logon
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $User
 
 # Settings: restart up to 10 times if the process exits, 1 min apart
