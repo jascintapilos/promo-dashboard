@@ -254,3 +254,57 @@ test('not-found: snapshot.detail becomes the mechanics string in the /api/run-qc
   const mechanics = snapshot.notFound ? snapshot.detail : 'unreachable';
   assert.equal(mechanics, 'Code GHOST not found on QP2A');
 });
+
+// ── Increment 1 (real-QC upgrade): MANUAL_REQUIRED must never become PASS ────
+
+import { VERDICTS, AUTOMATED_VERDICTS, _sealVerdictForTest } from '../src/qc-dashboard/verdict-engine.js';
+
+test('Increment 1: VERDICTS enum includes MANUAL_PASS as a first-class terminal state', () => {
+  assert.equal(VERDICTS.SAFE, 'SAFE');
+  assert.equal(VERDICTS.REVIEW, 'REVIEW');
+  assert.equal(VERDICTS.NOT_SAFE, 'NOT_SAFE');
+  assert.equal(VERDICTS.MANUAL_REQUIRED, 'MANUAL_REQUIRED');
+  assert.equal(VERDICTS.MANUAL_PASS, 'MANUAL_PASS');
+});
+
+test('Increment 1: MANUAL_PASS is NOT in AUTOMATED_VERDICTS — only operator-override can produce it', () => {
+  assert.ok(AUTOMATED_VERDICTS.has('SAFE'));
+  assert.ok(AUTOMATED_VERDICTS.has('REVIEW'));
+  assert.ok(AUTOMATED_VERDICTS.has('NOT_SAFE'));
+  assert.ok(AUTOMATED_VERDICTS.has('MANUAL_REQUIRED'));
+  assert.equal(AUTOMATED_VERDICTS.has('MANUAL_PASS'), false, 'MANUAL_PASS must not be an automated verdict');
+});
+
+test('Increment 1: computeVerdict never produces MANUAL_PASS from any input combination', () => {
+  // Try every combination that might tempt aggregation to soften: empty findings
+  // (would be SAFE), pure fetch-failed FAILs (would be MANUAL_REQUIRED), mixed
+  // FAILs (would be NOT_SAFE), pure WARNINGs (would be REVIEW). None should
+  // return MANUAL_PASS.
+  const cases = [
+    { findings: [], details: { promoCode: 'X', promoName: 'X', promoType: 'X', currency: 'X', validity: 'X', rewardValidity: 'X', status: 'X' } },
+    { findings: [{ severity: 'FAIL', check: 'fetch-failed', message: 'x' }], details: UNAVAILABLE_DETAILS },
+    { findings: [{ severity: 'FAIL', check: 'no-currencies', message: 'x' }], details: UNAVAILABLE_DETAILS },
+    { findings: [{ severity: 'WARNING', check: 'stale-mt', message: 'x' }], details: UNAVAILABLE_DETAILS },
+  ];
+  for (const c of cases) {
+    const { verdict } = computeVerdict(c);
+    assert.notEqual(verdict, 'MANUAL_PASS', `computeVerdict must not produce MANUAL_PASS (input: ${JSON.stringify(c.findings.map(f => f.check))})`);
+    assert.ok(AUTOMATED_VERDICTS.has(verdict), `verdict "${verdict}" must be in AUTOMATED_VERDICTS`);
+  }
+});
+
+test('Increment 1: _sealVerdictForTest throws if a code path emits MANUAL_PASS from automation', () => {
+  // Loud invariant — future refactors that accidentally return MANUAL_PASS
+  // from computeVerdict will fail here at runtime + in this test.
+  assert.throws(
+    () => _sealVerdictForTest({ verdict: 'MANUAL_PASS', findings: [] }),
+    /MANUAL_PASS must come from the override endpoint only/,
+  );
+});
+
+test('Increment 1: automated verdicts pass through the seal untouched', () => {
+  for (const v of ['SAFE', 'REVIEW', 'NOT_SAFE', 'MANUAL_REQUIRED']) {
+    const sealed = _sealVerdictForTest({ verdict: v, findings: [] });
+    assert.equal(sealed.verdict, v);
+  }
+});
