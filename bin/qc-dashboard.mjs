@@ -130,7 +130,12 @@ function buildSiteDiag() {
   try { cfg = loadSitesConfig(); }
   catch (e) { return { error: 'sites-config-load-failed', detail: e?.message?.replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>') || 'unknown' }; }
   const REQUIRED_QP2 = ['baseUrl', 'apiHost', 'reqSignKey', 'loginMerchantCode', 'username'];
-  const REQUIRED_QPRO = ['baseUrl', 'username'];
+  // R21: QPRO uses the same login flow as QP2 (POST {apiHost}/api/bo/login with
+  // AES-CBC(password, reqSignKey) + loginMerchantCode). Pre-R21 this list was
+  // just ['baseUrl', 'username'] — Codex flagged that as a false-green source
+  // for QPRO in the Site Configs modal. Aligning with QP2 so the diag reflects
+  // real usability of the auto-fetch path.
+  const REQUIRED_QPRO = ['baseUrl', 'apiHost', 'reqSignKey', 'loginMerchantCode', 'username'];
   const REQUIRED_BIA = ['baseUrl', 'username'];
   const requiredFor = (p) => (p === 'qp2' ? REQUIRED_QP2 : p === 'qpro' ? REQUIRED_QPRO : REQUIRED_BIA);
   const sites = Object.values(cfg.sites || {}).map((s) => {

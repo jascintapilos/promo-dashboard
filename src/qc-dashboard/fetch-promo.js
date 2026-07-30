@@ -293,7 +293,18 @@ function _r17LogQpro({ tag, brand, code, site, listingResp, detailBundle }) {
 }
 
 async function fetchQproQp2(brand, code, runtime) {
-  const site = getSite(runtime.siteId);
+  const rawSite = getSite(runtime.siteId);
+  // R21 (trial A): for QPRO reads, override apiHost with baseUrl. The recorded
+  // qproNapi.823868.com host returns nginx 403 from both prod and dev — Codex
+  // audit + operator memory suggest the API moved to the same host as the BO
+  // front-end (bo.mei707.com / qproNbo.mei707.com). This override affects ONLY
+  // the QC Hub read path — daily canary save flow reads from src/ingest.js's
+  // BRAND_TO_SITE + uses the original apiHost, so operator's daily save flow
+  // is untouched by this trial. If the read succeeds, we know the new host;
+  // if it also 403s, we've falsified the hypothesis.
+  const site = runtime.platform === 'qpro' && rawSite.baseUrl
+    ? { ...rawSite, apiHost: rawSite.baseUrl }
+    : rawSite;
   const diagTarget = process.env.QC_DIAG_BRAND;
   const diagOn = !!diagTarget && (diagTarget === '*' || diagTarget.split(',').map((s) => s.trim()).includes(brand));
   const listingResp = diagOn ? await getQproListingReadonly(site, code, { merchantId: runtime.merchantId }) : null;
