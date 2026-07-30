@@ -260,14 +260,55 @@ function normalizeIgmp({ brand, runtime, list, detail, rewardContents }) {
   return { details, checkCandidate, raw: { list, detail, rewardContents } };
 }
 
+// R17 (TEMP DIAG — remove after root-cause identified): tiny helper that redacts
+// URLs down to host-only + returns object-key shapes without values, so nothing
+// sensitive lands in the pipeline log. Fires ONLY when QC_DIAG_BRAND env var
+// matches the brand being fetched (default off; opt-in per deploy).
+function _r17SafeHost(u) {
+  try { return new URL(u).host; } catch { return String(u || '').replace(/[?#].*$/, '').slice(0, 60); }
+}
+function _r17Keys(obj) {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) return `Array(${obj.length})`;
+  if (typeof obj === 'object') return Object.keys(obj);
+  return typeof obj;
+}
+function _r17LogQpro({ tag, brand, code, site, listingResp, detailBundle }) {
+  try {
+    const listingRows = listingResp?.data?.rows || [];
+    const matched = listingRows.find((r) => r.code === code);
+    const currencyRows = detailBundle?.currencies || [];
+    const nameRows = detailBundle?.names || [];
+    console.log('[r17-diag] ' + JSON.stringify({
+      tag, brand, code,
+      site: { id: site?.id, platform: site?.platform, baseUrl: _r17SafeHost(site?.baseUrl), apiHost: _r17SafeHost(site?.apiHost) },
+      listing: { rowCount: listingRows.length, matched: !!matched, matchedRowKeys: matched ? Object.keys(matched).slice(0, 40) : null, matchedId: matched?.id ?? null },
+      detail: { keys: _r17Keys(detailBundle?.detail), sample: detailBundle?.detail?.[0] ? Object.keys(detailBundle.detail[0]).slice(0, 40) : null },
+      currencies: { rowCount: currencyRows.length, firstRowKeys: currencyRows[0] ? Object.keys(currencyRows[0]).slice(0, 40) : null, firstRow: currencyRows[0] ? { currency: currencyRows[0].currency, currency_id: currencyRows[0].currency_id, currency_code: currencyRows[0].currency_code, has_currency_field: 'currency' in currencyRows[0] } : null },
+      names: { rowCount: nameRows.length, firstRowKeys: nameRows[0] ? Object.keys(nameRows[0]).slice(0, 40) : null, sampleLangs: nameRows.map((n) => n.language || n.lang || n.locale || null).slice(0, 8) },
+    }));
+  } catch (e) {
+    try { console.log('[r17-diag] logger-failed: ' + (e?.message || 'unknown')); } catch {}
+  }
+}
+
 async function fetchQproQp2(brand, code, runtime) {
   const site = getSite(runtime.siteId);
-  const listingRow = await findPromotionByCodeReadonly(site, code, { merchantId: runtime.merchantId });
-  if (!listingRow) throw new PromoNotFoundError(brand, code);
+  const diagTarget = process.env.QC_DIAG_BRAND;
+  const diagOn = !!diagTarget && (diagTarget === '*' || diagTarget.split(',').map((s) => s.trim()).includes(brand));
+  const listingResp = diagOn ? await getQproListingReadonly(site, code, { merchantId: runtime.merchantId }) : null;
+  const listingRow = diagOn
+    ? (listingResp?.data?.rows || []).find((r) => r.code === code) || null
+    : await findPromotionByCodeReadonly(site, code, { merchantId: runtime.merchantId });
+  if (!listingRow) {
+    if (diagOn) _r17LogQpro({ tag: 'listing-empty', brand, code, site, listingResp, detailBundle: null });
+    throw new PromoNotFoundError(brand, code);
+  }
   const [detailBundle, listingFull] = await Promise.all([
     getPromotionDetailReadonly(site, listingRow.id),
-    getQproListingReadonly(site, code, { merchantId: runtime.merchantId }),
+    diagOn ? Promise.resolve(listingResp) : getQproListingReadonly(site, code, { merchantId: runtime.merchantId }),
   ]);
+  if (diagOn) _r17LogQpro({ tag: 'listing+detail', brand, code, site, listingResp: listingFull, detailBundle });
   const fullRow = (listingFull?.data?.rows || []).find((r) => r.code === code) || listingRow;
   return normalizeQproQp2({ brand, runtime, listingRow: fullRow, listingFull, ...detailBundle });
 }
