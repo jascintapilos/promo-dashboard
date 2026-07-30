@@ -112,6 +112,25 @@ function updateRemarksVisibility() {
 
 const $ = (id) => document.getElementById(id);
 
+/* R12: session pill (topbar signal zone) */
+function setSessionPill(email) {
+  const pill = document.getElementById('sessionPill');
+  if (!pill) return;
+  if (email) {
+    pill.classList.remove('neutral');
+    pill.textContent = `Signed in · ${email}`;
+    pill.setAttribute('title', email);
+  } else {
+    pill.classList.add('neutral');
+    pill.textContent = 'Signed out';
+  }
+}
+/* Backward-compat mirror for anywhere still reading #signedIn */
+function _syncLegacySignedIn(email) {
+  const el = document.getElementById('signedIn');
+  if (el) el.textContent = email || 'Signed out';
+}
+
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     ...opts,
@@ -136,7 +155,7 @@ async function ensureLogin() {
   try {
     const me = await api('/api/me');
     state.user = me.user;
-    $('signedIn').textContent = state.user.email;
+    setSessionPill(state.user.email);
     return;
   } catch {}
 
@@ -146,7 +165,7 @@ async function ensureLogin() {
     // Dev bypass — localhost only; server enforces the restriction.
     const login = await api('/auth/login', { method: 'POST', body: JSON.stringify({}) });
     state.user = login.user;
-    $('signedIn').textContent = state.user.email;
+    setSessionPill(state.user.email);
     return;
   }
 
@@ -159,7 +178,7 @@ async function ensureLogin() {
       api('/auth/login', { method: 'POST', body: JSON.stringify({ credential: response.credential }) })
         .then((data) => {
           state.user = data.user;
-          $('signedIn').textContent = state.user.email;
+          setSessionPill(state.user.email);
           $('loginOverlay').classList.add('hidden');
           resolve();
         })
@@ -901,8 +920,17 @@ function bindSwitcher() {
   });
 }
 
+function bindTopbarScrollShadow() {
+  const topbar = document.getElementById('topbar');
+  if (!topbar) return;
+  window.addEventListener('scroll', () => {
+    topbar.classList.toggle('scrolled', window.scrollY > 4);
+  }, { passive: true });
+}
+
 async function init() {
   bindSwitcher();
+  bindTopbarScrollShadow();
   bind();
   setWorkflowStep('setup');
   renderEmptyStates();
