@@ -18,16 +18,15 @@
       </div>
     </div>
 
-    <header class="topbar">
+    <header class="topbar topbar-shared" id="topbar">
       <div class="topbar-brand">
         <span class="brand-eyebrow">Promo Operations</span>
         <h1>QC Hub</h1>
       </div>
+      <div class="topbar-signals">
+        <span id="sessionPill" class="head-status-pill neutral" title="Current session">Signed out</span>
+      </div>
       <div class="topbar-actions">
-        <nav class="dashboard-switcher" aria-label="Switch dashboard">
-          <a href="/" class="tab" aria-current="page">QC Hub</a>
-          <a href="/dashboard" class="tab">Ops Dashboard</a>
-        </nav>
         <div class="switcher-menu">
           <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-qc">
             QC Hub
@@ -39,7 +38,7 @@
           </ul>
         </div>
         <button id="settingsBtn" class="settings-btn hidden" type="button" aria-label="Manage users">⚙</button>
-        <span id="signedIn" class="signed-in">Signed out</span>
+        <span id="signedIn" class="signed-in" hidden aria-hidden="true">Signed out</span>
         <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
         <span id="logoutError" class="logout-error hidden" role="alert"></span>
       </div>
