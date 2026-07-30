@@ -21,7 +21,7 @@
  *   node bin/pull-bo-to-sheet.mjs --include-test
  *   node bin/pull-bo-to-sheet.mjs --skip-igmp          # QPRO+QP2 only
  */
-import { getAllPromotions, getPromotionDetail } from '../src/api-client.js';
+import { getAllPromotions, getPromotionDetail, promoTypeLabel } from '../src/api-client.js';
 import { QP2_BRAND_TO_IDS } from '../src/api-mapper-qp2.js';
 import { igmpPost } from '../src/igmp-client.js';
 import { getSheetsClient } from '../src/sheets-client.js';
@@ -95,7 +95,7 @@ for (const { brand, siteId } of QPRO_BRANDS) {
       const region = await regionFor(siteId, r.id);
       collected.push({
         date: ddmmyyyy(r.created_at), code: r.code, brand, region,
-        createdBy: 'promo test bot', type: ({1:'Deposit',2:'Cashback',3:'Free Credit',4:'Free Spin',5:'Rebate'}[r.promo_type] || `type_${r.promo_type}`),
+        createdBy: 'promo test bot', type: promoTypeLabel(r.promo_type),
         status: 'Created',
       });
     }
@@ -124,7 +124,7 @@ try {
     const region = await regionFor('ibc22', row.id, merchantId);
     collected.push({
       date: ddmmyyyy(row.created_at), code: row.code, brand, region,
-      createdBy: 'promo test bot', type: ({1:'Deposit',2:'Cashback',3:'Free Credit',4:'Free Spin',5:'Rebate'}[row.promo_type] || `type_${row.promo_type}`),
+      createdBy: 'promo test bot', type: promoTypeLabel(row.promo_type),
       status: 'Created',
     });
   }
