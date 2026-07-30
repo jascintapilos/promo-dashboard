@@ -13,6 +13,7 @@ import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashb
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
+import { loadConfig as loadSitesConfig, getSite as getSiteById } from '../src/sites.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -117,12 +118,60 @@ function checkCsrf(req, res) {
   return true;
 }
 
+/* R17: admin-only diagnostic — per-site config status.
+   Returns id + platform + host-only URL + which required fields are present
+   (never the values). Lets an admin see "why is Open BO disabled for QPRO1?"
+   without server access. NEVER exposes: password, username, reqSignKey, tokens. */
+function _safeHost(u) {
+  try { return new URL(u).host; } catch { return null; }
+}
+function buildSiteDiag() {
+  let cfg;
+  try { cfg = loadSitesConfig(); }
+  catch (e) { return { error: 'sites-config-load-failed', detail: e?.message?.replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>') || 'unknown' }; }
+  const REQUIRED_QP2 = ['baseUrl', 'apiHost', 'reqSignKey', 'loginMerchantCode', 'username'];
+  const REQUIRED_QPRO = ['baseUrl', 'username'];
+  const REQUIRED_BIA = ['baseUrl', 'username'];
+  const requiredFor = (p) => (p === 'qp2' ? REQUIRED_QP2 : p === 'qpro' ? REQUIRED_QPRO : REQUIRED_BIA);
+  const sites = Object.values(cfg.sites || {}).map((s) => {
+    const fields = requiredFor(s.platform);
+    const has = {};
+    for (const f of fields) {
+      const v = s[f];
+      has[`has_${f}`] = !!(v && !(typeof v === 'string' && v.startsWith('REPLACE')));
+    }
+    let valid = true;
+    let invalid_reason = null;
+    try { getSiteById(s.id); }
+    catch (e) {
+      valid = false;
+      invalid_reason = e?.code === 'SITE_CONFIG_INCOMPLETE'
+        ? { code: 'SITE_CONFIG_INCOMPLETE', field: e.field || null }
+        : { code: 'OTHER', message: (e?.message || 'unknown').slice(0, 120).replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>') };
+    }
+    return {
+      id: s.id,
+      platform: s.platform,
+      baseUrl_host: _safeHost(s.baseUrl),
+      apiHost_host: _safeHost(s.apiHost),
+      ...has,
+      valid,
+      invalid_reason,
+    };
+  });
+  return { sites, defaultSite: cfg.defaultSite };
+}
+
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
   if (req.method === 'GET' && url.pathname === '/api/admin/users') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     return send(res, 200, { users: loadAdmittedUsers() });
+  }
+  if (req.method === 'GET' && url.pathname === '/api/diag/sites') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    return send(res, 200, buildSiteDiag());
   }
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
