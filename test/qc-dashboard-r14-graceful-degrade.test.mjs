@@ -46,6 +46,103 @@ test('probeDuplicateAcrossMvp: SITE_CONFIG_INCOMPLETE on one brand → partial w
   }
 });
 
+test('R16: one broken site does not poison other sites in the loader', async () => {
+  const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+  const path = await import('node:path');
+  const os = await import('node:os');
+  const tmp = path.join(os.tmpdir(), `r16-lazy-${Date.now()}`);
+  mkdirSync(tmp, { recursive: true });
+  const sitesFile = path.join(tmp, 'bo-sites.json');
+
+  // Two sites: ibc22 has a placeholder username; qpro1 is fully valid.
+  // Pre-R16 loader would throw on ibc22 upfront and never return qpro1.
+  writeFileSync(sitesFile, JSON.stringify({
+    sites: {
+      ibc22: {
+        platform: 'qp2',
+        baseUrl: 'https://example.com',
+        apiHost: 'https://api.example.com',
+        reqSignKey: 'k',
+        loginMerchantCode: 'm',
+        username: 'REPLACE_ME',
+        password: 'x',
+      },
+      qpro1: {
+        platform: 'qpro',
+        baseUrl: 'https://qpro1.example.com',
+        username: 'real-user',
+        password: 'real-pass',
+      },
+    },
+  }, null, 2));
+
+  const cwdBefore = process.cwd();
+  process.chdir(tmp);
+  const originalEnv = process.env.BO_SITES_FILE;
+  process.env.BO_SITES_FILE = sitesFile;
+  try {
+    const modUrl = new URL(`../src/sites.js?r16test=${Date.now()}`, import.meta.url);
+    const { getSite } = await import(modUrl.href);
+
+    // qpro1 must succeed even though ibc22 is broken
+    const qpro1 = getSite('qpro1');
+    assert.equal(qpro1.id, 'qpro1');
+    assert.equal(qpro1.username, 'real-user');
+    assert.equal(qpro1.baseUrl, 'https://qpro1.example.com');
+
+    // ibc22 must still throw SITE_CONFIG_INCOMPLETE — targeted callers still get the graceful signal
+    let ibcErr;
+    try { getSite('ibc22'); } catch (e) { ibcErr = e; }
+    assert.ok(ibcErr, 'ibc22 must still throw');
+    assert.equal(ibcErr.code, 'SITE_CONFIG_INCOMPLETE');
+    assert.equal(ibcErr.siteId, 'ibc22');
+    assert.equal(ibcErr.field, 'username');
+
+    // Repeat getSite('qpro1') — should still work and hit the _validated cache path
+    const qpro1Again = getSite('qpro1');
+    assert.equal(qpro1Again._validated, true);
+  } finally {
+    process.chdir(cwdBefore);
+    if (originalEnv === undefined) delete process.env.BO_SITES_FILE;
+    else process.env.BO_SITES_FILE = originalEnv;
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+});
+
+test('R16: listSites() preserves all-or-throw behavior for estate-wide scripts', async () => {
+  const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+  const path = await import('node:path');
+  const os = await import('node:os');
+  const tmp = path.join(os.tmpdir(), `r16-listsites-${Date.now()}`);
+  mkdirSync(tmp, { recursive: true });
+  const sitesFile = path.join(tmp, 'bo-sites.json');
+  writeFileSync(sitesFile, JSON.stringify({
+    sites: {
+      ibc22: { platform: 'qp2', baseUrl: 'https://example.com', apiHost: 'https://api.example.com', reqSignKey: 'k', loginMerchantCode: 'm', username: 'REPLACE_ME', password: 'x' },
+      qpro1: { platform: 'qpro', baseUrl: 'https://qpro1.example.com', username: 'real', password: 'p' },
+    },
+  }, null, 2));
+
+  const cwdBefore = process.cwd();
+  process.chdir(tmp);
+  const originalEnv = process.env.BO_SITES_FILE;
+  process.env.BO_SITES_FILE = sitesFile;
+  try {
+    const modUrl = new URL(`../src/sites.js?r16listtest=${Date.now()}`, import.meta.url);
+    const { listSites } = await import(modUrl.href);
+    let err;
+    try { listSites(); } catch (e) { err = e; }
+    assert.ok(err, 'listSites() must throw when any site is invalid');
+    assert.equal(err.code, 'SITE_CONFIG_INCOMPLETE');
+    assert.equal(err.siteId, 'ibc22');
+  } finally {
+    process.chdir(cwdBefore);
+    if (originalEnv === undefined) delete process.env.BO_SITES_FILE;
+    else process.env.BO_SITES_FILE = originalEnv;
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+});
+
 test('sites.js SITE_CONFIG_INCOMPLETE error carries publicMessage + code + siteId + field', async () => {
   const { readFileSync, writeFileSync, mkdirSync, rmSync } = await import('node:fs');
   const path = await import('node:path');
