@@ -17,6 +17,7 @@
         <p id="loginError" class="login-error hidden"></p>
       </div>
     </div>
+
     <header class="topbar">
       <div class="topbar-brand">
         <span class="brand-eyebrow">Promo Operations</span>
@@ -44,87 +45,144 @@
       </div>
     </header>
 
-    <main>
-      <section class="picker-panel">
-        <div class="picker-head">
-          <span class="picker-label">Brands</span>
-          <div class="picker-actions">
-            <button id="brandAllBtn" type="button" class="chip-btn">All</button>
-            <button id="brandClearBtn" type="button" class="chip-btn" disabled>Clear</button>
+    <main class="qc-layout">
+      <!-- LEFT: QC Setup rail -->
+      <aside class="qc-setup-rail" aria-label="QC Setup">
+        <div class="rail-block">
+          <div class="rail-head">
+            <span class="rail-label">Brands</span>
+            <div class="rail-actions">
+              <button id="brandAllBtn" type="button" class="chip-btn">All</button>
+              <button id="brandClearBtn" type="button" class="chip-btn" disabled>Clear</button>
+            </div>
+          </div>
+          <div id="brandChips" class="chip-list" role="group" aria-label="Selected brands"></div>
+          <div id="brandEmpty" class="empty-state empty-inline">Choose one or more brands</div>
+          <div class="brand-adder">
+            <select id="brandAddSelect" class="brand-add-select" aria-label="Add brand"></select>
+          </div>
+          <div class="rail-meta">
             <span id="brandCount" class="picker-meta"></span>
           </div>
         </div>
-        <div id="brandChips" class="chip-list" role="group" aria-label="Selected brands"></div>
-        <div class="brand-adder">
-          <select id="brandAddSelect" class="brand-add-select" aria-label="Add brand"></select>
+
+        <div class="rail-block">
+          <div class="rail-head">
+            <span class="rail-label" id="codesLabel">Promo codes</span>
+            <span class="picker-meta" id="codesCount">1 of 5</span>
+          </div>
+          <div id="codeInputs" class="code-inputs-stack" aria-labelledby="codesLabel"></div>
+          <button id="addCodeBtn" type="button" class="chip-btn add-code-btn" aria-label="Add another promo code">+ Add code</button>
+        </div>
+
+        <div class="rail-block rail-links">
+          <a id="openBo" class="btn-link disabled" target="_blank" rel="noreferrer">Open BO</a>
+          <a id="openModule" class="btn-link disabled" target="_blank" rel="noreferrer">Open Module</a>
+        </div>
+
+        <div class="rail-block rail-run">
+          <button id="runQc" class="primary btn-run">Run QC</button>
+          <button id="clearBtn" class="secondary btn-clear">Clear</button>
+        </div>
+      </aside>
+
+      <!-- CENTER: Active QC workspace -->
+      <section class="workspace" aria-label="Active QC workspace">
+        <ol class="workflow-strip" id="workflowStrip" aria-label="QC workflow progress">
+          <li class="workflow-step active" data-step="setup"><span class="ws-dot"></span><span class="ws-label">Setup</span></li>
+          <li class="workflow-step" data-step="running"><span class="ws-dot"></span><span class="ws-label">Running</span></li>
+          <li class="workflow-step" data-step="review"><span class="ws-dot"></span><span class="ws-label">Review</span></li>
+          <li class="workflow-step" data-step="save"><span class="ws-dot"></span><span class="ws-label">Save</span></li>
+        </ol>
+
+        <div id="workspaceEmpty" class="empty-state empty-workspace">
+          <div class="empty-icon" aria-hidden="true">◍</div>
+          <div class="empty-title">Ready when you are</div>
+          <div class="empty-hint">Pick brands and promo codes on the left, then hit <strong>Run QC</strong>.</div>
+        </div>
+
+        <div id="workspaceBody" class="workspace-body hidden">
+          <div id="skeletonBlock" class="skeleton-block hidden" aria-hidden="true">
+            <div class="skeleton skeleton-line" style="width:60%;height:22px;"></div>
+            <div class="skeleton skeleton-line" style="width:40%;height:14px;margin-top:12px;"></div>
+            <div class="skeleton skeleton-line" style="width:100%;height:80px;margin-top:16px;"></div>
+          </div>
+
+          <div id="resultPills" class="result-pills batch-tabs" role="tablist" aria-label="QC batch results"></div>
+
+          <div id="verdictPanel" class="verdict hidden card">
+            <div id="verdictText" class="verdict-text"></div>
+            <div id="mechanics" class="mechanics"></div>
+            <div id="findings" class="findings"></div>
+          </div>
+
+          <section class="details-card card" id="detailsCard">
+            <div class="card-title-row">
+              <h2>Promo details</h2>
+              <span class="muted small" id="detailsHint"></span>
+            </div>
+            <div class="details-table-wrap">
+              <table class="details-table">
+                <thead id="detailsHead"></thead>
+                <tbody id="detailsRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="form-grid card" id="remarksCard">
+            <div class="card-title-row">
+              <h2>Error &amp; remarks</h2>
+              <span class="muted small">Applies to the active result only</span>
+            </div>
+            <label>Category <input id="errorCategory"></label>
+            <label>Description <textarea id="description"></textarea></label>
+            <label>Expected <textarea id="expected"></textarea></label>
+            <label>Actual <textarea id="actual"></textarea></label>
+            <label>Action <textarea id="actionRequired"></textarea></label>
+            <label>Person <input id="personResponsible"></label>
+            <label>Evidence <input id="evidenceLink"></label>
+            <button id="manualFix" class="secondary" type="button">Fix with Claude</button>
+          </section>
+        </div>
+
+        <!-- Sticky bottom action bar (inside workspace) -->
+        <div class="action-bar" id="actionBar" aria-hidden="true">
+          <div class="action-bar-inner">
+            <div class="action-bar-verdict">
+              <button data-result="PASS" id="passBtn" disabled>Pass</button>
+              <button data-result="FAIL">Fail</button>
+              <button data-result="REQUIRES_REVIEW">Review</button>
+              <button data-result="RECHECK_AFTER_AMENDMENT">Recheck</button>
+            </div>
+            <div class="action-bar-save">
+              <label class="apply-all-check">
+                <input type="checkbox" id="applyRemarksAll"> Apply remarks to all
+              </label>
+              <button id="copySummary" class="secondary">Copy summary</button>
+              <button id="saveRecord" class="primary">Save active</button>
+              <button id="saveAll" class="primary">Save all</button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="picker-panel">
-        <div class="picker-head">
-          <span class="picker-label" id="codesLabel">Promo codes</span>
-          <span class="picker-meta" id="codesCount">1 of 5</span>
+      <!-- RIGHT: History drawer -->
+      <aside class="history-panel" aria-label="Recent QC history">
+        <div class="history-head">
+          <span class="rail-label">Recent QC</span>
+          <span id="historyMeta" class="picker-meta"></span>
         </div>
-        <div id="codeInputs" class="code-inputs-stack" aria-labelledby="codesLabel"></div>
-        <button id="addCodeBtn" type="button" class="chip-btn add-code-btn" aria-label="Add another promo code">+ Add code</button>
-      </section>
-
-      <section class="action-row">
-        <button id="runQc" class="primary">Run QC</button>
-        <button id="searchBtn" class="secondary">Search</button>
-        <button id="clearBtn" class="secondary">Clear</button>
-        <a id="openBo" class="btn-link disabled" target="_blank" rel="noreferrer">Open BO</a>
-        <a id="openModule" class="btn-link disabled" target="_blank" rel="noreferrer">Open Module</a>
-      </section>
-
-      <section id="resultPills" class="result-pills"></section>
-
-      <section id="verdictPanel" class="verdict hidden">
-        <div id="verdictText" class="verdict-text"></div>
-        <div id="mechanics" class="mechanics"></div>
-        <div id="findings" class="findings"></div>
-      </section>
-
-      <section>
-        <h2>Promo Details</h2>
-        <div class="details-table-wrap">
-          <table class="details-table">
-            <thead id="detailsHead"></thead>
-            <tbody id="detailsRows"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="form-grid">
-        <h2>Error & Remarks</h2>
-        <label>Category <input id="errorCategory"></label>
-        <label>Description <textarea id="description"></textarea></label>
-        <label>Expected <textarea id="expected"></textarea></label>
-        <label>Actual <textarea id="actual"></textarea></label>
-        <label>Action <textarea id="actionRequired"></textarea></label>
-        <label>Person <input id="personResponsible"></label>
-        <label>Evidence <input id="evidenceLink"></label>
-        <button id="manualFix" class="secondary" type="button">Fix with Claude</button>
-      </section>
-
-      <section class="result-row">
-        <button data-result="PASS" id="passBtn" disabled>Pass</button>
-        <button data-result="FAIL">Fail</button>
-        <button data-result="REQUIRES_REVIEW">Requires Review</button>
-        <button data-result="RECHECK_AFTER_AMENDMENT">Recheck After Amendment</button>
-        <button id="saveRecord" class="primary">Save</button>
-        <button id="saveAll" class="primary">Save All</button>
-        <button id="copySummary" class="secondary">Copy QC Summary</button>
-      </section>
-
-      <section>
-        <h2>Recent QC History</h2>
-        <table>
-          <thead><tr><th>Time</th><th>Brand</th><th>Code</th><th>Result</th><th>Checked By</th><th>Action</th></tr></thead>
+        <div id="historyBanner" class="inline-banner hidden" role="status"></div>
+        <div id="historyEmpty" class="empty-state empty-inline">No history yet</div>
+        <table class="history-table">
+          <thead><tr><th>Time</th><th>Brand · Code</th><th>Result</th><th></th></tr></thead>
           <tbody id="historyRows"></tbody>
         </table>
-      </section>
+      </aside>
     </main>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
     <div id="promptModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
       <div class="modal-box">

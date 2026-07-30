@@ -5,9 +5,110 @@ const state = {
   activeBrand: null,
   results: [],
   activeKey: '',
-  selectedResults: {},
+  selectedResults: {},      // { [resultKey]: { verdict, remarks } }
   adminUsers: [],
+  historyRows: [],
+  workflowStep: 'setup',    // R10: 'setup' | 'running' | 'review' | 'save'
 };
+
+const EMPTY_REMARKS = () => ({
+  errorCategory: '', description: '', expected: '', actual: '',
+  actionRequired: '', personResponsible: '', evidenceLink: '',
+});
+
+const REMARK_FIELDS = ['errorCategory','description','expected','actual','actionRequired','personResponsible','evidenceLink'];
+
+/* ── R10: workflow strip ── */
+function setWorkflowStep(step) {
+  state.workflowStep = step;
+  const order = ['setup','running','review','save'];
+  const activeIx = order.indexOf(step);
+  document.querySelectorAll('.workflow-step').forEach((el) => {
+    const stepName = el.dataset.step;
+    const ix = order.indexOf(stepName);
+    el.classList.remove('active','done');
+    if (ix < activeIx) el.classList.add('done');
+    if (ix === activeIx) el.classList.add('active');
+  });
+}
+
+/* ── R10 + R11: toast ── */
+function toast(message, level='muted', ms=null) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = `toast ${level}`;
+  const msg = document.createElement('span');
+  msg.textContent = message;
+  t.appendChild(msg);
+  const x = document.createElement('span');
+  x.className = 'toast-x';
+  x.textContent = '×';
+  t.appendChild(x);
+  const remove = () => { t.style.opacity = 0; setTimeout(() => t.remove(), 180); };
+  t.addEventListener('click', remove);
+  container.appendChild(t);
+  while (container.children.length > 3) container.firstChild.remove();
+  setTimeout(remove, ms ?? (level === 'error' ? 6000 : 4000));
+}
+
+/* ── R10: empty-state visibility ── */
+function renderEmptyStates() {
+  const brandEmpty = document.getElementById('brandEmpty');
+  if (brandEmpty) brandEmpty.classList.toggle('hidden', state.selectedBrands.size > 0);
+  const wsEmpty = document.getElementById('workspaceEmpty');
+  const wsBody = document.getElementById('workspaceBody');
+  const hasResults = state.results.length > 0;
+  if (wsEmpty) wsEmpty.classList.toggle('hidden', hasResults);
+  if (wsBody) wsBody.classList.toggle('hidden', !hasResults);
+  const actionBar = document.getElementById('actionBar');
+  if (actionBar) actionBar.setAttribute('aria-hidden', hasResults ? 'false' : 'true');
+  const histEmpty = document.getElementById('historyEmpty');
+  if (histEmpty) histEmpty.classList.toggle('hidden', state.historyRows.length > 0);
+}
+
+/* ── R10: skeleton toggle ── */
+function showSkeleton(on) {
+  const el = document.getElementById('skeletonBlock');
+  if (el) el.classList.toggle('hidden', !on);
+}
+
+/* ── R11 fix 4: form ↔ per-result remarks ── */
+function ensureResultSlot(key) {
+  if (!state.selectedResults[key]) {
+    state.selectedResults[key] = { verdict: null, remarks: EMPTY_REMARKS() };
+  } else if (typeof state.selectedResults[key] === 'string') {
+    state.selectedResults[key] = { verdict: state.selectedResults[key], remarks: EMPTY_REMARKS() };
+  }
+  if (!state.selectedResults[key].remarks) state.selectedResults[key].remarks = EMPTY_REMARKS();
+  return state.selectedResults[key];
+}
+function getVerdictFor(key) { return state.selectedResults[key]?.verdict || null; }
+function loadRemarksIntoForm(remarks) {
+  const src = remarks || EMPTY_REMARKS();
+  for (const f of REMARK_FIELDS) {
+    const el = document.getElementById(f);
+    if (el) el.value = src[f] || '';
+  }
+}
+function persistRemarksFromForm() {
+  if (!state.activeKey) return;
+  const slot = ensureResultSlot(state.activeKey);
+  for (const f of REMARK_FIELDS) {
+    const el = document.getElementById(f);
+    if (el) slot.remarks[f] = el.value;
+  }
+}
+
+/* ── R10: remarks card visibility (FAIL/REVIEW only) ── */
+function updateRemarksVisibility() {
+  const card = document.getElementById('remarksCard');
+  if (!card) return;
+  const data = activeResult();
+  const v = data?.verdict;
+  const show = v === 'NOT_SAFE' || v === 'REVIEW' || v === 'REQUIRES_REVIEW';
+  card.classList.toggle('hidden', !show);
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -256,6 +357,7 @@ function renderBrands() {
       unselected.map((b) => `<option value="${b.id}">${b.label}</option>`).join('');
   }
   updateBrandLinks();
+  renderEmptyStates();
 }
 
 function verdictLabel(v) {
@@ -395,15 +497,18 @@ function renderActiveResult() {
   const key = data ? resultKey(data) : null;
   renderPills();
   document.querySelectorAll('[data-result]').forEach((btn) => {
-    btn.classList.toggle('primary', Boolean(data && state.selectedResults[key] === btn.dataset.result));
+    btn.classList.toggle('primary', Boolean(data && getVerdictFor(key) === btn.dataset.result));
+    btn.setAttribute('aria-pressed', String(Boolean(data && getVerdictFor(key) === btn.dataset.result)));
   });
   if (!data) {
-    $('verdictPanel').className = 'verdict hidden';
+    $('verdictPanel').className = 'verdict hidden card';
     renderDetailsTable();
+    updateRemarksVisibility();
+    renderEmptyStates();
     return;
   }
   const panel = $('verdictPanel');
-  panel.className = `verdict ${verdictClass(data.verdict)}`;
+  panel.className = `verdict card ${verdictClass(data.verdict)}`;
   $('verdictText').textContent = verdictWords(data.verdict, data.findings.length);
   $('mechanics').textContent = data.error ? `${data.error}: ${data.detail}` : data.mechanics;
   $('findings').innerHTML = data.findings.map((f, i) => `
@@ -417,21 +522,29 @@ function renderActiveResult() {
   });
   renderDetailsTable();
   $('passBtn').disabled = data.verdict !== 'SAFE';
+  // R11 fix 4: load this result's remarks into the form
+  loadRemarksIntoForm(ensureResultSlot(key).remarks);
+  updateRemarksVisibility();
+  renderEmptyStates();
 }
 
 function renderRun(results) {
   state.results = results;
   state.activeKey = results[0] ? resultKey(results[0]) : '';
   state.selectedResults = {};
+  for (const r of results) ensureResultSlot(resultKey(r));
+  setWorkflowStep(results.length ? 'review' : 'setup');
   renderActiveResult();
 }
 
 async function runQc() {
   const codes = parseCodes();
   const brands = [...state.selectedBrands];
-  if (!brands.length || !codes.length) return alert('Select at least one brand and enter one to five promo codes.');
-  if (codes.length > 5) return alert('Run QC accepts at most 5 promo codes.');
+  if (!brands.length || !codes.length) { toast('Select at least one brand and one promo code.', 'error'); return; }
+  if (codes.length > 5) { toast('Run QC accepts at most 5 promo codes.', 'error'); return; }
   $('runQc').disabled = true;
+  setWorkflowStep('running');
+  showSkeleton(true);
   try {
     const batches = await Promise.all(brands.map((brand) =>
       api('/api/run-qc', { method: 'POST', body: JSON.stringify({ brand, codes }) })
@@ -443,6 +556,7 @@ async function runQc() {
     renderRun(batches.flat());
   } finally {
     $('runQc').disabled = false;
+    showSkeleton(false);
   }
 }
 
@@ -505,50 +619,81 @@ function compactFindings(data) {
   }));
 }
 
-function recordPayload(data) {
+function recordPayload(data, useActiveFormRemarks=false) {
   const brand = state.brands.find((b) => b.id === data.brand);
+  const key = resultKey(data);
+  const slot = ensureResultSlot(key);
+  // R11 fix 3: use this result's own stored remarks by default; only pull from live form when explicitly asked
+  const remarks = useActiveFormRemarks ? Object.fromEntries(REMARK_FIELDS.map((f) => [f, document.getElementById(f)?.value || ''])) : slot.remarks;
   return {
     brand: data.brand,
     code: data.code,
     platform: brand?.runtime?.platform || '',
     region: brand?.runtime?.region || '',
     promoType: data.details?.promoType || '',
-    result: state.selectedResults[resultKey(data)],
+    result: slot.verdict,
     findings: compactFindings(data),
-    errorCategory: $('errorCategory').value,
-    description: $('description').value,
-    expected: $('expected').value,
-    actual: $('actual').value,
-    actionRequired: $('actionRequired').value,
-    personResponsible: $('personResponsible').value,
-    evidenceLink: $('evidenceLink').value,
+    errorCategory: remarks.errorCategory || '',
+    description: remarks.description || '',
+    expected: remarks.expected || '',
+    actual: remarks.actual || '',
+    actionRequired: remarks.actionRequired || '',
+    personResponsible: remarks.personResponsible || '',
+    evidenceLink: remarks.evidenceLink || '',
     fetchSnapshot: data.snapshotPath || '',
     durationS: data.duration_s || '',
   };
 }
 
+// R11 fix 2: try/catch + toast, buttons stay enabled for retry
 async function saveRecord() {
   const data = activeResult();
-  if (!data) return alert('Run QC before saving.');
+  if (!data) { toast('Run QC before saving.', 'error'); return; }
   const key = resultKey(data);
-  if (!state.selectedResults[key]) return alert('Choose a QC result for the active code first.');
-  if (!confirm(`Save ${state.selectedResults[key]} for ${data.brand} ${data.code}?`)) return;
-  const saved = await api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(data)) });
-  alert(saved.sheet.action === 'pending' ? `Saved locally; sheet pending: ${saved.sheet.error}` : 'Saved.');
-  await loadHistory();
+  const slot = ensureResultSlot(key);
+  if (!slot.verdict) { toast('Choose Pass/Fail/Review for the active result first.', 'error'); return; }
+  persistRemarksFromForm();
+  const btn = $('saveRecord');
+  btn.disabled = true;
+  try {
+    const saved = await api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(data, /*useActiveFormRemarks=*/true)) });
+    setWorkflowStep('save');
+    toast(saved.sheet?.action === 'pending' ? `Saved locally; sheet pending: ${saved.sheet.error}` : `Saved ${data.brand} ${data.code}.`, 'success');
+    try { await loadHistory(); } catch {}
+  } catch (e) {
+    toast(`Save failed: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
+// R11 fix 3: remarks apply to ACTIVE result only, unless "Apply to all" checked
 async function saveAll() {
-  if (!state.results.length) return alert('Run QC before saving.');
-  const missing = state.results.filter((r) => !state.selectedResults[resultKey(r)]).map((r) => `${r.brand} ${r.code}`);
-  if (missing.length) return alert(`Choose a QC result for: ${missing.join(', ')}`);
-  if (!confirm(`Save ${state.results.length} QC records?`)) return;
-  const saved = await Promise.all(state.results.map((result) => (
-    api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(result)) })
-  )));
-  const pending = saved.filter((item) => item.sheet.action === 'pending').length;
-  alert(pending ? `Saved ${saved.length} locally; ${pending} sheet writes pending.` : `Saved ${saved.length} records.`);
-  await loadHistory();
+  if (!state.results.length) { toast('Run QC before saving.', 'error'); return; }
+  persistRemarksFromForm();
+  const missing = state.results.filter((r) => !getVerdictFor(resultKey(r))).map((r) => `${r.brand} ${r.code}`);
+  if (missing.length) { toast(`Choose a result for: ${missing.join(', ')}`, 'error'); return; }
+  const applyAll = document.getElementById('applyRemarksAll')?.checked;
+  const btn = $('saveAll');
+  btn.disabled = true;
+  try {
+    const activeKey = state.activeKey;
+    const results = await Promise.allSettled(state.results.map((r) => {
+      const useForm = applyAll || (resultKey(r) === activeKey);
+      return api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(r, useForm)) });
+    }));
+    const okCount = results.filter((x) => x.status === 'fulfilled').length;
+    const failCount = results.length - okCount;
+    if (failCount === 0) {
+      setWorkflowStep('save');
+      toast(`Saved ${okCount} records.`, 'success');
+    } else {
+      toast(`Saved ${okCount}, failed ${failCount}. Retry the failed ones.`, 'error');
+    }
+    try { await loadHistory(); } catch {}
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function copySummary() {
@@ -560,7 +705,12 @@ async function copySummary() {
     data.mechanics,
     ...data.findings.map((f) => `- ${f.severity}: ${f.message}`),
   ].join('\n');
-  await navigator.clipboard.writeText(text);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Summary copied.', 'muted');
+  } catch (e) {
+    toast(`Copy failed: ${e.message}`, 'error');
+  }
 }
 
 async function dispatchHistoryFix(index) {
@@ -590,31 +740,62 @@ async function dispatchHistoryFix(index) {
   }
 }
 
+// R11 fix 1: try/catch; failure shows inline banner but does not fatal the app
 async function loadHistory() {
-  const h = await api('/api/history');
-  state.historyRows = h.rows || [];
-  $('historyRows').innerHTML = state.historyRows.map((r, i) => {
-    const canFix = r.qc_result === 'FAIL' || r.qc_result === 'REQUIRES_REVIEW' || r.qc_result === 'REVIEW';
-    return `
-      <tr>
-        <td>${r.timestamp || ''}</td>
-        <td>${r.brand || ''}</td>
-        <td><code>${r.code || ''}</code></td>
-        <td>${r.qc_result || ''}</td>
-        <td>${r.checked_by || ''}</td>
-        <td>${canFix ? `<button data-history-fix="${i}">Fix with Claude</button>` : ''}</td>
-      </tr>
-    `;
-  }).join('');
-  document.querySelectorAll('[data-history-fix]').forEach((btn) => {
-    btn.addEventListener('click', () => dispatchHistoryFix(Number(btn.dataset.historyFix)));
-  });
+  const banner = document.getElementById('historyBanner');
+  const meta = document.getElementById('historyMeta');
+  try {
+    const h = await api('/api/history');
+    state.historyRows = h.rows || [];
+    if (banner) { banner.classList.add('hidden'); banner.textContent = ''; }
+    if (meta) meta.textContent = state.historyRows.length ? `${state.historyRows.length} recent` : '';
+    // R10: compact 3-col history rows (Time · Brand·Code · Result · [Fix?])
+    $('historyRows').innerHTML = state.historyRows.map((r, i) => {
+      const canFix = r.qc_result === 'FAIL' || r.qc_result === 'REQUIRES_REVIEW' || r.qc_result === 'REVIEW';
+      const escBrand = (r.brand || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      const escCode = (r.code || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      const escResult = (r.qc_result || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      return `
+        <tr>
+          <td class="hist-time">${(r.timestamp || '').replace(/T/,' ').slice(0, 16)}</td>
+          <td class="hist-brand">${escBrand}<br><code>${escCode}</code></td>
+          <td>${escResult}</td>
+          <td>${canFix ? `<button data-history-fix="${i}">Fix</button>` : ''}</td>
+        </tr>
+      `;
+    }).join('');
+    document.querySelectorAll('[data-history-fix]').forEach((btn) => {
+      btn.addEventListener('click', () => dispatchHistoryFix(Number(btn.dataset.historyFix)));
+    });
+    renderEmptyStates();
+  } catch (e) {
+    if (banner) {
+      banner.textContent = `History unavailable — QC still works. (${e.message})`;
+      banner.classList.remove('hidden');
+    }
+    state.historyRows = [];
+    if (meta) meta.textContent = '';
+    if ($('historyRows')) $('historyRows').innerHTML = '';
+    renderEmptyStates();
+  }
 }
 
 function bind() {
   $('runQc').addEventListener('click', runQc);
-  $('searchBtn').addEventListener('click', runQc);
-  $('clearBtn').addEventListener('click', () => { resetCodeRows(); state.results = []; state.activeKey = ''; renderActiveResult(); });
+  $('clearBtn').addEventListener('click', () => {
+    resetCodeRows();
+    state.results = [];
+    state.activeKey = '';
+    state.selectedResults = {};
+    loadRemarksIntoForm(EMPTY_REMARKS());
+    setWorkflowStep('setup');
+    renderActiveResult();
+  });
+  // R11 fix 4: persist form edits into the active result's slot on every change
+  for (const f of REMARK_FIELDS) {
+    const el = document.getElementById(f);
+    if (el) el.addEventListener('input', persistRemarksFromForm);
+  }
   $('saveRecord').addEventListener('click', saveRecord);
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
@@ -659,8 +840,10 @@ function bind() {
   document.querySelectorAll('[data-result]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const data = activeResult();
-      if (!data) return alert('Run QC before choosing a result.');
-      state.selectedResults[resultKey(data)] = btn.dataset.result;
+      if (!data) { toast('Run QC before choosing a result.', 'error'); return; }
+      const slot = ensureResultSlot(resultKey(data));
+      slot.verdict = btn.dataset.result;
+      persistRemarksFromForm();
       renderActiveResult();
     });
   });
@@ -721,6 +904,8 @@ function bindSwitcher() {
 async function init() {
   bindSwitcher();
   bind();
+  setWorkflowStep('setup');
+  renderEmptyStates();
   await ensureLogin();
   syncSettingsAccess();
   const returnTo = new URLSearchParams(location.search).get('return');
@@ -730,9 +915,12 @@ async function init() {
   }
   state.brands = (await api('/api/brands')).brands;
   renderBrands();
-  await loadHistory();
+  // R11 fix 1: history failure no longer fatals init
+  loadHistory().catch(() => {});
+  renderEmptyStates();
 }
 
 init().catch((e) => {
-  document.body.innerHTML = `<main><section><h1>Promo QC Hub</h1><p>${e.message}</p></section></main>`;
+  const stackHtml = (e.stack || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  document.body.innerHTML = `<main><section><h1>Promo QC Hub</h1><p>${e.message}</p><pre style="white-space:pre-wrap;font-size:11px;color:#666">${stackHtml}</pre></section></main>`;
 });
