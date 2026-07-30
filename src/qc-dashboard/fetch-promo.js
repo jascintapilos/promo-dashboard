@@ -292,8 +292,44 @@ async function fetchIgmp(brand, code, runtime) {
   return normalizeIgmp({ brand, runtime, list, detail, rewardContents });
 }
 
+// R14: shared "unavailable" details shape reused by both the resolve-runtime
+// pre-fetch catch and the fetch failure catch below. Keeps every failure mode
+// returning the same shape so the frontend never gets an unexpected null.
+const UNAVAILABLE_DETAILS = {
+  promoName: 'unavailable', promoType: 'unavailable', currency: 'unavailable',
+  minDeposit: 'unavailable', maxBonus: 'unavailable', turnover: 'unavailable',
+  reward: 'unavailable', lifetimeClaim: 'unavailable', dailyClaim: 'unavailable',
+  validity: 'unavailable', recurring: 'unavailable', eligibility: 'unavailable',
+  gamesProviders: 'unavailable', inboxContent: 'unavailable', rewardValidity: 'unavailable',
+  status: 'unavailable', createdBy: 'unavailable', updatedAt: 'unavailable',
+};
+function unavailableSnapshot({ brand, code, runtime = null, error, detail }) {
+  return {
+    brand, code, runtime,
+    fetchedAt: new Date().toISOString(),
+    snapshotPath: null,
+    error, detail,
+    notFound: false,
+    details: { promoCode: code, ...UNAVAILABLE_DETAILS },
+    checkCandidate: { platform: runtime?.platform || 'unknown', brand, code },
+    raw: null,
+  };
+}
+
 export async function fetchPromoSnapshot({ brand, code }) {
-  const runtime = resolveBrandRuntime(brand);
+  // R14: wrap resolveBrandRuntime so a bad site config on the SELECTED brand
+  // returns the same "unavailable" details shape as notFound (with a config-
+  // specific error label) instead of throwing out of the API handler.
+  let runtime;
+  try {
+    runtime = resolveBrandRuntime(brand);
+  } catch (e) {
+    const detail = e?.code === 'SITE_CONFIG_INCOMPLETE'
+      ? (e.publicMessage || 'Site not fully configured on server')
+      : (e?.publicMessage || 'Unknown brand configuration error');
+    try { console.warn(`[qc-hub] fetchPromoSnapshot resolve failed: brand=${brand} ${e?.message || 'unknown'}`); } catch {}
+    return unavailableSnapshot({ brand, code, error: 'Site config incomplete', detail });
+  }
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   await mkdir(FETCH_DIR, { recursive: true });
   const snapshotPath = `${FETCH_DIR}/${brand}__${code}__${ts}.json`;
@@ -306,6 +342,10 @@ export async function fetchPromoSnapshot({ brand, code }) {
     return snapshot;
   } catch (e) {
     const notFound = isPromoNotFoundError(e);
+    // R14: sanitize file paths and use publicMessage if the underlying error
+    // carries one (e.g. SITE_CONFIG_INCOMPLETE thrown mid-fetch). Server log
+    // still gets the full message via appendFile below.
+    const clientDetail = e?.publicMessage || (e?.message || '').replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>');
     const failed = {
       brand,
       code,
@@ -319,45 +359,27 @@ export async function fetchPromoSnapshot({ brand, code }) {
       await mkdir('captures/qc-dashboard', { recursive: true });
       await appendFile(FAILED_LOG, `${JSON.stringify(failed)}\n`, 'utf8');
     });
-    return {
-      brand,
-      code,
-      runtime,
-      fetchedAt: failed.ts,
-      snapshotPath: null,
+    const snapshot = unavailableSnapshot({
+      brand, code, runtime,
       error: notFound ? null : 'BO unreachable',
-      detail: e.message,
-      notFound,
-      details: {
-        promoCode: code,
-        promoName: 'unavailable',
-        promoType: 'unavailable',
-        currency: 'unavailable',
-        minDeposit: 'unavailable',
-        maxBonus: 'unavailable',
-        turnover: 'unavailable',
-        reward: 'unavailable',
-        lifetimeClaim: 'unavailable',
-        dailyClaim: 'unavailable',
-        validity: 'unavailable',
-        recurring: 'unavailable',
-        eligibility: 'unavailable',
-        gamesProviders: 'unavailable',
-        inboxContent: 'unavailable',
-        rewardValidity: 'unavailable',
-        status: 'unavailable',
-        createdBy: 'unavailable',
-        updatedAt: 'unavailable',
-      },
-      checkCandidate: { platform: runtime.platform, brand, code },
-      raw: null,
-    };
+      detail: clientDetail,
+    });
+    snapshot.notFound = notFound;
+    snapshot.fetchedAt = failed.ts;
+    return snapshot;
   }
 }
 
+// R14: per-brand isolation. One broken site config must never fail the batch.
+// - SITE_CONFIG_INCOMPLETE errors surface as a WARNING finding (`duplicate-check-partial`)
+//   so admins know the check is degraded, not silently passing.
+// - Other errors (network / auth) are noted in the same warning but at a lower severity signal.
+// - Server log gets the raw error for debugging; the client-visible message never
+//   contains an absolute filesystem path (all such throws now carry .publicMessage).
 export async function probeDuplicateAcrossMvp({ brand, code }, brandList) {
   const enabled = brandList.filter((b) => b.enabled && b.id !== brand);
   const hits = [];
+  const skipped = [];
   await Promise.all(enabled.map(async (b) => {
     try {
       const runtime = resolveBrandRuntime(b.id);
@@ -369,13 +391,32 @@ export async function probeDuplicateAcrossMvp({ brand, code }, brandList) {
         const row = await findPromotionByCodeReadonly(site, code, { merchantId: runtime.merchantId });
         if (row) hits.push(b.id);
       }
-    } catch {}
+    } catch (e) {
+      const reason = e?.code === 'SITE_CONFIG_INCOMPLETE'
+        ? `config incomplete (missing ${e.field || 'credentials'})`
+        : (e?.publicMessage || 'unavailable');
+      skipped.push({ brand: b.id, reason });
+      // Server-side log keeps the real error for debugging; do not surface it to the client
+      try { console.warn(`[qc-hub] probe-duplicate skipped: ${b.id} (${e?.message || 'unknown'})`); } catch {}
+    }
   }));
-  if (!hits.length) return [];
-  return [{
-    severity: 'WARNING',
-    check: 'duplicate-brand',
-    message: `Same code also found on MVP brand(s): ${hits.sort().join(', ')}`,
-    actual: hits,
-  }];
+  const findings = [];
+  if (hits.length) {
+    findings.push({
+      severity: 'WARNING',
+      check: 'duplicate-brand',
+      message: `Same code also found on MVP brand(s): ${hits.sort().join(', ')}`,
+      actual: hits,
+    });
+  }
+  if (skipped.length) {
+    const parts = skipped.map((s) => `${s.brand}: ${s.reason}`).sort();
+    findings.push({
+      severity: 'WARNING',
+      check: 'duplicate-check-partial',
+      message: `Duplicate check skipped for ${skipped.length} brand${skipped.length===1?'':'s'} — ${parts.join('; ')}`,
+      actual: skipped.map((s) => s.brand).sort(),
+    });
+  }
+  return findings;
 }
