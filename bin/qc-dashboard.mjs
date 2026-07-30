@@ -173,7 +173,7 @@ function buildSiteDiag() {
        launchOk: bool, launchError: <sanitized>, browserVersion: string | null }
    Admin-only. Read-only — never launches long-lived processes. */
 async function checkPlaywrightReadiness() {
-  const out = { playwrightPkg: null, chromiumBinary: null, launchOk: false, launchError: null, browserVersion: null };
+  const out = { playwrightPkg: null, chromiumBinary: null, launchStrategy: null, launchOk: false, launchError: null, browserVersion: null };
   let chromium;
   try {
     const mod = await import('playwright');
@@ -181,18 +181,34 @@ async function checkPlaywrightReadiness() {
     try { out.playwrightPkg = (await import('playwright/package.json', { with: { type: 'json' } })).default.version; } catch { out.playwrightPkg = 'installed (version unknown)'; }
   } catch (e) { out.launchError = 'playwright package missing: ' + (e?.message || 'unknown').slice(0, 120); return out; }
   try { out.chromiumBinary = chromium.executablePath ? chromium.executablePath() : null; } catch {}
-  let browser;
-  try {
-    browser = await chromium.launch({ headless: true, timeout: 15000 });
-    const ctx = await browser.newContext();
-    out.browserVersion = browser.version();
-    out.launchOk = true;
-    await ctx.close();
-  } catch (e) {
-    out.launchError = (e?.message || 'launch failed').split('\n')[0].slice(0, 240);
-  } finally {
-    try { if (browser) await browser.close(); } catch {}
+  // Try multiple launch configs so a partial install (full Chromium present but
+  // chrome-headless-shell missing) still succeeds. Playwright 1.55+ defaults to
+  // the headless-shell binary when `headless:true`; forcing executablePath +
+  // args=--headless=new falls back to the full Chromium that IS installed here.
+  const attempts = [
+    { name: 'default(headless:true)', opts: { headless: true, timeout: 15000 } },
+    { name: 'headless-new(force-full-chromium)', opts: { headless: true, executablePath: out.chromiumBinary, args: ['--headless=new'], timeout: 15000 } },
+    { name: 'headed(fallback)', opts: { headless: false, executablePath: out.chromiumBinary, timeout: 15000 } },
+  ];
+  const failures = [];
+  for (const attempt of attempts) {
+    if (attempt.opts.executablePath == null) { failures.push(`${attempt.name}: no executablePath`); continue; }
+    let browser;
+    try {
+      browser = await chromium.launch(attempt.opts);
+      const ctx = await browser.newContext();
+      out.browserVersion = browser.version();
+      out.launchStrategy = attempt.name;
+      out.launchOk = true;
+      await ctx.close();
+      break;
+    } catch (e) {
+      failures.push(`${attempt.name}: ${(e?.message || 'launch failed').split('\n')[0].slice(0, 160)}`);
+    } finally {
+      try { if (browser) await browser.close(); } catch {}
+    }
   }
+  if (!out.launchOk) out.launchError = failures.join(' | ');
   return out;
 }
 
