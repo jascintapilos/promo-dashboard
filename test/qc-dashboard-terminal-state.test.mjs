@@ -99,7 +99,9 @@ test('fetch-failed: computeVerdict returns exactly one finding (no required-fiel
     checkCandidate: { platform: 'qpro', brand: 'QPRO5', code: 'ANY' },
   });
   const { verdict, findings } = computeVerdict({ findings: autoFindings, details: UNAVAILABLE_DETAILS });
-  assert.equal(verdict, 'NOT_SAFE');
+  // R20: verdict is now MANUAL_REQUIRED (not NOT_SAFE) when the only FAIL is
+  // a fetch-failed one — see "R20:" tests below.
+  assert.equal(verdict, 'MANUAL_REQUIRED');
   assert.equal(findings.length, 1, `Expected exactly 1 finding, got ${findings.length}: ${JSON.stringify(findings.map((f) => f.check))}`);
   assert.equal(findings[0].check, 'fetch-failed');
   assert.ok(!findings.some((f) => f.check === 'required-field-unavailable'), 'must not append required-field-unavailable');
@@ -132,6 +134,36 @@ test('fetch-failed: HTML/nginx body stripped from detail, status preserved', () 
   assert.ok(!/<html|<body|nginx/i.test(msg), `HTML body must be stripped, got: ${msg}`);
   assert.ok(!/qpro1api\.823868\.com/.test(msg), `URL must be stripped, got: ${msg}`);
   assert.ok(/HTTP 403/.test(msg), `status must be preserved, got: ${msg}`);
+});
+
+// R20: MANUAL_REQUIRED verdict when the only FAIL is a fetch-failed one.
+test('R20: MANUAL_REQUIRED verdict when only failure is fetch-failed', () => {
+  const findings = runAutoChecks({
+    brand: 'QP2A', code: 'X', notFound: false,
+    error: 'Site config incomplete',
+    detail: 'Unknown brand configuration error',
+    checkCandidate: { platform: 'qp2', brand: 'QP2A', code: 'X' },
+  });
+  const { verdict } = computeVerdict({ findings, details: UNAVAILABLE_DETAILS });
+  assert.equal(verdict, 'MANUAL_REQUIRED');
+});
+
+test('R20: NOT_SAFE stays if there is ANY non-fetch-failed FAIL alongside', () => {
+  const findings = [
+    { severity: 'FAIL', check: 'fetch-failed', message: 'BO unreachable' },
+    { severity: 'FAIL', check: 'no-currencies', message: 'No promotion currencies configured' },
+  ];
+  const { verdict } = computeVerdict({ findings, details: UNAVAILABLE_DETAILS });
+  assert.equal(verdict, 'NOT_SAFE');
+});
+
+test('R20: MANUAL_REQUIRED allowed to coexist with WARNING findings', () => {
+  const findings = [
+    { severity: 'FAIL', check: 'fetch-failed', message: 'BO unreachable' },
+    { severity: 'WARNING', check: 'duplicate-check-partial', message: 'skipped' },
+  ];
+  const { verdict } = computeVerdict({ findings, details: UNAVAILABLE_DETAILS });
+  assert.equal(verdict, 'MANUAL_REQUIRED');
 });
 
 // ── SUCCESSFUL FETCH — required-field failures still apply ───────────────────
