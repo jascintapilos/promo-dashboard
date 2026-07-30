@@ -34,10 +34,22 @@
      .brand-eyebrow/.head-status-pill/.switcher-*/.logout-btn/.subhead now live
      in /dashboard-switcher.css (shared file). Only per-page tweaks remain here. */
   .brand-sub#sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
-  /* R18-lite: source-strip pills replaced by the site-configs wrench in the
-     topbar-signals slot. Force-hidden via !important because renderDataSources()
-     later sets element.style.display='flex' at data-load. */
-  #source-strip{display:none !important;}
+  /* R18-lite v2: source-strip pills tucked into a popover anchored under
+     the ℹ button. Hidden by default via [hidden]; toggled by JS click. */
+  .status-popover-wrap{position:relative;}
+  #source-strip[hidden]{display:none;}
+  .status-popover-panel{
+    position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+    display:flex;gap:8px;flex-wrap:nowrap;
+    padding:10px 14px;
+    background:#fff;border:1px solid #d9dee7;border-radius:12px;
+    box-shadow:0 12px 32px -12px rgba(16,24,40,.18);
+    z-index:60;
+    animation:status-fade .12s ease-out;
+    font-size:11px;color:#5b6472;
+  }
+  @keyframes status-fade{from{opacity:0;transform:translate(-50%,-4px);}to{opacity:1;transform:translate(-50%,0);}}
+  #statusPopoverBtn[aria-expanded="true"]{background:#fbcfe8;border-color:#f9a8d4;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
 
@@ -486,13 +498,16 @@
       <p class="sub brand-sub" id="sub">Loading…</p>
     </div>
     <div class="topbar-signals">
-      <!-- R18-lite: pills replaced by admin icons in topbar-actions. Old
-           source-strip kept in DOM but display:none so renderDataSources()
-           doesn't null-throw. -->
-      <div class="source-strip hidden" id="source-strip" style="display:none;">
-        <span id="last-entry-pill"></span>
-        <span id="last-pull-pill"></span>
-        <span id="banner-health-pill"></span>
+      <!-- R18-lite v2: 3 status pills hidden by default, revealed as a popover
+           anchored under the ℹ button. renderDataSources() still renders into
+           #source-strip; the popover just controls its visibility. -->
+      <div class="status-popover-wrap">
+        <button type="button" id="statusPopoverBtn" class="settings-btn" aria-label="Data sources status" title="Data sources status" aria-expanded="false" aria-controls="source-strip">ℹ</button>
+        <div class="source-strip status-popover-panel" id="source-strip" hidden>
+          <span id="last-entry-pill"></span>
+          <span id="last-pull-pill"></span>
+          <span id="banner-health-pill"></span>
+        </div>
       </div>
     </div>
     <div class="topbar-actions">
@@ -1797,7 +1812,9 @@ function renderDataSources(data){
   const summary=staleCount?`${staleCount} stale · newest ${newest}`:`newest ${newest}`;
   const rows=sources.map(s=>`<div class="src-pop-row"><strong><span class="src-dot ${stale(s.d)?'stale':''}"></span>${s.label}</strong><span class="src-ts">${fmt(s.d)}</span></div>`).join('');
   pill.innerHTML=`<span class="src-pill"><span class="src-dot ${aggDot}"></span><span class="src-pill-label">Last entry</span><span class="src-pill-summary">${summary}</span><span class="src-pop">${rows}</span></span>`;
-  strip.style.display='flex';
+  // R18-lite v2: don't force-show — the popover controls visibility via the
+  // `hidden` attribute now. Just mark that we have data to show.
+  strip.dataset.hasData = 'true';
 }
 
 /* ── PULL HEALTH PILL (when sheet last got fresh data per source) ── */
@@ -2740,6 +2757,20 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 });
+
+// R18-lite v2: ℹ status popover toggle — click reveals the 3 data-source pills
+// under the button, click outside or Escape hides. Not gated by role because
+// it's just showing already-visible-in-page freshness signals.
+(function bindStatusPopover(){
+  const btn = document.getElementById('statusPopoverBtn');
+  const panel = document.getElementById('source-strip');
+  if (!btn || !panel) return;
+  const open = () => { panel.hidden = false; btn.setAttribute('aria-expanded','true'); };
+  const close = () => { panel.hidden = true; btn.setAttribute('aria-expanded','false'); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
+  document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== btn) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
 
 // R18-lite: unhide admin-only topbar icons (🔧 wrench + ⚙ users gear) if
 // the current session belongs to an admin. Both icons deep-link back to QC
