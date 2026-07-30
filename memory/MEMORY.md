@@ -28,7 +28,10 @@
 - [QPRO PUT wipes promotion_currency](project_qpro_put_currency_wipe.md) — Never re-send promotion_currency. Archive leaves code reserved — bump suffix.
 - [QPRO promo_type/sub_type to Bonus Type label](project_qpro_promo_type_subtype_map.md) — (2,1)=Dep-Reload, (2,2)=Dep-Welcome, (3,1)=FC, (4,1)=FS-Welcome, (4,2)=FS-Reload.
 - [QPRO4-17 have no SG region](feedback_qpro5plus_no_sg_region.md) — missing SGD currency there is confirmed expected, not a bug; reconfirmed 2026-07-10 across 12 brands in one batch.
+<<<<<<< Updated upstream
 - [VM category wipe 2026-07-08](project_vm_cat_wipe_2026-07-08.md) — bulk VM amend wiped promotion_category on 414 VM_* promos (missing GET→PUT field rename); restored 2026-07-21; bulk amends must use a rename-aware PUT builder.
+=======
+>>>>>>> Stashed changes
 - [QPRO Dep/FC must have game_provider_ids set](feedback_qpro_depfc_game_provider_required.md) — empty = rebate engine drops turnover deduction; "all games" still needs the full Layer-1 inclusion list, not an empty array. [[project_qpro_rebate_scope_incident]]
 
 ## QP2 Rules & Dialogs
