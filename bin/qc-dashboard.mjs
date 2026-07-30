@@ -13,7 +13,7 @@ import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashb
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
-import { loadConfig as loadSitesConfig, getSite as getSiteById } from '../src/sites.js';
+import { loadConfig as loadSitesConfig, getSite as getSiteById, writeRuntimeOverlay, getRuntimeOverlaySnapshot } from '../src/sites.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -173,8 +173,33 @@ async function handleApi(req, res, user) {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     return send(res, 200, buildSiteDiag());
   }
+  if (req.method === 'GET' && url.pathname === '/api/admin/site-configs') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    const diag = buildSiteDiag();
+    // Augment with per-site "has_overlay" flag so the UI can show
+    // which sites are patched via runtime overlay vs bare bo-sites.json.
+    const overlay = getRuntimeOverlaySnapshot();
+    const overlaidSiteIds = new Set(Object.keys(overlay.sites || {}));
+    if (Array.isArray(diag.sites)) {
+      diag.sites = diag.sites.map((s) => ({ ...s, has_overlay: overlaidSiteIds.has(s.id) }));
+    }
+    return send(res, 200, diag);
+  }
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
+  if (req.method === 'POST' && url.pathname === '/api/admin/site-configs') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    let body;
+    try { body = await readJsonBounded(req, 65536); }
+    catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
+    try {
+      const result = writeRuntimeOverlay(body);
+      try { console.log(`[admin] site-configs overlay written by ${user.email} — sites=${result.sitesWritten} passwords=${result.passwordsWritten}`); } catch {}
+      return send(res, 200, { ok: true, ...result });
+    } catch (e) {
+      return send(res, 400, { error: (e?.message || 'overlay write failed').slice(0, 200) });
+    }
+  }
   if (req.method === 'GET' && url.pathname === '/api/history') {
     return send(res, 200, await queryHistory({
       brand: url.searchParams.get('brand') || '',
