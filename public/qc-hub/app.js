@@ -62,6 +62,7 @@ function closeModalById(id) {
   if (id === 'promptModal') closePromptModal();
   else if (id === 'usersModal') closeUsersModal();
   else if (id === 'siteConfigsModal') closeSiteConfigsModal();
+  else if (id === 'manualPassModal') closeManualPassModal();
 }
 
 /* ── R10: workflow strip ── */
@@ -527,6 +528,7 @@ function verdictLabel(v) {
   if (v === 'SAFE') return 'PASS';
   if (v === 'REVIEW') return 'REVIEW';
   if (v === 'MANUAL_REQUIRED') return 'MANUAL';
+  if (v === 'MANUAL_PASS') return 'MANUAL PASS';
   return 'FAIL';
 }
 
@@ -534,16 +536,18 @@ function verdictClass(v) {
   if (v === 'SAFE') return 'safe';
   if (v === 'REVIEW') return 'review';
   if (v === 'MANUAL_REQUIRED') return 'manual';
+  // MANUAL_PASS uses the same amber accent as MANUAL_REQUIRED — visually
+  // distinct from auto-SAFE (green) so operators/reviewers can tell an
+  // override apart from an automated pass at a glance.
+  if (v === 'MANUAL_PASS') return 'manual';
   return 'not-safe';
 }
 
 function verdictWords(v, count) {
   if (v === 'SAFE') return 'SAFE TO APPROVE - PASS';
   if (v === 'REVIEW') return `REQUIRES REVIEW - WARNING - ${count} findings`;
-  // R20: when the only FAIL is a fetch-failed one (auto-fetch couldn't reach
-  // BO), don't scream "NOT SAFE". Flag the workflow reality: operator has to
-  // check the promo in the browser and mark manually.
-  if (v === 'MANUAL_REQUIRED') return `AUTO-FETCH UNAVAILABLE - MANUAL REVIEW REQUIRED - ${count} findings`;
+  if (v === 'MANUAL_REQUIRED') return `MANUAL REVIEW REQUIRED - LIVE BO EVIDENCE UNAVAILABLE - ${count} findings`;
+  if (v === 'MANUAL_PASS') return `MANUAL PASS OVERRIDE RECORDED - ${count} findings`;
   return `NOT SAFE TO APPROVE - FAIL - ${count} findings`;
 }
 
@@ -649,6 +653,85 @@ function renderCell(result, column) {
   return `<td class="${column.mono ? 'mono-cell' : 'name-cell'}"><span>${escapeHtml(value)}</span>${chipHtml ? ' ' + chipHtml : ''}</td>`;
 }
 
+/* Increment 6: Expected-vs-Live table.
+   Rendered from result.compare — hidden entirely when the active result
+   has no compare block (non-MVP brand, or the flow skipped). Every value
+   goes through escapeHtml — expected/live sides carry BO-derived strings
+   and must never touch innerHTML raw. */
+function formatCompareValue(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (Array.isArray(v)) return v.length ? v.map((x) => String(x)).join(', ') : '[]';
+  if (typeof v === 'object') {
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+  return String(v);
+}
+
+function compareVerdictClass(v) {
+  const s = String(v || '').toLowerCase();
+  if (s === 'match') return 'match';
+  if (s === 'mismatch') return 'mismatch';
+  if (s === 'unavailable') return 'unavailable';
+  return 'skipped';
+}
+
+function renderCompareCard() {
+  const card = $('compareCard');
+  const bar = $('compareSourceBar');
+  const rows = $('compareRows');
+  const hint = $('compareHint');
+  if (!card || !bar || !rows) return;
+  const data = activeResult();
+  const cmp = data?.compare;
+  if (!cmp || !Array.isArray(cmp.fields) || cmp.fields.length === 0) {
+    card.classList.add('hidden');
+    bar.replaceChildren();
+    rows.replaceChildren();
+    if (hint) hint.textContent = '';
+    return;
+  }
+  card.classList.remove('hidden');
+
+  const src = cmp.expectedSource || {};
+  const kindLabel = ({
+    bundle: 'From canary bundle',
+    request: 'From approved request',
+    ambiguous: 'Ambiguous — need Handle',
+    'not-found': 'No approved source',
+    invalid: 'Invalid source',
+  })[src.sourceType] || 'Unknown source';
+  const parts = [];
+  parts.push(`<span class="src-kind">${escapeHtml(kindLabel)}</span>`);
+  const meta = [];
+  if (src.handle) meta.push(`<span class="src-meta">Handle <code>${escapeHtml(src.handle)}</code></span>`);
+  if (src.promoCode) meta.push(`<span class="src-meta">Code <code>${escapeHtml(src.promoCode)}</code></span>`);
+  if (src.brand) meta.push(`<span class="src-meta">Brand <code>${escapeHtml(src.brand)}</code></span>`);
+  if (src.sourceTs) meta.push(`<span class="src-meta">Source ts <code>${escapeHtml(String(src.sourceTs).slice(0, 19))}</code></span>`);
+  if (src.approvalStatus) meta.push(`<span class="src-meta">Approval <code>${escapeHtml(src.approvalStatus)}</code></span>`);
+  bar.innerHTML = parts.concat(meta).join(' ');
+
+  const summary = cmp.summary || {};
+  if (hint) {
+    hint.textContent = `${summary.passed || 0} match · ${summary.failed || 0} mismatch · ${summary.unavailable || 0} unavailable · ${summary.skipped || 0} skipped`;
+  }
+
+  rows.innerHTML = cmp.fields.map((f) => {
+    const cls = compareVerdictClass(f.verdict);
+    const expected = escapeHtml(formatCompareValue(f.expected));
+    const actual = escapeHtml(formatCompareValue(f.actual));
+    const expectedCls = f.expected == null ? 'field-value' : (cls === 'mismatch' ? 'field-value has-value mismatch' : 'field-value has-value');
+    const actualCls = f.actual == null ? 'field-value' : (cls === 'mismatch' ? 'field-value has-value mismatch' : 'field-value has-value');
+    const notes = f.notes ? `<span class="field-notes">${escapeHtml(f.notes)}</span>` : '';
+    return `<tr class="row-${cls}">
+      <td class="field-name">${escapeHtml(f.name)}${notes}</td>
+      <td class="${expectedCls}">${expected}</td>
+      <td class="${actualCls}">${actual}</td>
+      <td><span class="verdict-chip ${cls}">${escapeHtml(String(f.verdict || ''))}</span></td>
+    </tr>`;
+  }).join('');
+}
+
 function renderDetailsTable() {
   // R15: DETAIL_COLUMNS[].label is a code-owned literal (safe), but result.brand
   // comes from the QC batch (BO-derived) and must be escaped before innerHTML.
@@ -699,6 +782,7 @@ function renderActiveResult() {
   if (!data) {
     $('verdictPanel').className = 'verdict hidden card';
     renderDetailsTable();
+    renderCompareCard();
     updateRemarksVisibility();
     renderEmptyStates();
     return;
@@ -723,10 +807,15 @@ function renderActiveResult() {
     btn.addEventListener('click', () => dispatchFindingFix(Number(btn.dataset.fixFinding)));
   });
   renderDetailsTable();
-  // R20: enable Pass for both auto-SAFE and MANUAL_REQUIRED. When auto-fetch
-  // failed, the operator can still pass after checking the promo in the
-  // browser — the tool shouldn't block that path.
-  $('passBtn').disabled = data.verdict !== 'SAFE' && data.verdict !== 'MANUAL_REQUIRED';
+  renderCompareCard();
+  // Increment 1 (reverts R20): PASS is auto-only. MANUAL_REQUIRED must never
+  // silently become an automated PASS — that would violate the "no PASS
+  // without live BO evidence" invariant. Operators who want to record a pass
+  // for a MANUAL_REQUIRED result use the separate MANUAL_PASS override flow
+  // (Increment 7) which captures reason + evidence + checker identity into a
+  // distinct audit record.
+  $('passBtn').disabled = data.verdict !== 'SAFE';
+  updateManualPassButtonGate(data);
   // R11 fix 4: load this result's remarks into the form
   loadRemarksIntoForm(ensureResultSlot(key).remarks);
   updateRemarksVisibility();
@@ -742,17 +831,33 @@ function renderRun(results) {
   renderActiveResult();
 }
 
+// Increment 6: handle input is validated client-side too — the server
+// enforces the same pattern (^[A-Z]{1,3}\d{1,6}$) so bad values 400 there,
+// but catching it here gives immediate feedback and doesn't waste a round-trip.
+function parseHandle() {
+  const raw = ($('handleInput')?.value || '').trim();
+  if (!raw) return { ok: true, handle: null };
+  if (raw.length > 40) return { ok: false, error: `Handle "${raw.slice(0, 30)}…" is longer than 40 characters.` };
+  if (!/^[A-Za-z][A-Za-z0-9-]{1,39}$/.test(raw)) {
+    return { ok: false, error: `Handle "${raw}" must be letters/digits/hyphens (underscores are reserved for promo codes).` };
+  }
+  return { ok: true, handle: raw };
+}
+
 async function runQc() {
   const codes = parseCodes();
   const brands = [...state.selectedBrands];
   if (!brands.length || !codes.length) { toast('Select at least one brand and one promo code.', 'error'); return; }
   if (codes.length > 5) { toast('Run QC accepts at most 5 promo codes.', 'error'); return; }
+  const parsedHandle = parseHandle();
+  if (!parsedHandle.ok) { toast(parsedHandle.error, 'error'); return; }
+  const handle = parsedHandle.handle;
   $('runQc').disabled = true;
   setWorkflowStep('running');
   showSkeleton(true);
   try {
     const batches = await Promise.all(brands.map((brand) =>
-      api('/api/run-qc', { method: 'POST', body: JSON.stringify({ brand, codes }) })
+      api('/api/run-qc', { method: 'POST', body: JSON.stringify({ brand, codes, handle }) })
         .then((data) => (data.results || []).map((r) => ({ ...r, brand })))
         .catch((e) => codes.map((code) => ({
           brand, code, verdict: 'NOT_SAFE', mechanics: '', findings: [{ severity: 'FAIL', check: 'run-qc-error', message: e.message }], details: {}, snapshotPath: '', duplicateRecent: null,
@@ -901,6 +1006,91 @@ async function saveAll() {
   }
 }
 
+// Increment 7 helper — kept in its own function so it lives far from the
+// Pass-button gate that Increment 1 audits. See D5 for the invariant.
+function updateManualPassButtonGate(data) {
+  const btn = $('manualPassBtn');
+  if (!btn) return;
+  btn.disabled = data.verdict !== 'MANUAL_REQUIRED';
+}
+
+/* Increment 7: Manual Pass Override — modal flow.
+   Reason/evidence live only in this modal; on submit, the server re-validates
+   everything and creates a NEW audit record. Local state is never mutated to
+   PASS — the modal closes on success and history reloads so the operator
+   sees the new MANUAL_PASS row alongside the original MANUAL_REQUIRED one. */
+function openManualPassModal() {
+  const data = activeResult();
+  if (!data) { toast('Run QC before requesting an override.', 'error'); return; }
+  if (data.verdict !== 'MANUAL_REQUIRED') {
+    toast('Manual Pass is only available when the verdict is MANUAL_REQUIRED.', 'error'); return;
+  }
+  $('mpReason').value = '';
+  $('mpEvidence').value = '';
+  $('mpChecker').value = state.user?.email || '';
+  $('mpError').classList.add('hidden');
+  $('mpError').textContent = '';
+  const ctx = $('manualPassContext');
+  if (ctx) {
+    ctx.innerHTML = `Overriding <code>${escapeHtml(data.brand)}</code> · <code>${escapeHtml(data.code)}</code>
+      — current verdict <code>MANUAL_REQUIRED</code>.
+      ${data.findings.length ? `Reason from auto-check: <em>${escapeHtml(data.findings[0].message || '')}</em>` : ''}`;
+  }
+  $('manualPassModal').classList.remove('hidden');
+  activateModalTrap('manualPassModal');
+}
+
+function closeManualPassModal() {
+  releaseModalTrap('manualPassModal');
+  $('manualPassModal').classList.add('hidden');
+}
+
+async function submitManualPassOverride() {
+  const data = activeResult();
+  if (!data) { closeManualPassModal(); return; }
+  const reason = $('mpReason').value.trim();
+  const evidence = $('mpEvidence').value.trim();
+  const errBox = $('mpError');
+  errBox.classList.add('hidden'); errBox.textContent = '';
+  if (reason.length < 10) { errBox.textContent = 'Reason must be at least 10 characters.'; errBox.classList.remove('hidden'); return; }
+  if (!evidence) { errBox.textContent = 'Evidence is required.'; errBox.classList.remove('hidden'); return; }
+  const brand = state.brands.find((b) => b.id === data.brand);
+  const submitBtn = $('mpSubmit');
+  submitBtn.disabled = true;
+  try {
+    await api('/api/qc-manual-pass-override', {
+      method: 'POST',
+      body: JSON.stringify({
+        brand: data.brand,
+        code: data.code,
+        platform: brand?.runtime?.platform || '',
+        region: brand?.runtime?.region || '',
+        promoType: data.details?.promoType || '',
+        // Blocker 1 fix: send the server-issued runId. The server verifies
+        // the runId maps to a recent MANUAL_REQUIRED result before allowing
+        // the override — a crafted body cannot spoof this. If the runId is
+        // missing (upgraded server, old cached page), the server 400s and
+        // the operator retries.
+        runId: data.runId || null,
+        reason,
+        evidence,
+        findings: data.findings || [],
+        fetchSnapshot: data.snapshotPath || '',
+        durationS: data.duration_s || '',
+        compare: data.compare || null,
+      }),
+    });
+    toast(`MANUAL_PASS recorded for ${data.brand} ${data.code}.`, 'success');
+    closeManualPassModal();
+    try { await loadHistory(); } catch {}
+  } catch (e) {
+    errBox.textContent = `Override failed: ${e.message}`;
+    errBox.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
 async function copySummary() {
   const data = activeResult();
   if (!data) return;
@@ -987,6 +1177,7 @@ function bind() {
   $('runQc').addEventListener('click', runQc);
   $('clearBtn').addEventListener('click', () => {
     resetCodeRows();
+    if ($('handleInput')) $('handleInput').value = '';
     state.results = [];
     state.activeKey = '';
     state.selectedResults = {};
@@ -1003,6 +1194,15 @@ function bind() {
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
   $('manualFix').addEventListener('click', dispatchManualFix);
+  // Increment 7: Manual Pass Override modal wiring
+  const mpBtn = $('manualPassBtn');
+  if (mpBtn) mpBtn.addEventListener('click', openManualPassModal);
+  const mpCancel = $('mpCancel');
+  if (mpCancel) mpCancel.addEventListener('click', closeManualPassModal);
+  const mpSubmit = $('mpSubmit');
+  if (mpSubmit) mpSubmit.addEventListener('click', submitManualPassOverride);
+  const mpModal = $('manualPassModal');
+  if (mpModal) mpModal.addEventListener('click', (e) => { if (e.target === mpModal) closeManualPassModal(); });
   $('settingsBtn').addEventListener('click', () => {
     openUsersModal().catch((e) => alert(`Could not load admitted users: ${e.message}`));
   });

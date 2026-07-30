@@ -68,6 +68,17 @@
 
         <div class="rail-block">
           <div class="rail-head">
+            <span class="rail-label" id="handleLabel">Request Handle</span>
+            <span class="picker-meta">optional</span>
+          </div>
+          <input id="handleInput" class="handle-input" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="e.g. P172 or P068-r69" aria-labelledby="handleLabel"
+                 maxlength="40" pattern="[A-Za-z][A-Za-z0-9-]{1,39}">
+          <p class="rail-hint">Link results to an approved request. Leave blank to match by promo code + brand.</p>
+        </div>
+
+        <div class="rail-block">
+          <div class="rail-head">
             <span class="rail-label" id="codesLabel">Promo codes</span>
             <span class="picker-meta" id="codesCount">1 of 5</span>
           </div>
@@ -129,6 +140,24 @@
             </div>
           </section>
 
+          <!-- Increment 6: deterministic Expected-vs-Live comparison.
+               Hidden until the active result carries a `compare` block. -->
+          <section class="details-card card compare-card hidden" id="compareCard" aria-live="polite">
+            <div class="card-title-row">
+              <h2>Expected vs Live</h2>
+              <span class="muted small" id="compareHint"></span>
+            </div>
+            <div id="compareSourceBar" class="compare-source-bar"></div>
+            <div class="details-table-wrap">
+              <table class="details-table compare-table">
+                <thead>
+                  <tr><th>Field</th><th>Expected</th><th>Live BO</th><th>Verdict</th></tr>
+                </thead>
+                <tbody id="compareRows"></tbody>
+              </table>
+            </div>
+          </section>
+
           <section class="form-grid card" id="remarksCard">
             <div class="card-title-row">
               <h2>Error &amp; remarks</h2>
@@ -153,6 +182,7 @@
               <button data-result="FAIL">Fail</button>
               <button data-result="REQUIRES_REVIEW">Review</button>
               <button data-result="RECHECK_AFTER_AMENDMENT">Recheck</button>
+              <button id="manualPassBtn" type="button" class="manual-pass-btn" disabled title="Available only when the automated verdict is MANUAL_REQUIRED">Manual Pass Override</button>
             </div>
             <div class="action-bar-save">
               <label class="apply-all-check">
@@ -183,6 +213,38 @@
 
     <!-- Toast container -->
     <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- Increment 7: Manual Pass override modal (D5).
+         Only reachable when the active verdict is MANUAL_REQUIRED. -->
+    <div id="manualPassModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="manualPassTitle">
+      <div class="modal-box">
+        <h2 id="manualPassTitle" style="margin-bottom:8px">Manual Pass Override</h2>
+        <p class="muted" style="margin:0 0 12px">
+          You are recording a PASS without live BO evidence. This creates a distinct audit entry
+          (<code>MANUAL_PASS</code>) — the original <code>MANUAL_REQUIRED</code> row stays.
+        </p>
+        <div id="manualPassContext" class="manual-pass-context muted"></div>
+        <form id="manualPassForm" class="form-grid" onsubmit="return false">
+          <label>
+            Reason <span class="muted small">why live BO evidence was unavailable AND how you verified the promo manually (10+ chars)</span>
+            <textarea id="mpReason" required minlength="10" maxlength="2000" rows="4"></textarea>
+          </label>
+          <label>
+            Evidence <span class="muted small">screenshot link, ticket URL, or short verification note</span>
+            <input id="mpEvidence" type="text" required maxlength="1000">
+          </label>
+          <label>
+            Checker <span class="muted small">from your session — cannot be changed</span>
+            <input id="mpChecker" type="text" disabled>
+          </label>
+          <div id="mpError" class="inline-banner hidden" role="alert"></div>
+          <div class="modal-actions">
+            <button id="mpSubmit" class="primary" type="submit">Record Manual Pass</button>
+            <button id="mpCancel" class="secondary" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div id="promptModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
       <div class="modal-box">

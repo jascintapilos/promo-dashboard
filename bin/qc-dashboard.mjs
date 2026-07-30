@@ -10,10 +10,15 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
+import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
+import { runComparison } from '../src/qc-dashboard/compare-flow.js';
+import { recordRun } from '../src/qc-dashboard/run-store.js';
+import { hashComparePayload } from '../src/qc-dashboard/manual-pass.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 import { loadConfig as loadSitesConfig, getSite as getSiteById, writeRuntimeOverlay, getRuntimeOverlaySnapshot } from '../src/sites.js';
+import { preflightBrand, preflightAllBrands, _clearPreflightCache } from '../src/qc-dashboard/preflight.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -227,6 +232,18 @@ async function handleApi(req, res, user) {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     return send(res, 200, await checkPlaywrightReadiness());
   }
+  if (req.method === 'GET' && url.pathname === '/api/preflight') {
+    // Increment 2 (real-QC upgrade): per-brand preflight so RunQC can skip
+    // brands where the BO cannot be reached with valid session, and report
+    // MANUAL_REQUIRED with the preflight reason instead of a promotion FAIL.
+    // Safe to expose to any admitted user — payload strips secrets/paths.
+    const brand = url.searchParams.get('brand');
+    if (brand) {
+      const skipCache = url.searchParams.get('skipCache') === '1';
+      return send(res, 200, await preflightBrand(brand, { skipCache }));
+    }
+    return send(res, 200, await preflightAllBrands({ skipCache: url.searchParams.get('skipCache') === '1' }));
+  }
   if (req.method === 'GET' && url.pathname === '/api/admin/site-configs') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     const diag = buildSiteDiag();
@@ -267,11 +284,52 @@ async function handleApi(req, res, user) {
     const body = await readJsonBounded(req);
     const normalized = normalizeRunQcRequest(body);
     if (!normalized.ok) return send(res, normalized.status, { error: normalized.error });
-    const { brand, codes } = normalized;
+    const { brand, codes, handle } = normalized;
     const brands = buildBrandList();
     const selected = brands.find((b) => b.id === brand);
     if (!selected) return send(res, 400, { error: `Unknown brand ${brand}` });
     if (!selected.enabled) return send(res, 400, { error: `${brand} is not enabled — coming soon` });
+    // Increment 6 (real-QC upgrade): MVP brands run the deterministic
+    // expected-vs-live comparator; other brands keep the pre-existing
+    // auto-checks path unchanged.
+    const isMvpBrand = selected.qcRules?.mvp === true;
+
+    // Increment 2 (real-QC upgrade): preflight the brand ONCE per RunQC call
+    // before any BO fetch. If not READY, every code returns MANUAL_REQUIRED
+    // with the preflight reason as a single fetch-failed finding — no BO
+    // fetches attempted. Preflight failures are per brief §1: transport /
+    // config / auth issues MUST be reported separately from promotion FAILs.
+    const preflight = await preflightBrand(brand);
+    if (preflight.status !== 'READY') {
+      const preflightDetail = `${preflight.status}: ${(preflight.checks || []).filter((c) => !c.ok).map((c) => `${c.name} — ${c.detail}`).join('; ') || 'not ready'}`;
+      const results = codes.map((code) => {
+        // Blocker 1 fix: even the preflight-blocked MANUAL_REQUIRED paths get
+        // a server-issued runId. That's what the MANUAL_PASS override endpoint
+        // requires to prove the override targets a real, recent server-side
+        // MANUAL_REQUIRED decision (not a crafted body claim).
+        const runId = recordRun({ brand, code, verdict: 'MANUAL_REQUIRED', sourceType: 'preflight-blocked' });
+        return {
+          code,
+          runId,
+          verdict: 'MANUAL_REQUIRED',
+          mechanics: 'Live BO evidence unavailable — preflight blocked',
+          findings: [{
+            severity: 'FAIL',
+            check: 'fetch-failed',
+            message: `Preflight: ${preflightDetail} — no live BO fetch attempted, enter QC verdict manually via Override.`,
+          }],
+          details: {},
+          snapshotPath: null,
+          duplicateRecent: null,
+          error: 'Preflight not READY',
+          detail: preflightDetail,
+          preflight,
+          duration_s: Number(((Date.now() - started) / 1000).toFixed(2)),
+        };
+      });
+      return send(res, 200, { results, preflight, duration_s: Number(((Date.now() - started) / 1000).toFixed(2)) });
+    }
+
     const settled = await Promise.allSettled(codes.map(async (code) => {
       const codeStarted = Date.now();
       const duplicateRecent = await findDuplicateRecent({ brand, code });
@@ -280,9 +338,54 @@ async function handleApi(req, res, user) {
         probeDuplicateAcrossMvp({ brand, code }, brands),
       ]);
       const autoFindings = runAutoChecks(snapshot, { duplicateFindings });
-      const { verdict, findings } = computeVerdict({ findings: autoFindings, details: snapshot.details });
+      const baseline = computeVerdict({ findings: autoFindings, details: snapshot.details });
+      let verdict = baseline.verdict;
+      let findings = baseline.findings;
+      let compareBlock = null;
+      // Increment 6 (real-QC upgrade): for MVP brands, layer the deterministic
+      // expected-vs-live comparator on top of the auto-checks path. Its
+      // verdict takes precedence, but auto-check findings still surface so
+      // duplicate-brand warnings / preflight advisories don't get lost. Non-MVP
+      // brands run only the pre-existing path (Increment 8 will gate this
+      // more strictly if needed).
+      if (isMvpBrand) {
+        try {
+          const cmp = runComparison({ brand, code, handle, snapshot, brandConfig: selected });
+          if (cmp.status === 'ok') {
+            verdict = cmp.verdict;
+            findings = [...cmp.findings, ...findings.filter((f) => f.check !== 'run-qc-error')];
+            compareBlock = {
+              expectedSource: cmp.expectedSource,
+              expected: cmp.expectedRef,
+              actual: cmp.actualRef,
+              fields: cmp.fields,
+              summary: cmp.summary,
+            };
+          }
+        } catch (e) {
+          // Defensive: a bug in the compare engine must not turn the whole
+          // /api/run-qc call into a 500. Fall back to the baseline verdict,
+          // add a WARNING so operators know the compare didn't run cleanly.
+          findings = [...findings, {
+            severity: 'WARNING',
+            check: 'compare-engine-error',
+            message: `Compare engine failed: ${e?.message || 'unknown error'} — auto-check verdict used instead.`,
+          }];
+        }
+      }
+      // Blocker 1 fix: record every /api/run-qc outcome server-side, keyed
+      // by a runId returned to the client. The MANUAL_PASS override
+      // endpoint requires this runId + re-verifies the recorded verdict, so
+      // priorVerdict claims in the request body cannot bypass eligibility.
+      const runCompareHash = compareBlock ? hashComparePayload({
+        expected: compareBlock.expected,
+        actual: compareBlock.actual,
+        fields: compareBlock.fields,
+      }) : null;
+      const runId = recordRun({ brand, code, verdict, compareHash: runCompareHash, sourceType: compareBlock?.expectedSource?.sourceType || null });
       return {
         code,
+        runId,
         verdict,
         mechanics: snapshot.notFound ? snapshot.detail : buildMechanics(snapshot.details),
         findings,
@@ -291,6 +394,8 @@ async function handleApi(req, res, user) {
         duplicateRecent,
         error: snapshot.error || null,
         detail: snapshot.detail || null,
+        preflight,
+        compare: compareBlock,
         duration_s: Number(((Date.now() - codeStarted) / 1000).toFixed(2)),
       };
     }));
@@ -315,6 +420,19 @@ async function handleApi(req, res, user) {
   if (req.method === 'POST' && url.pathname === '/api/qc-record') {
     const body = await readJsonBounded(req);
     return send(res, 200, await saveQcRecord(body, user));
+  }
+  if (req.method === 'POST' && url.pathname === '/api/qc-manual-pass-override') {
+    // Increment 7 (real-QC upgrade): D5 override endpoint. Distinct from
+    // /api/qc-record so a client bug (or a curl-happy operator) can't
+    // silently turn a FAIL into an automated PASS by posting to the wrong
+    // route. Precondition is validated server-side: only MANUAL_REQUIRED
+    // results are eligible. Reason + evidence + checker are captured into
+    // a separate audit record — the original MANUAL_REQUIRED row stays.
+    const body = await readJsonBounded(req);
+    const parsed = validateManualPassOverride({ body, user });
+    if (!parsed.ok) return send(res, parsed.status, { error: parsed.error });
+    const saved = await saveQcRecord(parsed.record, user);
+    return send(res, 200, { ...saved, override: parsed.record.override });
   }
   if (req.method === 'POST' && url.pathname === '/api/fix-request') {
     const body = await readJsonBounded(req, 65536);
