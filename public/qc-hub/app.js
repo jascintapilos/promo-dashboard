@@ -18,6 +18,51 @@ const EMPTY_REMARKS = () => ({
 
 const REMARK_FIELDS = ['errorCategory','description','expected','actual','actionRequired','personResponsible','evidenceLink'];
 
+/* R13: modal focus trap
+   Keeps Tab / Shift+Tab cycling inside the open modal, closes on Escape,
+   and restores focus to the trigger element on close. Called from
+   openPromptModal / closePromptModal / openUsersModal / closeUsersModal. */
+const _modalTraps = new Map(); // modalId → { handler, priorFocus }
+const FOCUSABLE_SEL = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function activateModalTrap(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal || _modalTraps.has(modalId)) return;
+  const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const focusables = () => Array.from(modal.querySelectorAll(FOCUSABLE_SEL)).filter((el) => el.offsetParent !== null);
+  const handler = (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); closeModalById(modalId); return; }
+    if (e.key !== 'Tab') return;
+    const list = focusables();
+    if (!list.length) { e.preventDefault(); return; }
+    const first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', handler, true);
+  _modalTraps.set(modalId, { handler, priorFocus });
+  requestAnimationFrame(() => {
+    const list = focusables();
+    if (list[0]) list[0].focus();
+    else { modal.setAttribute('tabindex', '-1'); modal.focus(); }
+  });
+}
+
+function releaseModalTrap(modalId) {
+  const trap = _modalTraps.get(modalId);
+  if (!trap) return;
+  document.removeEventListener('keydown', trap.handler, true);
+  _modalTraps.delete(modalId);
+  if (trap.priorFocus && typeof trap.priorFocus.focus === 'function') {
+    try { trap.priorFocus.focus(); } catch {}
+  }
+}
+
+function closeModalById(id) {
+  if (id === 'promptModal') closePromptModal();
+  else if (id === 'usersModal') closeUsersModal();
+}
+
 /* ── R10: workflow strip ── */
 function setWorkflowStep(step) {
   state.workflowStep = step;
@@ -141,11 +186,17 @@ async function api(path, opts = {}) {
   return data;
 }
 
-function waitForGoogle() {
+/* R13: 8s timeout so a blocked GSI script doesn't hang the sign-in overlay forever */
+function waitForGoogle(timeoutMs = 8000) {
   if (typeof google !== 'undefined' && google.accounts) return Promise.resolve();
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
     const iv = setInterval(() => {
-      if (typeof google !== 'undefined' && google.accounts) { clearInterval(iv); resolve(); }
+      if (typeof google !== 'undefined' && google.accounts) { clearInterval(iv); resolve(); return; }
+      if (Date.now() - started > timeoutMs) {
+        clearInterval(iv);
+        reject(new Error('Google Sign-In script did not load within ' + Math.round(timeoutMs/1000) + 's. Check network / ad-blocker and reload.'));
+      }
     }, 80);
   });
 }
@@ -171,7 +222,14 @@ async function ensureLogin() {
 
   // Production: Google Sign-In.
   $('loginOverlay').classList.remove('hidden');
-  await waitForGoogle();
+  try {
+    await waitForGoogle();
+  } catch (err) {
+    const el = $('loginError');
+    el.textContent = err.message || 'Google Sign-In script failed to load.';
+    el.classList.remove('hidden');
+    throw err;
+  }
 
   await new Promise((resolve, reject) => {
     function onCredential(response) {
@@ -267,9 +325,11 @@ async function openUsersModal() {
   state.adminUsers = normalizeAdminUsers(data.users);
   renderUsersModal();
   $('usersModal').classList.remove('hidden');
+  activateModalTrap('usersModal');
 }
 
 function closeUsersModal() {
+  releaseModalTrap('usersModal');
   $('usersModal').classList.add('hidden');
 }
 
@@ -434,9 +494,11 @@ function openPromptModal(prompt) {
   $('copiedConfirm').classList.add('hidden');
   $('promptModal').classList.remove('hidden');
   pre.scrollTop = 0;
+  activateModalTrap('promptModal');
 }
 
 function closePromptModal() {
+  releaseModalTrap('promptModal');
   $('promptModal').classList.add('hidden');
 }
 
