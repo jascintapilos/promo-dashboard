@@ -71,18 +71,9 @@ h2 { font-size: 15px; margin-bottom: 12px; }
 .small { font-size: 11.5px; }
 .muted { color: var(--muted); }
 
-/* R12 note: .topbar / .topbar-brand / .topbar-actions / .brand-eyebrow / .logout-btn / .head-status-pill / .switcher-* now live in /dashboard-switcher.css (shared). Only per-page overrides remain here. */
-
-.settings-btn {
-  width: 34px; height: 34px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel); color: var(--text);
-  font-size: 15px; cursor: pointer;
-}
-.settings-btn:hover { background: var(--chip); }
-.settings-btn.hidden { display: none; }
+/* R12 note: .topbar / .topbar-brand / .topbar-actions / .brand-eyebrow / .logout-btn / .head-status-pill / .switcher-* now live in /dashboard-switcher.css (shared). Only per-page overrides remain here.
+   R18-lite: .settings-btn also moved to the shared file so the wrench icon
+   on Ops Dashboard picks up the same styling. */
 
 @media (max-width: 640px) {
   .signed-in { display: none; }

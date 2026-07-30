@@ -34,6 +34,10 @@
      .brand-eyebrow/.head-status-pill/.switcher-*/.logout-btn/.subhead now live
      in /dashboard-switcher.css (shared file). Only per-page tweaks remain here. */
   .brand-sub#sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
+  /* R18-lite: source-strip pills replaced by the site-configs wrench in the
+     topbar-signals slot. Force-hidden via !important because renderDataSources()
+     later sets element.style.display='flex' at data-load. */
+  #source-strip{display:none !important;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
 
@@ -482,7 +486,11 @@
       <p class="sub brand-sub" id="sub">Loading…</p>
     </div>
     <div class="topbar-signals">
-      <div class="source-strip" id="source-strip" style="display:none;">
+      <!-- R18-lite: pills removed per operator request. Site Configs button
+           moved into the topbar for one-click admin access. Old source-strip
+           kept in DOM but display:none so the render code doesn't error. -->
+      <a href="/?open=site-configs" id="siteConfigsBtn" class="settings-btn" aria-label="Site configs (opens QC Hub)" title="Site configs (opens QC Hub)">🔧</a>
+      <div class="source-strip hidden" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
         <span id="last-pull-pill"></span>
         <span id="banner-health-pill"></span>
