@@ -92,18 +92,32 @@ function readRaw() {
     }
     for (const k of REQUIRED_BY_PLATFORM[s.platform]) {
       if (!s[k] || (typeof s[k] === 'string' && s[k].startsWith('REPLACE'))) {
-        throw new Error(`${FILE}: site "${id}" (${s.platform}) is missing or has a placeholder for "${k}"`);
+        // R14: mark this as a known config-gap so upstream callers can degrade
+        // gracefully and never leak the server-side file path to the browser.
+        const err = new Error(`${FILE}: site "${id}" (${s.platform}) is missing or has a placeholder for "${k}"`);
+        err.code = 'SITE_CONFIG_INCOMPLETE';
+        err.siteId = id;
+        err.platform = s.platform;
+        err.field = k;
+        err.publicMessage = `Site "${id}" (${s.platform}) is not fully configured on this server — contact admin.`;
+        throw err;
       }
     }
     if (!s.password && passwords[s.username]) {
       s.password = passwords[s.username];
     }
     if (!s.password) {
-      throw new Error(
+      const err = new Error(
         `Missing password for site "${id}" (username="${s.username}").\n` +
         `  Set passwords["${s.username}"] in ${LOCAL_FILE},\n` +
         `  or add a "password" field on the site in ${FILE}.`,
       );
+      err.code = 'SITE_CONFIG_INCOMPLETE';
+      err.siteId = id;
+      err.platform = s.platform;
+      err.field = 'password';
+      err.publicMessage = `Site "${id}" (${s.platform}) has no password configured on this server — contact admin.`;
+      throw err;
     }
     s.id = id;
     s.baseUrl = s.baseUrl.replace(/\/$/, '');
