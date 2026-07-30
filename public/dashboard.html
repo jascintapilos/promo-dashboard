@@ -486,10 +486,9 @@
       <p class="sub brand-sub" id="sub">Loading…</p>
     </div>
     <div class="topbar-signals">
-      <!-- R18-lite: pills removed per operator request. Site Configs button
-           moved into the topbar for one-click admin access. Old source-strip
-           kept in DOM but display:none so the render code doesn't error. -->
-      <a href="/?open=site-configs" id="siteConfigsBtn" class="settings-btn" aria-label="Site configs (opens QC Hub)" title="Site configs (opens QC Hub)">🔧</a>
+      <!-- R18-lite: pills replaced by admin icons in topbar-actions. Old
+           source-strip kept in DOM but display:none so renderDataSources()
+           doesn't null-throw. -->
       <div class="source-strip hidden" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
         <span id="last-pull-pill"></span>
@@ -498,6 +497,8 @@
     </div>
     <div class="topbar-actions">
       <span class="head-status-pill" id="lastRefreshPill" title="Last data refresh">Loading…</span>
+      <a href="/?open=site-configs" id="siteConfigsBtn" class="settings-btn hidden" aria-label="Site configs (opens QC Hub)" title="Site configs (opens QC Hub)">🔧</a>
+      <a href="/?open=users-modal" id="settingsBtn" class="settings-btn hidden" aria-label="Manage users (opens QC Hub)" title="Manage users (opens QC Hub)">⚙</a>
       <div class="switcher-menu">
         <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-ops">
           Ops Dashboard
@@ -2739,6 +2740,19 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 });
+
+// R18-lite: unhide admin-only topbar icons (🔧 wrench + ⚙ users gear) if
+// the current session belongs to an admin. Both icons deep-link back to QC
+// Hub where the actual modals live.
+(function syncAdminIcons(){
+  fetch('/api/me').then((r) => r.json()).then((data) => {
+    if (data?.user?.role !== 'admin') return;
+    const wrench = document.getElementById('siteConfigsBtn');
+    const gear = document.getElementById('settingsBtn');
+    if (wrench) wrench.classList.remove('hidden');
+    if (gear) gear.classList.remove('hidden');
+  }).catch(() => {});
+})();
 
 // Logout button
 (function bindLogout(){
