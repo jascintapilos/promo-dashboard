@@ -39,8 +39,26 @@ function isRateLimitAuthError(e) {
   return RATE_LIMIT_MESSAGE_RE.test(msg);
 }
 
+// R22 (Path A): browser-fingerprint headers copied verbatim from a working
+// Playwright request captured by src/browser/qpro-login-probe.js. The BO's
+// nginx-level WAF returns 403 for requests missing these — CRM stakeholder's
+// dashboard on the same server reaches BO successfully with plain Node fetch,
+// proving TLS/JA3 fingerprint isn't the barrier (headers are). Values are
+// stable — a fixed Chromium 148 UA on Windows is what the WAF is trained on.
+const BROWSER_FP_HEADERS = {
+  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.7778.96 Safari/537.36',
+  'x-user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.7778.96 Safari/537.36',
+  'sec-ch-ua': '"Chromium";v="148", "HeadlessChrome";v="148", "Not/A)Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+};
+
 async function rawFetchJson(url, opts = {}) {
-  const headers = { accept: 'application/json, text/plain, */*', ...(opts.headers || {}) };
+  const headers = {
+    ...BROWSER_FP_HEADERS,
+    accept: 'application/json, text/plain, */*',
+    ...(opts.headers || {}),
+  };
   let body = opts.body;
   if (body && typeof body === 'object' && !(body instanceof URLSearchParams)) {
     headers['content-type'] = 'application/json';
@@ -112,8 +130,14 @@ async function rawLoginStandard(site) {
   // the same instant — reduces how often the retry path below even needs to
   // fire. Harmless for a single/manual login (adds at most 1.2s once).
   await sleep(Math.random() * 1200);
+  // R22 (Path A): send the BO's front-end origin as Referer. Playwright's
+  // successful login sent 'https://bo.mei707.com/' (the site.baseUrl origin)
+  // because the browser navigated there before submitting. Node fetch has to
+  // set it explicitly. Missing Referer is a common WAF 403 trigger.
+  const refererHeader = site.baseUrl ? { referer: site.baseUrl.replace(/\/$/, '') + '/' } : undefined;
   const data = await withLoginRetry(() => rawFetchJson(`${site.apiHost}/api/bo/login`, {
     method: 'POST',
+    headers: refererHeader,
     body: {
       merchant_code: site.loginMerchantCode,
       username: site.username,
@@ -169,11 +193,19 @@ export async function authedFetch(siteOrId, pathOrUrl, opts = {}) {
   const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${site.apiHost}${pathOrUrl}`;
   let session = await getSession(site);
 
+  // R22 (Path A): default Referer to the BO front-end origin — same as the
+  // Playwright login capture. rawFetchJson merges opts.headers over defaults,
+  // so a caller-supplied referer still wins.
+  const referer = site.baseUrl ? site.baseUrl.replace(/\/$/, '') + '/' : null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       return await rawFetchJson(url, {
         ...opts,
-        headers: { ...(opts.headers || {}), ...authHeaders(session) },
+        headers: {
+          ...(referer ? { referer } : {}),
+          ...(opts.headers || {}),
+          ...authHeaders(session),
+        },
       });
     } catch (e) {
       if (e instanceof AuthError && attempt === 0) {
