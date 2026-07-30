@@ -10,7 +10,10 @@ export const REQUIRED_FIELDS = [
 
 // Terminal-state checks already carry a single root-cause finding.
 // Appending required-field failures on top of these is noise.
-const TERMINAL_CHECKS = new Set(['code-not-found', 'bo-unreachable']);
+// R19: added 'fetch-failed' — any snapshot.error now short-circuits auto-
+// checks (see auto-checks.js) and this set stops verdict-engine from
+// spawning "Required field X unavailable" spam on top.
+const TERMINAL_CHECKS = new Set(['code-not-found', 'bo-unreachable', 'fetch-failed']);
 
 export function unavailableRequiredFields(details = {}, required = REQUIRED_FIELDS) {
   return required.filter((field) => details[field] === 'unavailable' || details[field] == null || details[field] === '');

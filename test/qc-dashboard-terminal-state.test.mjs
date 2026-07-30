@@ -72,7 +72,9 @@ test('not-found: /api/run-qc uses snapshot.detail as mechanics (buildMechanics b
 
 // ── BO UNREACHABLE ────────────────────────────────────────────────────────────
 
-test('bo-unreachable: runAutoChecks returns exactly one bo-unreachable finding', () => {
+// R19: bo-unreachable check was renamed to 'fetch-failed' and now catches ANY
+// snapshot.error, not just 'BO unreachable'. Tests updated to match.
+test('fetch-failed: runAutoChecks returns exactly one fetch-failed finding', () => {
   const findings = runAutoChecks({
     brand: 'WS1_MY',
     code: 'ANY_CODE',
@@ -82,12 +84,12 @@ test('bo-unreachable: runAutoChecks returns exactly one bo-unreachable finding',
     checkCandidate: { platform: 'igmp', brand: 'WS1_MY', code: 'ANY_CODE' },
   });
   assert.equal(findings.length, 1, `Expected 1 finding, got ${findings.length}`);
-  assert.equal(findings[0].check, 'bo-unreachable');
+  assert.equal(findings[0].check, 'fetch-failed');
   assert.equal(findings[0].severity, 'FAIL');
   assert.ok(findings[0].message.toLowerCase().includes('unreachable'), 'message should mention unreachable');
 });
 
-test('bo-unreachable: computeVerdict returns exactly one finding (no required-field cascade)', () => {
+test('fetch-failed: computeVerdict returns exactly one finding (no required-field cascade)', () => {
   const autoFindings = runAutoChecks({
     brand: 'QPRO5',
     code: 'ANY',
@@ -99,8 +101,37 @@ test('bo-unreachable: computeVerdict returns exactly one finding (no required-fi
   const { verdict, findings } = computeVerdict({ findings: autoFindings, details: UNAVAILABLE_DETAILS });
   assert.equal(verdict, 'NOT_SAFE');
   assert.equal(findings.length, 1, `Expected exactly 1 finding, got ${findings.length}: ${JSON.stringify(findings.map((f) => f.check))}`);
-  assert.equal(findings[0].check, 'bo-unreachable');
+  assert.equal(findings[0].check, 'fetch-failed');
   assert.ok(!findings.some((f) => f.check === 'required-field-unavailable'), 'must not append required-field-unavailable');
+});
+
+// R19: SITE_CONFIG_INCOMPLETE (and any other non-'BO unreachable' error label)
+// used to fall through and spawn 10 noise findings. Now it collapses to one.
+test('fetch-failed: site-config-incomplete error also collapses to one finding + duplicate warnings', () => {
+  const dup = [{ severity: 'WARNING', check: 'duplicate-check-partial', message: 'Duplicate check skipped for QP2A' }];
+  const findings = runAutoChecks({
+    brand: 'QPRO1', code: 'X', notFound: false,
+    error: 'Site config incomplete',
+    detail: 'Site "qpro1" (qpro) is not fully configured on this server — contact admin.',
+    checkCandidate: { platform: 'qpro', brand: 'QPRO1', code: 'X' },
+  }, { duplicateFindings: dup });
+  assert.equal(findings.length, 2, `expected 2 findings (fetch-failed + duplicate-warning), got ${findings.length}`);
+  assert.equal(findings[0].check, 'fetch-failed');
+  assert.equal(findings[1].check, 'duplicate-check-partial');
+  assert.ok(!findings.some((f) => f.check === 'no-currencies'), 'must not run downstream cand-based checks when fetch failed');
+});
+
+test('fetch-failed: HTML/nginx body stripped from detail, status preserved', () => {
+  const findings = runAutoChecks({
+    brand: 'QPRO1', code: 'X', notFound: false,
+    error: 'BO unreachable',
+    detail: 'HTTP 403 https://qpro1api.823868.com/api/bo/login <html><head><title>403 Forbidden</title></head><body>…</body></html>',
+    checkCandidate: { platform: 'qpro', brand: 'QPRO1', code: 'X' },
+  });
+  const msg = findings[0].message;
+  assert.ok(!/<html|<body|nginx/i.test(msg), `HTML body must be stripped, got: ${msg}`);
+  assert.ok(!/qpro1api\.823868\.com/.test(msg), `URL must be stripped, got: ${msg}`);
+  assert.ok(/HTTP 403/.test(msg), `status must be preserved, got: ${msg}`);
 });
 
 // ── SUCCESSFUL FETCH — required-field failures still apply ───────────────────
