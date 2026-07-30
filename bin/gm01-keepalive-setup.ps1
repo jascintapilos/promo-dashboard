@@ -21,8 +21,16 @@ $action = New-ScheduledTaskAction `
     -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$WrapperScript`"" `
     -WorkingDirectory $WorkDir
 
-# Trigger: on user logon
+# Trigger 1: on user logon (primary start)
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $User
+
+# Trigger 2: hourly watchdog — if keepalive died mid-session, this revives it.
+# MultipleInstances=IgnoreNew (below) means a healthy running instance is untouched.
+$triggerWatchdog = New-ScheduledTaskTrigger `
+    -Once `
+    -At (Get-Date) `
+    -RepetitionInterval (New-TimeSpan -Minutes 60) `
+    -RepetitionDuration ([TimeSpan]::MaxValue)
 
 # Settings: restart up to 10 times if the process exits, 1 min apart
 $settings = New-ScheduledTaskSettingsSet `
@@ -40,7 +48,7 @@ $principal = New-ScheduledTaskPrincipal `
 Register-ScheduledTask `
     -TaskName   $TaskName `
     -Action     $action `
-    -Trigger    $triggerLogon `
+    -Trigger    @($triggerLogon, $triggerWatchdog) `
     -Settings   $settings `
     -Principal  $principal `
     -Description 'Keeps the GM01/UNTUNG28 BO session alive so commission submission runs without CAPTCHA.' `
@@ -48,7 +56,7 @@ Register-ScheduledTask `
 
 Write-Host ""
 Write-Host "Task '$TaskName' registered successfully."
-Write-Host "It will auto-start on next logon and restart automatically if it crashes."
+Write-Host "It will auto-start on next logon, retry on crash, and self-heal hourly."
 Write-Host ""
 Write-Host "To start it now without logging off:"
 Write-Host "  Start-ScheduledTask -TaskName '$TaskName'"

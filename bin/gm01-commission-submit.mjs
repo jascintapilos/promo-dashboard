@@ -23,9 +23,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { BASE, ensureAuthenticated, failScreenshot } from '../src/gm01-session.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT        = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER_FILE = path.join(ROOT, 'gm01-submit-ledger.local.json');
 const CREDS_FILE  = path.join(ROOT, 'gm01-credentials.local.json');
+const DEAD_FLAG   = path.join(ROOT, 'gm01-session-dead.local.json');
 
 // Load credentials from local file (gitignored); CLI args override for one-off use.
 function loadCredentials() {
@@ -64,6 +65,12 @@ if (!USER || !PASS) {
   console.error('✗ No credentials found.');
   console.error(`  Create ${CREDS_FILE} with {"user":"...","pass":"..."}`);
   console.error('  or pass --user=<u> --pass=<p> on the command line.');
+  process.exit(1);
+}
+
+if (existsSync(DEAD_FLAG)) {
+  console.error('✗ Session is dead — re-capture before submitting.');
+  console.error('  node bin/gm01-session-capture.mjs');
   process.exit(1);
 }
 
