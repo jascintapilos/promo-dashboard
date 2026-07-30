@@ -1,76 +1,141 @@
 /* ─────────────────────────────────────────────────────────────
-   Shared dashboard switcher — loaded by both QC Hub and Ops Dashboard.
-   Do NOT theme with dashboard-specific tokens. All values are literals
-   so the surface stays visually identical across both surrounding themes.
+   Shared topbar + switcher — loaded by both QC Hub and Ops Dashboard.
+   All values are literals so the surface stays visually identical
+   across both surrounding themes. Filename kept as dashboard-switcher.css
+   for backward-compat; scope has grown to full topbar (R12).
    ───────────────────────────────────────────────────────────── */
 
+/* ══════════════════════════════════════════════════════════════
+   Shared topbar (3-zone: brand · signals · actions)
+   ══════════════════════════════════════════════════════════════ */
+.topbar-shared {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 68px;
+  padding: 14px 24px;
+  background: rgba(255,255,255,0.86);
+  backdrop-filter: saturate(1.4) blur(8px);
+  -webkit-backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid transparent;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+
+/* Hairline gradient bottom border — more editorial than a flat line */
+.topbar-shared::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #d9dee7 30%, #d9dee7 70%, transparent);
+  pointer-events: none;
+}
+
+.topbar-shared.scrolled { box-shadow: 0 6px 20px -12px rgba(20,25,35,0.15); }
+
+.topbar-brand {
+  display: flex; flex-direction: column;
+  min-width: 0;
+  line-height: 1.15; gap: 3px;
+}
+.topbar-brand h1 {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  color: #171821;
+}
+.topbar-brand .brand-sub {
+  font-size: 11.5px; font-weight: 500;
+  color: #7a8394;
+}
+
+.topbar-signals {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; flex-wrap: wrap;
+  min-width: 0;
+}
+
+.topbar-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Brand eyebrow (shared across all headers, not just topbar) */
 .brand-eyebrow {
   display: block;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 10.5px;
   font-weight: 600;
-  color: #5b6472;
+  color: #7a8394;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 2px;
+  letter-spacing: 0.09em;
+  margin-bottom: 1px;
 }
 
-.dashboard-switcher {
-  display: inline-flex;
-  height: 34px;
-  border: 1px solid #d9dee7;
-  border-radius: 8px;
-  background: #ffffff;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.dashboard-switcher .tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 14px;
+/* Shared status pill (moved out of Ops-inline CSS; used on both dashboards) */
+.head-status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 11.5px; font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #fce7f3;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.head-status-pill::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: #db2777;
+}
+.head-status-pill.neutral {
+  background: #f2f4f7;
   color: #5b6472;
-  text-decoration: none;
-  transition: background 0.12s, color 0.12s;
-  box-sizing: border-box;
+  border-color: #e6e9ef;
 }
-
-.dashboard-switcher .tab + .tab { border-left: 1px solid #d9dee7; }
-
-.dashboard-switcher .tab:hover {
-  color: #171821;
-  background: #f0f2f5;
+.head-status-pill.neutral::before { background: #7a8394; }
+.head-status-pill.warn {
+  background: #fdf3e4;
+  color: #9a6700;
+  border-color: #f2d3a5;
 }
-
-.dashboard-switcher .tab[aria-current="page"] {
-  color: #ffffff;
-  background: #171821;
-  font-weight: 600;
+.head-status-pill.warn::before { background: #d97706; }
+.head-status-pill.good {
+  background: #e9f7ef;
+  color: #1a7f37;
+  border-color: #b8e0c8;
 }
-
-.dashboard-switcher .tab:focus-visible {
-  outline: 2px solid #171821;
-  outline-offset: 2px;
-  border-radius: 6px;
+.head-status-pill.good::before { background: #1a7f37; }
+.head-status-pill.danger {
+  background: #fcebeb;
+  color: #b42318;
+  border-color: #f0c4c4;
 }
+.head-status-pill.danger::before { background: #b42318; }
 
-.switcher-menu {
-  display: none;
-  position: relative;
+/* Ops sub-header (below topbar, page-scoped controls: date range + refresh) */
+.subhead {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; flex-wrap: wrap;
+  padding: 10px 24px 12px;
+  background: transparent;
+  max-width: 1440px; margin: 0 auto;
 }
-
-.switcher-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px;
+.subhead-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 14px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 12.5px; font-weight: 500;
   color: #171821;
   background: #ffffff;
   border: 1px solid #d9dee7;
@@ -78,8 +143,68 @@
   cursor: pointer;
   box-sizing: border-box;
 }
+.subhead-btn:hover:not(:disabled) { background: #f0f2f5; }
+.subhead-btn:disabled { opacity: 0.5; cursor: default; }
+.subhead-btn .refresh-ts {
+  font-size: 10px; font-weight: 400; color: #7a8394; line-height: 1;
+  margin-left: 4px;
+}
 
-.switcher-toggle:hover { background: #f0f2f5; }
+/* ══════════════════════════════════════════════════════════════
+   Legacy dashboard-switcher (kept for backward compat; hidden on desktop
+   since R12 forces dropdown-only mode)
+   ══════════════════════════════════════════════════════════════ */
+.dashboard-switcher {
+  display: none;
+  height: 34px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.dashboard-switcher .tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 12.5px; font-weight: 500;
+  color: #5b6472;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  box-sizing: border-box;
+}
+.dashboard-switcher .tab + .tab { border-left: 1px solid #d9dee7; }
+.dashboard-switcher .tab:hover { color: #171821; background: #f0f2f5; }
+.dashboard-switcher .tab[aria-current="page"] {
+  color: #ffffff; background: #171821; font-weight: 600;
+}
+.dashboard-switcher .tab:focus-visible { outline: 2px solid #171821; outline-offset: 2px; border-radius: 6px; }
+
+/* ══════════════════════════════════════════════════════════════
+   Compact switcher menu — R12 default on ALL viewport sizes
+   ══════════════════════════════════════════════════════════════ */
+.switcher-menu {
+  display: inline-block;
+  position: relative;
+}
+.switcher-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 12.5px; font-weight: 500;
+  color: #171821;
+  background: #ffffff;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 0.12s, border-color 0.12s;
+}
+.switcher-toggle:hover { background: #f0f2f5; border-color: #c8cfd8; }
 .switcher-toggle:focus-visible { outline: 2px solid #171821; outline-offset: 2px; }
 .switcher-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 .switcher-toggle svg { transition: transform 0.12s; }
@@ -88,17 +213,21 @@
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  min-width: 180px;
+  min-width: 190px;
   padding: 4px;
   margin: 0;
   list-style: none;
   background: #ffffff;
   border: 1px solid #d9dee7;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.10);
-  z-index: 20;
+  box-shadow: 0 10px 24px -8px rgba(16, 24, 40, 0.15), 0 2px 6px rgba(16,24,40,0.06);
+  z-index: 50;
+  animation: switcher-fade-in 0.12s ease-out;
 }
-
+@keyframes switcher-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .switcher-menu-item {
   display: block;
   padding: 8px 12px;
@@ -108,36 +237,79 @@
   text-decoration: none;
   border-radius: 6px;
 }
-
-.switcher-menu-item:hover { background: #f0f2f5; }
+.switcher-menu-item:hover { background: #fce7f3; color: #171821; }
 .switcher-menu-item[aria-current="page"] {
-  color: #ffffff;
-  background: #171821;
-  font-weight: 600;
+  color: #ffffff; background: #171821; font-weight: 600;
 }
+.switcher-menu-item[aria-current="page"]:hover { color: #ffffff; background: #171821; }
 .switcher-menu-item:focus-visible { outline: 2px solid #171821; outline-offset: -1px; }
 
-@media (max-width: 640px) {
-  .dashboard-switcher { display: none; }
-  .switcher-menu { display: inline-block; }
-}
-
-/* ── Logout button + inline error ─────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   Logout button + inline error (shared)
+   ══════════════════════════════════════════════════════════════ */
 .logout-btn {
   height: 34px;
   padding: 0 12px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 12.5px; font-weight: 500;
   color: #5b6472;
   background: #ffffff;
   border: 1px solid #d9dee7;
   border-radius: 8px;
   cursor: pointer;
   box-sizing: border-box;
+  transition: background 0.12s, color 0.12s;
 }
 .logout-btn:hover:not(:disabled) { color: #171821; background: #f0f2f5; }
 .logout-btn:focus-visible { outline: 2px solid #171821; outline-offset: 2px; }
 .logout-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .logout-error { font-size: 11.5px; color: #b42318; padding: 0 4px; align-self: center; }
 .logout-error.hidden { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   Responsive
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .topbar-shared {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+    padding: 12px 16px;
+    min-height: 0;
+  }
+  .topbar-signals { justify-content: flex-start; }
+  .topbar-actions { justify-content: flex-start; }
+  .subhead { padding: 8px 16px 10px; justify-content: flex-start; }
+}
+
+@media (max-width: 640px) {
+  .topbar-brand h1 { font-size: 17px; }
+  .brand-eyebrow { font-size: 9.5px; }
+  .head-status-pill { font-size: 10.5px; padding: 4px 9px; }
+}
+
+/* Dark-mode adjustments (only inside :root[data-theme="dark"] or matching prefers-color-scheme) */
+@media (prefers-color-scheme: dark) {
+  .topbar-shared {
+    background: rgba(24,29,36,0.86);
+    border-bottom-color: transparent;
+  }
+  .topbar-shared::after {
+    background: linear-gradient(to right, transparent, #303946 30%, #303946 70%, transparent);
+  }
+  .topbar-brand h1 { color: #e7ecf3; }
+  .topbar-brand .brand-sub, .brand-eyebrow { color: #9aa7b8; }
+  .head-status-pill { background: #3a1a2c; color: #f472b6; border-color: #4d2338; }
+  .head-status-pill::before { background: #f472b6; }
+  .head-status-pill.neutral { background: #242b35; color: #9aa7b8; border-color: #303946; }
+  .head-status-pill.warn { background: #3a2915; color: #f6b16d; border-color: #503617; }
+  .head-status-pill.good { background: #1a3a24; color: #6adf94; border-color: #24503a; }
+  .head-status-pill.danger { background: #3a1518; color: #f28b83; border-color: #4d2020; }
+  .subhead-btn, .switcher-toggle, .logout-btn {
+    background: #1c222a; color: #e7ecf3; border-color: #303946;
+  }
+  .subhead-btn:hover, .switcher-toggle:hover, .logout-btn:hover:not(:disabled) { background: #242b35; }
+  .switcher-panel { background: #1c222a; border-color: #303946; }
+  .switcher-menu-item { color: #e7ecf3; }
+  .switcher-menu-item:hover { background: #3a1a2c; }
+  .switcher-menu-item[aria-current="page"] { background: #e7ecf3; color: #171821; }
+}

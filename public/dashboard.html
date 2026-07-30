@@ -27,20 +27,15 @@
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);
-       font-size:14px;line-height:1.5;padding:28px 20px 72px;-webkit-font-smoothing:antialiased;}
-  .page{max-width:1280px;margin:0 auto;}
+       font-size:14px;line-height:1.5;padding:0 0 72px;-webkit-font-smoothing:antialiased;}
+  .page{max-width:1280px;margin:0 auto;padding:0 20px;}
 
-  /* ── HEADER ── */
-  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
-  .head-left h1{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);}
-  .head-left .sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
-  .head-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  /* ── HEADER ── R12: .topbar/.topbar-brand/.topbar-signals/.topbar-actions/
+     .brand-eyebrow/.head-status-pill/.switcher-*/.logout-btn/.subhead now live
+     in /dashboard-switcher.css (shared file). Only per-page tweaks remain here. */
+  .brand-sub#sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
-
-  /* ── Command-strip pieces ── */
-  .head-status-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--pink-soft);color:var(--pink);border:1px solid var(--pink-line);letter-spacing:.01em;}
-  .head-status-pill::before{content:"";display:inline-block;width:6px;height:6px;border-radius:999px;background:var(--pink);}
 
   /* ── Read This First + Suggested Actions ── */
   .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
@@ -61,13 +56,6 @@
   .action-item i{font-size:15px;flex-shrink:0;}
   .action-item .action-chev{color:var(--ink3);font-size:12px;}
 
-  /* Shared dashboard switcher CSS is loaded separately via
-     <link rel="stylesheet" href="/dashboard-switcher.css"> in the <head>. */
-  .head-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -.03em; color: var(--ink); }
-  @media (max-width: 640px) {
-    .head-left h1 { font-size: 18px; }
-    .brand-eyebrow { font-size: 9.5px; }
-  }
   .btn:hover{background:#fafbfc;} .btn:disabled{opacity:.5;cursor:default;}
 
   /* ── SECTION LABELS ── */
@@ -486,27 +474,22 @@
 </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="head">
-    <div class="head-left">
+<header class="topbar topbar-shared" id="topbar">
+    <div class="topbar-brand">
       <span class="brand-eyebrow">Promo Operations</span>
       <h1>Ops Dashboard</h1>
-      <p class="sub" id="sub">Loading…</p>
+      <p class="sub brand-sub" id="sub">Loading…</p>
+    </div>
+    <div class="topbar-signals">
       <div class="source-strip" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
         <span id="last-pull-pill"></span>
         <span id="banner-health-pill"></span>
       </div>
     </div>
-    <div class="head-right">
+    <div class="topbar-actions">
       <span class="head-status-pill" id="lastRefreshPill" title="Last data refresh">Loading…</span>
-      <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
-      <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
-      <nav class="dashboard-switcher" aria-label="Switch dashboard">
-        <a href="/" class="tab">QC Hub</a>
-        <a href="/dashboard" class="tab" aria-current="page">Ops Dashboard</a>
-      </nav>
       <div class="switcher-menu">
         <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-ops">
           Ops Dashboard
@@ -520,7 +503,14 @@
       <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
       <span id="logoutError" class="logout-error hidden" role="alert"></span>
     </div>
-  </div>
+  </header>
+
+<div class="subhead" aria-label="Ops Dashboard controls">
+  <button class="subhead-btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
+  <button class="subhead-btn" id="refresh" onclick="loadData()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh <span id="refresh-ts" class="refresh-ts"></span></button>
+</div>
+
+<div class="page">
 
   <div class="app-layout">
     <nav class="side-nav">
@@ -3230,8 +3220,10 @@ function renderEscTable(){
 <script>
   (function(){
     const btn=document.getElementById('scroll-top');
+    const topbar=document.getElementById('topbar');
     window.addEventListener('scroll',function(){
       btn.classList.toggle('visible',window.scrollY>400);
+      if(topbar) topbar.classList.toggle('scrolled',window.scrollY>4);
     },{passive:true});
   })();
 </script>
