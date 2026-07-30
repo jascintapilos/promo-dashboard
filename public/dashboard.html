@@ -15,6 +15,7 @@
     --bg:#f5f6f8; --card:#ffffff; --ink:#13161c; --ink2:#5b6472; --ink3:#9aa1ad;
     --line:#eceef1; --line2:#e2e5ea;
     --accent:#4c6ef5; --accent-soft:#eaeeff;
+    --pink:#db2777; --pink-soft:#fce7f3; --pink-line:#fbcfe8;
     --teal:#0ca678; --teal-soft:#e3f6ef;
     --good:#16a34a; --good-soft:#e9f7ef; --warn:#d97706; --warn-soft:#fdf3e4; --risk:#dc2626; --risk-soft:#fcebeb;
     --gold:#d97706; --gold-soft:#fef3c7;
@@ -33,9 +34,32 @@
   .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
   .head-left h1{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);}
   .head-left .sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
-  .head-right{display:flex;gap:8px;align-items:center;}
+  .head-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
+
+  /* ── Command-strip pieces ── */
+  .head-status-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--pink-soft);color:var(--pink);border:1px solid var(--pink-line);letter-spacing:.01em;}
+  .head-status-pill::before{content:"";display:inline-block;width:6px;height:6px;border-radius:999px;background:var(--pink);}
+
+  /* ── Read This First + Suggested Actions ── */
+  .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
+  @media(max-width:1000px){.brief-row{grid-template-columns:1fr;}}
+  .brief-card{padding:20px 22px;}
+  .brief-card .card-title{margin-bottom:2px;}
+  .brief-card .card-hint{margin-bottom:14px;}
+  .brief-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .brief-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);line-height:1.5;}
+  .brief-list li::before{content:"";flex-shrink:0;width:8px;height:8px;border-radius:999px;background:var(--pink);margin-top:6px;}
+  .brief-list.muted li::before{background:var(--line2);}
+  .brief-list li strong{font-weight:600;}
+  .action-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+  .action-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);cursor:pointer;font-size:13px;color:var(--ink);text-align:left;transition:background .12s,border-color .12s;}
+  .action-item:hover{background:var(--pink-soft);border-color:var(--pink-line);}
+  .action-item.action-primary{background:var(--pink-soft);border-color:var(--pink-line);color:var(--pink);font-weight:600;}
+  .action-item.action-primary:hover{background:var(--pink);color:#fff;}
+  .action-item i{font-size:15px;flex-shrink:0;}
+  .action-item .action-chev{color:var(--ink3);font-size:12px;}
 
   /* Shared dashboard switcher CSS is loaded separately via
      <link rel="stylesheet" href="/dashboard-switcher.css"> in the <head>. */
@@ -291,10 +315,12 @@
   .pg-tab i{font-size:14px;flex-shrink:0;}
   .pg-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:10.5px;font-weight:700;border-radius:6px;background:var(--line);color:var(--ink3);flex-shrink:0;}
   .pg-tab.active .pg-num{background:rgba(255,255,255,0.22);color:#fff;}
-  .pg-tab:hover{background:#f0f1f4;}
-  .pg-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .pg-tab:hover{background:var(--pink-soft);color:var(--ink);}
+  .pg-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);border-left:3px solid var(--pink);padding-left:11px;}
   .pg-tab.active:hover{background:#3d5ef0;}
-  @media(max-width:720px){.app-layout{flex-direction:column;}.side-nav{width:100%;position:static;}.pg-tabs{flex-direction:row;flex-wrap:wrap;}.pg-tab{width:auto;}}
+  .pg-group-label{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--ink3);text-transform:uppercase;padding:0 4px;margin:10px 0 4px;user-select:none;}
+  .pg-group-label:first-child{margin-top:0;}
+  @media(max-width:720px){.app-layout{flex-direction:column;}.side-nav{width:100%;position:static;}.pg-tabs{flex-direction:row;flex-wrap:wrap;}.pg-tab{width:auto;}.pg-group-label{display:none;}}
   .wk-grid{overflow-x:auto;margin-top:4px;}
   .wk-tbl{width:100%;border-collapse:collapse;font-size:11px;}
   .wk-tbl th{font-weight:600;color:var(--ink3);text-align:center;padding:3px 6px;white-space:nowrap;border-bottom:1px solid var(--line);}
@@ -474,6 +500,7 @@
       </div>
     </div>
     <div class="head-right">
+      <span class="head-status-pill" id="lastRefreshPill" title="Last data refresh">Loading…</span>
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
       <nav class="dashboard-switcher" aria-label="Switch dashboard">
@@ -498,10 +525,13 @@
   <div class="app-layout">
     <nav class="side-nav">
       <div class="pg-tabs">
+        <div class="pg-group-label">Command</div>
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><span class="pg-num">1</span><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-util" onclick="switchView('util')"><span class="pg-num">2</span><i class="ti ti-chart-histogram" aria-hidden="true"></i> Utilization</button>
+        <div class="pg-group-label">Quality</div>
         <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">3</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
         <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><span class="pg-num">4</span><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
+        <div class="pg-group-label">Resources</div>
         <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">5</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
         <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">6</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
       </div>
@@ -513,6 +543,25 @@
 
   <div id="content" style="display:none;">
     <div id="view-ops">
+
+    <!-- 0. COMMAND BRIEF: Read This First / Suggested Actions -->
+    <div class="brief-row" id="brief-row">
+      <div class="card brief-card">
+        <div class="card-title">Read this first</div>
+        <div class="card-hint">Auto-computed from today's data</div>
+        <ul class="brief-list" id="brief-read"></ul>
+      </div>
+      <div class="card brief-card">
+        <div class="card-title">Suggested actions</div>
+        <div class="card-hint">Jump to the relevant tab</div>
+        <ul class="action-list" id="brief-actions">
+          <li><button class="action-item action-primary" onclick="switchView('hk')"><span><i class="ti ti-alert-triangle"></i> Review banner expiries</span><span class="action-chev">Housekeeping →</span></button></li>
+          <li><button class="action-item" onclick="switchView('util')"><span><i class="ti ti-users"></i> Check utilization outliers</span><span class="action-chev">Utilization →</span></button></li>
+          <li><button class="action-item" onclick="switchView('sop')"><span><i class="ti ti-book"></i> Open SOP index</span><span class="action-chev">SOP →</span></button></li>
+          <li><button class="action-item" onclick="switchView('at')"><span><i class="ti ti-robot"></i> See automation roadmap</span><span class="action-chev">Automation →</span></button></li>
+        </ul>
+      </div>
+    </div>
 
     <!-- 1. EXECUTIVE SUMMARY -->
     <div class="exec-card" id="exec-card">
@@ -1275,7 +1324,73 @@ let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
-let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null, _utilGauge=null;
+let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null, _utilGauge=null, _lastRefreshAt=null;
+
+function updateLastRefreshPill(){
+  const pill=document.getElementById('lastRefreshPill');
+  if(!pill||!_lastRefreshAt) return;
+  const mins=Math.max(0, Math.round((Date.now()-_lastRefreshAt.getTime())/60000));
+  pill.textContent = mins===0 ? 'Just now' : (mins<60 ? `Updated ${mins}m ago` : `Updated ${Math.round(mins/60)}h ago`);
+}
+setInterval(updateLastRefreshPill, 30000);
+
+function renderCommandBrief(totalRows, brandsSet, teamUtil, bannerRows){
+  const ul=document.getElementById('brief-read');
+  if(!ul) return;
+  ul.replaceChildren();
+
+  const items=[];
+
+  // 1. Team utilization
+  if(!isNaN(teamUtil)){
+    const state = teamUtil>=90 ? 'attention — near or over capacity' : teamUtil<60 ? 'under target — capacity available' : 'healthy';
+    items.push({label:'Team utilization', value:`${teamUtil.toFixed(0)}%`, hint:state});
+  } else {
+    items.push({label:'Team utilization', value:'—', hint:'no data this period'});
+  }
+
+  // 2. Banner health
+  const expiredCount=(bannerRows||[]).filter(b=>{
+    const s=String(b.Status||b.status||'').toLowerCase();
+    return s.includes('expired')||s.includes('missing');
+  }).length;
+  const expiringCount=(bannerRows||[]).filter(b=>{
+    const s=String(b.Status||b.status||'').toLowerCase();
+    return s.includes('expiring');
+  }).length;
+  if(expiredCount||expiringCount){
+    const parts=[];
+    if(expiredCount) parts.push(`${expiredCount} expired/missing`);
+    if(expiringCount) parts.push(`${expiringCount} expiring soon`);
+    items.push({label:'Banner health', value:parts.join(' · '), hint:'needs housekeeping'});
+  } else {
+    items.push({label:'Banner health', value:'all healthy', hint:'no issues detected'});
+  }
+
+  // 3. Promo workload
+  if(totalRows && totalRows.length){
+    items.push({label:'Promo code tasks this week', value:`${totalRows.length}`, hint:`across ${brandsSet.size} brand${brandsSet.size===1?'':'s'}`});
+  } else {
+    items.push({label:'Promo code tasks this week', value:'—', hint:'not available yet'});
+  }
+
+  for(const it of items){
+    const li=document.createElement('li');
+    const strong=document.createElement('strong');
+    strong.textContent=it.value;
+    li.appendChild(strong);
+    li.appendChild(document.createTextNode(' · '));
+    li.appendChild(document.createTextNode(it.label));
+    if(it.hint){
+      const em=document.createElement('span');
+      em.style.color='var(--ink3)';
+      em.style.marginLeft='6px';
+      em.textContent=`(${it.hint})`;
+      li.appendChild(em);
+    }
+    ul.appendChild(li);
+  }
+}
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1422,11 +1537,14 @@ function render(data,_skipStore){
   const teamUtil=calcWeeklyTeamUtil();
 
   const ts=new Date();  // stamp with current time so Refresh button always shows when user last fetched
+  _lastRefreshAt=ts;
   const dStr=fmtDate(ts);
   const tStr=fmtTime(ts);
   document.getElementById('sub').textContent=`Operations overview · ${rangeNote()}`;
   document.getElementById('refresh-ts').textContent=`${tStr} · ${dStr}`;
+  updateLastRefreshPill();
 
+  renderCommandBrief(total, brandsSet, teamUtil, (_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
