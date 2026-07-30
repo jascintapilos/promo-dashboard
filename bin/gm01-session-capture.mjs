@@ -14,12 +14,13 @@
 // is never printed. Cookies/tokens/session contents are never logged.
 
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, unlinkSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT               = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORAGE_STATE_FILE = path.join(ROOT, 'gm01-storage-state.local.json');
+const DEAD_FLAG          = path.join(ROOT, 'gm01-session-dead.local.json');
 const SHOT_DIR = path.join(ROOT, 'captures');
 const BASE_URL = 'https://utn.bo5w.com';
 const LOGIN_URL = `${BASE_URL}/`;
@@ -92,6 +93,8 @@ try {
   // Save the authorized state via Playwright's storageState feature.
   await ctx.storageState({ path: STORAGE_STATE_FILE });
   console.log('[gm01-session] ✓ Authorized session saved (gm01-storage-state.local.json)');
+  // Clear the session-dead flag so subsequent runs don't block.
+  try { if (existsSync(DEAD_FLAG)) unlinkSync(DEAD_FLAG); } catch { /* best-effort */ }
 
   await browser.close();
   process.exit(0);

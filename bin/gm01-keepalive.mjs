@@ -12,7 +12,13 @@
 //   node bin/gm01-keepalive.mjs --interval=10   # ping every 10 min
 //   node bin/gm01-keepalive.mjs --once          # single ping then exit
 
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { BASE, openAuthedContext, hasSavedState } from '../src/gm01-session.js';
+
+const ROOT      = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DEAD_FLAG = path.join(ROOT, 'gm01-session-dead.local.json');
 
 const args = {};
 for (const a of process.argv.slice(2)) {
@@ -70,5 +76,9 @@ if (once) {
 }
 
 await browser.close();
+if (sessionDied) {
+  // Write flag so commission submit fails fast with a clear re-capture message.
+  try { writeFileSync(DEAD_FLAG, JSON.stringify({ dead: true, since: new Date().toISOString() }, null, 2)); } catch { /* best-effort */ }
+}
 // Exit 1 on session death so Task Scheduler treats it as a failure and retries.
 process.exit(sessionDied ? 1 : 0);
