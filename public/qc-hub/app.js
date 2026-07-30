@@ -578,6 +578,25 @@ function escapeHtml(value) {
   })[ch]);
 }
 
+// R23: sanitize error detail for the mechanics one-liner — same treatment
+// auto-checks.js applies to the finding message (R19). Strips inline HTML
+// bodies (nginx 403 pages), full URLs, and de-dupes 'HTTP 403 (HTTP 403)'
+// when the status is the only useful signal. Kept in the frontend so any
+// future server-side error string is safely rendered too.
+function _cleanMechanicsDetail(detail) {
+  if (!detail) return 'fetch failed';
+  let out = String(detail);
+  const htmlIx = out.search(/<html|<!doctype|<head/i);
+  if (htmlIx >= 0) out = out.slice(0, htmlIx).trim();
+  const statusMatch = out.match(/HTTP\s+(\d{3})/i);
+  out = out.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+  if (!out || /^HTTP\s+\d{3}$/i.test(out)) return statusMatch ? `HTTP ${statusMatch[1]}` : 'fetch failed';
+  if (out.length > 200) out = out.slice(0, 200) + '…';
+  return statusMatch && !new RegExp(`HTTP\\s+${statusMatch[1]}`, 'i').test(out)
+    ? `${out} (HTTP ${statusMatch[1]})`
+    : out;
+}
+
 function openPromptModal(prompt) {
   const pre = $('promptText');
   pre.textContent = prompt;
@@ -687,7 +706,10 @@ function renderActiveResult() {
   const panel = $('verdictPanel');
   panel.className = `verdict card ${verdictClass(data.verdict)}`;
   $('verdictText').textContent = verdictWords(data.verdict, data.findings.length);
-  $('mechanics').textContent = data.error ? `${data.error}: ${data.detail}` : data.mechanics;
+  // R23: mechanics text also carries the failure detail; strip inline HTML +
+  // absolute URLs same way R19 did for finding.message. Previously the raw
+  // nginx 403 body leaked here even after R19 cleaned the finding.
+  $('mechanics').textContent = data.error ? `${data.error}: ${_cleanMechanicsDetail(data.detail)}` : data.mechanics;
   // R15 (Codex-flagged blocker): finding.message and finding.severity can carry
   // BO- / server-derived text (e.g. R14 partial-check message includes site id +
   // field name). Escape both before innerHTML.
