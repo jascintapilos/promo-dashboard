@@ -412,10 +412,12 @@ function renderBrands() {
   if (selected.length === 0) {
     chipsEl.innerHTML = '<span class="chip-empty">No brands selected — pick one below.</span>';
   } else {
+    // R15: brand.id and brand.label come from the server /api/brands response
+    // (controlled by data/qc-dashboard-brands.json today, but treat as untrusted).
     chipsEl.innerHTML = selected.map((brand) => `
-      <span class="brand-chip selected" data-brand="${brand.id}">
-        <span>${brand.label}</span>
-        <button type="button" class="chip-x" data-remove="${brand.id}" aria-label="Remove ${brand.label}">×</button>
+      <span class="brand-chip selected" data-brand="${escapeHtml(brand.id)}">
+        <span>${escapeHtml(brand.label)}</span>
+        <button type="button" class="chip-x" data-remove="${escapeHtml(brand.id)}" aria-label="Remove ${escapeHtml(brand.label)}">×</button>
       </span>
     `).join('');
     document.querySelectorAll('.chip-x[data-remove]').forEach((btn) => {
@@ -433,7 +435,7 @@ function renderBrands() {
   } else {
     select.disabled = false;
     select.innerHTML = '<option value="" disabled selected>+ Add brand</option>' +
-      unselected.map((b) => `<option value="${b.id}">${b.label}</option>`).join('');
+      unselected.map((b) => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.label)}</option>`).join('');
   }
   updateBrandLinks();
   renderEmptyStates();
@@ -541,10 +543,12 @@ function renderCell(result, column) {
 }
 
 function renderDetailsTable() {
-  $('detailsHead').innerHTML = `<tr><th>Brand</th>${DETAIL_COLUMNS.map((column) => `<th>${column.label}</th>`).join('')}</tr>`;
+  // R15: DETAIL_COLUMNS[].label is a code-owned literal (safe), but result.brand
+  // comes from the QC batch (BO-derived) and must be escaped before innerHTML.
+  $('detailsHead').innerHTML = `<tr><th>Brand</th>${DETAIL_COLUMNS.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr>`;
   $('detailsRows').innerHTML = state.results.map((result) => `
     <tr class="${state.activeKey === resultKey(result) ? 'active-detail-row' : ''}">
-      <td><strong>${result.brand}</strong></td>
+      <td><strong>${escapeHtml(result.brand)}</strong></td>
       ${DETAIL_COLUMNS.map((column) => renderCell(result, column)).join('')}
     </tr>
   `).join('') || `<tr><td colspan="${DETAIL_COLUMNS.length + 1}" class="muted">Run QC to load batch details.</td></tr>`;
@@ -557,11 +561,15 @@ function activeResult() {
 }
 
 function renderPills() {
+  // R15: r.brand and r.code come from the QC batch (BO-derived) — escape before innerHTML.
+  // key is composed of brand+code so it also needs escaping when placed in the data-key
+  // attribute (attribute-context escaping via the same HTML entity encoder is safe).
+  // verdictClass()/verdictLabel() return code-owned literals — safe as-is.
   $('resultPills').innerHTML = state.results.map((r) => {
     const key = resultKey(r);
-    return `<button class="pill ${state.activeKey === key ? 'active' : ''}" data-key="${key}">
-      <strong>${r.brand}</strong>
-      <code>${r.code}</code>
+    return `<button class="pill ${state.activeKey === key ? 'active' : ''}" data-key="${escapeHtml(key)}">
+      <strong>${escapeHtml(r.brand)}</strong>
+      <code>${escapeHtml(r.code)}</code>
       <span class="chip ${verdictClass(r.verdict)}">${verdictLabel(r.verdict)}</span>
     </button>`;
   }).join('');
@@ -592,9 +600,12 @@ function renderActiveResult() {
   panel.className = `verdict card ${verdictClass(data.verdict)}`;
   $('verdictText').textContent = verdictWords(data.verdict, data.findings.length);
   $('mechanics').textContent = data.error ? `${data.error}: ${data.detail}` : data.mechanics;
+  // R15 (Codex-flagged blocker): finding.message and finding.severity can carry
+  // BO- / server-derived text (e.g. R14 partial-check message includes site id +
+  // field name). Escape both before innerHTML.
   $('findings').innerHTML = data.findings.map((f, i) => `
     <div class="finding">
-      <div><strong class="${f.severity === 'FAIL' ? 'issue' : 'review'}">${f.severity}</strong> ${f.message}</div>
+      <div><strong class="${f.severity === 'FAIL' ? 'issue' : 'review'}">${escapeHtml(f.severity)}</strong> ${escapeHtml(f.message)}</div>
       ${f.severity === 'FAIL' ? `<button data-fix-finding="${i}">Fix with Claude</button>` : ''}
     </div>
   `).join('') || '<div class="muted">No findings</div>';
@@ -830,17 +841,15 @@ async function loadHistory() {
     state.historyRows = h.rows || [];
     if (banner) { banner.classList.add('hidden'); banner.textContent = ''; }
     if (meta) meta.textContent = state.historyRows.length ? `${state.historyRows.length} recent` : '';
-    // R10: compact 3-col history rows (Time · Brand·Code · Result · [Fix?])
+    // R15: use the shared escapeHtml() (covers ' and " too, needed for the timestamp
+     // slice + full defense-in-depth). Replaces the R11-era local escaper.
     $('historyRows').innerHTML = state.historyRows.map((r, i) => {
       const canFix = r.qc_result === 'FAIL' || r.qc_result === 'REQUIRES_REVIEW' || r.qc_result === 'REVIEW';
-      const escBrand = (r.brand || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-      const escCode = (r.code || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-      const escResult = (r.qc_result || '').replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
       return `
         <tr>
-          <td class="hist-time">${(r.timestamp || '').replace(/T/,' ').slice(0, 16)}</td>
-          <td class="hist-brand">${escBrand}<br><code>${escCode}</code></td>
-          <td>${escResult}</td>
+          <td class="hist-time">${escapeHtml((r.timestamp || '').replace(/T/,' ').slice(0, 16))}</td>
+          <td class="hist-brand">${escapeHtml(r.brand || '')}<br><code>${escapeHtml(r.code || '')}</code></td>
+          <td>${escapeHtml(r.qc_result || '')}</td>
           <td>${canFix ? `<button data-history-fix="${i}">Fix</button>` : ''}</td>
         </tr>
       `;
