@@ -56,16 +56,19 @@ async function ping() {
 console.log(`[gm01-keepalive] Starting — ping every ${intervalMin} min. Ctrl+C to stop.`);
 
 let running = true;
+let sessionDied = false;
 if (once) {
-  await ping();
+  const alive = await ping();
+  if (!alive) sessionDied = true;
 } else {
   while (running) {
     running = await ping();
-    if (!running) break;
+    if (!running) { sessionDied = true; break; }
     await new Promise(r => setTimeout(r, intervalMin * 60 * 1000));
   }
   console.log('[gm01-keepalive] Stopped — re-capture with gm01-session-capture.mjs.');
 }
 
 await browser.close();
-process.exit(0);
+// Exit 1 on session death so Task Scheduler treats it as a failure and retries.
+process.exit(sessionDied ? 1 : 0);
