@@ -34,22 +34,34 @@
      .brand-eyebrow/.head-status-pill/.switcher-*/.logout-btn/.subhead now live
      in /dashboard-switcher.css (shared file). Only per-page tweaks remain here. */
   .brand-sub#sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
-  /* R18-lite v2: source-strip pills tucked into a popover anchored under
-     the ℹ button. Hidden by default via [hidden]; toggled by JS click. */
+  /* R18-lite v3: 3 status pills + admin link tucked into a popover anchored
+     under the 🔧 wrench in the top-right actions cluster. Popover hidden by
+     default via [hidden]; JS toggles on wrench click. Right-anchored so it
+     doesn't clip off the viewport edge. */
   .status-popover-wrap{position:relative;}
-  #source-strip[hidden]{display:none;}
+  #wrench-popover[hidden]{display:none;}
   .status-popover-panel{
-    position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
-    display:flex;gap:8px;flex-wrap:nowrap;
-    padding:10px 14px;
+    position:absolute;top:calc(100% + 8px);right:0;
+    display:flex;flex-direction:column;gap:10px;
+    padding:14px 16px;min-width:260px;max-width:340px;
     background:#fff;border:1px solid #d9dee7;border-radius:12px;
     box-shadow:0 12px 32px -12px rgba(16,24,40,.18);
     z-index:60;
     animation:status-fade .12s ease-out;
     font-size:11px;color:#5b6472;
   }
-  @keyframes status-fade{from{opacity:0;transform:translate(-50%,-4px);}to{opacity:1;transform:translate(-50%,0);}}
-  #statusPopoverBtn[aria-expanded="true"]{background:#fbcfe8;border-color:#f9a8d4;}
+  @keyframes status-fade{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .status-popover-panel .source-strip{display:flex;flex-direction:column;gap:8px;}
+  #siteConfigsBtn[aria-expanded="true"]{background:#fbcfe8;border-color:#f9a8d4;}
+  .wrench-admin-link{
+    display:block;padding:8px 10px;
+    border-top:1px solid #eceff4;
+    font-size:12.5px;font-weight:600;color:#db2777;
+    text-decoration:none;text-align:right;
+    margin:4px -6px -6px;
+  }
+  .wrench-admin-link:hover{background:#fce7f3;border-radius:8px;}
+  .wrench-admin-link.hidden{display:none;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
 
@@ -497,22 +509,23 @@
       <h1>Ops Dashboard</h1>
       <p class="sub brand-sub" id="sub">Loading…</p>
     </div>
-    <div class="topbar-signals">
-      <!-- R18-lite v2: 3 status pills hidden by default, revealed as a popover
-           anchored under the ℹ button. renderDataSources() still renders into
-           #source-strip; the popover just controls its visibility. -->
-      <div class="status-popover-wrap">
-        <button type="button" id="statusPopoverBtn" class="settings-btn" aria-label="Data sources status" title="Data sources status" aria-expanded="false" aria-controls="source-strip">ℹ</button>
-        <div class="source-strip status-popover-panel" id="source-strip" hidden>
-          <span id="last-entry-pill"></span>
-          <span id="last-pull-pill"></span>
-          <span id="banner-health-pill"></span>
-        </div>
-      </div>
-    </div>
+    <div class="topbar-signals"></div>
     <div class="topbar-actions">
       <span class="head-status-pill" id="lastRefreshPill" title="Last data refresh">Loading…</span>
-      <a href="/?open=site-configs" id="siteConfigsBtn" class="settings-btn hidden" aria-label="Site configs (opens QC Hub)" title="Site configs (opens QC Hub)">🔧</a>
+      <!-- R18-lite v3: wrench = data-sources popover. Click reveals the 3
+           pills (Last Entry / Last Pull / Banners) + a "Site configs →"
+           deep-link at the bottom (admin-only). -->
+      <div class="status-popover-wrap">
+        <button type="button" id="siteConfigsBtn" class="settings-btn" aria-label="Data sources + admin" title="Data sources + admin" aria-expanded="false" aria-controls="wrench-popover">🔧</button>
+        <div class="status-popover-panel" id="wrench-popover" hidden>
+          <div class="source-strip" id="source-strip">
+            <span id="last-entry-pill"></span>
+            <span id="last-pull-pill"></span>
+            <span id="banner-health-pill"></span>
+          </div>
+          <a href="/?open=site-configs" id="siteConfigsLink" class="wrench-admin-link hidden">Site configs →</a>
+        </div>
+      </div>
       <a href="/?open=users-modal" id="settingsBtn" class="settings-btn hidden" aria-label="Manage users (opens QC Hub)" title="Manage users (opens QC Hub)">⚙</a>
       <div class="switcher-menu">
         <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-ops">
@@ -2758,12 +2771,12 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 });
 
-// R18-lite v2: ℹ status popover toggle — click reveals the 3 data-source pills
-// under the button, click outside or Escape hides. Not gated by role because
-// it's just showing already-visible-in-page freshness signals.
-(function bindStatusPopover(){
-  const btn = document.getElementById('statusPopoverBtn');
-  const panel = document.getElementById('source-strip');
+// R18-lite v3: 🔧 wrench toggles a popover with data-source pills + (for
+// admins) a Site configs deep-link. Available to all users because the pill
+// data is not sensitive. Click outside / Escape close the popover.
+(function bindWrenchPopover(){
+  const btn = document.getElementById('siteConfigsBtn');
+  const panel = document.getElementById('wrench-popover');
   if (!btn || !panel) return;
   const open = () => { panel.hidden = false; btn.setAttribute('aria-expanded','true'); };
   const close = () => { panel.hidden = true; btn.setAttribute('aria-expanded','false'); };
@@ -2772,16 +2785,17 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 })();
 
-// R18-lite: unhide admin-only topbar icons (🔧 wrench + ⚙ users gear) if
-// the current session belongs to an admin. Both icons deep-link back to QC
-// Hub where the actual modals live.
-(function syncAdminIcons(){
+// R18-lite v3: reveal admin-only elements once we know the current user's
+// role. Wrench itself is visible to everyone (shows non-sensitive pill data);
+// the "Site configs →" link inside the popover + the ⚙ users gear are
+// admin-only.
+(function syncAdminUi(){
   fetch('/api/me').then((r) => r.json()).then((data) => {
     if (data?.user?.role !== 'admin') return;
-    const wrench = document.getElementById('siteConfigsBtn');
     const gear = document.getElementById('settingsBtn');
-    if (wrench) wrench.classList.remove('hidden');
+    const configLink = document.getElementById('siteConfigsLink');
     if (gear) gear.classList.remove('hidden');
+    if (configLink) configLink.classList.remove('hidden');
   }).catch(() => {});
 })();
 
