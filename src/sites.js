@@ -3,7 +3,7 @@
 // Passwords live in a separate gitignored `bo-sites.local.json`, keyed by
 // username, so multiple sites that share a service account share a lookup.
 
-import { readFileSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
 // Per-platform required fields at config-parse time.
@@ -28,6 +28,12 @@ const SUPPORTED_PLATFORMS = Object.keys(REQUIRED_BY_PLATFORM);
 const FILE = path.resolve(process.env.BO_SITES_FILE || 'bo-sites.json');
 const LOCAL_FILE = path.resolve(process.env.BO_SITES_LOCAL_FILE || 'bo-sites.local.json');
 
+// R18-lite: admin-writable runtime overlay. Merged on top of FILE at load
+// time (overlay wins per-site + per-field). Lives outside git so real BO
+// credentials never touch the repo. Lets an admin patch prod site configs
+// via QC Hub Settings without server access.
+const RUNTIME_FILE = path.resolve(process.env.BO_SITES_RUNTIME_FILE || 'data/bo-sites-runtime.json');
+
 let _cached = null;
 
 function softPermsCheck(file) {
@@ -40,8 +46,93 @@ function softPermsCheck(file) {
   } catch {}
 }
 
+// R18-lite: overlay support. Loaded fresh each readRaw() so a runtime write
+// (via invalidateCache) is picked up on the next getSite() call. Overlay
+// schema mirrors the base file: `{ sites: { <id>: {...fields} } }`, plus an
+// optional top-level `passwords: {<username>: <pw>}` object that merges into
+// the local-passwords cache the same way bo-sites.local.json does.
+function readRuntimeOverlay() {
+  if (!existsSync(RUNTIME_FILE)) return { sites: {}, passwords: {} };
+  softPermsCheck(RUNTIME_FILE);
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(RUNTIME_FILE, 'utf8'));
+  } catch (e) {
+    // Runtime file is admin-editable; a corrupt paste shouldn't kill loading.
+    // Log and continue with empty overlay so base config still works.
+    try { console.warn(`[sites] runtime overlay ${RUNTIME_FILE} is invalid JSON, ignoring: ${e.message}`); } catch {}
+    return { sites: {}, passwords: {} };
+  }
+  return {
+    sites: parsed.sites && typeof parsed.sites === 'object' ? parsed.sites : {},
+    passwords: parsed.passwords && typeof parsed.passwords === 'object' ? parsed.passwords : {},
+  };
+}
+function mergeRuntimeOverlay(baseSites) {
+  const overlay = readRuntimeOverlay();
+  if (!overlay.sites || Object.keys(overlay.sites).length === 0) return baseSites;
+  const merged = { ...baseSites };
+  for (const [id, override] of Object.entries(overlay.sites)) {
+    if (!override || typeof override !== 'object') continue;
+    merged[id] = { ...(merged[id] || {}), ...override };
+  }
+  return merged;
+}
+
+// R18-lite: exposed so admin endpoints can bust cache after a POST. Also
+// clears the passwords cache so a runtime-added password on the overlay is
+// picked up on the next getSite() call.
+export function invalidateSitesCache() {
+  _cached = null;
+  _passwordsCache = null;
+}
+
+// R18-lite: server writes admin-supplied overlay JSON. Validates shape
+// (top-level sites object, per-site fields are strings only) but does NOT
+// validate credentials — that happens lazily in getSite() as usual. Returns
+// { sitesWritten: N }.
+export function writeRuntimeOverlay(overlayJson) {
+  if (!overlayJson || typeof overlayJson !== 'object') throw new Error('Overlay must be an object');
+  const sites = overlayJson.sites;
+  if (sites !== undefined && (typeof sites !== 'object' || sites === null || Array.isArray(sites))) {
+    throw new Error('overlay.sites must be an object');
+  }
+  const passwords = overlayJson.passwords;
+  if (passwords !== undefined && (typeof passwords !== 'object' || passwords === null || Array.isArray(passwords))) {
+    throw new Error('overlay.passwords must be an object');
+  }
+  if (sites) {
+    for (const [id, entry] of Object.entries(sites)) {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(`overlay.sites["${id}"] must be an object`);
+      for (const [k, v] of Object.entries(entry)) {
+        if (typeof v !== 'string' && typeof v !== 'number') throw new Error(`overlay.sites["${id}"].${k} must be a string`);
+      }
+    }
+  }
+  const payload = { sites: sites || {}, passwords: passwords || {} };
+  mkdirSync(path.dirname(RUNTIME_FILE), { recursive: true });
+  writeFileSync(RUNTIME_FILE, JSON.stringify(payload, null, 2), { encoding: 'utf8', mode: 0o600 });
+  invalidateSitesCache();
+  return {
+    sitesWritten: Object.keys(payload.sites).length,
+    passwordsWritten: Object.keys(payload.passwords).length,
+  };
+}
+
+// R18-lite: admin diag needs to know which sites were overlay-patched vs came
+// straight from bo-sites.json. Returns the raw overlay for that comparison —
+// no credential exposure risk because the endpoint that consumes it strips
+// values down to has_<field> booleans before returning to the client.
+export function getRuntimeOverlaySnapshot() {
+  return readRuntimeOverlay();
+}
+
 function loadLocalPasswords() {
-  if (!existsSync(LOCAL_FILE)) return {};
+  // R18-lite: overlay passwords take precedence over LOCAL_FILE so an admin-
+  // added password wins over a stale entry (or fills in when LOCAL_FILE is
+  // absent, which is the prod case).
+  const overlayPasswords = readRuntimeOverlay().passwords || {};
+  if (!existsSync(LOCAL_FILE)) return { ...overlayPasswords };
   softPermsCheck(LOCAL_FILE);
   let parsed;
   try {
@@ -52,7 +143,7 @@ function loadLocalPasswords() {
   if (!parsed.passwords || typeof parsed.passwords !== 'object') {
     throw new Error(`${LOCAL_FILE}: missing top-level "passwords" object`);
   }
-  return parsed.passwords;
+  return { ...parsed.passwords, ...overlayPasswords };
 }
 
 function readRaw() {
@@ -79,6 +170,10 @@ function readRaw() {
   if (!parsed.sites || typeof parsed.sites !== 'object') {
     throw new Error(`${FILE}: missing top-level "sites" object`);
   }
+  // R18-lite: merge runtime overlay on top of base. Overlay wins per-site +
+  // per-field so an admin can e.g. patch just the `password` on one site
+  // without having to re-declare the whole entry.
+  parsed.sites = mergeRuntimeOverlay(parsed.sites);
   const ids = Object.keys(parsed.sites);
   if (ids.length === 0) throw new Error(`${FILE}: no sites defined`);
 

@@ -37,6 +37,7 @@
             <li role="none"><a href="/dashboard" role="menuitem" class="switcher-menu-item">Ops Dashboard</a></li>
           </ul>
         </div>
+        <button id="siteConfigsBtn" class="settings-btn hidden" type="button" aria-label="Site configs" title="Site configs">🔧</button>
         <button id="settingsBtn" class="settings-btn hidden" type="button" aria-label="Manage users">⚙</button>
         <span id="signedIn" class="signed-in" hidden aria-hidden="true">Signed out</span>
         <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
@@ -193,6 +194,22 @@
           <button id="closePromptBtn" class="secondary" type="button">Close</button>
         </div>
         <p id="copiedConfirm" class="copy-confirm hidden">Copied to clipboard.</p>
+      </div>
+    </div>
+
+    <div id="siteConfigsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="siteConfigsTitle">
+      <div class="modal-box modal-box-lg">
+        <h2 id="siteConfigsTitle">Site configs (runtime overlay)</h2>
+        <p class="muted" style="margin:0 0 12px">Real BO credentials live in a gitignored file on the server. Paste JSON matching <code>bo-sites.json</code> shape and click <strong>Import</strong>. Existing entries are overridden per-field; entries you don't include are left untouched.</p>
+        <div id="siteConfigsBanner" class="inline-banner hidden" role="status"></div>
+        <table id="siteConfigsTable" style="font-size:12px;"></table>
+        <label style="display:block;margin:14px 0 6px;font-size:12px;font-weight:600;">Overlay JSON</label>
+        <textarea id="siteConfigsJson" rows="12" spellcheck="false" style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;" placeholder='{&#10;  "sites": {&#10;    "qpro1": {&#10;      "baseUrl": "https://bo.mei707.com",&#10;      "apiHost": "https://api.mei707.com",&#10;      "reqSignKey": "...",&#10;      "loginMerchantCode": "...",&#10;      "username": "...",&#10;      "password": "..."&#10;    }&#10;  }&#10;}'></textarea>
+        <div class="modal-actions" style="margin-top:12px;">
+          <button id="siteConfigsImportBtn" class="primary" type="button">Import</button>
+          <button id="siteConfigsRefreshBtn" class="secondary" type="button">Refresh status</button>
+          <button id="siteConfigsCloseBtn" class="secondary" type="button">Close</button>
+        </div>
       </div>
     </div>
 

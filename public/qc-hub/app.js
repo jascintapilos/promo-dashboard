@@ -61,6 +61,7 @@ function releaseModalTrap(modalId) {
 function closeModalById(id) {
   if (id === 'promptModal') closePromptModal();
   else if (id === 'usersModal') closeUsersModal();
+  else if (id === 'siteConfigsModal') closeSiteConfigsModal();
 }
 
 /* ── R10: workflow strip ── */
@@ -260,10 +261,91 @@ async function ensureLogin() {
 }
 
 function syncSettingsAccess() {
-  const btn = $('settingsBtn');
-  if (!btn) return;
-  btn.classList.toggle('hidden', state.user?.role !== 'admin');
+  const isAdmin = state.user?.role === 'admin';
+  const usersBtn = $('settingsBtn');
+  if (usersBtn) usersBtn.classList.toggle('hidden', !isAdmin);
+  const siteConfigsBtn = $('siteConfigsBtn');
+  if (siteConfigsBtn) siteConfigsBtn.classList.toggle('hidden', !isAdmin);
 }
+
+/* R18-lite: Site configs modal — admin pastes overlay JSON, server writes
+   to data/bo-sites-runtime.json (gitignored) and invalidates cache. Diag
+   grid shows per-site status so the admin sees which sites are still broken. */
+async function refreshSiteConfigsGrid() {
+  const table = document.getElementById('siteConfigsTable');
+  const banner = document.getElementById('siteConfigsBanner');
+  if (!table) return;
+  try {
+    const data = await api('/api/admin/site-configs');
+    if (banner) { banner.classList.add('hidden'); banner.textContent = ''; }
+    table.replaceChildren();
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    for (const label of ['Site', 'Platform', 'Host', 'API host', 'Overlay?', 'Valid?', 'Missing']) {
+      const th = document.createElement('th'); th.textContent = label; hr.appendChild(th);
+    }
+    thead.appendChild(hr); table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    for (const s of (data.sites || [])) {
+      const tr = document.createElement('tr');
+      const cell = (v) => { const td = document.createElement('td'); td.textContent = v == null ? '—' : String(v); return td; };
+      tr.appendChild(cell(s.id));
+      tr.appendChild(cell(s.platform));
+      tr.appendChild(cell(s.baseUrl_host));
+      tr.appendChild(cell(s.apiHost_host));
+      tr.appendChild(cell(s.has_overlay ? 'yes' : 'no'));
+      const validCell = cell(s.valid ? '✓' : '✗');
+      validCell.style.color = s.valid ? 'var(--safe, #1a7f37)' : 'var(--danger, #b42318)';
+      validCell.style.fontWeight = '600';
+      tr.appendChild(validCell);
+      tr.appendChild(cell(s.invalid_reason?.field || (s.invalid_reason?.message || '')));
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+  } catch (e) {
+    if (banner) {
+      banner.textContent = `Could not load status: ${e.message}`;
+      banner.classList.remove('hidden');
+    }
+  }
+}
+
+async function openSiteConfigsModal() {
+  document.getElementById('siteConfigsModal').classList.remove('hidden');
+  activateModalTrap('siteConfigsModal');
+  await refreshSiteConfigsGrid();
+}
+function closeSiteConfigsModal() {
+  releaseModalTrap('siteConfigsModal');
+  document.getElementById('siteConfigsModal').classList.add('hidden');
+}
+async function importSiteConfigs() {
+  const banner = document.getElementById('siteConfigsBanner');
+  const btn = document.getElementById('siteConfigsImportBtn');
+  const raw = (document.getElementById('siteConfigsJson')?.value || '').trim();
+  if (!raw) { toast('Paste overlay JSON first.', 'error'); return; }
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch (e) { toast(`Invalid JSON: ${e.message}`, 'error'); return; }
+  btn.disabled = true;
+  try {
+    const result = await api('/api/admin/site-configs', { method: 'POST', body: JSON.stringify(parsed) });
+    if (banner) {
+      banner.textContent = `Wrote overlay — ${result.sitesWritten} site(s), ${result.passwordsWritten || 0} password(s). Try Run QC now.`;
+      banner.classList.remove('hidden');
+    }
+    toast(`Overlay saved (${result.sitesWritten} sites).`, 'success');
+    document.getElementById('siteConfigsJson').value = ''; // clear so plain-text creds don't linger
+    await refreshSiteConfigsGrid();
+  } catch (e) {
+    toast(`Import failed: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Modal trap needs to know how to close this one via closeModalById */
+function _closeSiteConfigsModalById() { closeSiteConfigsModal(); }
 
 function normalizeAdminUsers(users) {
   const byEmail = new Map();
@@ -892,6 +974,21 @@ function bind() {
   $('manualFix').addEventListener('click', dispatchManualFix);
   $('settingsBtn').addEventListener('click', () => {
     openUsersModal().catch((e) => alert(`Could not load admitted users: ${e.message}`));
+  });
+  // R18-lite: site configs modal
+  const siteConfigsBtn = document.getElementById('siteConfigsBtn');
+  if (siteConfigsBtn) siteConfigsBtn.addEventListener('click', () => {
+    openSiteConfigsModal().catch((e) => toast(`Could not open site configs: ${e.message}`, 'error'));
+  });
+  const siteConfigsCloseBtn = document.getElementById('siteConfigsCloseBtn');
+  if (siteConfigsCloseBtn) siteConfigsCloseBtn.addEventListener('click', closeSiteConfigsModal);
+  const siteConfigsImportBtn = document.getElementById('siteConfigsImportBtn');
+  if (siteConfigsImportBtn) siteConfigsImportBtn.addEventListener('click', importSiteConfigs);
+  const siteConfigsRefreshBtn = document.getElementById('siteConfigsRefreshBtn');
+  if (siteConfigsRefreshBtn) siteConfigsRefreshBtn.addEventListener('click', refreshSiteConfigsGrid);
+  const siteConfigsModal = document.getElementById('siteConfigsModal');
+  if (siteConfigsModal) siteConfigsModal.addEventListener('click', (e) => {
+    if (e.target === siteConfigsModal) closeSiteConfigsModal();
   });
   $('usersCloseBtn').addEventListener('click', closeUsersModal);
   $('usersModal').addEventListener('click', (e) => {
