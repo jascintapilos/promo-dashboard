@@ -5,6 +5,7 @@ const COOKIE = 'qc_hub_session';
 const ALLOWLIST = 'admitted-users.json';
 const SECRET_FILE = 'qc-dashboard-session-secret.local.json';
 const CONFIG_FILE = 'qc-hub-config.json';
+const VALID_ROLES = new Set(['admin', 'promo-team', 'hod-view', 'guest']);
 
 export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
 
@@ -29,11 +30,53 @@ function sessionSecret() {
   return secret;
 }
 
-function admittedEmails() {
-  if (process.env.AUTH_MODE === 'dev') return new Set([process.env.DEV_USER_EMAIL || 'dev@localhost']);
+function authErr(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
+function normalizeRole(role, email = '') {
+  const normalized = String(role || 'promo-team').trim().toLowerCase();
+  if (VALID_ROLES.has(normalized)) return normalized;
+  console.warn(`Invalid admitted-users role "${role}" for ${email || 'unknown user'}; defaulting to promo-team.`);
+  return 'promo-team';
+}
+
+export function loadAdmittedUsers() {
   if (!existsSync(ALLOWLIST)) throw new Error(`${ALLOWLIST} is required outside AUTH_MODE=dev`);
   const parsed = JSON.parse(readFileSync(ALLOWLIST, 'utf8'));
-  return new Set((parsed.emails || []).map((e) => String(e).toLowerCase()));
+  const usersByEmail = new Map();
+  if (Array.isArray(parsed.users)) {
+    for (const raw of parsed.users) {
+      if (!raw || typeof raw !== 'object') continue;
+      const email = String(raw.email || '').trim().toLowerCase();
+      if (!email) continue;
+      usersByEmail.set(email, { email, role: normalizeRole(raw.role, email) });
+    }
+  } else if (Array.isArray(parsed.emails)) {
+    for (const rawEmail of parsed.emails) {
+      const email = String(rawEmail).trim().toLowerCase();
+      if (!email) continue;
+      usersByEmail.set(email, { email, role: 'promo-team' });
+    }
+  } else {
+    throw new Error(`${ALLOWLIST} must contain an "emails" array or "users" array.`);
+  }
+  const users = [...usersByEmail.values()];
+  if (users.length === 0) {
+    throw new Error(`${ALLOWLIST} has an empty admitted users list — server refusing to start.`);
+  }
+  return users;
+}
+
+function admittedUsersByEmail() {
+  if (process.env.AUTH_MODE === 'dev') {
+    const email = process.env.DEV_USER_EMAIL || 'dev@localhost';
+    const role = normalizeRole(process.env.DEV_USER_ROLE || 'admin', email);
+    return new Map([[email.trim().toLowerCase(), { email: email.trim().toLowerCase(), role }]]);
+  }
+  return new Map(loadAdmittedUsers().map((user) => [user.email, user]));
 }
 
 function sign(payload) {
@@ -93,34 +136,53 @@ export function validateProductionConfig() {
       'To run locally without OAuth, set AUTH_MODE=dev.',
     );
   }
+  validateAllowlist();
 }
 
-export function validateTokenData(data, allowSet, clientId) {
-  if (!data.email || data.email_verified !== 'true') throw new Error('Google token has no verified email');
+export function validateAllowlist() {
+  if (process.env.AUTH_MODE === 'dev') return;
+  if (!existsSync(ALLOWLIST)) {
+    throw new Error(`${ALLOWLIST} is required outside AUTH_MODE=dev — server refusing to start.`);
+  }
+  try {
+    loadAdmittedUsers();
+  } catch (e) {
+    if (e instanceof SyntaxError) throw new Error(`${ALLOWLIST} is malformed JSON: ${e.message}`);
+    throw e;
+  }
+}
+
+export function validateTokenData(data, admitted, clientId) {
+  if (!data.email || data.email_verified !== 'true') throw authErr(401, 'Google token has no verified email');
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID is required to validate token audience');
   if (String(data.aud) !== String(clientId)) {
-    throw new Error(`Google token audience mismatch: expected ${clientId}, got ${data.aud}`);
+    throw authErr(401, 'Google token audience mismatch');
   }
-  if (!allowSet.has(String(data.email).toLowerCase())) {
-    throw new Error('Email is not in admitted-users allowlist');
+  const email = String(data.email).trim().toLowerCase();
+  const user = admitted instanceof Map
+    ? admitted.get(email)
+    : (admitted?.has?.(email) ? { email, role: 'promo-team' } : null);
+  if (!user) {
+    throw authErr(403, 'Email is not in admitted-users allowlist');
   }
-  return { email: String(data.email).toLowerCase(), name: data.name || data.email };
+  return { email, name: data.name || data.email, role: user.role || 'promo-team' };
 }
 
 export async function verifyGoogleIdToken(idToken) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-  if (!res.ok) throw new Error(`Google tokeninfo rejected token (${res.status})`);
+  if (!res.ok) throw authErr(401, `Google tokeninfo rejected token (${res.status})`);
   const data = await res.json();
   const clientId = getGoogleClientId();
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID must be set in production — cannot verify token audience');
-  return validateTokenData(data, admittedEmails(), clientId);
+  return validateTokenData(data, admittedUsersByEmail(), clientId);
 }
 
 export async function loginFromRequest(req, body) {
   if (process.env.AUTH_MODE === 'dev') {
     if (!isLocalhost(req)) throw new Error('AUTH_MODE=dev login is localhost-only');
-    const email = process.env.DEV_USER_EMAIL || 'dev@localhost';
-    return { email, name: email };
+    const email = String(process.env.DEV_USER_EMAIL || 'dev@localhost').trim().toLowerCase();
+    const role = normalizeRole(process.env.DEV_USER_ROLE || 'admin', email);
+    return { email, name: email, role };
   }
   if (!body?.credential) throw new Error('Missing Google credential');
   return verifyGoogleIdToken(body.credential);

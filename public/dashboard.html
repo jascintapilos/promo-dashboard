@@ -9,11 +9,13 @@
 <title>Promo Team Operations</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+<link rel="stylesheet" href="/dashboard-switcher.css?v=__BUILD__">
 <style>
   :root{
     --bg:#f5f6f8; --card:#ffffff; --ink:#13161c; --ink2:#5b6472; --ink3:#9aa1ad;
     --line:#eceef1; --line2:#e2e5ea;
     --accent:#4c6ef5; --accent-soft:#eaeeff;
+    --pink:#db2777; --pink-soft:#fce7f3; --pink-line:#fbcfe8;
     --teal:#0ca678; --teal-soft:#e3f6ef;
     --good:#16a34a; --good-soft:#e9f7ef; --warn:#d97706; --warn-soft:#fdf3e4; --risk:#dc2626; --risk-soft:#fcebeb;
     --gold:#d97706; --gold-soft:#fef3c7;
@@ -32,9 +34,40 @@
   .head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;}
   .head-left h1{font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);}
   .head-left .sub{font-size:12.5px;color:var(--ink3);margin-top:3px;}
-  .head-right{display:flex;gap:8px;align-items:center;}
+  .head-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
+
+  /* ── Command-strip pieces ── */
+  .head-status-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--pink-soft);color:var(--pink);border:1px solid var(--pink-line);letter-spacing:.01em;}
+  .head-status-pill::before{content:"";display:inline-block;width:6px;height:6px;border-radius:999px;background:var(--pink);}
+
+  /* ── Read This First + Suggested Actions ── */
+  .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
+  @media(max-width:1000px){.brief-row{grid-template-columns:1fr;}}
+  .brief-card{padding:20px 22px;}
+  .brief-card .card-title{margin-bottom:2px;}
+  .brief-card .card-hint{margin-bottom:14px;}
+  .brief-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .brief-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);line-height:1.5;}
+  .brief-list li::before{content:"";flex-shrink:0;width:8px;height:8px;border-radius:999px;background:var(--pink);margin-top:6px;}
+  .brief-list.muted li::before{background:var(--line2);}
+  .brief-list li strong{font-weight:600;}
+  .action-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+  .action-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);cursor:pointer;font-size:13px;color:var(--ink);text-align:left;transition:background .12s,border-color .12s;}
+  .action-item:hover{background:var(--pink-soft);border-color:var(--pink-line);}
+  .action-item.action-primary{background:var(--pink-soft);border-color:var(--pink-line);color:var(--pink);font-weight:600;}
+  .action-item.action-primary:hover{background:var(--pink);color:#fff;}
+  .action-item i{font-size:15px;flex-shrink:0;}
+  .action-item .action-chev{color:var(--ink3);font-size:12px;}
+
+  /* Shared dashboard switcher CSS is loaded separately via
+     <link rel="stylesheet" href="/dashboard-switcher.css"> in the <head>. */
+  .head-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -.03em; color: var(--ink); }
+  @media (max-width: 640px) {
+    .head-left h1 { font-size: 18px; }
+    .brand-eyebrow { font-size: 9.5px; }
+  }
   .btn:hover{background:#fafbfc;} .btn:disabled{opacity:.5;cursor:default;}
 
   /* ── SECTION LABELS ── */
@@ -152,6 +185,33 @@
   .cap-note-item{font-size:12px;padding:5px 11px;border-radius:8px;display:flex;align-items:center;gap:6px;}
   .cap-note-item i{font-size:14px;}
 
+  /* ── UTIL SUMMARY (gauge + buckets) ── */
+  .util-summary-row{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:14px;}
+  @media(max-width:820px){.util-summary-row{grid-template-columns:1fr;}}
+  .util-gauge-card,.util-buckets-card{padding:20px 22px;}
+  .util-gauge-wrap{position:relative;width:100%;max-width:220px;height:220px;margin:14px auto 4px;}
+  .util-gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .util-gauge-val{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1;}
+  .util-gauge-lbl{font-size:11px;color:var(--ink3);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+  .util-bucket-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;}
+  @media(max-width:640px){.util-bucket-row{grid-template-columns:1fr;}}
+  .util-bucket{border:1px solid var(--line2);border-radius:10px;padding:12px 14px;background:var(--bg);}
+  .util-bucket-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;}
+  .util-bucket-count{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .util-bucket-list{list-style:none;padding:0;margin:0;font-size:12.5px;color:var(--ink);display:flex;flex-direction:column;gap:4px;}
+  .util-bucket-list li{display:flex;justify-content:space-between;align-items:center;padding:3px 0;}
+  .util-bucket-pct{font-size:11px;color:var(--ink3);font-weight:500;}
+  .util-bucket-empty{color:var(--ink3);font-style:italic;font-size:11.5px;}
+  .util-bucket-warn{border-color:#fde68a;background:#fef9e7;}
+  .util-bucket-warn .util-bucket-head{color:#b45309;}
+  .util-bucket-warn .util-bucket-count{background:#fde68a;color:#7c2d12;}
+  .util-bucket-good{border-color:#bbf7d0;background:#f0fdf4;}
+  .util-bucket-good .util-bucket-head{color:#166534;}
+  .util-bucket-good .util-bucket-count{background:#bbf7d0;color:#14532d;}
+  .util-bucket-risk{border-color:#fecaca;background:#fef2f2;}
+  .util-bucket-risk .util-bucket-head{color:#b91c1c;}
+  .util-bucket-risk .util-bucket-count{background:#fecaca;color:#7f1d1d;}
+
   /* ── TRENDS ── */
   .trend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .trend-legend{display:flex;gap:14px;}
@@ -253,10 +313,14 @@
   .pg-tabs{display:flex;flex-direction:column;gap:3px;}
   .pg-tab{font-size:12.5px;font-weight:500;padding:9px 14px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:var(--ink2);cursor:pointer;transition:background .12s,color .12s;display:flex;align-items:center;gap:8px;width:100%;text-align:left;}
   .pg-tab i{font-size:14px;flex-shrink:0;}
-  .pg-tab:hover{background:#f0f1f4;}
-  .pg-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .pg-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:10.5px;font-weight:700;border-radius:6px;background:var(--line);color:var(--ink3);flex-shrink:0;}
+  .pg-tab.active .pg-num{background:rgba(255,255,255,0.22);color:#fff;}
+  .pg-tab:hover{background:var(--pink-soft);color:var(--ink);}
+  .pg-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);border-left:3px solid var(--pink);padding-left:11px;}
   .pg-tab.active:hover{background:#3d5ef0;}
-  @media(max-width:720px){.app-layout{flex-direction:column;}.side-nav{width:100%;position:static;}.pg-tabs{flex-direction:row;flex-wrap:wrap;}.pg-tab{width:auto;}}
+  .pg-group-label{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--ink3);text-transform:uppercase;padding:0 4px;margin:10px 0 4px;user-select:none;}
+  .pg-group-label:first-child{margin-top:0;}
+  @media(max-width:720px){.app-layout{flex-direction:column;}.side-nav{width:100%;position:static;}.pg-tabs{flex-direction:row;flex-wrap:wrap;}.pg-tab{width:auto;}.pg-group-label{display:none;}}
   .wk-grid{overflow-x:auto;margin-top:4px;}
   .wk-tbl{width:100%;border-collapse:collapse;font-size:11px;}
   .wk-tbl th{font-weight:600;color:var(--ink3);text-align:center;padding:3px 6px;white-space:nowrap;border-bottom:1px solid var(--line);}
@@ -426,7 +490,8 @@
 
   <div class="head">
     <div class="head-left">
-      <h1>Promo Team Operations</h1>
+      <span class="brand-eyebrow">Promo Operations</span>
+      <h1>Ops Dashboard</h1>
       <p class="sub" id="sub">Loading…</p>
       <div class="source-strip" id="source-strip" style="display:none;">
         <span id="last-entry-pill"></span>
@@ -435,19 +500,40 @@
       </div>
     </div>
     <div class="head-right">
+      <span class="head-status-pill" id="lastRefreshPill" title="Last data refresh">Loading…</span>
       <button class="btn" id="date-btn"><i class="ti ti-calendar-week" aria-hidden="true" style="pointer-events:none"></i> <span id="date-label" style="pointer-events:none">This week</span></button>
       <button class="btn" id="refresh" onclick="loadData()" style="flex-direction:column;align-items:center;gap:1px;padding:6px 16px;"><span style="display:flex;align-items:center;gap:6px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</span><span id="refresh-ts" style="font-size:10px;font-weight:400;color:var(--ink3);line-height:1;"></span></button>
+      <nav class="dashboard-switcher" aria-label="Switch dashboard">
+        <a href="/" class="tab">QC Hub</a>
+        <a href="/dashboard" class="tab" aria-current="page">Ops Dashboard</a>
+      </nav>
+      <div class="switcher-menu">
+        <button class="switcher-toggle" type="button" aria-label="Switch dashboard" aria-expanded="false" aria-controls="switcher-menu-panel-ops">
+          Ops Dashboard
+          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </button>
+        <ul id="switcher-menu-panel-ops" class="switcher-panel" role="menu" hidden>
+          <li role="none"><a href="/" role="menuitem" class="switcher-menu-item">QC Hub</a></li>
+          <li role="none"><a href="/dashboard" role="menuitem" aria-current="page" class="switcher-menu-item">Ops Dashboard</a></li>
+        </ul>
+      </div>
+      <button id="logoutBtn" class="logout-btn" type="button">Log out</button>
+      <span id="logoutError" class="logout-error hidden" role="alert"></span>
     </div>
   </div>
 
   <div class="app-layout">
     <nav class="side-nav">
       <div class="pg-tabs">
-        <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
-        <button class="pg-tab" id="pg-esc" onclick="switchView('esc')"><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalations</button>
-        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
-        <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
-        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
+        <div class="pg-group-label">Command</div>
+        <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><span class="pg-num">1</span><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
+        <button class="pg-tab" id="pg-util" onclick="switchView('util')"><span class="pg-num">2</span><i class="ti ti-chart-histogram" aria-hidden="true"></i> Utilization</button>
+        <div class="pg-group-label">Quality</div>
+        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">3</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
+        <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><span class="pg-num">4</span><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
+        <div class="pg-group-label">Resources</div>
+        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">5</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
+        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">6</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
       </div>
     </nav>
     <div class="app-main">
@@ -457,6 +543,25 @@
 
   <div id="content" style="display:none;">
     <div id="view-ops">
+
+    <!-- 0. COMMAND BRIEF: Read This First / Suggested Actions -->
+    <div class="brief-row" id="brief-row">
+      <div class="card brief-card">
+        <div class="card-title">Read this first</div>
+        <div class="card-hint">Auto-computed from today's data</div>
+        <ul class="brief-list" id="brief-read"></ul>
+      </div>
+      <div class="card brief-card">
+        <div class="card-title">Suggested actions</div>
+        <div class="card-hint">Jump to the relevant tab</div>
+        <ul class="action-list" id="brief-actions">
+          <li><button class="action-item action-primary" onclick="switchView('hk')"><span><i class="ti ti-alert-triangle"></i> Review banner expiries</span><span class="action-chev">Housekeeping →</span></button></li>
+          <li><button class="action-item" onclick="switchView('util')"><span><i class="ti ti-users"></i> Check utilization outliers</span><span class="action-chev">Utilization →</span></button></li>
+          <li><button class="action-item" onclick="switchView('sop')"><span><i class="ti ti-book"></i> Open SOP index</span><span class="action-chev">SOP →</span></button></li>
+          <li><button class="action-item" onclick="switchView('at')"><span><i class="ti ti-robot"></i> See automation roadmap</span><span class="action-chev">Automation →</span></button></li>
+        </ul>
+      </div>
+    </div>
 
     <!-- 1. EXECUTIVE SUMMARY -->
     <div class="exec-card" id="exec-card">
@@ -497,28 +602,6 @@
       </div>
     </div>
 
-    <!-- 6. TEAM CAPACITY (full width) -->
-    <p class="section-label">Coverage &amp; capacity</p>
-    <div class="card" style="margin-bottom:28px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
-        <div>
-          <div class="card-title">Team capacity</div>
-          <div class="card-hint">Utilisation against expected hours</div>
-        </div>
-        <div class="cap-tabs">
-          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab('ytd')">YTD</button>
-          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab('weekly')">Weekly</button>
-        </div>
-      </div>
-      <div id="cap-ytd-view" style="display:none;">
-        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
-        <div id="cap-bars"></div>
-        <div class="cap-highlights" id="cap-highlights"></div>
-      </div>
-      <div id="cap-weekly-view">
-        <div class="wk-grid" id="cap-weekly-grid"></div>
-      </div>
-    </div>
 
     <!-- 7. TRENDS -->
     <p class="section-label">Deliverables trend</p>
@@ -618,194 +701,67 @@
     </div>
 
     </div><!-- /view-ops -->
-    <div id="view-esc" style="display:none;">
-
-    <!-- ── ESCALATION EXEC BANNER ── -->
-    <div class="esc-exec">
-      <div class="esc-exec-badge"><i class="ti ti-shield-exclamation"></i>Promo team · root cause analysis · Jan–Jun 2026</div>
-      <div class="esc-exec-body">
-        <strong>45 of 81 escalations (56%) are preventable promo team errors.</strong> The remaining 44% are platform or system limitations outside the team's control.
-        Three recurring patterns — T&amp;C content mismatches, missing providers, and unlinked member groups — account for <strong>34 of those 45 cases (76%)</strong> and are each fixable with a checklist step.
-      </div>
-      <div class="esc-exec-pills">
-        <span class="esc-exec-pill">19 T&amp;C / content mismatch</span>
-        <span class="esc-exec-pill">9 wrong BO setting</span>
-        <span class="esc-exec-pill">8 provider / game not added</span>
-        <span class="esc-exec-pill">7 member group missing</span>
-        <span class="esc-exec-pill">2 unclassified HE</span>
-      </div>
-      <div class="esc-exec-note">HE rate has held at 7–8 cases/month since March — not declining without process change</div>
-    </div>
-
-    <!-- ── RECOMMENDATIONS ── -->
-    <p class="section-label">Root cause &amp; recommended fixes</p>
-    <div class="esc-rec-grid">
-
-      <!-- Card 1: T&C / Content Mismatch -->
-      <div class="esc-rec-card r-tnc">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">T&amp;C ↔ BO alignment</div>
-            <div class="esc-rec-sub">Largest single category · 42% of all HE cases</div>
-          </div>
-          <span class="esc-rec-tag r-tnc">19 cases</span>
-        </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">5×</span>Claim window: T&amp;C says 30 days, BO set to 7 days — repeated May–Jun cluster</li>
-          <li><span class="pat-ct">5×</span>Turnover or bonus amount differs between T&amp;C text and BO value (e.g. ×5 UI vs ×20 T&amp;C)</li>
-          <li><span class="pat-ct">5×</span>Game/provider restriction stated in T&amp;C does not match BO eligible list</li>
-          <li><span class="pat-ct">4×</span>Wrong locale, missing promo name, or round count differs from title</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: pre-publish T&amp;C cross-check</strong>
-          For every promo, map each claim in the T&amp;C to its exact BO field: <em>reward_validity</em> (claim window), turnover multiplier, eligible providers, and bonus cap. Any figure in the T&amp;C must have a matching BO setting verified before activation.
-        </div>
-      </div>
-
-      <!-- Card 2: Provider / Game Not Added -->
-      <div class="esc-rec-card r-prov">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">Provider &amp; game checklist</div>
-            <div class="esc-rec-sub">Always caught post-escalation, never pre-launch</div>
-          </div>
-          <span class="esc-rec-tag r-prov">8 cases</span>
-        </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">4×</span>FS game provider blacklisted in error or never added to eligible list — member plays, TO doesn't count</li>
-          <li><span class="pat-ct">3×</span>Category (e.g. Live Casino) not added to BO despite being named in T&amp;C or campaign</li>
-          <li><span class="pat-ct">1×</span>Game name field left blank in FS promo — member claims but receives no spins</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: eligible provider verification step</strong>
-          Before activating any promo: confirm every provider/game named in the T&amp;C or campaign brief is in the BO eligible list and not on the blacklist. For FS promos, also confirm the game name field is populated.
-        </div>
-      </div>
-
-      <!-- Card 3: Member Group Missing -->
-      <div class="esc-rec-card r-grp">
-        <div class="esc-rec-hd">
-          <div>
-            <div class="esc-rec-title">Member group as final step</div>
-            <div class="esc-rec-sub">Jun spike: 4 of 7 total cases in one month</div>
-          </div>
-          <span class="esc-rec-tag r-grp">7 cases</span>
-        </div>
-        <ul class="esc-rec-patterns">
-          <li><span class="pat-ct">4×</span>June 2026 cluster — QPRO3, QPRO2 (×2), QP2C: promo live but member group never linked</li>
-          <li><span class="pat-ct">3×</span>Jan–Feb cases: member group omitted on multi-merchant promos (QP2A/C/D)</li>
-          <li><span class="pat-ct">all</span>Always discovered only when a member tries to claim and is blocked</li>
-        </ul>
-        <div class="esc-rec-action">
-          <strong>Fix: member group as final activation gate</strong>
-          Add "Link member group" as the explicit last step in the promo activation SOP — completed after all settings are verified, not at creation. For multi-merchant promos, verify each merchant's group separately.
-        </div>
-      </div>
-
-    </div><!-- /esc-rec-grid -->
-
-    <!-- ── ESCALATION TRACKER MODULE ── -->
-    <p class="section-label">Escalation tracker</p>
-    <div class="row2" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Error sub-categories</div>
-            <div class="card-hint">Jan–Jun 2026 · 81 cases · categories inferred from elaboration text</div>
+    <div id="view-util" style="display:none;">
+    <p class="section-label">Team health at a glance</p>
+    <div class="util-summary-row" style="margin-bottom:28px;">
+      <div class="card util-gauge-card">
+        <div class="card-title">Team utilization</div>
+        <div class="card-hint">Against 70–90% healthy target</div>
+        <div class="util-gauge-wrap">
+          <canvas id="util-gauge-canvas"></canvas>
+          <div class="util-gauge-center">
+            <div class="util-gauge-val" id="util-gauge-val">—</div>
+            <div class="util-gauge-lbl">team average</div>
           </div>
         </div>
-        <div style="position:relative;height:275px;margin-top:4px;"><canvas id="esc-cat-chart"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Volume &amp; root cause</div>
-            <div class="card-hint">Monthly trend · snapshot 24 Jun 2026</div>
-          </div>
-        </div>
-        <div style="position:relative;height:150px;"><canvas id="esc-month-chart"></canvas></div>
-        <div class="esc-mini-row">
-          <div class="esc-mini"><div class="em-val" style="color:#ea580c;">45</div><div class="em-lbl">Human Error<br>56%</div></div>
-          <div class="esc-mini"><div class="em-val" style="color:#2563eb;">30</div><div class="em-lbl">Sys Limitation<br>37%</div></div>
-          <div class="esc-mini"><div class="em-val" style="color:#16a34a;">58</div><div class="em-lbl">Resolved<br>89% tracked</div></div>
-        </div>
+      <div class="card util-buckets-card">
+        <div class="card-title">Who to look at</div>
+        <div class="card-hint">Buckets by current % utilization</div>
+        <div class="util-bucket-row" id="util-buckets"></div>
       </div>
     </div>
-    <div class="records" style="margin-bottom:28px;">
-      <details class="rec" id="rec-escalation">
-        <summary><i class="ti ti-alert-circle" aria-hidden="true"></i> Escalation log <span class="cnt">81 cases · Jan–Jun 2026</span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-        <div class="rec-body">
-          <div class="rec-tools">
-            <input type="text" id="esc-q" class="esc-search-input" placeholder="Search code, agent, creator, description…" oninput="renderEscTable()">
-            <select onchange="renderEscTable()" id="esc-cause"><option value="">All Root Causes</option><option>Human Error</option><option>System Limitation</option><option>Unclassified</option></select>
-            <select onchange="renderEscTable()" id="esc-cat"><option value="">All Categories</option><option>T&amp;C / Message Mismatch</option><option>Reward Not Assigned</option><option>Wrong Promo Setting</option><option>Game / Provider Not Added</option><option>Member Group Missing</option><option>Claim Restriction Bug</option><option>Duplicate Reward</option><option>Sync / Technical Issue</option><option>Unclassified</option></select>
-            <select onchange="renderEscTable()" id="esc-status"><option value="">All Statuses</option><option>Resolved</option><option>Investigating</option><option>Ongoing</option></select>
-            <select onchange="renderEscTable()" id="esc-tab"><option value="">All Months</option><option value="Jan-Feb">Jan–Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option></select>
-            <span class="esc-tbl-cnt" id="esc-cnt"></span>
-          </div>
-          <table style="table-layout:fixed;">
-            <thead><tr>
-              <th style="width:74px">Date</th>
-              <th style="width:90px">Agent</th>
-              <th style="width:170px">Promo Code</th>
-              <th style="width:82px">Platform</th>
-              <th style="width:84px">Creator</th>
-              <th style="width:110px">Root Cause</th>
-              <th style="width:155px">Error Category</th>
-              <th>Description</th>
-              <th style="width:90px">Status</th>
-            </tr></thead>
-            <tbody id="esc-tbody"></tbody>
-          </table>
+    <p class="section-label">Team utilization</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
+        <div>
+          <div class="card-title">Team capacity</div>
+          <div class="card-hint">Utilisation against expected hours</div>
         </div>
-      </details>
-    </div>
-    <!-- ── CAMPAIGN SOURCE SECTION ── -->
-    <p class="section-label" style="margin-top:28px;">Campaign source</p>
-    <div class="row2" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Escalations by department</div>
-            <div class="card-hint">Inferred from promo code prefix — click a bar to filter</div>
-          </div>
+        <div class="cap-tabs">
+          <button class="cap-tab" id="cap-tab-ytd" onclick="switchCapTab(&#39;ytd&#39;)">YTD</button>
+          <button class="cap-tab active" id="cap-tab-weekly" onclick="switchCapTab(&#39;weekly&#39;)">Weekly</button>
         </div>
-        <div style="position:relative;height:200px;margin-top:6px;"><canvas id="esc-src-chart"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-header-info">
-            <div class="card-title">Department share</div>
-            <div class="card-hint">Click a row to filter the table below</div>
-          </div>
-        </div>
-        <div id="esc-src-dept-list" style="margin-top:4px;"></div>
+      <div id="cap-ytd-view" style="display:none;">
+        <div id="cap-summary-row" style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+        <div id="cap-bars"></div>
+        <div class="cap-highlights" id="cap-highlights"></div>
+      </div>
+      <div id="cap-weekly-view">
+        <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
-    <div class="records" style="margin-bottom:28px;">
-      <details class="rec" id="rec-camp-src">
-        <summary><i class="ti ti-building" aria-hidden="true"></i> Campaign source detail <span class="cnt" id="esc-src-cnt-sum"></span><i class="ti ti-chevron-down chev" aria-hidden="true"></i></summary>
-        <div class="rec-body">
-          <div class="rec-tools">
-            <input type="text" id="esc-src-q" class="esc-search-input" placeholder="Search code, platform…" oninput="renderEscSrcTable()">
-            <select id="esc-src-dept" onchange="renderEscSrcTable()"><option value="">All Departments</option></select>
-            <span class="esc-tbl-cnt" id="esc-src-cnt"></span>
-          </div>
-          <table style="table-layout:fixed;">
-            <thead><tr>
-              <th style="width:150px">Campaign Source</th>
-              <th style="width:120px">Brand / Platform</th>
-              <th style="width:160px">Campaign Name</th>
-              <th style="width:175px">Promo Code</th>
-              <th>Remark</th>
-            </tr></thead>
-            <tbody id="esc-src-tbody"></tbody>
-          </table>
+    </div><!-- /view-util -->
+    <div id="view-sop" style="display:none;">
+    <p class="section-label">Standard operating procedures</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+        <div>
+          <div class="card-title">SOP index &mdash; Team Directory</div>
+          <div class="card-hint" style="margin-top:6px;max-width:640px;">Live working files and templates for Banner, Promo Code, Game, CRM, and General Knowledge Library. Click through to the Directory sheet for the latest.</div>
         </div>
-      </details>
+        <a href="https://docs.google.com/spreadsheets/d/1AKFsxkNuFILj7Ge7jlq5aYlcEDTAvVsN4zWGftxmY68/edit" target="_blank" rel="noreferrer" class="btn" style="text-decoration:none;color:var(--ink);"><i class="ti ti-external-link" aria-hidden="true"></i> Open Directory sheet</a>
+      </div>
+      <ul style="margin-top:20px;line-height:1.9;color:var(--ink2);padding-left:20px;">
+        <li><strong>Banner</strong> &mdash; working files, templates, upload procedures</li>
+        <li><strong>Promo Code</strong> &mdash; naming convention, canary flow, T&amp;C</li>
+        <li><strong>Game</strong> &mdash; provider onboarding, category updates</li>
+        <li><strong>CRM</strong> &mdash; FastTrack / Smartico setup + workflows</li>
+        <li><strong>General Knowledge Library</strong> &mdash; team-wide reference docs</li>
+      </ul>
     </div>
-    <!-- ── /ESCALATION TRACKER MODULE ── -->
-    </div><!-- /view-esc -->
+    </div><!-- /view-sop -->
     <div id="view-hk" style="display:none;">
 
     <div class="kpis" id="hk-kpis" style="margin-bottom:24px;"></div>
@@ -1368,7 +1324,73 @@ let cSort={col:null,dir:'asc'}, gSort={col:null,dir:'asc'}, aSort={col:null,dir:
 let _capTab='weekly';
 let _filterFrom=null, _filterTo=null;
 let _brandsExpanded=false;
-let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null;
+let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null, _utilGauge=null, _lastRefreshAt=null;
+
+function updateLastRefreshPill(){
+  const pill=document.getElementById('lastRefreshPill');
+  if(!pill||!_lastRefreshAt) return;
+  const mins=Math.max(0, Math.round((Date.now()-_lastRefreshAt.getTime())/60000));
+  pill.textContent = mins===0 ? 'Just now' : (mins<60 ? `Updated ${mins}m ago` : `Updated ${Math.round(mins/60)}h ago`);
+}
+setInterval(updateLastRefreshPill, 30000);
+
+function renderCommandBrief(totalRows, brandsSet, teamUtil, bannerRows){
+  const ul=document.getElementById('brief-read');
+  if(!ul) return;
+  ul.replaceChildren();
+
+  const items=[];
+
+  // 1. Team utilization
+  if(!isNaN(teamUtil)){
+    const state = teamUtil>=90 ? 'attention — near or over capacity' : teamUtil<60 ? 'under target — capacity available' : 'healthy';
+    items.push({label:'Team utilization', value:`${teamUtil.toFixed(0)}%`, hint:state});
+  } else {
+    items.push({label:'Team utilization', value:'—', hint:'no data this period'});
+  }
+
+  // 2. Banner health
+  const expiredCount=(bannerRows||[]).filter(b=>{
+    const s=String(b.Status||b.status||'').toLowerCase();
+    return s.includes('expired')||s.includes('missing');
+  }).length;
+  const expiringCount=(bannerRows||[]).filter(b=>{
+    const s=String(b.Status||b.status||'').toLowerCase();
+    return s.includes('expiring');
+  }).length;
+  if(expiredCount||expiringCount){
+    const parts=[];
+    if(expiredCount) parts.push(`${expiredCount} expired/missing`);
+    if(expiringCount) parts.push(`${expiringCount} expiring soon`);
+    items.push({label:'Banner health', value:parts.join(' · '), hint:'needs housekeeping'});
+  } else {
+    items.push({label:'Banner health', value:'all healthy', hint:'no issues detected'});
+  }
+
+  // 3. Promo workload
+  if(totalRows && totalRows.length){
+    items.push({label:'Promo code tasks this week', value:`${totalRows.length}`, hint:`across ${brandsSet.size} brand${brandsSet.size===1?'':'s'}`});
+  } else {
+    items.push({label:'Promo code tasks this week', value:'—', hint:'not available yet'});
+  }
+
+  for(const it of items){
+    const li=document.createElement('li');
+    const strong=document.createElement('strong');
+    strong.textContent=it.value;
+    li.appendChild(strong);
+    li.appendChild(document.createTextNode(' · '));
+    li.appendChild(document.createTextNode(it.label));
+    if(it.hint){
+      const em=document.createElement('span');
+      em.style.color='var(--ink3)';
+      em.style.marginLeft='6px';
+      em.textContent=`(${it.hint})`;
+      li.appendChild(em);
+    }
+    ul.appendChild(li);
+  }
+}
 
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1515,11 +1537,14 @@ function render(data,_skipStore){
   const teamUtil=calcWeeklyTeamUtil();
 
   const ts=new Date();  // stamp with current time so Refresh button always shows when user last fetched
+  _lastRefreshAt=ts;
   const dStr=fmtDate(ts);
   const tStr=fmtTime(ts);
   document.getElementById('sub').textContent=`Operations overview · ${rangeNote()}`;
   document.getElementById('refresh-ts').textContent=`${tStr} · ${dStr}`;
+  updateLastRefreshPill();
 
+  renderCommandBrief(total, brandsSet, teamUtil, (_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
   renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
@@ -1538,7 +1563,8 @@ function render(data,_skipStore){
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='block';
   document.getElementById('refresh').disabled=false;
-  if(!_escInit && document.getElementById('view-esc').style.display!=='none'){initEscalationCharts();renderEscTable();_escInit=true;}
+  const _escEl = document.getElementById('view-esc');
+  if(!_escInit && _escEl && _escEl.style.display!=='none'){initEscalationCharts();renderEscTable();_escInit=true;}
 }
 
 function openRecordSection(id){
@@ -1937,6 +1963,86 @@ function renderCapacity(){
   onLeave.forEach(u=>notes.push(`<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-moon"></i><span>${u.Staff} — on leave</span></div>`));
   document.getElementById('cap-highlights').innerHTML=notes.join('');
   if(_capTab==='weekly') renderWeeklyCapacity();
+  renderUtilSummary();
+}
+
+function renderUtilSummary(){
+  const rows = UTIL.filter(u => (u.Staff||'').toLowerCase() !== 'total' && (u.Staff||'').trim() && !HIDDEN_STAFF.has(u.Staff) && !RESIGNED_STAFF.has(u.Staff));
+  const withPct = rows
+    .map(u => ({ staff: (u.Staff||'').trim(), pct: parseFloat(String(u['% Utilisation']||'').replace('%','')) }))
+    .filter(x => !isNaN(x.pct));
+  const teamAvg = withPct.length ? withPct.reduce((s,x)=>s+x.pct,0) / withPct.length : NaN;
+  renderUtilGauge(teamAvg);
+  renderUtilBuckets(withPct);
+}
+
+function renderUtilGauge(avg){
+  const canvas = document.getElementById('util-gauge-canvas');
+  const valEl = document.getElementById('util-gauge-val');
+  if (!canvas || !valEl) return;
+  const has = !isNaN(avg);
+  const safe = has ? Math.max(0, Math.min(100, avg)) : 0;
+  valEl.textContent = has ? `${avg.toFixed(0)}%` : '—';
+  const color = !has ? '#cbd5e1' : safe < 60 ? '#d97706' : safe > 90 ? '#dc2626' : '#16a34a';
+  if (_utilGauge) { _utilGauge.destroy(); _utilGauge = null; }
+  _utilGauge = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: ['Team', 'Remaining'], datasets: [{ data: has ? [safe, 100 - safe] : [0, 100], backgroundColor: [color, '#e5e7eb'], borderWidth: 0 }] },
+    options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 400 }, responsive: true, maintainAspectRatio: false },
+  });
+}
+
+function renderUtilBuckets(withPct){
+  const container = document.getElementById('util-buckets');
+  if (!container) return;
+  const under = withPct.filter(x => x.pct < 60);
+  const healthy = withPct.filter(x => x.pct >= 60 && x.pct <= 90);
+  const over = withPct.filter(x => x.pct > 90);
+  const buckets = [
+    { label: 'Under (<60%)', cls: 'warn', items: under },
+    { label: 'Healthy (60–90%)', cls: 'good', items: healthy },
+    { label: 'Over (>90%)', cls: 'risk', items: over },
+  ];
+  container.replaceChildren();
+  for (const b of buckets) {
+    const wrap = document.createElement('div');
+    wrap.className = `util-bucket util-bucket-${b.cls}`;
+
+    const head = document.createElement('div');
+    head.className = 'util-bucket-head';
+    const label = document.createElement('span');
+    label.textContent = b.label;
+    const count = document.createElement('span');
+    count.className = 'util-bucket-count';
+    count.textContent = String(b.items.length);
+    head.appendChild(label);
+    head.appendChild(count);
+
+    const list = document.createElement('ul');
+    list.className = 'util-bucket-list';
+    if (b.items.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'util-bucket-empty';
+      empty.textContent = 'no one';
+      list.appendChild(empty);
+    } else {
+      for (const item of b.items) {
+        const li = document.createElement('li');
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item.staff;
+        const pctSpan = document.createElement('span');
+        pctSpan.className = 'util-bucket-pct';
+        pctSpan.textContent = `${item.pct.toFixed(0)}%`;
+        li.appendChild(nameSpan);
+        li.appendChild(pctSpan);
+        list.appendChild(li);
+      }
+    }
+
+    wrap.appendChild(head);
+    wrap.appendChild(list);
+    container.appendChild(wrap);
+  }
 }
 
 function switchCapTab(tab){
@@ -2623,6 +2729,38 @@ function loadData(){
     });
 }
 loadData();
+
+// Dashboard switcher — mobile dropdown
+document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
+  const panelId = toggle.getAttribute('aria-controls');
+  const panel = panelId && document.getElementById(panelId);
+  if (!panel) return;
+  const open = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); };
+  const close = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); };
+  toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
+  document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+});
+
+// Logout button
+(function bindLogout(){
+  const btn = document.getElementById('logoutBtn');
+  const errEl = document.getElementById('logoutError');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    try {
+      const r = await fetch('/auth/logout', { method: 'POST' });
+      if (!r.ok) throw new Error(`Logout HTTP ${r.status}`);
+      location.href = '/';
+    } catch (e) {
+      errEl.textContent = `Logout failed: ${e.message}`;
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  });
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/plugins/ranges.js"></script>
@@ -2690,19 +2828,16 @@ loadData();
 
 /* ── PAGE VIEW SWITCHER ── */
 function switchView(v){
-  ['ops','esc','hk','gr','at'].forEach(n=>{
+  ['ops','sop','hk','gr','util','at'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
   const showCtrl = v==='ops';
   document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
   document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
-  if(v==='esc' && !_escInit && document.getElementById('content').style.display!=='none'){
-    initEscalationCharts(); renderEscTable(); _escInit=true;
-  }
   if(v==='hk') renderHousekeepingTab();
   if(v==='at') renderAutomationTab();
-  try{history.replaceState(null,'',v==='esc'?'#escalations':v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='at'?'#automation':'#');}catch(e){}
+  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='util'?'#utilization':v==='sop'?'#sop':v==='at'?'#automation':'#');}catch(e){}
 }
 
 // ── Automation Tab ───────────────────────────────────────────────────────────
@@ -2788,9 +2923,10 @@ function filterAtPortfolio(){
 }
 
 (function(){
-  if(location.hash==='#escalations') switchView('esc');
-  else if(location.hash==='#housekeeping') switchView('hk');
+  if(location.hash==='#housekeeping') switchView('hk');
   else if(location.hash==='#guardrails') switchView('gr');
+  else if(location.hash==='#utilization') switchView('util');
+  else if(location.hash==='#sop') switchView('sop');
   else if(location.hash==='#automation') switchView('at');
 })();
 

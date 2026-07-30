@@ -42,7 +42,7 @@ import { upsertRows } from '../src/qc-results-log.js';
 const { flags, positional } = parseArgs(process.argv.slice(2));
 const userInput = positional[0];
 if (!userInput) {
-  console.error('usage: canary-multi-brand.js <handle|P###> [--commit] [--parallel] [--playwright]');
+  console.error('usage: canary-multi-brand.js <handle|P###> [--commit] [--parallel] [--playwright] [--ft-prefix|--no-ft-prefix]');
   process.exit(2);
 }
 const commit = flags.commit === true;
@@ -71,6 +71,8 @@ function runValidator(args, label) {
   const forwarded = [...args];
   if (flags.brands) forwarded.push(`--brands=${flags.brands}`);
   if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
+  if (flags['ft-prefix']) forwarded.push('--ft-prefix');
+  if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,
@@ -210,7 +212,8 @@ function runCanary(job) {
     args.push(`--brand=${brand}`);
     if (site) args.push(`--site=${site}`);
     if (suffix) args.push(`--code-suffix=${suffix}`);
-    // Forward IGMP-only passthrough flag (suppress FT_ prefix this run).
+    // Forward the operator's required IGMP FT-prefix choice.
+    if (flags['ft-prefix']) args.push('--ft-prefix');
     if (flags['no-ft-prefix']) args.push('--no-ft-prefix');
     // Forward parallel-qc to per-brand runners (QPRO + QP2 honor it; IGMP ignores).
     if (flags['parallel-qc']) args.push('--parallel-qc');
@@ -303,6 +306,8 @@ if (!commit && worst === 0) {
   const forwarded = ['--plan'];
   if (flags.brands) forwarded.push(`--brands=${flags.brands}`);
   if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
+  if (flags['ft-prefix']) forwarded.push('--ft-prefix');
+  if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,

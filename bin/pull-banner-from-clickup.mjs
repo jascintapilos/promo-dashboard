@@ -52,6 +52,8 @@ if (!taskId && bid) {
   const links = await readBannerLinks(sheetsClient, [bid], tab);
   const entry = links.get(bid);
   if (!entry?.clickup_task_id) {
+    // Exit 1 = hyperlink not found or not parseable.
+    // Callers treat exit 1 as a hard failure (task lookup failed).
     console.error(`No ClickUp task found for ${bid} in Banner Schedule tab "${tab}".`);
     console.error('Check that the B-ID row has a blue ClickUp hyperlink in column C.');
     process.exit(1);
@@ -323,11 +325,16 @@ if (!bannerFiles.length && ncLinks.banners) {
 }
 
 if (!bannerFiles.length) {
-  console.log('No banner images found matching known naming conventions:');
-  console.log('  QPRO/QP2: qpro4-ye55-mup-pp-campaign-960x400-my-en.jpg');
-  console.log('  WS1/WS2 (attachment): mb8-campaign-name-1280x320-my-en.jpg');
-  console.log('  WS1/WS2 (Nextcloud): no share link found in ClickUp comments either.');
-  process.exit(0);
+  // Exit 2 = task resolved but no images found — distinct from:
+  //   exit 0 = images staged successfully
+  //   exit 1 = hyperlink not found / ClickUp API error / missing token
+  // Callers (e.g. upload-promo.js subprocess integration) must treat exit 2
+  // as "pull ran, staged nothing" — not as success.
+  console.error('[pull-banner] Task resolved but no banner images found matching known naming conventions:');
+  console.error('  QPRO/QP2: qpro4-ye55-mup-pp-campaign-960x400-my-en.jpg');
+  console.error('  WS1/WS2 (attachment): mb8-campaign-name-1280x320-my-en.jpg');
+  console.error('  WS1/WS2 (Nextcloud): no share link found in ClickUp comments either.');
+  process.exit(2);
 }
 
 // ── Group and build staged files list ────────────────────────────────────────
