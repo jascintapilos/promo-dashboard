@@ -526,18 +526,24 @@ function renderBrands() {
 function verdictLabel(v) {
   if (v === 'SAFE') return 'PASS';
   if (v === 'REVIEW') return 'REVIEW';
+  if (v === 'MANUAL_REQUIRED') return 'MANUAL';
   return 'FAIL';
 }
 
 function verdictClass(v) {
   if (v === 'SAFE') return 'safe';
   if (v === 'REVIEW') return 'review';
+  if (v === 'MANUAL_REQUIRED') return 'manual';
   return 'not-safe';
 }
 
 function verdictWords(v, count) {
   if (v === 'SAFE') return 'SAFE TO APPROVE - PASS';
   if (v === 'REVIEW') return `REQUIRES REVIEW - WARNING - ${count} findings`;
+  // R20: when the only FAIL is a fetch-failed one (auto-fetch couldn't reach
+  // BO), don't scream "NOT SAFE". Flag the workflow reality: operator has to
+  // check the promo in the browser and mark manually.
+  if (v === 'MANUAL_REQUIRED') return `AUTO-FETCH UNAVAILABLE - MANUAL REVIEW REQUIRED - ${count} findings`;
   return `NOT SAFE TO APPROVE - FAIL - ${count} findings`;
 }
 
@@ -695,7 +701,10 @@ function renderActiveResult() {
     btn.addEventListener('click', () => dispatchFindingFix(Number(btn.dataset.fixFinding)));
   });
   renderDetailsTable();
-  $('passBtn').disabled = data.verdict !== 'SAFE';
+  // R20: enable Pass for both auto-SAFE and MANUAL_REQUIRED. When auto-fetch
+  // failed, the operator can still pass after checking the promo in the
+  // browser — the tool shouldn't block that path.
+  $('passBtn').disabled = data.verdict !== 'SAFE' && data.verdict !== 'MANUAL_REQUIRED';
   // R11 fix 4: load this result's remarks into the form
   loadRemarksIntoForm(ensureResultSlot(key).remarks);
   updateRemarksVisibility();

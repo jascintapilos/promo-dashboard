@@ -311,6 +311,9 @@ textarea { min-height: 66px; resize: vertical; }
 .verdict-text { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
 .verdict.safe { border-left: 3px solid var(--safe); }
 .verdict.review { border-left: 3px solid var(--pink); }
+/* R20: MANUAL_REQUIRED — amber left-border to signal "workflow gap, not a
+   product defect". Not the alarming red used for real FAILs. */
+.verdict.manual { border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 3%, transparent); }
 .verdict.not-safe { border-left: 3px solid var(--danger); }
 .mechanics { color: var(--muted); font-size: 12.5px; }
 .findings { margin-top: 10px; }
@@ -330,6 +333,7 @@ textarea { min-height: 66px; resize: vertical; }
 }
 .chip.safe { color: var(--safe); background: color-mix(in srgb, var(--safe) 14%, transparent); }
 .chip.review { color: var(--pink); background: var(--pink-soft); }
+.chip.manual { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
 .chip.not-safe { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
 
 /* Details table */
