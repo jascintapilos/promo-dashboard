@@ -12,7 +12,11 @@ import { getSheetsClient } from './sheets-client.js';
 import { getOpsSheetId } from './ops-sheet.js';
 
 export const QPRO_BRANDS = Array.from({ length: 17 }, (_, i) => ({ brand: `QPRO${i + 1}`, siteId: `qpro${i + 1}` }));
-export const QP2_MERCHANTS = Object.entries(QP2_BRAND_TO_IDS).map(([brand, ids]) => ({ brand, merchantId: ids.merchantId, siteId: 'qp2' }));
+// R20-fix: QP2 shared BO lives in bo-sites.json under id 'ibc22' (all four
+// QP2 merchants — QP2A/B/C/D — share ibc22.qtp777.com). src/ingest.js:75-78
+// is already 'ibc22'; this file was drifted to a fictional 'qp2' siteId that
+// no bo-sites.json ever had. Fix aligns QC Hub with the daily canary flow.
+export const QP2_MERCHANTS = Object.entries(QP2_BRAND_TO_IDS).map(([brand, ids]) => ({ brand, merchantId: ids.merchantId, siteId: 'ibc22' }));
 // Brand label must match bundleBrand() in bin/canary-api-igmp.js exactly —
 // that's what qc-bundle filenames are keyed by (WS1_MY, WS1_SG, ... but WS2
 // stays single since it has only one region).
