@@ -94,7 +94,22 @@ const SUBTYPE_LABELS = { '100': 'API', '150': 'Fish', '120': 'Poker G1', '130': 
 // Key includes bonusTypeId, dates, levelCode, typeCode, and checkDeposit so that
 // a Normal-only run never blocks an All-levels run, and partial re-runs only
 // skip the combos that already succeeded.
-const force = !!cliArgs.force;
+//
+// --force requires the exact run date (DD-MM-YYYY) to prevent accidental replay:
+//   --force=29-07-2026   ← only accepted if startDate begins with that date
+//   --force              ← rejected (no date = no proof of intent)
+
+const forceArg = cliArgs.force;
+const runDate  = startDate.split(' ')[0]; // "DD-MM-YYYY" portion of startDate
+
+if (forceArg !== undefined) {
+  if (forceArg === true || forceArg !== runDate) {
+    console.error('✗ --force requires the exact run date to prevent accidental double-submission.');
+    console.error(`  Use: --force=${runDate}`);
+    process.exit(1);
+  }
+}
+const force = forceArg === runDate;
 
 function loadLedger() {
   if (!existsSync(LEDGER_FILE)) return {};
@@ -110,8 +125,20 @@ function recordSubmission(key) {
 }
 
 const ledger = loadLedger();
-// Exit early only if every combo in this run is already recorded.
 const allKeys = levelsToRun.flatMap(lv => submitTypeCodes.map(tc => submissionKey(lv, tc)));
+
+if (force) {
+  const alreadyDone = allKeys.filter(k => ledger[k]);
+  if (alreadyDone.length > 0) {
+    console.warn('⚠ ──────────────────────────────────────────────────────────');
+    console.warn('⚠  FORCE MODE — re-submitting already-ledgered combos:');
+    alreadyDone.forEach(k => console.warn(`⚠    ${k}  (was: ${ledger[k].slice(0, 19)})`));
+    console.warn('⚠ ──────────────────────────────────────────────────────────');
+    console.warn('');
+  }
+}
+
+// Exit early only if every combo in this run is already recorded.
 if (!force && allKeys.every(k => ledger[k])) {
   console.log('⚠ ALREADY SUBMITTED — all combos for this run are in the ledger.');
   console.log(`  ${bonusType} | ${startDate} → ${endDate} | ${submitTypes.join(', ')}`);
