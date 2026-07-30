@@ -354,6 +354,88 @@ textarea { min-height: 66px; resize: vertical; }
 .issue { color: var(--danger); }
 .review { color: var(--pink); }
 
+/* Increment 6: Expected-vs-Live comparison card + rail Handle input */
+.handle-input {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.rail-hint {
+  font-size: 11px; color: var(--muted); margin: 4px 0 0; line-height: 1.35;
+}
+.compare-card { margin-top: 12px; }
+.compare-card.hidden { display: none; }
+.compare-source-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 8px 10px; margin-bottom: 10px;
+  background: var(--bg); border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--muted);
+}
+.compare-source-bar .src-kind {
+  font-weight: 600; color: var(--text);
+  padding: 1px 6px; border-radius: 4px; background: var(--chip);
+}
+.compare-source-bar .src-meta code {
+  font-size: 11.5px; padding: 1px 4px; border-radius: 3px; background: var(--chip);
+}
+.compare-table { min-width: 720px; }
+.compare-table td { vertical-align: top; white-space: normal; }
+.compare-table td.field-name { font-weight: 600; color: var(--text); white-space: nowrap; }
+.compare-table td.field-value {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px; color: var(--muted);
+  max-width: 260px; word-break: break-word;
+}
+.compare-table td.field-value.has-value { color: var(--text); }
+.compare-table td.field-value.mismatch { color: var(--danger); }
+.compare-table tr.row-match { }
+.compare-table tr.row-mismatch { background: color-mix(in srgb, var(--danger) 4%, transparent); }
+.compare-table tr.row-unavailable { background: color-mix(in srgb, var(--warn) 5%, transparent); }
+.compare-table tr.row-skipped td { color: var(--muted); }
+.compare-table .verdict-chip {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+}
+.compare-table .verdict-chip.match { color: var(--safe); background: color-mix(in srgb, var(--safe) 14%, transparent); }
+.compare-table .verdict-chip.mismatch { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.compare-table .verdict-chip.unavailable { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.compare-table .verdict-chip.skipped { color: var(--muted); background: var(--chip); }
+.compare-table .field-notes {
+  display: block; font-size: 11px; color: var(--muted);
+  font-family: "Segoe UI", -apple-system, sans-serif;
+  font-weight: 400; margin-top: 2px;
+}
+
+/* Increment 7: Manual Pass override — button + modal.
+   Amber tone matches the MANUAL verdict chip so operators recognize the
+   button as tied to the MANUAL_REQUIRED state without reading the label. */
+.manual-pass-btn {
+  background: var(--warn);
+  color: white;
+  border: 1px solid var(--warn);
+  font-weight: 600;
+}
+.manual-pass-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 90%, black);
+}
+.manual-pass-btn:disabled {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.manual-pass-context {
+  padding: 8px 10px; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--warn) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--border));
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.manual-pass-context code {
+  padding: 1px 4px; border-radius: 3px; background: var(--chip);
+}
+
 /* Form grid (remarks) */
 .form-grid { display: flex; flex-direction: column; gap: 10px; }
 .form-grid label { display: grid; gap: 4px; font-size: 12px; font-weight: 500; color: var(--text); }

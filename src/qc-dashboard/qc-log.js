@@ -42,6 +42,12 @@ export function normalizeQcRecord(input, user) {
     fetch_snapshot: input.fetch_snapshot || input.fetchSnapshot || '',
     duration_s: input.duration_s ?? input.durationS ?? '',
     sheet_pending: false,
+    // Increment 7 (real-QC upgrade): compare block + override object are
+    // JSONL-only for now — the sheet header stays at 24 columns so existing
+    // installs don't need a migration. When the sheet is later widened,
+    // these fields already have a stable shape in the log to draw from.
+    compare: input.compare || null,
+    override: input.override || null,
   };
 }
 
