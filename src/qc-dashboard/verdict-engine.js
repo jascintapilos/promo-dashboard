@@ -48,7 +48,16 @@ export function computeVerdict({ findings = [], details = {}, requiredFields = R
       });
     }
   }
-  if (mergedFindings.some((f) => f.severity === 'FAIL')) return { verdict: 'NOT_SAFE', findings: mergedFindings };
+  // R20: distinguish "the promo is broken" (NOT_SAFE) from "we couldn't reach
+  // the BO so operator has to check manually" (MANUAL_REQUIRED). Only apply
+  // the softer verdict when EVERY FAIL is a fetch-failed one; if there's a
+  // real content FAIL mixed in, keep NOT_SAFE so the operator sees the true
+  // problem.
+  const failFindings = mergedFindings.filter((f) => f.severity === 'FAIL');
+  if (failFindings.length && failFindings.every((f) => f.check === 'fetch-failed')) {
+    return { verdict: 'MANUAL_REQUIRED', findings: mergedFindings };
+  }
+  if (failFindings.length) return { verdict: 'NOT_SAFE', findings: mergedFindings };
   if (mergedFindings.some((f) => f.severity === 'WARNING')) return { verdict: 'REVIEW', findings: mergedFindings };
   return { verdict: 'SAFE', findings: mergedFindings };
 }
