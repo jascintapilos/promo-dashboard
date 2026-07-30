@@ -354,14 +354,41 @@ export async function getAllPromotionContents(site, opts = {}) {
 
 // Promo-type integer → name. The QPRO/QP2 BOs store the bonus type as an
 // integer in the detail endpoint; this maps them back to the labels the rest
-// of the codebase uses. (Empirical mapping; expand if a new type shows up.)
-const PROMO_TYPE_LABELS = {
-  1: 'Deposit',
-  2: 'Cashback',
+// of the codebase uses.
+//
+// This MUST stay the exact inverse of what the mappers write, or a BO read
+// round-trips to the wrong label. The writer side is authoritative:
+//   - api-mapper-qpro.js promoTypeInt() → 2 for Deposit AND Cashback
+//     ("QPRO treats Cashback like Deposit")
+//   - api-mapper-qp2.js promoTypeInt()  → 1 = Manual (fallback only, not for
+//     normal promos), 2 = Deposit Bonus (Deposit + Cashback), 3 = FC, 4 = FS
+//
+// Fixed 2026-07-28: this map previously had 1:'Deposit' and 2:'Cashback',
+// which mislabelled EVERY QPRO/QP2 deposit promo as Cashback on read. That
+// surfaced as a spurious Sentinel FAIL on promo_id 592 (P239, QPRO2), where
+// the QC bundle's detail said "Cashback" while the listing endpoint correctly
+// said "Deposit - Reload" — both carrying promo_type=2 / promo_sub_type=1.
+//
+// Note on 1:'Manual' — QP2 Deposit promos used to default to 1 before that
+// writer bug was fixed, so legacy rows saved as 1 are genuinely stored as
+// Manual in the BO. Labelling them 'Manual' reflects the persisted state
+// rather than hiding it.
+//
+// 2 is deliberately ambiguous (Deposit and Cashback share it), so this map
+// cannot recover Cashback from the integer alone. Where the distinction
+// matters, prefer the listing endpoint's human-readable bonus_type (e.g.
+// 'Deposit - Reload'), which is more specific than anything derivable here.
+export const PROMO_TYPE_LABELS = {
+  1: 'Manual',
+  2: 'Deposit',
   3: 'Free Credit',
   4: 'Free Spin',
-  5: 'Rebate',
+  5: 'Rebate',      // unverified against a writer; no mapper emits 5 today
 };
+
+// Resolve a BO promo_type integer to a label, with a visible fallback for
+// unknown values so a new BO type shows up as `type_9` instead of undefined.
+export const promoTypeLabel = (t) => PROMO_TYPE_LABELS[t] || `type_${t}`;
 
 // One promo's full details. Combines three endpoints into one record:
 //   - /api/bo/promotion/<id>            main fields
@@ -422,7 +449,7 @@ export async function getPromotionDetail(site, promotionId) {
   return {
     promo_code: main.code,
     name: main.name,
-    bonus_type: PROMO_TYPE_LABELS[main.promo_type] || `type_${main.promo_type}`,
+    bonus_type: promoTypeLabel(main.promo_type),
     promo_type: main.promo_type ?? null,
     promo_sub_type: main.promo_sub_type ?? null,
     bonus_sub_type: null, // BO stores promo_sub_type as integer; mapping unknown for now
