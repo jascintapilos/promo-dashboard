@@ -164,10 +164,18 @@ if (refresh) {
       const detail = r2?.ok ? r2.value : null;
       const list_row = r1?.ok ? r1.value : null;
       if (platform === 'qpro' && detail) {
-        // bonus_type: getPromotionDetail maps promo_type=2 → 'Cashback' via PROMO_TYPE_LABELS,
-        // but QPRO uses promo_type=2 for Deposit promos too. The listing endpoint returns the
-        // correct human-readable label (e.g. 'Deposit - Welcome'). Use that instead so Sentinel
-        // sees the authoritative value without false-positive FAIL on every Deposit promo.
+        // bonus_type: prefer the listing endpoint's human-readable label (e.g.
+        // 'Deposit - Welcome') over the detail endpoint's, which is derived from the
+        // promo_type integer alone and so cannot express the sub-type.
+        //
+        // This used to also be a workaround for PROMO_TYPE_LABELS mapping promo_type=2
+        // → 'Cashback'; that root bug was fixed 2026-07-28 in src/api-client.js, so this
+        // is now a specificity upgrade rather than a correctness fix. Kept because
+        // 'Deposit - Reload' is strictly more useful to Sentinel than 'Deposit'.
+        //
+        // NOTE: this only ever protected the qc-fanout path. Bundles written directly by
+        // canary-api.js / canary-api-qp2.js never passed through here, which is why the
+        // bad label still reached Sentinel via the canary.
         if (list_row?.bonus_type) detail.bonus_type = list_row.bonus_type;
         // auto_reward_activation: QPRO GET /api/bo/promotion/{id} never returns this field.
         // The ?? null in getPromotionDetail produces an explicit null that Sentinel reads as
