@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   isLocalhost,
   isSessionExpired,
@@ -46,10 +51,10 @@ test('null clientId is always rejected (fail-closed)', () => {
   assert.throws(() => validateTokenData(data, allow, null), /GOOGLE_CLIENT_ID/i);
 });
 
-test('email outside admitted domain is rejected', () => {
+test('email from outside domain is rejected (relies on explicit allowlist, not domain suffix)', () => {
   const allow = new Set(['user@thebrandingpeople.co']);
   const data = { email: 'user@gmail.com', email_verified: 'true', aud: 'cid', name: 'U' };
-  assert.throws(() => validateTokenData(data, allow, 'cid'), /domain/i);
+  assert.throws(() => validateTokenData(data, allow, 'cid'), /allowlist/i);
 });
 
 test('email not in allowlist is rejected', () => {
@@ -58,17 +63,32 @@ test('email not in allowlist is rejected', () => {
   assert.throws(() => validateTokenData(data, allow, 'cid'), /allowlist/i);
 });
 
-test('validateProductionConfig throws when GOOGLE_CLIENT_ID is missing outside dev mode', () => {
-  const origClientId = process.env.GOOGLE_CLIENT_ID;
-  const origMode = process.env.AUTH_MODE;
-  process.env.AUTH_MODE = 'production';
-  process.env.GOOGLE_CLIENT_ID = '';
+test('validateProductionConfig throws when no client ID is available (env + config both absent)', () => {
+  // Run in an isolated tempdir so no qc-hub-config.json is discoverable.
+  // Never touches the real project config file. Safe under parallel runs
+  // and process interruption — worst case leaves an empty tempdir.
+  const tmp = mkdtempSync(path.join(tmpdir(), 'qc-hub-config-test-'));
   try {
-    assert.throws(() => validateProductionConfig(), /GOOGLE_CLIENT_ID/i);
+    const authUrl = pathToFileURL(path.resolve('src/qc-dashboard/auth.js')).href;
+    const script = `
+      import(${JSON.stringify(authUrl)}).then(({ validateProductionConfig }) => {
+        try { validateProductionConfig(); process.exit(2); }
+        catch (e) {
+          if (/GOOGLE_CLIENT_ID/i.test(e.message)) process.exit(0);
+          process.stderr.write('WRONG_MESSAGE:' + e.message);
+          process.exit(3);
+        }
+      }).catch((e) => { process.stderr.write('IMPORT_ERR:' + e.message); process.exit(4); });
+    `;
+    const result = spawnSync(process.execPath, ['-e', script], {
+      cwd: tmp,
+      env: { ...process.env, AUTH_MODE: 'production', GOOGLE_CLIENT_ID: '' },
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    assert.equal(result.status, 0, `expected validateProductionConfig to throw with /GOOGLE_CLIENT_ID/i. exit=${result.status} stderr=${result.stderr}`);
   } finally {
-    if (origClientId != null) process.env.GOOGLE_CLIENT_ID = origClientId;
-    else process.env.GOOGLE_CLIENT_ID = '';
-    process.env.AUTH_MODE = origMode || '';
+    try { rmSync(tmp, { recursive: true, force: true }); } catch {}
   }
 });
 
@@ -84,6 +104,127 @@ test('validateProductionConfig passes in dev mode without GOOGLE_CLIENT_ID', () 
     else process.env.GOOGLE_CLIENT_ID = '';
     process.env.AUTH_MODE = origMode || '';
   }
+});
+
+// ── validateAllowlist — fail-closed at startup ────────────────────────────────
+
+function spawnAllowlistCheck({ tmp, allowlistContent, expectExitCode = 0, expectMessage }) {
+  const authUrl = pathToFileURL(path.resolve('src/qc-dashboard/auth.js')).href;
+  const configPath = path.join(tmp, 'qc-hub-config.json');
+  // Provide a valid client ID so we're testing the allowlist step specifically
+  writeFileSync(configPath, JSON.stringify({ googleClientId: 'x.apps.googleusercontent.com' }));
+  if (allowlistContent !== undefined) {
+    writeFileSync(path.join(tmp, 'admitted-users.json'), allowlistContent);
+  }
+  const script = `
+    import(${JSON.stringify(authUrl)}).then(({ validateAllowlist }) => {
+      try { validateAllowlist(); process.exit(0); }
+      catch (e) {
+        process.stderr.write(e.message);
+        process.exit(1);
+      }
+    }).catch((e) => { process.stderr.write('IMPORT_ERR:' + e.message); process.exit(4); });
+  `;
+  return spawnSync(process.execPath, ['-e', script], {
+    cwd: tmp,
+    env: { ...process.env, AUTH_MODE: 'production', GOOGLE_CLIENT_ID: '' },
+    encoding: 'utf8',
+    timeout: 10000,
+  });
+}
+
+test('validateAllowlist throws when admitted-users.json is missing (fail-closed)', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-missing-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp }); // no file written
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /admitted-users\.json is required/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist throws when file is malformed JSON', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-malformed-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: '{not json' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /malformed JSON/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist throws when emails and users arrays are both missing', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-noarray-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ allowed: [] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /"emails" array or "users" array/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist throws when emails array is empty (all filtered out)', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-empty-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ emails: ['', '  '] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /empty admitted users list/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist accepts users shape with role', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-ok-'));
+  try {
+    const result = spawnAllowlistCheck({
+      tmp,
+      allowlistContent: JSON.stringify({ users: [{ email: 'admin@example.com', role: 'admin' }] }),
+    });
+    assert.equal(result.status, 0, `expected pass, got exit=${result.status} stderr=${result.stderr}`);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist throws when users array is empty', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-empty-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ users: [] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /empty admitted users list/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist filters malformed users and fails cleanly when none remain', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-users-malformed-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ users: ['bad', {}, { role: 'admin' }] }) });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /empty admitted users list/i);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist passes with a valid single-entry allowlist', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-ok-'));
+  try {
+    const result = spawnAllowlistCheck({ tmp, allowlistContent: JSON.stringify({ emails: ['someone@example.com'] }) });
+    assert.equal(result.status, 0, `expected pass, got exit=${result.status} stderr=${result.stderr}`);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('validateAllowlist skipped in dev mode', () => {
+  const tmp = mkdtempSync(path.join(tmpdir(), 'allowlist-dev-'));
+  try {
+    const authUrl = pathToFileURL(path.resolve('src/qc-dashboard/auth.js')).href;
+    // No allowlist file, but dev mode should skip the check
+    const script = `
+      import(${JSON.stringify(authUrl)}).then(({ validateAllowlist }) => {
+        try { validateAllowlist(); process.exit(0); }
+        catch (e) { process.stderr.write(e.message); process.exit(1); }
+      });
+    `;
+    const result = spawnSync(process.execPath, ['-e', script], {
+      cwd: tmp,
+      env: { ...process.env, AUTH_MODE: 'dev' },
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    assert.equal(result.status, 0, `dev mode should skip. stderr=${result.stderr}`);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
 // ── Session expiry ────────────────────────────────────────────────────────────

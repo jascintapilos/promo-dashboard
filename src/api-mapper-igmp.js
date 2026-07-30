@@ -1,5 +1,6 @@
 import { buildTncRow, needsZh } from './igmp-tnc.js';
 import { splitDualPromoName } from './promo-namer.js';
+import { applyIgmpFtPrefix } from './igmp-ft-prefix.js';
 
 // API mapper for iGMP (WS1 V3 / WS2 — nougatsage.com kiosk Back Office).
 //
@@ -501,9 +502,10 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
       normalizedRec.promo_code = primary;
     }
   }
-  // Ensure FT_ prefix (covers single-code records that don't already have it)
-  if (ftPrefix && typeof normalizedRec.promo_code === 'string' && !normalizedRec.promo_code.startsWith('FT_')) {
-    normalizedRec.promo_code = 'FT_' + normalizedRec.promo_code;
+  // Apply the explicit decision in both directions. A "no" answer must also
+  // remove a stale leading FT_ from a single-code source value.
+  if (typeof normalizedRec.promo_code === 'string') {
+    normalizedRec.promo_code = applyIgmpFtPrefix(normalizedRec.promo_code, ftPrefix);
   }
 
   // Fall through parsed.* to top-level for fields the ingest leaves nested.

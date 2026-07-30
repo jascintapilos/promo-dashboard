@@ -22,12 +22,14 @@
 
 ## QPRO Rules
 - [QPRO QC endpoint paths](feedback_qpro_qc_endpoints.md) — Use list + /promotioncurrency + /messagetemplate + /popups for QC.
+- [QPRO PUT body format — 4 required transforms](project_qpro_put_body_format.md) — Omit free_spin_game_code; reformat valid_from to Y-m-d H:i:s; promo_p1_id null→0; build promotion_category_turnover.
 - [QPRO PUT silent field wipe](feedback_qpro_put_silent_field_wipe.md) — PUT treats absent fields as null. Use plan.buildUpdate().
 - [QPRO never sets member_group_ids](feedback_qpro_no_member_groups.md) — member_group_ids stays [] on all QPRO BOs.
 - [QPRO PUT wipes promotion_currency](project_qpro_put_currency_wipe.md) — Never re-send promotion_currency. Archive leaves code reserved — bump suffix.
 - [QPRO promo_type/sub_type to Bonus Type label](project_qpro_promo_type_subtype_map.md) — (2,1)=Dep-Reload, (2,2)=Dep-Welcome, (3,1)=FC, (4,1)=FS-Welcome, (4,2)=FS-Reload.
 - [QPRO4-17 have no SG region](feedback_qpro5plus_no_sg_region.md) — missing SGD currency there is confirmed expected, not a bug; reconfirmed 2026-07-10 across 12 brands in one batch.
 - [VM category wipe 2026-07-08](project_vm_cat_wipe_2026-07-08.md) — bulk VM amend wiped promotion_category on 414 VM_* promos (missing GET→PUT field rename); restored 2026-07-21; bulk amends must use a rename-aware PUT builder.
+- [QPRO Dep/FC must have game_provider_ids set](feedback_qpro_depfc_game_provider_required.md) — empty = rebate engine drops turnover deduction; "all games" still needs the full Layer-1 inclusion list, not an empty array. [[project_qpro_rebate_scope_incident]]
 
 ## QP2 Rules & Dialogs
 - [QP2 FS GOOSS = vs20olympgold](feedback_qp2_fs_gooss_vs20olympgold.md) — Gates of Olympus Super Scatter resolves to vs20olympgold on QP2.
@@ -41,7 +43,6 @@
 - [QP2 conditions divergence](feedback_qp2_conditions_divergence.md) — auto_reward fixed post-save; freespin_check needs live probe.
 - [QP2 promotion PUT semantics](project_qp2_promotion_put_semantics.md) — Omit black_list_sub_categories; re-assert dialog_popup_list; omit promotion_currency.
 - [QP2 blacklist derivation is scoped](feedback_qp2_blacklist_scoped_derivation.md) — promo blacklist_sub_categories = template ∩ promo categories ∩ selected providers; full-template QC compare gives false MISMATCH.
-- [QP2 provider catalog unreadable on ibc22](project_qp2_provider_catalog_ibc22.md) — /api/bo/gameprovider 500s; authoritative 50-code all-providers list + mapper's category map is incomplete.
 - [QP2 promotioncurrency PUT scales bonus_rate ×100](feedback_qp2_promotioncurrency_put_rate_scaling.md) — standalone PUT re-scales like POST; echo-PUT corrupts deposit rows (120→12000). Send rate/100 + verify after.
 - [QP2 target.game_provider_codes is authoritative](feedback_qp2_target_gp_codes_authoritative.md) — provider changes must rewrite target (string codes), not just top-level numeric ids.
 - [QP2 blacklist template create API](project_qp2_blacklist_template_create_api.md) — POST /gameprovider/updateBlacklistTemplate; promo_testbot view-only, use jascinta login; id=11 = "Live Casino and Sports Only".
@@ -117,6 +118,7 @@
 - [Browser identity — Jascinta's Chrome](feedback_browser_identity.md) — 2 browsers connected. Use switch_browser at session START to let Jascinta name hers.
 
 ## Project State & Dashboards
+- [QPRO rebate scope incident + mapper fix needed](project_qpro_rebate_scope_incident.md) — VM_DEP1000_GET500_5X + VM_FC_VARIABLE_5X saved without game_provider_ids; rebate engine dropped turnover; Sentinel + Pre-QC guardrails added 2026-07-22; mapper fix still open.
 - [LC REL clone batch P145-P147 (2026-07-18)](project_lc_rel_clone_batch.md) — ACQ_REL_*_12X_LC live on QPRO2+QP2D, LC+Sports all providers; QP2D single-merchant sentinel FAIL = false positive for this family.
 - [Promo code prefix convention (approved)](project_promo_code_prefix_convention.md) — FT_OWNER_OBJECTIVE matrix; sheet dropdowns + Phase 3 parser/namer/QC-agent support live.
 - [Handover state — 2026-07-01 (current)](project_handover_state_2026-07-01.md) — **Read first when picking up.** P003/P004 WS1 referral FS done; referral exception logic in all 3 QC agents.
