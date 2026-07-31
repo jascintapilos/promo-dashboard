@@ -63,13 +63,30 @@ export async function ingestCurrentMonthFromSheet({
   // so dataRows[i] corresponds to sheet row i+2.
   await fillMergedCellsDown(client, tab, dataRows);
 
+  // Zero-omission invariant: a newly added populated column may not bypass
+  // ingestion merely because its header is unknown to the current parser.
+  const recognizedIndexes = new Set(Object.values(colMap));
+  const unknownPopulatedHeaders = [];
+  for (let index = 0; index < header.length; index++) {
+    const label = String(header[index] ?? '').trim();
+    if (!label || recognizedIndexes.has(index)) continue;
+    if (dataRows.some((row) => String(row?.[index] ?? '').trim() !== '')) {
+      unknownPopulatedHeaders.push(`${label} (column ${index + 1})`);
+    }
+  }
+  if (unknownPopulatedHeaders.length) {
+    throw new Error(
+      `Zero-omission ingest blocked: populated sheet column(s) are not registered: ${unknownPopulatedHeaders.join(', ')}`,
+    );
+  }
+
   const records = [];
   const namerStats = { override: 0, derived: 0, incomplete: 0, unsupported: 0, already_named: 0 };
   for (let i = 0; i < dataRows.length; i++) {
     const sheetRowNum = i + 2;  // header is row 1; data starts at 2
     const cells = dataRows[i];
     if (!cells || cells.length === 0) continue;
-    const rec = rowToRecord(cells, colMap, sheetRowNum);
+    const rec = rowToRecord(cells, colMap, sheetRowNum, header);
     if (!rec) continue;
     // Remember which tab this record came from — writeback must target the
     // SAME tab, not "whatever month it is today". Without this, fixing a

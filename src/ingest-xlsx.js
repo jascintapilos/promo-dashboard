@@ -28,6 +28,7 @@ import {
   parseRecurring, parseValidityDays, parseDetails, parseInstructions,
   BRAND_TO_SITE,
 } from './ingest.js';
+import { buildRequestRequirements } from './request-requirements.js';
 
 import { OWNER_CODES } from './campaign-prefix-rules.js';
 
@@ -257,7 +258,7 @@ export function parseMaxPlayerCaps(raw) {
   return { lifetime: undefined, daily: undefined };
 }
 
-export function rowToRecord(cells, colMap, sourceLine) {
+export function rowToRecord(cells, colMap, sourceLine, header = []) {
   const get = (k) => {
     const idx = colMap[k];
     return idx == null ? '' : (cells[idx] ?? '');
@@ -348,6 +349,11 @@ export function rowToRecord(cells, colMap, sourceLine) {
     source_line: sourceLine,
     handle: `${requestId}-r${sourceLine}`,
   };
+  record.coverage_manifest = buildRequestRequirements(record, { cells, colMap, header });
+  const cadence = record.coverage_manifest.requirements.claim_cadence;
+  if (cadence?.campaign_total_limit != null) record.max_per_player = cadence.campaign_total_limit;
+  if (cadence?.daily_limit != null) record.daily_max = cadence.daily_limit;
+  record.dialog_scope = record.coverage_manifest.requirements.dialog_scope;
   return record;
 }
 
@@ -372,7 +378,7 @@ export async function ingestCurrentMonth(extractedDir = 'captures/sheet-extracte
   // Iterate from row 2 onwards.
   const records = [];
   for (const { row, cells } of sheetRows.slice(1)) {
-    const rec = rowToRecord(cells, colMap, row);
+    const rec = rowToRecord(cells, colMap, row, header);
     if (!rec) continue;
     if (onlyQcCompleted && !/qc.*complete/i.test(rec.status)) continue;
     records.push(rec);

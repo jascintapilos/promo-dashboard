@@ -24,6 +24,7 @@ import { getAllGameProviders, getAllCategories, getFreeSpinGames, getGameProvide
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { splitDualPromoName, gameAcronym } from './promo-namer.js';
 import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
+import { isBrandAuthorized } from './request-requirements.js';
 import { resolveFreeSpinBet } from './free-spin-bet.js';
 
 // Per-brand QPRO group naming varies — QPRO1 has bare names ("BRONZE",
@@ -839,6 +840,7 @@ const CTA_TEXT_BY_DOCKEY = {
 
 export async function buildDialogPopupBody(resolved, brand) {
   if (resolved.popup_dialog !== true) return null;
+  if (resolved.dialog_scope && !isBrandAuthorized(resolved.dialog_scope, brand)) return null;
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   const r = resolved.parsed || {};
   const minDep = Number(r.min_deposit ?? 0);

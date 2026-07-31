@@ -409,6 +409,8 @@ if (!commit) {
         instructions: resolved.instructions || null,
         campaign: resolved.campaign || null,
         remark: resolved.remark || null,
+        coverage_manifest: resolved.coverage_manifest || null,
+        dialog_scope: resolved.dialog_scope || null,
         requestor: resolved.requestor || null,
         per_currency_overrides: resolved.per_currency_overrides ?? {},
       },
@@ -752,6 +754,8 @@ try {
         instructions: resolved.instructions || null,
         campaign: resolved.campaign || null,
         remark: resolved.remark || null,
+        coverage_manifest: resolved.coverage_manifest || null,
+        dialog_scope: resolved.dialog_scope || null,
         per_currency_overrides: resolved.per_currency_overrides ?? {},
       },
       qc_endpoints: {
