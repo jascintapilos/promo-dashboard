@@ -591,6 +591,16 @@ function fsHowToApplyZh(rec) {
   );
 }
 
+function claimCadenceEn(rec) {
+  const cadence = rec.coverage_manifest?.requirements?.claim_cadence;
+  if (cadence?.daily_limit === 1 && cadence?.campaign_total_limit) {
+    return `Each member can claim this promotion once per day, up to ${cadence.campaign_total_limit} times during the campaign period.`;
+  }
+  return rec.recurring
+    ? 'Each member can claim this promotion once per day.'
+    : 'Each member can claim this promotion only once.';
+}
+
 function buildFsEn(rec) {
   const rounds   = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
   const bet      = rec.fs_amount_per_bet ?? rec.parsed?.value_per_spin;
@@ -622,7 +632,7 @@ function buildFsEn(rec) {
   const fsItemsEn = [
     c1,
     `Bonuses are valid for ${vWords} (${validityDays}) ${validityDays === 1 ? 'day' : 'days'} upon issuance unless stated otherwise.`,
-    rec.recurring ? 'Each member can claim this promotion once per day.' : 'Each member can claim this promotion only once.',
+    claimCadenceEn(rec),
     `Turnover Requirement for this promotion is ${to}x. Example as follows (Deposit × ${to}) + (Free Spin Winning Amount × ${to}).`,
     ...(capW > 0 ? [`The maximum withdrawal amount from this promotion is capped at ${pref} ${capW}.`] : []),
     'Promotion codes are time-limited and cannot be extended once expired.',

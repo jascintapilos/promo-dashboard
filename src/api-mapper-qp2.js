@@ -23,6 +23,7 @@ import { getAllCategories, getAllGameProviders, getFreeSpinGames, getGameProvide
 import { resolveBlacklistTemplateId } from './blacklist-template.js';
 import { gameAcronym, splitDualPromoName } from './promo-namer.js';
 import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
+import { isBrandAuthorized } from './request-requirements.js';
 import { resolveFreeSpinBet } from './free-spin-bet.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
@@ -951,6 +952,7 @@ export async function buildSmsTemplateBody(resolved, brand) {
 
 export async function buildDialogPopupBody(resolved, brand) {
   if (resolved.popup_dialog !== true) return null;
+  if (resolved.dialog_scope && !isBrandAuthorized(resolved.dialog_scope, brand)) return null;
   if (/cashback/i.test(resolved.bonus_type || '')) return null;
   const ids = QP2_BRAND_TO_IDS[brand];
   if (!ids) throw new Error(`api-mapper-qp2: brand "${brand}" site_id not configured`);

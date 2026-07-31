@@ -512,6 +512,10 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
   const promotionNameLocalized = (docKey === 'ZH' || docKey === 'ID')
     ? (r.promotion_name_zh_id || r.promotion_name_zh || promotionNameEn)
     : promotionNameEn;
+  const claimCadence = r.coverage_manifest?.requirements?.claim_cadence;
+  const claimLimitSentenceEn = claimCadence?.daily_limit === 1 && claimCadence?.campaign_total_limit
+    ? `Each member can claim this promotion once per day, up to ${claimCadence.campaign_total_limit} times during the campaign period.`
+    : 'Each member can claim this promotion only once.';
 
   const vars = {
     currency_symbol: currencySymbol,
@@ -544,6 +548,7 @@ export async function renderBody({ bonusType, locale, brand, platform, resolved 
     // Per-locale promo name — body templates should reference {{promotion_name}}
     // (not {{promotion_name_en}}) so ZH/ID bodies show the localized name.
     promotion_name: promotionNameLocalized,
+    claim_limit_sentence_en: claimLimitSentenceEn,
     bonus_sub_type: r.bonus_sub_type || '',
     bonus_sub_type_zh: BONUS_SUBTYPE_ZH[r.bonus_sub_type] || r.bonus_sub_type || '',
     tnc_link_html: tncLinkHtml,

@@ -401,7 +401,14 @@ if (request.promotion_name_zh_id) valuesByField.promotion_name_zh_id = request.p
 // the request is fully complete without waiting on the slower deep-QC layer.
 // If only some brands succeeded, keep the row at "Created" so operators can
 // see the BO work landed but the overall request still needs attention.
-if (anySucceeded) valuesByField.status = allSucceeded ? 'QC Completed' : 'Created';
+const coverage = request.coverage_manifest;
+const coverageReady = Boolean(
+  coverage?.complete
+  && Object.values(coverage.source_cells || {}).every(
+    (cell) => !cell.populated || ['mapped', 'informational'].includes(cell.disposition),
+  ),
+);
+if (anySucceeded) valuesByField.status = allSucceeded && coverageReady ? 'QC Completed' : 'Created';
 const hasValues = Object.keys(valuesByField).length > 0;
 
 if (commit && !(daySplit?.count > 1)) {

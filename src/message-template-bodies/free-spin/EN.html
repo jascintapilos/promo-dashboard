@@ -60,7 +60,7 @@
 
 <ol>
   <li>{{#if_min_deposit}}A minimum deposit of {{currency_symbol}} {{min_deposit}} is required to claim this promotion.{{else}}No minimum deposit is required to claim this promotion.{{/if}}</li>
-  <li>Each member can claim this promotion only once.</li>
+  <li>{{claim_limit_sentence_en}}</li>
   <li>This promotion applies exclusively to one game under [{{game_provider}}]. Your [{{game_provider}}] wallet will be locked until the turnover requirement is fulfilled.</li>
   <li>The turnover requirement for this promotion is {{turnover_words}} ({{turnover}}) time{{#if_turnover_plural}}s{{/if}} the sum of the transfer amount and any winnings from Free Spins.</li>
   <li>The promotion must be claimed within {{validity_days_words}} ({{validity_days}}) day{{#if_validity_days_plural}}s{{/if}}, and the bonus will expire {{rewards_validity_days_words}} ({{rewards_validity_days}}) day{{#if_rewards_validity_days_plural}}s{{/if}} after the claim.</li>
