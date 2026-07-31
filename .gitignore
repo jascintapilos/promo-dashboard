@@ -2,6 +2,8 @@
 *.local.json
 bo-sites.json
 data/bo-sites-runtime.json
+data/relay-secret.local.json
+data/relay-secret.local.json.tmp-*
 google-credentials.local.json
 # admitted-users.json is NOT a secret — it's a list of allow-listed Google
 # emails managed via git so allowlist edits auto-deploy through Bitbucket.
