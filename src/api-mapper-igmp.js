@@ -209,7 +209,7 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   // buildTncRow would otherwise return the generic (non-WS) name as PromotionRewardName.
   const isWsSite = Boolean(recWithSite.__site_override);
   const resolvedRec = (isWsSite && typeof recWithSite.promotion_name_en === 'string')
-    ? { ...recWithSite, promotion_name_en: splitDualPromoName(recWithSite.promotion_name_en).ws1Unique }
+    ? { ...recWithSite, promotion_name_en: splitDualPromoName(recWithSite.promotion_name_en).generic }
     : recWithSite;
   const locales = ['en'];
   if (needsZh(resolvedRec)) locales.push('zh');

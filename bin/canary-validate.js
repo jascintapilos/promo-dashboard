@@ -27,6 +27,7 @@ import path from 'node:path';
 import { parseArgs } from './_args.js';
 import { loadAllRequests, resolveHandle } from '../src/planner.js';
 import { isIgmpRequest, resolveIgmpFtPrefixDecision } from '../src/igmp-ft-prefix.js';
+import { isBrandAuthorized } from '../src/request-requirements.js';
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
 const userInput = positional[0];
@@ -159,6 +160,24 @@ if (doTriage) {
 
   const bt = (request.bonus_type || '').toLowerCase();
   const p  = request.parsed || {};
+  const coverage = request.coverage_manifest;
+
+  if (!coverage) {
+    reject('coverage_manifest', 'Source-column coverage manifest missing', 'Re-ingest with the zero-omission ingest path');
+  } else {
+    for (const issue of (coverage.unresolved || [])) {
+      reject('coverage_manifest', issue, 'Fix or clarify the populated source column and re-ingest');
+    }
+    const unaccounted = Object.entries(coverage.source_cells || {})
+      .filter(([, cell]) => cell.populated && !['mapped', 'informational'].includes(cell.disposition));
+    if (unaccounted.length) {
+      reject(
+        'coverage_manifest',
+        `Populated columns lack an approved disposition: ${unaccounted.map(([field]) => field).join(', ')}`,
+        'Map every populated source column before dry-run',
+      );
+    }
+  }
 
   if (!request.bonus_type || !KNOWN_BONUS_TYPES.has(bt)) {
     reject('bonus_type', `Unknown or missing bonus_type: "${request.bonus_type}"`, 'Set bonus_type in source sheet col E');
@@ -323,6 +342,17 @@ if (doPlan) {
     // ── Structural ──────────────────────────────────────────────────────────
     if (!plan.promotion) {
       pFail('plan.promotion', 'plan.promotion missing — canary aborted before building the body?');
+    }
+
+    const dialogScope = src.dialog_scope || src.coverage_manifest?.requirements?.dialog_scope;
+    if (dialogScope) {
+      const authorized = isBrandAuthorized(dialogScope, brand);
+      if (authorized && dialogScope.enabled && platform !== 'igmp' && !plan.dialogPopup) {
+        pFail('dialogPopup', `Dialog is required on ${brand} but no dialog plan was generated`);
+      }
+      if (!authorized && plan.dialogPopup) {
+        pFail('dialogPopup', `Dialog is prohibited on ${brand} but a dialog plan was generated`);
+      }
     }
 
     // IGMP: _unimplemented blocks
