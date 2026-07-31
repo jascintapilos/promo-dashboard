@@ -63,6 +63,7 @@ function closeModalById(id) {
   else if (id === 'usersModal') closeUsersModal();
   else if (id === 'siteConfigsModal') closeSiteConfigsModal();
   else if (id === 'manualPassModal') closeManualPassModal();
+  else if (id === 'relayKeyModal') closeRelayKeyModal();
 }
 
 /* ── R10: workflow strip ── */
@@ -315,6 +316,98 @@ async function openSiteConfigsModal() {
   document.getElementById('siteConfigsModal').classList.remove('hidden');
   activateModalTrap('siteConfigsModal');
   await refreshSiteConfigsGrid();
+  await refreshRelayKeyStatus();
+}
+
+// BO Relay self-service rotation.
+// Status shows only "Configured / Not Configured" + last rotation timestamp.
+// The rotate button POSTs to /api/admin/relay-secret/rotate; the response
+// is displayed ONCE in the relayKeyModal — never persisted client-side,
+// never logged, cleared on close.
+async function refreshRelayKeyStatus() {
+  const el = document.getElementById('relayKeyStatus');
+  const btn = document.getElementById('relayKeyRotateBtn');
+  if (!el) return;
+  try {
+    const h = await api('/api/admin/relay-health');
+    if (h.relaySecretConfigured && h.relaySecretSource === 'env') {
+      // §3: env-managed — self-service must not pretend a click had effect.
+      el.textContent = '✓ Configured — source: RELAY_SECRET environment variable (externally managed; rotate at the source)';
+      if (btn) { btn.disabled = true; btn.title = 'Rotation is disabled because RELAY_SECRET is set via the environment. Ask whoever set the env var to rotate there.'; }
+    } else if (h.relaySecretConfigured) {
+      const when = h.relaySecretLastRotatedAt
+        ? new Date(h.relaySecretLastRotatedAt).toLocaleString()
+        : '(source: file)';
+      el.textContent = `✓ Configured — last rotation ${when}${h.relaySecretLastRotatedBy ? ` by ${h.relaySecretLastRotatedBy}` : ''}`;
+      if (btn) { btn.disabled = false; btn.title = ''; }
+    } else {
+      el.textContent = '✗ Not configured — click Generate to create a key';
+      if (btn) { btn.disabled = false; btn.title = ''; }
+    }
+    el.classList.remove('hidden');
+  } catch (e) {
+    el.textContent = `status unavailable: ${e.message}`;
+    el.classList.remove('hidden');
+  }
+}
+
+async function rotateRelayKey() {
+  const btn = document.getElementById('relayKeyRotateBtn');
+  if (!confirm('Rotate the relay key?\n\nThis invalidates every pending relay job and forces the VDI worker to be re-configured with the new value.\n\nThe key is displayed ONCE and cannot be recovered afterwards.')) return;
+  if (btn) btn.disabled = true;
+  try {
+    // /api/admin/relay-secret/rotate — server sends Cache-Control: no-store;
+    // we deliberately do NOT stash the value anywhere except the modal state.
+    const resp = await fetch('/api/admin/relay-secret/rotate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+    const body = await resp.json();
+    openRelayKeyModal(body.secret, body.rotatedAt);
+    // Refresh the status label AFTER the value is on screen — this proves the
+    // admin sees "configured=true" without needing another round-trip.
+    await refreshRelayKeyStatus();
+  } catch (e) {
+    toast(`Rotate failed: ${e.message}`, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function openRelayKeyModal(secret, rotatedAt) {
+  const modal = document.getElementById('relayKeyModal');
+  const value = document.getElementById('relayKeyValue');
+  value.value = secret;
+  document.getElementById('relayKeyCopyConfirm').classList.add('hidden');
+  modal.classList.remove('hidden');
+  activateModalTrap('relayKeyModal');
+  requestAnimationFrame(() => { value.focus(); value.select(); });
+}
+function closeRelayKeyModal() {
+  const value = document.getElementById('relayKeyValue');
+  // Wipe the DOM copy of the secret on close. Won't help against a
+  // hostile browser extension but does prevent accidental re-reveal via
+  // in-page inspection after the modal is dismissed.
+  if (value) value.value = '';
+  releaseModalTrap('relayKeyModal');
+  document.getElementById('relayKeyModal').classList.add('hidden');
+}
+async function copyRelayKeyToClipboard() {
+  const value = document.getElementById('relayKeyValue');
+  if (!value?.value) return;
+  try {
+    await navigator.clipboard.writeText(value.value);
+    const el = document.getElementById('relayKeyCopyConfirm');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 3000);
+  } catch {
+    toast('Copy failed — select the value manually and copy.', 'error');
+  }
 }
 function closeSiteConfigsModal() {
   releaseModalTrap('siteConfigsModal');
@@ -524,7 +617,25 @@ function renderBrands() {
   renderEmptyStates();
 }
 
-function verdictLabel(v) {
+// BO Relay: intermediate statuses that appear on QUEUED results before the
+// worker's evidence lands. Each has its own pill class so the operator can
+// see at a glance whether the run is still pending vs terminal.
+function relayStatusLabel(result) {
+  const s = result?.status;
+  if (s === 'QUEUED') return 'QUEUED';
+  if (s === 'RELAY_FETCHING') return 'RELAY FETCHING';
+  if (s === 'TIMED_OUT') return 'RELAY TIMED OUT';
+  if (s === 'EXPIRED') return 'RELAY EXPIRED';
+  if (s === 'LOST') return 'RELAY LOST';
+  return null;
+}
+function isRelayPendingStatus(result) {
+  return result?.status === 'QUEUED' || result?.status === 'RELAY_FETCHING';
+}
+
+function verdictLabel(v, result) {
+  const relay = relayStatusLabel(result);
+  if (relay && v == null) return relay;
   if (v === 'SAFE') return 'PASS';
   if (v === 'REVIEW') return 'REVIEW';
   if (v === 'MANUAL_REQUIRED') return 'MANUAL';
@@ -532,7 +643,9 @@ function verdictLabel(v) {
   return 'FAIL';
 }
 
-function verdictClass(v) {
+function verdictClass(v, result) {
+  if (result && isRelayPendingStatus(result)) return 'pending';
+  if (result && (result.status === 'TIMED_OUT' || result.status === 'EXPIRED' || result.status === 'LOST')) return 'manual';
   if (v === 'SAFE') return 'safe';
   if (v === 'REVIEW') return 'review';
   if (v === 'MANUAL_REQUIRED') return 'manual';
@@ -760,7 +873,7 @@ function renderPills() {
     return `<button class="pill ${state.activeKey === key ? 'active' : ''}" data-key="${escapeHtml(key)}">
       <strong>${escapeHtml(r.brand)}</strong>
       <code>${escapeHtml(r.code)}</code>
-      <span class="chip ${verdictClass(r.verdict)}">${verdictLabel(r.verdict)}</span>
+      <span class="chip ${verdictClass(r.verdict, r)}">${escapeHtml(verdictLabel(r.verdict, r))}</span>
     </button>`;
   }).join('');
   document.querySelectorAll('[data-key]').forEach((btn) => {
@@ -788,8 +901,10 @@ function renderActiveResult() {
     return;
   }
   const panel = $('verdictPanel');
-  panel.className = `verdict card ${verdictClass(data.verdict)}`;
-  $('verdictText').textContent = verdictWords(data.verdict, data.findings.length);
+  panel.className = `verdict card ${verdictClass(data.verdict, data)}`;
+  $('verdictText').textContent = isRelayPendingStatus(data)
+    ? `${relayStatusLabel(data)} — awaiting BO relay evidence from the VDI worker`
+    : verdictWords(data.verdict, data.findings.length);
   // R23: mechanics text also carries the failure detail; strip inline HTML +
   // absolute URLs same way R19 did for finding.message. Previously the raw
   // nginx 403 body leaked here even after R19 cleaned the finding.
@@ -820,6 +935,86 @@ function renderActiveResult() {
   loadRemarksIntoForm(ensureResultSlot(key).remarks);
   updateRemarksVisibility();
   renderEmptyStates();
+}
+
+// BO Relay: per-job polling. Emits state transitions QUEUED → RELAY_FETCHING
+// → COMPARING → COMPLETE without holding an HTTP request open. If the job
+// is still QUEUED/LEASED at JOB_POLL_MAX_MS we abandon and surface TIMED_OUT
+// (the browser's own decision; the server ALSO has a job TTL and will EXPIRE
+// the record independently so no verdict can leak out).
+const JOB_POLL_INTERVAL_MS = 2000;
+const JOB_POLL_MAX_MS = 90_000;
+const _relayPollTimers = new Map(); // resultKey → timeout id
+
+function _updateResultInPlace(key, patch) {
+  const ix = state.results.findIndex((r) => resultKey(r) === key);
+  if (ix < 0) return;
+  state.results[ix] = { ...state.results[ix], ...patch };
+  if (state.activeKey === key) renderActiveResult();
+  else renderPills();
+}
+
+async function pollRelayJob(result) {
+  const key = resultKey(result);
+  const jobId = result.jobId;
+  const startedAt = Date.now();
+  const poll = async () => {
+    if (Date.now() - startedAt > JOB_POLL_MAX_MS) {
+      _updateResultInPlace(key, {
+        status: 'TIMED_OUT',
+        verdict: 'MANUAL_REQUIRED',
+        mechanics: 'Relay did not respond within 90s',
+        findings: [{ severity: 'FAIL', check: 'relay-timeout', message: 'The BO relay worker on the VDI did not return a result within 90s — enter QC verdict manually via Override.' }],
+        details: {},
+      });
+      return;
+    }
+    try {
+      const data = await api(`/api/qc-jobs/${encodeURIComponent(jobId)}`);
+      const job = data.job || {};
+      if (job.status === 'COMPLETED' && job.result) {
+        const b = job.result;
+        _updateResultInPlace(key, {
+          status: 'COMPLETE',
+          runId: job.finalRunId,
+          verdict: b.verdict,
+          mechanics: b.verdict === 'MANUAL_REQUIRED' ? 'Relay evidence incomplete' : 'Via BO relay',
+          findings: b.findings || [],
+          details: {},
+          compare: b.fields ? { expected: b.expectedRef, actual: b.actualRef, fields: b.fields, summary: b.summary, expectedSource: b.expectedSource } : null,
+        });
+        return;
+      }
+      if (job.status === 'EXPIRED') {
+        _updateResultInPlace(key, {
+          status: 'EXPIRED',
+          verdict: 'MANUAL_REQUIRED',
+          mechanics: 'Relay job expired',
+          findings: [{ severity: 'FAIL', check: 'relay-expired', message: 'The BO relay job expired before a result was submitted — enter QC verdict manually via Override.' }],
+        });
+        return;
+      }
+      if (job.status === 'LEASED') {
+        _updateResultInPlace(key, { status: 'RELAY_FETCHING' });
+      }
+      const t = setTimeout(poll, JOB_POLL_INTERVAL_MS);
+      _relayPollTimers.set(key, t);
+    } catch (e) {
+      // 404 = unknown/lost job (e.g. server restarted). Treat as MANUAL_REQUIRED.
+      _updateResultInPlace(key, {
+        status: 'LOST',
+        verdict: 'MANUAL_REQUIRED',
+        mechanics: 'Relay job lost',
+        findings: [{ severity: 'FAIL', check: 'relay-lost', message: `Relay job could not be retrieved: ${e.message} — enter QC verdict manually via Override.` }],
+      });
+    }
+  };
+  await poll();
+}
+
+function _cancelRelayPolls() {
+  for (const t of _relayPollTimers.values()) clearTimeout(t);
+  _relayPollTimers.clear();
 }
 
 function renderRun(results) {
@@ -864,9 +1059,16 @@ async function runQc() {
         })))
     ));
     renderRun(batches.flat());
-  } finally {
-    $('runQc').disabled = false;
-    showSkeleton(false);
+    // BO Relay UI (correction brief §7): every QUEUED result kicks off a
+    // background poll of /api/qc-jobs/:id. The DOM updates as each job
+    // moves through states. If a job doesn't complete within JOB_POLL_MAX_MS
+    // we mark it TIMED_OUT client-side (verdict stays MANUAL_REQUIRED per
+    // §5 — the server also has its own 2-min job TTL as the authoritative
+    // deadline).
+    for (const r of batches.flat()) {
+      if (r.status === 'QUEUED' && r.jobId) pollRelayJob(r);
+    }
+
   }
 }
 
@@ -1176,6 +1378,7 @@ async function loadHistory() {
 function bind() {
   $('runQc').addEventListener('click', runQc);
   $('clearBtn').addEventListener('click', () => {
+    _cancelRelayPolls();
     resetCodeRows();
     if ($('handleInput')) $('handleInput').value = '';
     state.results = [];
@@ -1220,6 +1423,18 @@ function bind() {
   const siteConfigsModal = document.getElementById('siteConfigsModal');
   if (siteConfigsModal) siteConfigsModal.addEventListener('click', (e) => {
     if (e.target === siteConfigsModal) closeSiteConfigsModal();
+  });
+  // BO Relay self-service rotate — admin-only. Button lives inside the
+  // existing site-configs modal so we don't add a new nav entry.
+  const relayKeyRotateBtn = document.getElementById('relayKeyRotateBtn');
+  if (relayKeyRotateBtn) relayKeyRotateBtn.addEventListener('click', rotateRelayKey);
+  const relayKeyCopyBtn = document.getElementById('relayKeyCopyBtn');
+  if (relayKeyCopyBtn) relayKeyCopyBtn.addEventListener('click', copyRelayKeyToClipboard);
+  const relayKeyCloseBtn = document.getElementById('relayKeyCloseBtn');
+  if (relayKeyCloseBtn) relayKeyCloseBtn.addEventListener('click', closeRelayKeyModal);
+  const relayKeyModal = document.getElementById('relayKeyModal');
+  if (relayKeyModal) relayKeyModal.addEventListener('click', (e) => {
+    if (e.target === relayKeyModal) closeRelayKeyModal();
   });
   $('usersCloseBtn').addEventListener('click', closeUsersModal);
   $('usersModal').addEventListener('click', (e) => {

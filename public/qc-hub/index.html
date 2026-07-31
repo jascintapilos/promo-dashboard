@@ -272,6 +272,35 @@
           <button id="siteConfigsRefreshBtn" class="secondary" type="button">Refresh status</button>
           <button id="siteConfigsCloseBtn" class="secondary" type="button">Close</button>
         </div>
+        <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+        <h3 style="margin:0 0 6px;font-size:14px;">BO Relay key</h3>
+        <p class="muted" style="margin:0 0 8px;font-size:12px;">
+          The VDI-side relay worker authenticates to this server with a shared HMAC key.
+          Rotating regenerates the key server-side and invalidates all in-flight jobs.
+          <strong>The value is shown once</strong> — copy it into the VDI file
+          <code>%USERPROFILE%\.qc-relay\relay-secret</code> and never store it elsewhere.
+        </p>
+        <div id="relayKeyStatus" class="inline-banner" role="status" style="margin-bottom:8px;"></div>
+        <div class="modal-actions" style="margin-top:0;">
+          <button id="relayKeyRotateBtn" class="primary" type="button">Generate / Rotate Relay Key</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="relayKeyModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="relayKeyModalTitle">
+      <div class="modal-box">
+        <h2 id="relayKeyModalTitle" style="margin-bottom:8px;">Relay key — one-time reveal</h2>
+        <p class="muted" style="margin:0 0 12px;">
+          This value is displayed only once. Copy it, then paste it into
+          <code>%USERPROFILE%\.qc-relay\relay-secret</code> on the VDI (one line, no trailing newline).
+          After you close this dialog it cannot be recovered — you would have to rotate a new one.
+        </p>
+        <textarea id="relayKeyValue" rows="3" readonly spellcheck="false" style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;letter-spacing:0.02em;background:var(--chip);"></textarea>
+        <div id="relayKeyCopyConfirm" class="copy-confirm hidden">Copied to clipboard.</div>
+        <div class="modal-actions" style="margin-top:12px;">
+          <button id="relayKeyCopyBtn" class="primary" type="button">Copy to Clipboard</button>
+          <button id="relayKeyCloseBtn" class="secondary" type="button">Close (and forget)</button>
+        </div>
       </div>
     </div>
 

@@ -19,6 +19,69 @@ import { hashComparePayload } from '../src/qc-dashboard/manual-pass.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 import { loadConfig as loadSitesConfig, getSite as getSiteById, writeRuntimeOverlay, getRuntimeOverlaySnapshot } from '../src/sites.js';
 import { preflightBrand, preflightAllBrands, _clearPreflightCache } from '../src/qc-dashboard/preflight.js';
+import { runComparisonFromRelay } from '../src/qc-dashboard/compare-flow.js';
+import { readServerRelaySecret, verifySignedRequest, readRawBodyBounded, MAX_BODY_BYTES, _clearNonceCacheForTest as _clearRelayNonceCache } from '../src/qc-dashboard/relay-auth.js';
+import { relayJobStore, safeJobForClient, JOB_STATUS } from '../src/qc-dashboard/relay-job-store.js';
+import { sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
+import { readStatus as readRelayStatus, rotateSecret as rotateRelaySecret, registerRotationInvalidation } from '../src/qc-dashboard/relay-secret-store.js';
+
+// BO Relay: the secret is read on demand each request. The admin can rotate
+// via POST /api/admin/relay-secret/rotate without restarting the server —
+// that's the "no tech team needed" requirement. `getRelaySecret()` returns
+// null when neither RELAY_SECRET env nor the persisted file is present.
+function getRelaySecret() {
+  const status = readServerRelaySecret();
+  return status.present ? status.secret : null;
+}
+{
+  const initial = readServerRelaySecret();
+  if (!initial.present) console.log('[relay] disabled — no secret configured; admin can generate one via the QC Hub');
+  else console.log(`[relay] enabled — secret source: ${process.env.RELAY_SECRET ? 'env' : 'admin-managed file'}`);
+}
+
+// Rotation invalidation (§1): drop every pending job + worker heartbeat
+// tied to the OLD secret. Registered once at boot.
+const RELAY_FALLBACK_PREFLIGHT_STATUSES = new Set(['BO_UNREACHABLE', 'AUTH_EXPIRED', 'CONFIG_MISSING']);
+const WORKER_HEARTBEAT = new Map(); // workerId → { lastSeenAt, workerVersion }
+// §4: rotation must invalidate EVERYTHING keyed to the previous secret:
+//  · pending / leased jobs (their finalRunId would have been derived
+//    under the old key context; safer to drop)
+//  · worker heartbeats (a stale worker's next lease attempt should
+//    surface as "workers: 0" until it re-signs with the new key)
+//  · HMAC replay-nonce cache (nonces are only meaningful against a
+//    specific key; keeping old entries is harmless but wastes memory)
+registerRotationInvalidation(() => {
+  relayJobStore._clearForTest();
+  WORKER_HEARTBEAT.clear();
+  _clearRelayNonceCache();
+});
+
+function _workerSeen(workerId, extras = {}) {
+  if (!workerId) return;
+  const wid = String(workerId).slice(0, 64);
+  WORKER_HEARTBEAT.set(wid, { lastSeenAt: Date.now(), workerVersion: extras.version || null });
+}
+
+// CSRF/origin check for state-changing admin endpoints (§1). SameSite=Lax on
+// the session cookie already prevents most cross-site POSTs; this is
+// defense in depth. Rejects requests whose Origin/Referer host does not
+// match the Host the request came in on. Localhost/dev is allowed.
+function _verifySameOrigin(req) {
+  const host = String(req.headers.host || '').toLowerCase();
+  if (!host) return { ok: false, error: 'missing host header' };
+  const origin = req.headers.origin || req.headers.referer;
+  if (!origin) {
+    // fetch() sends Origin on every POST from browser. Its absence on a
+    // state-changing request is suspicious — reject.
+    return { ok: false, error: 'origin/referer header required for state-changing admin request' };
+  }
+  let parsed;
+  try { parsed = new URL(origin); } catch { return { ok: false, error: 'invalid origin' }; }
+  if (parsed.host.toLowerCase() !== host) {
+    return { ok: false, error: `cross-origin request rejected (origin=${parsed.host}, host=${host})` };
+  }
+  return { ok: true };
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -265,6 +328,11 @@ async function handleApi(req, res, user) {
     catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
     try {
       const result = writeRuntimeOverlay(body);
+      // Preflight caches per-brand READY/BO_UNREACHABLE for 30s. When admin
+      // rewrites the overlay we invalidate so the next /api/run-qc probes
+      // fresh — otherwise the operator sees stale advice for up to half a
+      // minute after a site fix. Also makes route tests deterministic.
+      _clearPreflightCache();
       try { console.log(`[admin] site-configs overlay written by ${user.email} — sites=${result.sitesWritten} passwords=${result.passwordsWritten}`); } catch {}
       return send(res, 200, { ok: true, ...result });
     } catch (e) {
@@ -302,21 +370,48 @@ async function handleApi(req, res, user) {
     const preflight = await preflightBrand(brand);
     if (preflight.status !== 'READY') {
       const preflightDetail = `${preflight.status}: ${(preflight.checks || []).filter((c) => !c.ok).map((c) => `${c.name} — ${c.detail}`).join('; ') || 'not ready'}`;
+      // Correction brief §1: relay fallback covers connectivity/credential
+      // gaps on the company server when the brand is VALID + ENABLED (the
+      // enabled check above already guaranteed this). Codes still go to
+      // MANUAL_REQUIRED when the relay is disabled OR the preflight status
+      // isn't in the whitelist (e.g. PARTIAL_DATA — the relay wouldn't
+      // help). Invalid brands / codes never get here (400 above / snapshot-
+      // notFound handled by the direct-fetch code path).
+      const relaySecret = getRelaySecret();
+      const shouldRelay = isMvpBrand
+        && relaySecret != null
+        && RELAY_FALLBACK_PREFLIGHT_STATUSES.has(preflight.status);
       const results = codes.map((code) => {
-        // Blocker 1 fix: even the preflight-blocked MANUAL_REQUIRED paths get
-        // a server-issued runId. That's what the MANUAL_PASS override endpoint
-        // requires to prove the override targets a real, recent server-side
-        // MANUAL_REQUIRED decision (not a crafted body claim).
+        if (shouldRelay) {
+          const job = relayJobStore.createJob({
+            brand, code, handle: handle || null, requestedBy: user.email,
+          });
+          return {
+            code,
+            jobId: job.jobId,
+            status: 'QUEUED',
+            verdict: null,
+            mechanics: 'Awaiting relay evidence from VDI',
+            findings: [],
+            details: {},
+            snapshotPath: null,
+            duplicateRecent: null,
+            error: null,
+            detail: `Preflight: ${preflightDetail} — dispatched to BO relay`,
+            preflight,
+            duration_s: Number(((Date.now() - started) / 1000).toFixed(2)),
+          };
+        }
+        // No relay path — same MANUAL_REQUIRED-with-runId behavior as before.
         const runId = recordRun({ brand, code, verdict: 'MANUAL_REQUIRED', sourceType: 'preflight-blocked' });
         return {
-          code,
-          runId,
+          code, runId,
           verdict: 'MANUAL_REQUIRED',
           mechanics: 'Live BO evidence unavailable — preflight blocked',
           findings: [{
             severity: 'FAIL',
             check: 'fetch-failed',
-            message: `Preflight: ${preflightDetail} — no live BO fetch attempted, enter QC verdict manually via Override.`,
+            message: `Preflight: ${preflightDetail}${relaySecret ? '' : ' — BO relay not configured (admin can rotate a key from the QC Hub admin panel)'} — no live BO fetch attempted, enter QC verdict manually via Override.`,
           }],
           details: {},
           snapshotPath: null,
@@ -327,7 +422,7 @@ async function handleApi(req, res, user) {
           duration_s: Number(((Date.now() - started) / 1000).toFixed(2)),
         };
       });
-      return send(res, 200, { results, preflight, duration_s: Number(((Date.now() - started) / 1000).toFixed(2)) });
+      return send(res, 200, { results, preflight, relayDispatched: shouldRelay && results.some((r) => r.status === 'QUEUED'), duration_s: Number(((Date.now() - started) / 1000).toFixed(2)) });
     }
 
     const settled = await Promise.allSettled(codes.map(async (code) => {
@@ -434,6 +529,83 @@ async function handleApi(req, res, user) {
     const saved = await saveQcRecord(parsed.record, user);
     return send(res, 200, { ...saved, override: parsed.record.override });
   }
+  // ─────────────────────────────────────────────────────────────────────
+  // GET /api/qc-jobs/:jobId — session-gated, ownership-checked (§3).
+  {
+    const m = url.pathname.match(/^\/api\/qc-jobs\/([A-Za-z0-9_-]{4,64})$/);
+    if (m && req.method === 'GET') {
+      const jobId = m[1];
+      const lookup = relayJobStore.getForUser({ jobId, user });
+      if (!lookup.ok) {
+        // NOT_FOUND for both nonexistent and wrong-owner: prevents id-guess enumeration.
+        const status = lookup.code === 'UNAUTHORIZED' ? 401 : 404;
+        return send(res, status, { error: lookup.code === 'UNAUTHORIZED' ? 'unauthorized' : 'not found' });
+      }
+      const safe = safeJobForClient(lookup.job);
+      return send(res, 200, { job: safe });
+    }
+  }
+  // GET /api/admin/relay-health — admin-only aggregate view (no PII).
+  // Deliberately NOT under /api/relay/* so it stays on the session-gate
+  // dispatch path — HMAC is for the worker's own routes only.
+  if (req.method === 'GET' && url.pathname === '/api/admin/relay-health') {
+    if (user?.role !== 'admin') return send(res, 403, { error: 'forbidden' });
+    const now = Date.now();
+    const workers = [];
+    for (const [wid, hb] of WORKER_HEARTBEAT) {
+      workers.push({
+        workerId: wid,
+        lastSeenAt: hb.lastSeenAt,
+        ageSeconds: Math.floor((now - hb.lastSeenAt) / 1000),
+        offline: (now - hb.lastSeenAt) > 30_000,
+        workerVersion: hb.workerVersion,
+      });
+    }
+    // §1: status only carries { configured, source, lastRotatedAt, lastRotatedBy }
+    // — never the value. `configured` is the observable state.
+    const secretStatus = readRelayStatus();
+    return send(res, 200, {
+      relaySecretConfigured: secretStatus.configured,
+      relaySecretSource: secretStatus.source,
+      relaySecretLastRotatedAt: secretStatus.lastRotatedAt,
+      relaySecretLastRotatedBy: secretStatus.lastRotatedBy,
+      jobs: relayJobStore.counts(now),
+      workers: workers.sort((a, b) => b.lastSeenAt - a.lastSeenAt),
+    });
+  }
+  // POST /api/admin/relay-secret/rotate — admin + CSRF/origin check.
+  // Returns the freshly generated key ONCE. Response is Cache-Control:
+  // no-store. Never returns the value again through any other endpoint.
+  if (req.method === 'POST' && url.pathname === '/api/admin/relay-secret/rotate') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    const originCheck = _verifySameOrigin(req);
+    if (!originCheck.ok) return send(res, 403, { error: originCheck.error });
+    try {
+      // Read (and discard) any body — the route is body-less by design.
+      await readJsonBounded(req, 512).catch(() => null);
+      const result = rotateRelaySecret({ actorEmail: user.email });
+      // Deliberately spartan log: rotated + who + when. Never the value,
+      // never the length beyond "rotated".
+      try { console.log(`[relay-secret] rotated by ${user.email} at ${result.rotatedAt}`); } catch {}
+      return send(res, 200, {
+        secret: result.secret,
+        rotatedAt: result.rotatedAt,
+        rotatedBy: result.rotatedBy,
+        instructions: 'Copy this value to the VDI file %USERPROFILE%\\.qc-relay\\relay-secret (one line, no trailing newline). This is the only time this value is shown.',
+      }, {
+        'cache-control': 'no-store',
+        pragma: 'no-cache',
+      });
+    } catch (e) {
+      if (e?.code === 'EXTERNALLY_MANAGED') {
+        // §3: never pretend the write became effective when the env var
+        // still wins. 409 is the semantic match ("cannot rotate in this
+        // state") — the admin UI turns this into a clear banner.
+        return send(res, 409, { error: e.message, code: 'EXTERNALLY_MANAGED' });
+      }
+      return send(res, 500, { error: (e?.message || 'rotate failed').slice(0, 200) });
+    }
+  }
   if (req.method === 'POST' && url.pathname === '/api/fix-request') {
     const body = await readJsonBounded(req, 65536);
     return send(res, 200, await dispatchFixRequest({ ...body, requestedBy: user.email }));
@@ -457,6 +629,12 @@ async function handle(req, res) {
     }
     if (req.method === 'POST' && url.pathname === '/auth/logout') {
       return send(res, 200, { ok: true }, { 'set-cookie': 'qc_hub_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
+    }
+    // Relay endpoints authenticate via HMAC on raw request bytes — must be
+    // dispatched BEFORE the session gate. Session-holding humans never call
+    // these; only the VDI worker with the shared RELAY_SECRET does.
+    if (url.pathname.startsWith('/api/relay/')) {
+      return await handleRelayApi(req, res, url);
     }
     if (url.pathname.startsWith('/api/')) {
       const user = requireSession(req, res);
@@ -488,6 +666,124 @@ async function handle(req, res) {
     const status = e.status && e.status >= 400 && e.status < 600 ? e.status : 500;
     send(res, status, { error: status < 500 ? e.message : 'Internal server error' });
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// BO Relay endpoints. Signed with HMAC over raw bytes; no session cookie.
+// Correction brief §§3-6.
+
+async function handleRelayApi(req, res, url) {
+  const relaySecret = getRelaySecret();
+  if (!relaySecret) return send(res, 503, { error: 'relay unavailable' });
+  let rawBody;
+  try {
+    rawBody = await readRawBodyBounded(req, MAX_BODY_BYTES);
+  } catch (e) {
+    return send(res, e.status || 413, { error: 'body too large' });
+  }
+  const verify = verifySignedRequest({
+    method: req.method,
+    path: url.pathname,
+    headers: req.headers,
+    bodyBuffer: rawBody,
+    secret: relaySecret,
+  });
+  if (!verify.ok) {
+    // Generic 401 — never leak WHY the auth failed.
+    return send(res, verify.status || 401, { error: 'unauthorized' });
+  }
+  const workerId = String(req.headers['x-relay-worker'] || 'unknown').slice(0, 64);
+
+  // POST /api/relay/jobs/lease
+  if (req.method === 'POST' && url.pathname === '/api/relay/jobs/lease') {
+    let body;
+    try { body = rawBody.length ? JSON.parse(rawBody.toString('utf8')) : {}; }
+    catch { return send(res, 400, { error: 'invalid json' }); }
+    _workerSeen(workerId, { version: typeof body.workerVersion === 'string' ? body.workerVersion.slice(0, 32) : null });
+    const limit = Number.isInteger(body.limit) && body.limit > 0 && body.limit <= 5 ? body.limit : 5;
+    const leased = relayJobStore.leaseJobs({ workerId, limit });
+    return send(res, 200, { jobs: leased });
+  }
+  // POST /api/relay/jobs/:jobId/result
+  {
+    const m = url.pathname.match(/^\/api\/relay\/jobs\/([A-Za-z0-9_-]{4,64})\/result$/);
+    if (m && req.method === 'POST') {
+      const jobId = m[1];
+      _workerSeen(workerId);
+      const parsed = sanitizeResultPayload(rawBody.toString('utf8'));
+      if (!parsed.ok) return send(res, 400, { error: parsed.code === 'TOO_LARGE' ? 'payload too large' : 'invalid payload' });
+      const payload = parsed.payload;
+      if (payload.jobId !== jobId) return send(res, 400, { error: 'jobId mismatch' });
+
+      // Look up the job (server-side identity is authoritative — we compare
+      // the payload against what WE stored, not what the worker claims).
+      const stored = relayJobStore._peekForTest(jobId);
+      if (!stored) return send(res, 404, { error: 'unknown job' });
+
+      // Verdict re-derivation: we NEVER take the worker's verdict at face
+      // value. If evidence is present, compare(); if not, MANUAL_REQUIRED.
+      let bundle;
+      if (payload.workerError || !payloadCarriesEvidence(payload)) {
+        const reason = payload.workerError?.code || 'RELAY_INCOMPLETE_EVIDENCE';
+        bundle = {
+          status: 'ok',
+          verdict: 'MANUAL_REQUIRED',
+          findings: [{
+            severity: 'FAIL',
+            check: `relay-${reason.toLowerCase().replace(/_/g, '-')}`,
+            message: payload.workerError?.message || 'Relay could not produce complete evidence — enter QC verdict manually via Override.',
+            field: 'relayEvidence',
+          }],
+          fields: [],
+          summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+          expectedSource: { sourceType: 'not-found', requestedHandle: stored.handle || null },
+          expectedRef: null, actualRef: null,
+        };
+      } else {
+        bundle = runComparisonFromRelay({
+          brand: stored.brand,
+          code: stored.code,
+          handle: stored.handle,
+          expectedCanonical: payload.expectedCanonical,
+          actualCanonical: payload.actualCanonical,
+          expectedSourceMeta: payload.expectedSourceMeta,
+          platform: payload.platform || null,
+        });
+        // A "skip" from the compare flow means the relay evidence was
+        // unusable (unknown platform / missing fields). Never trust it.
+        if (bundle.status !== 'ok') {
+          bundle = {
+            status: 'ok', verdict: 'MANUAL_REQUIRED',
+            findings: [{ severity: 'FAIL', check: 'relay-unusable-evidence', message: `Relay evidence unusable: ${bundle.reason || 'unknown'}`, field: 'relayEvidence' }],
+            fields: [], summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+            expectedSource: { sourceType: 'not-found', requestedHandle: stored.handle || null },
+            expectedRef: null, actualRef: null,
+          };
+        }
+      }
+
+      const submit = relayJobStore.submitResult({
+        jobId, brand: stored.brand, code: stored.code, handle: stored.handle,
+        workerId, verdictBundle: bundle,
+      });
+      if (!submit.ok) return send(res, 409, { error: submit.code });
+
+      // Record the FINAL runId — this is what the MP-override endpoint will
+      // require (§5). Attach it to the job so the browser sees the same id.
+      if (!submit.alreadyComplete) {
+        const compareHash = bundle.fields?.length
+          ? hashComparePayload({ expected: bundle.expectedRef, actual: bundle.actualRef, fields: bundle.fields })
+          : null;
+        const runId = recordRun({
+          brand: stored.brand, code: stored.code, verdict: bundle.verdict,
+          compareHash, sourceType: bundle.expectedSource?.sourceType || 'relay',
+        });
+        relayJobStore.attachFinalRunId(jobId, runId);
+      }
+      return send(res, 200, { ok: true });
+    }
+  }
+  return send(res, 404, { error: 'not found' });
 }
 
 http.createServer(handle).listen(PORT, () => {

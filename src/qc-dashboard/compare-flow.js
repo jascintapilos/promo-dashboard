@@ -238,6 +238,115 @@ function _skip(code, reason) {
   return { status: 'skip', reason, code };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// BO Relay entrypoint (correction brief §§4-5): re-derive the verdict from
+// pre-normalized canonicals supplied by the VDI worker. The company server
+// NEVER trusts a relay-supplied verdict — we always call compare() again on
+// the sanitized shape so the audit record reflects our own decision.
+//
+// Inputs are already-canonical objects (produced on the VDI by
+// expectedFromSource + liveFromPlatform). The company server does not need
+// snapshotToLiveState or resolveExpectedSource here.
+export function runComparisonFromRelay({
+  brand, code, handle = null,
+  expectedCanonical, actualCanonical, expectedSourceMeta,
+  platform, deps = {},
+} = {}) {
+  if (!brand || !code) return _skip('missing-brand-or-code', 'brand and code are required');
+  if (!SUPPORTED_PLATFORMS.has(String(platform || '').toLowerCase())) {
+    return _skip('unsupported-platform', `runComparisonFromRelay: unsupported platform "${platform}"`);
+  }
+  if (!expectedCanonical || !actualCanonical) {
+    return {
+      status: 'ok',
+      verdict: 'MANUAL_REQUIRED',
+      findings: [{
+        severity: 'FAIL',
+        check: 'relay-incomplete-evidence',
+        message: 'Relay result missing expected/live canonical — cannot derive verdict; enter QC manually via Override.',
+        field: 'relayEvidence',
+      }],
+      fields: [],
+      summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+      expectedSource: _publicExpectedSourceFromMeta(expectedSourceMeta, handle),
+      expectedRef: null,
+      actualRef: null,
+    };
+  }
+  const compare = deps.compare || _defaultCompare;
+  let cmp;
+  try {
+    cmp = compare({ expected: expectedCanonical, actual: actualCanonical, brand, platform });
+  } catch (e) {
+    return {
+      status: 'ok',
+      verdict: 'MANUAL_REQUIRED',
+      findings: [{
+        severity: 'FAIL',
+        check: 'compare-engine-error',
+        message: `Deterministic compare failed on relay payload: ${_safeMessage(e)} — verdict cannot be trusted.`,
+        field: 'compareEngine',
+      }],
+      fields: [],
+      summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+      expectedSource: _publicExpectedSourceFromMeta(expectedSourceMeta, handle),
+      expectedRef: null,
+      actualRef: null,
+    };
+  }
+  const uiFields = (cmp.fields || []).map((f) => ({
+    name: f.field, expected: f.expected, actual: f.actual,
+    verdict: f.status, severity: f.severity, path: f.rule,
+    notes: f.message, expectedPath: f.expectedPath, boPath: f.boPath,
+  }));
+  const s = cmp.summary || {};
+  const skipped = uiFields.filter((f) => f.verdict === 'SKIPPED').length;
+  const summary = {
+    total: uiFields.length,
+    passed: s.passed || 0,
+    failed: s.failed || 0,
+    warnings: s.warning || 0,
+    unavailable: s.unavailable || 0,
+    skipped,
+  };
+  return {
+    status: 'ok',
+    verdict: cmp.verdict,
+    findings: _findingsFromFields(uiFields),
+    fields: uiFields,
+    summary,
+    expectedSource: _publicExpectedSourceFromMeta(expectedSourceMeta, handle),
+    expectedRef: {
+      promoCode: expectedCanonical.identity?.promoCode || null,
+      bonusType: expectedCanonical.identity?.bonusType || null,
+      currencies: (expectedCanonical.currencies || []).map((c) => c.code),
+    },
+    actualRef: {
+      promoCode: actualCanonical.identity?.promoCode || null,
+      bonusType: actualCanonical.identity?.bonusType || null,
+      currencies: (actualCanonical.currencies || []).map((c) => c.code),
+      promotionId: actualCanonical.identity?.promotionId || null,
+    },
+  };
+}
+
+// Relay-side variant: expectedSourceMeta comes from the worker as a plain
+// object, not the resolver's internal record. Whitelist the fields the
+// browser is allowed to see — never leak sourcePath.
+function _publicExpectedSourceFromMeta(meta, requestedHandle) {
+  if (!meta) return { sourceType: 'not-found', requestedHandle: requestedHandle || null };
+  return {
+    sourceType: meta.sourceType || null,
+    sourceId: meta.sourceId || null,
+    sourceTs: meta.sourceTs || null,
+    approvalStatus: meta.approvalStatus || null,
+    handle: meta.handle || null,
+    promoCode: meta.promoCode || null,
+    brand: meta.brand || null,
+    requestedHandle: requestedHandle || null,
+  };
+}
+
 function _findingsFromFields(fields) {
   // Only surface MISMATCH / UNAVAILABLE — MATCH and SKIPPED are noise for a
   // findings feed. The UI still gets every field via `fields` for the
