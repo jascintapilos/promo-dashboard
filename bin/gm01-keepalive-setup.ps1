@@ -1,4 +1,4 @@
-# GM01 Keepalive — Windows Task Scheduler setup
+# GM01 Keepalive - Windows Task Scheduler setup
 # Run once to register the task. No admin rights required.
 #   .\bin\gm01-keepalive-setup.ps1
 
@@ -26,7 +26,7 @@ $action = New-ScheduledTaskAction `
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $User
 $triggerLogon.Delay = 'PT30S'
 
-# Trigger 2: hourly watchdog — if keepalive died mid-session, this revives it.
+# Trigger 2: hourly watchdog - if keepalive died mid-session, this revives it.
 # MultipleInstances=IgnoreNew (below) means a healthy running instance is untouched.
 $triggerWatchdog = New-ScheduledTaskTrigger `
     -Once `
