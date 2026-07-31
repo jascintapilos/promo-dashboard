@@ -334,6 +334,18 @@ textarea { min-height: 66px; resize: vertical; }
 .chip.safe { color: var(--safe); background: color-mix(in srgb, var(--safe) 14%, transparent); }
 .chip.review { color: var(--pink); background: var(--pink-soft); }
 .chip.manual { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+/* BO Relay pending states (QUEUED, RELAY_FETCHING) — muted blue so it's
+   visually distinct from the four terminal-verdict colors above. */
+.chip.pending {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  border: 1px dashed var(--border);
+  animation: chip-pulse 1.6s ease-in-out infinite;
+}
+@keyframes chip-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
 .chip.not-safe { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
 
 /* Details table */
