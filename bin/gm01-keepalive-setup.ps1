@@ -21,8 +21,10 @@ $action = New-ScheduledTaskAction `
     -Argument "-NonInteractive -ExecutionPolicy Bypass -File `"$WrapperScript`"" `
     -WorkingDirectory $WorkDir
 
-# Trigger 1: on user logon (primary start)
+# Trigger 1: on user logon (primary start), delayed 30s to let the VDI session
+# fully initialize before Node launches (avoids silent early-exit on fast logons).
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $User
+$triggerLogon.Delay = 'PT30S'
 
 # Trigger 2: hourly watchdog — if keepalive died mid-session, this revives it.
 # MultipleInstances=IgnoreNew (below) means a healthy running instance is untouched.
@@ -30,7 +32,7 @@ $triggerWatchdog = New-ScheduledTaskTrigger `
     -Once `
     -At (Get-Date) `
     -RepetitionInterval (New-TimeSpan -Minutes 60) `
-    -RepetitionDuration ([TimeSpan]::MaxValue)
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 
 # Settings: restart up to 10 times if the process exits, 1 min apart
 $settings = New-ScheduledTaskSettingsSet `
