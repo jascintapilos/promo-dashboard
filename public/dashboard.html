@@ -2889,7 +2889,10 @@ function switchView(v){
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
-  const showCtrl = v==='ops';
+  // date-btn drives _filterFrom/_filterTo, which renderWeeklyCapacity() (Utilization
+  // tab's weekly grid) already reads on every rerender — so Utilization only needed
+  // the control shown, not new filtering logic.
+  const showCtrl = v==='ops' || v==='util';
   document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
   document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
   if(v==='hk') renderHousekeepingTab();
