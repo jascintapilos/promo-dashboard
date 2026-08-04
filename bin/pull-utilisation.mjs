@@ -234,7 +234,10 @@ function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFro
 // - minKey (YYYY-MM-DD, optional): rows dated before this are ignored entirely.
 //   Needed when a tracker file was cloned from an existing member — the carried-over
 //   tabs hold someone else's hours and would otherwise inflate the numerator.
-// Returns { hours, weekendDays: Set<dateKey>, leaveDays: Set<dateKey>, minDate: Date|null, maxDate: Date|null }
+// Returns { hours, weekendDays: Set<dateKey>, leaveDays: Set<dateKey>, minDate: Date|null, maxDate: Date|null, entries }
+// entries: [{date: dateKey, bo, task, hours}] for every non-leave row — feeds the
+// dashboard's "Work Focus" card (bin/pull-utilisation.mjs only used to discard task
+// text after summing it; the client now needs the raw text to categorize focus areas).
 async function sumTabHours(spreadsheetId, tabTitle, minKey) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -245,6 +248,7 @@ async function sumTabHours(spreadsheetId, tabTitle, minKey) {
   const weekendDays = new Set();
   const leaveDays   = new Set();
   const weeklyH     = new Map();
+  const entries     = [];
   let curDate = null;
   let minDate = null;
   let maxDate = null;
@@ -272,11 +276,13 @@ async function sumTabHours(spreadsheetId, tabTitle, minKey) {
           if (!maxDate || curDate > maxDate) maxDate = new Date(curDate);
           const wk = weekMon(curDate);
           weeklyH.set(wk, (weeklyH.get(wk) || 0) + n);
+          const task = String(r[1] || '').trim();
+          if (task) entries.push({ date: dateKey(curDate), bo: String(r[2] || '').trim(), task, hours: n });
         }
       }
     }
   }
-  return { hours: total, weekendDays, leaveDays, weeklyH, minDate, maxDate };
+  return { hours: total, weekendDays, leaveDays, weeklyH, minDate, maxDate, entries };
 }
 
 // Root Drive folder that contains all monthly "Weekly Report (Mmm YYYY)" subfolders.
@@ -360,14 +366,16 @@ async function getUtilisation(tracker) {
     const allWeekendDays = new Set();
     const allLeaveDays   = new Set();
     const allWeeklyH     = new Map();
+    const allEntries     = [];
     let personMinDate = null;
     let personMaxDate = null;
     for (const tab of yearTabs) {
-      const { hours, weekendDays, leaveDays, weeklyH, minDate, maxDate } = await sumTabHours(tracker.id, tab, tracker.startDate);
+      const { hours, weekendDays, leaveDays, weeklyH, minDate, maxDate, entries } = await sumTabHours(tracker.id, tab, tracker.startDate);
       totalHours += hours;
       for (const d of weekendDays) allWeekendDays.add(d);
       for (const d of leaveDays)   allLeaveDays.add(d);
       for (const [wk, h] of weeklyH) allWeeklyH.set(wk, (allWeeklyH.get(wk) || 0) + h);
+      allEntries.push(...entries);
       if (minDate && (!personMinDate || minDate < personMinDate)) personMinDate = minDate;
       if (maxDate && (!personMaxDate || maxDate > personMaxDate)) personMaxDate = maxDate;
       await sleep(300); // stay within Sheets API read quota
@@ -416,7 +424,8 @@ async function getUtilisation(tracker) {
     const effectiveHours = Math.max(0, personWeekdayHours - phDays * 8 - allLeaveDays.size * 8 - mlDays * 8);
     const pct = onMatLeave ? null : (effectiveHours > 0 ? (totalHours / effectiveHours) * 100 : 0);
     const weeklyExp = weeklyExpectedMap(tracker.region, allLeaveDays, startDate, endDate, matLeaveFrom, matLeaveTo);
-    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), notes: onMatLeave ? 'Maternity leave' : '' };
+    allEntries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), entries: allEntries, notes: onMatLeave ? 'Maternity leave' : '' };
   } catch (e) {
     const errSnip = e.message.slice(0, 60);
     process.stdout.write(`\n    ↳ tracker error (${errSnip}) — trying Weekly Report fallback… `);
@@ -454,7 +463,7 @@ console.log(`  -ML = maternity leave weekdays (window excluded from denominator)
 const results = [];
 for (const t of TRACKERS) {
   process.stdout.write(`  ${t.name.padEnd(12)} `);
-  const { hours, pct, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH, weeklyExp, notes: baseNotes, fallback } = await getUtilisation(t);
+  const { hours, pct, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH, weeklyExp, entries, notes: baseNotes, fallback } = await getUtilisation(t);
   const notes = t.leave || baseNotes;
   const display = pct === null ? '—' : pct.toFixed(1) + '%';
   const hrsLabel = hours !== null
@@ -468,7 +477,7 @@ for (const t of TRACKERS) {
       + ')'
     : '';
   console.log(`${display.padEnd(8)} ${hrsLabel.padEnd(58)} ${notes}`);
-  results.push({ staff: t.name, pct, hours, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: weeklyH || {}, weeklyExp: weeklyExp || {}, notes, fallback: !!fallback });
+  results.push({ staff: t.name, pct, hours, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: weeklyH || {}, weeklyExp: weeklyExp || {}, entries: entries || [], notes, fallback: !!fallback });
 }
 
 // Team average: only active members with data (excludes error rows; WR fallback counts as data)
@@ -551,6 +560,32 @@ if (WRITE) {
     valueInputOption: 'RAW', requestBody: { values: weeklyRows },
   });
   console.log(`✅ Wrote ${weeklyRows.length - 1} weekly rows to '${WEEKLY_TAB}'.`);
+
+  // ── Work log tab — raw task entries powering the dashboard's "Work Focus" card ──
+  // Fallback-sourced staff have no entry-level detail (only aggregate weekly hours
+  // from the Weekly Report), so they're simply absent from this tab.
+  const LOG_TAB = 'Work Log';
+  const logRows = [
+    ['Date', 'Staff', 'BO', 'Task', 'Hours'],
+    ...results
+      .filter(r => (!r.notes || r.fallback) && r.entries.length)
+      .flatMap(r => r.entries.map(e => [e.date, r.staff, e.bo, e.task, e.hours])),
+  ];
+  const metaL = await sheets.spreadsheets.get({ spreadsheetId: OPS_ID, fields: 'sheets.properties.title' });
+  const logTabExists = metaL.data.sheets.some(s => s.properties.title === LOG_TAB);
+  if (!logTabExists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: OPS_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: LOG_TAB } } }] },
+    });
+    console.log(`Created '${LOG_TAB}' tab`);
+  }
+  await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${LOG_TAB}'!A:E` });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: OPS_ID, range: `'${LOG_TAB}'!A1`,
+    valueInputOption: 'RAW', requestBody: { values: logRows },
+  });
+  console.log(`✅ Wrote ${logRows.length - 1} task entries to '${LOG_TAB}'.`);
 } else {
   console.log(`\n(DRY RUN — re-run with --write to commit.)`);
 }
