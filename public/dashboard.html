@@ -769,6 +769,12 @@
         <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
+    <p class="section-label">Insights</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="card-title">What the numbers say</div>
+      <div class="card-hint">Auto-generated from current YTD % and weekly trend data</div>
+      <div id="util-insights-list" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
     </div><!-- /view-util -->
     <div id="view-sop" style="display:none;">
     <p class="section-label">Standard operating procedures</p>
@@ -1993,6 +1999,7 @@ function renderCapacity(){
   document.getElementById('cap-highlights').innerHTML=notes.join('');
   if(_capTab==='weekly') renderWeeklyCapacity();
   renderUtilSummary();
+  renderUtilInsights();
 }
 
 function renderUtilSummary(){
@@ -2072,6 +2079,125 @@ function renderUtilBuckets(withPct){
     wrap.appendChild(list);
     container.appendChild(wrap);
   }
+}
+
+// ── UTILIZATION INSIGHTS (auto-generated from live YTD % + weekly trend data) ──
+// Deliberately reads full history, not _filterFrom/_filterTo — ramping/trend
+// detection needs a stable lookback window, same as the gauge/buckets above it.
+function renderUtilInsights(){
+  const container = document.getElementById('util-insights-list');
+  if (!container) return;
+
+  const RAMP_WEEKS  = 4;    // fewer than this many weekly rows = still ramping up
+  const ZERO_FLOOR  = 0.2;  // actual/expected below this on the latest week = possible unlogged absence
+  const TREND_DELTA = 15;   // percentage-point swing (last 2 weeks vs prior 2) worth flagging
+
+  const wkData = (_fullData && _fullData.utilWeekly) || [];
+  const rows = UTIL.filter(u => (u.Staff||'').toLowerCase() !== 'total' && (u.Staff||'').trim() && !HIDDEN_STAFF.has(u.Staff) && !RESIGNED_STAFF.has(u.Staff));
+
+  const perStaff = rows.map(u => {
+    const staff = (u.Staff||'').trim();
+    const pct = parseFloat(String(u['% Utilisation']||'').replace('%',''));
+    const weeks = wkData
+      .filter(w => w.Staff === staff && w.Expected !== undefined && w.Expected !== '' && parseFloat(w.Expected) > 0)
+      .sort((a,b) => a.Week < b.Week ? -1 : a.Week > b.Week ? 1 : 0)
+      .map(w => ({ week: w.Week, exp: parseFloat(w.Expected)||0, act: parseFloat(w.Hours)||0 }));
+    return { staff, pct, weeks };
+  });
+
+  // "shortHistory" deliberately doesn't assume WHY someone has few tracked weeks —
+  // could be a new joiner ramping up or someone just back from leave. Either way
+  // their % isn't a reliable signal yet, so it's excluded from the other rules below.
+  const shortHistory = new Set(perStaff.filter(p => p.weeks.length > 0 && p.weeks.length < RAMP_WEEKS).map(p=>p.staff));
+  const insights = [];
+  const alreadyFlagged = new Set(); // staff already covered by a more specific rule — skip in later, weaker rules
+
+  // Bucket composition — split "under target" into short-history vs established so a
+  // batch of new/returning joiners doesn't read as a sudden team-wide utilization problem.
+  const under60 = perStaff.filter(p => !isNaN(p.pct) && p.pct < 60);
+  const under60Short       = under60.filter(p => shortHistory.has(p.staff));
+  const under60Established = under60.filter(p => !shortHistory.has(p.staff));
+  if (under60Short.length && under60Established.length) {
+    insights.push({ type:'neutral', text:
+      `${under60.length} people are under 60% utilization right now, but ${under60Short.map(p=>p.staff).join(', ')} `+
+      `${under60Short.length>1?'have':'has'} limited tracked history so far — only ${under60Established.map(p=>p.staff).join(', ')} `+
+      `${under60Established.length>1?'are':'is'} below target with a full tracking window.` });
+  } else if (under60Established.length) {
+    insights.push({ type:'warn', text:
+      `${under60Established.map(p=>p.staff).join(', ')} ${under60Established.length>1?'are':'is'} below the 60% floor `+
+      `with a full tracking window.` });
+  }
+  if (shortHistory.size) {
+    insights.push({ type:'neutral', text:
+      `${[...shortHistory].join(', ')} ${shortHistory.size>1?'have':'has'} fewer than ${RAMP_WEEKS} tracked weeks so far — `+
+      `${shortHistory.size>1?'their':'their'} % isn't a reliable signal yet.` });
+  }
+
+  // The current week is still in progress (partial "Expected", hours not all logged yet),
+  // so a 0h reading there is normal reporting lag, not a real signal. Both rules below
+  // look at completed weeks only.
+  const curWeek = thisWeekMonday();
+
+  // Most recent COMPLETED week near-zero — likely an unlogged absence rather than a real drop.
+  for (const p of perStaff) {
+    if (shortHistory.has(p.staff)) continue;
+    const completed = p.weeks.filter(w => w.week !== curWeek);
+    if (!completed.length) continue;
+    const last = completed[completed.length-1];
+    if (last.exp > 0 && last.act / last.exp < ZERO_FLOOR) {
+      insights.push({ type:'risk', text:
+        `${p.staff} logged only ${last.act.toFixed(1)}h of ${last.exp}h expected in the week of ${last.week} — `+
+        `check whether this is unlogged leave before treating it as a drop.` });
+      alreadyFlagged.add(p.staff);
+    }
+  }
+
+  // Trend: last 2 completed weeks avg vs the 2 before — needs 4+ completed weeks to be meaningful.
+  // Skips anyone already flagged above so one zero week doesn't generate two overlapping insights.
+  let sharpestDrop = null, sharpestRise = null;
+  for (const p of perStaff) {
+    if (shortHistory.has(p.staff) || alreadyFlagged.has(p.staff)) continue;
+    const completed = p.weeks.filter(w => w.week !== curWeek);
+    if (completed.length < 4) continue;
+    const pctOf = w => w.exp > 0 ? w.act / w.exp * 100 : null;
+    const recent = completed.slice(-2).map(pctOf).filter(v => v !== null);
+    const prior  = completed.slice(-4,-2).map(pctOf).filter(v => v !== null);
+    if (!recent.length || !prior.length) continue;
+    const avgRecent = recent.reduce((a,b)=>a+b,0) / recent.length;
+    const avgPrior  = prior.reduce((a,b)=>a+b,0) / prior.length;
+    const delta = avgRecent - avgPrior;
+    if (delta <= -TREND_DELTA && (!sharpestDrop || delta < sharpestDrop.delta)) sharpestDrop = { staff:p.staff, delta };
+    if (delta >=  TREND_DELTA && (!sharpestRise || delta > sharpestRise.delta)) sharpestRise = { staff:p.staff, delta };
+  }
+  if (sharpestDrop) insights.push({ type:'risk', text:
+    `${sharpestDrop.staff} is trending down ${Math.abs(sharpestDrop.delta).toFixed(0)} points over the last 2 weeks `+
+    `vs. the 2 before — worth a quick check-in.` });
+  if (sharpestRise) insights.push({ type:'good', text:
+    `${sharpestRise.staff} is trending up ${sharpestRise.delta.toFixed(0)} points over the last 2 weeks — `+
+    `note what changed in case it's repeatable for others.` });
+
+  // Team average vs. the healthy floor.
+  const withPct = perStaff.filter(p => !isNaN(p.pct));
+  const teamAvg = withPct.length ? withPct.reduce((s,p)=>s+p.pct,0) / withPct.length : NaN;
+  if (!isNaN(teamAvg)) {
+    if (teamAvg < 60) insights.push({ type:'risk', text: `Team average (${teamAvg.toFixed(1)}%) is below the 60% healthy floor.` });
+    else if (teamAvg <= 65) insights.push({ type:'neutral', text: `Team average (${teamAvg.toFixed(1)}%) is inside the healthy band but close to the 60% floor.` });
+  }
+
+  if (!insights.length) {
+    container.innerHTML = '<div class="empty-state"><i class="ti ti-mood-smile"></i>No notable patterns this period.</div>';
+    return;
+  }
+  const ICON  = { risk:'ti-alert-triangle', warn:'ti-alert-circle', good:'ti-trending-up', neutral:'ti-info-circle' };
+  const STYLE = {
+    risk:    'background:var(--risk-soft);color:var(--risk);',
+    warn:    'background:var(--risk-soft);color:var(--risk);',
+    good:    'background:var(--good-soft);color:var(--good);',
+    neutral: 'background:var(--line);color:var(--ink2);',
+  };
+  container.innerHTML = insights.map(i =>
+    `<div class="cap-note-item" style="${STYLE[i.type]}align-items:flex-start;"><i class="ti ${ICON[i.type]}" style="margin-top:2px;flex-shrink:0;"></i><span>${i.text}</span></div>`
+  ).join('');
 }
 
 function switchCapTab(tab){
