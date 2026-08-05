@@ -38,6 +38,7 @@ if (!userInput) {
 
 const doPlan   = flags.plan === true || flags.all === true;
 const doTriage = flags.plan !== true || flags.all === true; // omit = triage; --plan = plan only; --all = both
+const skipCodeCheck = flags['skip-code-check'] === true; // operator-confirmed code override
 const brandFilter = flags.brands
   ? new Set(String(flags.brands).split(',').map((s) => s.trim().toUpperCase()).filter(Boolean))
   : null;
@@ -522,7 +523,7 @@ if (doPlan) {
     // ── Campaign prefix (FAIL at plan stage — code is now built, fixing requires re-dry-run) ──
     // IGMP/WS1 codes use FT_ prefix convention that omits ADHOC_/RET_ etc. — downgrade to WARN.
     const campFindings = checkCampaignPrefix(bundle.promo_code, src.campaign, src.campaign_owner, src.no_deposit);
-    const campSev = platform === 'igmp' ? 'WARN' : 'FAIL';
+    const campSev = (platform === 'igmp' || skipCodeCheck) ? 'WARN' : 'FAIL';
     for (const f of campFindings) findings.push({ sev: campSev, field: 'promo_code', msg: f });
 
     // ── Print brand row ────────────────────────────────────────────────────────

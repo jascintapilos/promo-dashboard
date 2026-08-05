@@ -691,6 +691,7 @@ export function hasSmsRequirement(resolved) {
     /\bSMS\s+(?:is\s+)?required\b/i.test(all)
     || /\brequired\s*:?\s*SMS\b/i.test(all)
     || /\bneed(?:s)?\s+SMS\b/i.test(all)
+    || /\bSMS\s*:\s*yes\b/i.test(all)
   );
 }
 

@@ -74,6 +74,7 @@ function runValidator(args, label) {
   if (flags['ft-prefix']) forwarded.push('--ft-prefix');
   if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
   if (flags['fs-game']) forwarded.push(`--fs-game=${flags['fs-game']}`);
+  if (flags['skip-code-check']) forwarded.push('--skip-code-check');
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,
@@ -312,6 +313,7 @@ if (!commit && worst === 0) {
   if (flags['ft-prefix']) forwarded.push('--ft-prefix');
   if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
   if (flags['fs-game']) forwarded.push(`--fs-game=${flags['fs-game']}`);
+  if (flags['skip-code-check']) forwarded.push('--skip-code-check');
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,
