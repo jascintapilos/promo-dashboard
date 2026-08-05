@@ -1068,7 +1068,9 @@ async function runQc() {
     for (const r of batches.flat()) {
       if (r.status === 'QUEUED' && r.jobId) pollRelayJob(r);
     }
-
+  } finally {
+    $('runQc').disabled = false;
+    showSkeleton(false);
   }
 }
 

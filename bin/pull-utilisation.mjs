@@ -36,11 +36,15 @@ const TRACKERS = [
   { name: 'Jascinta', id: '1z5IUbq4XwvihtyHH2jXU9lngh9FLvmvy-fAYbAcig00', region: 'MY' },
   { name: 'Wen',      id: '19EgP1nS3FRsOkTWjX6-LvcP0in3ZNWg17M7mQhd4YLU', region: 'MY' },
   { name: 'Alysa',    id: '1zbNGLJE4i0uGybLCTAalo5Ze0gLRe-iZmLUIEnySh8g', region: 'MY' },
-  { name: 'Elyssa',   id: '1ml0O0kTaHfk9JdWuc9zGbhr1KKEEIeRQFWM-dPzBkos', region: 'MY', matLeaveFrom: '2026-06-22' },
+  { name: 'Elyssa',   id: '1ml0O0kTaHfk9JdWuc9zGbhr1KKEEIeRQFWM-dPzBkos', region: 'MY', matLeaveFrom: '2026-06-22', matLeaveTo: '2026-08-03' },
   { name: 'Gaby',     id: '1s9Pw3nretdNlsRoMRnBC5SLUa_wpxIQoQuGjsNGxKFU', region: 'ID' },
   { name: 'Bangun',   id: '1EPtu6NUWj-rKBGdHQy8CafzpNbFP1Zca5z6n5G2EoQk', region: 'ID' },
   { name: 'Michelle', id: '1tBdE9qJO77_VckO-FU2DYIF-jaHnMig6H8KWgOyImjw', region: 'MY', resigned: true },
   { name: 'Kasturi',  id: '15uFk1o8orzisTR4HxwIkvqOre2SwvQtiQMhfdVx7MEY', region: 'MY', startDate: '2026-07-01' },
+  { name: 'Ridwan',   id: '1oE0c8eNEr8d8Cf1HBfXT69RiYwib9ym_vsJ4fRO73fs', region: 'ID', startDate: '2026-07-21' },
+  // Carmen's tracker was cloned from an existing member's file, so the Feb–Jul tabs
+  // hold someone else's history. startDate gates the numerator (see sumTabHours minKey).
+  { name: 'Carmen',   id: '1L1rs_lWTP4yQYgIslPKTClDuJFtZT9_32iPyKdOS2vI', region: 'MY', startDate: '2026-08-03' },
 ];
 
 // Unrecorded personal leave days confirmed via TG morning-chain absence + Slack cross-check.
@@ -161,7 +165,12 @@ function parseDMY(s) {
 
 // Matches personal leave only (AL / MC). PH is now handled via hardcoded PH_WEEKDAYS —
 // do NOT match PH here to avoid double-subtracting if anyone ever logs a PH row.
-const LEAVE_RE = /\b(AL|annual\s*leave|MC|medical(\s*(leave|cert(ificate)?))?\s*$)\b/i;
+// Anchored to the WHOLE cell (^...$), not \b...\b — genuine leave rows are a bare marker
+// cell ("AL", "MC", "Annual Leave"), never a sentence. A \b match previously caught any
+// task/remarks text that merely mentioned "MC" in passing (e.g. "Kasturi MC guidance",
+// "#ba-promo Elyssa MC coverage") and wrongly treated the tracker owner's own logged
+// work hours on that row as their leave — found + fixed 2026-08-04.
+const LEAVE_RE = /^(AL|annual\s*leave|MC|medical(\s*(leave|cert(ificate)?))?)$/i;
 
 function isLeaveRow(row) {
   const task    = String(row[1] || '').trim();
@@ -186,7 +195,9 @@ function weekMon(d) {
 // Starts at their first logged date, ends at today (or endDate if resigned).
 // Subtracts region PHs and personal leave/AL/override days.
 // matLeaveFrom (YYYY-MM-DD): weeks starting on/after this date get 0 expected hours.
-function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFrom) {
+// matLeaveTo   (YYYY-MM-DD): the return-to-work date — weeks on/after it are normal again.
+//   Omit for an open-ended leave still in progress.
+function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFrom, matLeaveTo) {
   const result = new Map();
   const phSet = PH_WEEKDAYS[region] || new Set();
   const start = new Date(startDate); start.setHours(0, 0, 0, 0);
@@ -197,8 +208,8 @@ function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFro
   cur.setDate(cur.getDate() - (dow0 === 0 ? 6 : dow0 - 1));
   while (cur <= end) {
     const wk = dateKey(cur);
-    // Weeks on/after maternity leave start have 0 expected hours
-    if (matLeaveFrom && wk >= matLeaveFrom) {
+    // Weeks inside the maternity-leave window have 0 expected hours
+    if (matLeaveFrom && wk >= matLeaveFrom && (!matLeaveTo || wk < matLeaveTo)) {
       result.set(wk, 0);
     } else {
       let exp = 0;
@@ -220,8 +231,14 @@ function weeklyExpectedMap(region, allLeaveDays, startDate, endDate, matLeaveFro
 // - Leave weekday dates are tracked to reduce the denominator.
 // - Weekend work dates are tracked (hours count in numerator, not denominator).
 // - Also tracks earliest + latest dates a non-leave hour was logged (start/end detection).
-// Returns { hours, weekendDays: Set<dateKey>, leaveDays: Set<dateKey>, minDate: Date|null, maxDate: Date|null }
-async function sumTabHours(spreadsheetId, tabTitle) {
+// - minKey (YYYY-MM-DD, optional): rows dated before this are ignored entirely.
+//   Needed when a tracker file was cloned from an existing member — the carried-over
+//   tabs hold someone else's hours and would otherwise inflate the numerator.
+// Returns { hours, weekendDays: Set<dateKey>, leaveDays: Set<dateKey>, minDate: Date|null, maxDate: Date|null, entries }
+// entries: [{date: dateKey, bo, task, hours}] for every non-leave row — feeds the
+// dashboard's "Work Focus" card (bin/pull-utilisation.mjs only used to discard task
+// text after summing it; the client now needs the raw text to categorize focus areas).
+async function sumTabHours(spreadsheetId, tabTitle, minKey) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: `'${tabTitle}'!A:H`,
@@ -231,6 +248,7 @@ async function sumTabHours(spreadsheetId, tabTitle) {
   const weekendDays = new Set();
   const leaveDays   = new Set();
   const weeklyH     = new Map();
+  const entries     = [];
   let curDate = null;
   let minDate = null;
   let maxDate = null;
@@ -238,6 +256,9 @@ async function sumTabHours(spreadsheetId, tabTitle) {
   for (const r of rows) {
     const parsed = parseDMY(r[0]);
     if (parsed) curDate = parsed;
+
+    // Rows before the member's start date belong to a previous owner of the file.
+    if (minKey && curDate && dateKey(curDate) < minKey) continue;
 
     const n = parseFloat(r[3]);
     if (!isNaN(n) && n > 0 && n < 24) {
@@ -255,11 +276,13 @@ async function sumTabHours(spreadsheetId, tabTitle) {
           if (!maxDate || curDate > maxDate) maxDate = new Date(curDate);
           const wk = weekMon(curDate);
           weeklyH.set(wk, (weeklyH.get(wk) || 0) + n);
+          const task = String(r[1] || '').trim();
+          if (task) entries.push({ date: dateKey(curDate), bo: String(r[2] || '').trim(), task, hours: n });
         }
       }
     }
   }
-  return { hours: total, weekendDays, leaveDays, weeklyH, minDate, maxDate };
+  return { hours: total, weekendDays, leaveDays, weeklyH, minDate, maxDate, entries };
 }
 
 // Root Drive folder that contains all monthly "Weekly Report (Mmm YYYY)" subfolders.
@@ -343,14 +366,16 @@ async function getUtilisation(tracker) {
     const allWeekendDays = new Set();
     const allLeaveDays   = new Set();
     const allWeeklyH     = new Map();
+    const allEntries     = [];
     let personMinDate = null;
     let personMaxDate = null;
     for (const tab of yearTabs) {
-      const { hours, weekendDays, leaveDays, weeklyH, minDate, maxDate } = await sumTabHours(tracker.id, tab);
+      const { hours, weekendDays, leaveDays, weeklyH, minDate, maxDate, entries } = await sumTabHours(tracker.id, tab, tracker.startDate);
       totalHours += hours;
       for (const d of weekendDays) allWeekendDays.add(d);
       for (const d of leaveDays)   allLeaveDays.add(d);
       for (const [wk, h] of weeklyH) allWeeklyH.set(wk, (allWeeklyH.get(wk) || 0) + h);
+      allEntries.push(...entries);
       if (minDate && (!personMinDate || minDate < personMinDate)) personMinDate = minDate;
       if (maxDate && (!personMaxDate || maxDate > personMaxDate)) personMaxDate = maxDate;
       await sleep(300); // stay within Sheets API read quota
@@ -372,18 +397,35 @@ async function getUtilisation(tracker) {
     for (const d of overrides) {
       if (d >= startKey && (!endKey || d <= endKey)) allLeaveDays.add(d);
     }
-    // Maternity leave: subtract weekdays from ML start to today from the denominator.
-    // pct is set to null (excluded from team average) while ML is active.
+    // Maternity leave: subtract the ML window's weekdays from the denominator.
+    // Window ends the day before matLeaveTo (the return-to-work date); an absent
+    // matLeaveTo means the leave is still open-ended and runs to today.
+    // pct is null (excluded from the team average) only while ML is still active.
     const matLeaveFrom = tracker.matLeaveFrom || null;
-    const onMatLeave = matLeaveFrom && dateKey(new Date()) >= matLeaveFrom;
-    const mlDays = matLeaveFrom ? weekdayHoursSince(
-      new Date(matLeaveFrom),
-      endDate || new Date(),
-    ) / 8 : 0;
+    const matLeaveTo   = tracker.matLeaveTo   || null;
+    const todayKey = dateKey(new Date());
+    const onMatLeave = !!matLeaveFrom && todayKey >= matLeaveFrom && (!matLeaveTo || todayKey < matLeaveTo);
+    // Count ML weekdays, skipping any that PH or tracked leave already removed —
+    // otherwise the same day is subtracted from the denominator twice.
+    let mlDays = 0;
+    if (matLeaveFrom) {
+      const phSet = PH_WEEKDAYS[tracker.region || 'MY'] || new Set();
+      const mlEnd = new Date(matLeaveTo || (endDate || new Date()));
+      if (matLeaveTo) mlEnd.setDate(mlEnd.getDate() - 1); // return date itself is a work day
+      mlEnd.setHours(0, 0, 0, 0);
+      for (const d = new Date(matLeaveFrom); d <= mlEnd; d.setDate(d.getDate() + 1)) {
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) continue;
+        const dk = dateKey(d);
+        if (phSet.has(dk) || allLeaveDays.has(dk)) continue;
+        mlDays++;
+      }
+    }
     const effectiveHours = Math.max(0, personWeekdayHours - phDays * 8 - allLeaveDays.size * 8 - mlDays * 8);
     const pct = onMatLeave ? null : (effectiveHours > 0 ? (totalHours / effectiveHours) * 100 : 0);
-    const weeklyExp = weeklyExpectedMap(tracker.region, allLeaveDays, startDate, endDate, matLeaveFrom);
-    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), notes: onMatLeave ? 'Maternity leave' : '' };
+    const weeklyExp = weeklyExpectedMap(tracker.region, allLeaveDays, startDate, endDate, matLeaveFrom, matLeaveTo);
+    allEntries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    return { hours: totalHours, pct, weekendDays: allWeekendDays.size, leaveDays: allLeaveDays.size, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: Object.fromEntries(allWeeklyH), weeklyExp: Object.fromEntries(weeklyExp), entries: allEntries, notes: onMatLeave ? 'Maternity leave' : '' };
   } catch (e) {
     const errSnip = e.message.slice(0, 60);
     process.stdout.write(`\n    ↳ tracker error (${errSnip}) — trying Weekly Report fallback… `);
@@ -415,12 +457,13 @@ async function getUtilisation(tracker) {
 console.log(`\nUtilisation pull — start-date aware  (${WRITE ? 'WRITE' : 'DRY RUN'})`);
 console.log(`  +we = weekend days worked (numerator only)`);
 console.log(`  -PH = region public holidays from start date (hardcoded)`);
-console.log(`  -AL = personal leave taken (AL/MC from tracker)\n`);
+console.log(`  -AL = personal leave taken (AL/MC from tracker)`);
+console.log(`  -ML = maternity leave weekdays (window excluded from denominator)\n`);
 
 const results = [];
 for (const t of TRACKERS) {
   process.stdout.write(`  ${t.name.padEnd(12)} `);
-  const { hours, pct, weekendDays, leaveDays, phDays, effectiveHours, startKey, endKey, weeklyH, weeklyExp, notes: baseNotes, fallback } = await getUtilisation(t);
+  const { hours, pct, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH, weeklyExp, entries, notes: baseNotes, fallback } = await getUtilisation(t);
   const notes = t.leave || baseNotes;
   const display = pct === null ? '—' : pct.toFixed(1) + '%';
   const hrsLabel = hours !== null
@@ -430,16 +473,38 @@ for (const t of TRACKERS) {
       + (weekendDays ? ` +${weekendDays}we` : '')
       + (phDays      ? ` -${phDays}PH`      : '')
       + (leaveDays   ? ` -${leaveDays}AL`   : '')
+      + (mlDays      ? ` -${mlDays}ML`      : '')
       + ')'
     : '';
-  console.log(`${display.padEnd(8)} ${hrsLabel.padEnd(50)} ${notes}`);
-  results.push({ staff: t.name, pct, hours, weekendDays, leaveDays, phDays, effectiveHours, startKey, endKey, weeklyH: weeklyH || {}, weeklyExp: weeklyExp || {}, notes, fallback: !!fallback });
+  console.log(`${display.padEnd(8)} ${hrsLabel.padEnd(58)} ${notes}`);
+  results.push({ staff: t.name, pct, hours, weekendDays, leaveDays, phDays, mlDays, effectiveHours, startKey, endKey, weeklyH: weeklyH || {}, weeklyExp: weeklyExp || {}, entries: entries || [], notes, fallback: !!fallback });
 }
 
 // Team average: only active members with data (excludes error rows; WR fallback counts as data)
 const withData = results.filter(r => r.pct !== null && (!r.notes || r.fallback));
 const avg = withData.length ? withData.reduce((s, r) => s + r.pct, 0) / withData.length : null;
 console.log(`\n  ${'Total'.padEnd(12)} ${avg === null ? '—' : avg.toFixed(1) + '%'}`);
+
+// --weekly: per-person recent-week detail (read-only; helps explain a YTD number).
+// --weeks=N controls how many trailing weeks to show (default 6).
+if (flags.weekly) {
+  const nWeeks = Number(flags.weeks) > 0 ? Number(flags.weeks) : 6;
+  console.log(`\n\nPer-person weekly detail (last ${nWeeks} weeks with an employment window)\n`);
+  for (const r of results) {
+    if (r.notes && !r.fallback) { console.log(`  ${r.staff} — ${r.notes}\n`); continue; }
+    const weeks = Object.keys(r.weeklyExp || {}).sort().slice(-nWeeks);
+    if (!weeks.length) { console.log(`  ${r.staff} — no weekly data\n`); continue; }
+    console.log(`  ${r.staff}`);
+    for (const wk of weeks) {
+      const exp = r.weeklyExp[wk];
+      const act = r.weeklyH?.[wk] || 0;
+      const pct = exp > 0 ? `${(act / exp * 100).toFixed(0)}%` : '—';
+      const bar = exp > 0 ? '█'.repeat(Math.min(20, Math.round(act / exp * 20))) : '';
+      console.log(`    ${wk}  ${String(act.toFixed(1)).padStart(6)}h / ${String(exp).padStart(3)}h  ${pct.padStart(5)}  ${bar}`);
+    }
+    console.log('');
+  }
+}
 
 if (WRITE) {
   const rows = [
@@ -451,6 +516,7 @@ if (WRITE) {
             + (r.weekendDays ? ` +${r.weekendDays}we` : '')
             + (r.phDays      ? ` -${r.phDays}PH`      : '')
             + (r.leaveDays   ? ` -${r.leaveDays}AL`   : '')
+            + (r.mlDays      ? ` -${r.mlDays}ML`      : '')
             + (r.fallback    ? ' (WR)'                 : '')
           : '';
       return [r.staff, r.pct === null ? '' : r.pct.toFixed(1) + '%', breakdown];
@@ -494,6 +560,32 @@ if (WRITE) {
     valueInputOption: 'RAW', requestBody: { values: weeklyRows },
   });
   console.log(`✅ Wrote ${weeklyRows.length - 1} weekly rows to '${WEEKLY_TAB}'.`);
+
+  // ── Work log tab — raw task entries powering the dashboard's "Work Focus" card ──
+  // Fallback-sourced staff have no entry-level detail (only aggregate weekly hours
+  // from the Weekly Report), so they're simply absent from this tab.
+  const LOG_TAB = 'Work Log';
+  const logRows = [
+    ['Date', 'Staff', 'BO', 'Task', 'Hours'],
+    ...results
+      .filter(r => (!r.notes || r.fallback) && r.entries.length)
+      .flatMap(r => r.entries.map(e => [e.date, r.staff, e.bo, e.task, e.hours])),
+  ];
+  const metaL = await sheets.spreadsheets.get({ spreadsheetId: OPS_ID, fields: 'sheets.properties.title' });
+  const logTabExists = metaL.data.sheets.some(s => s.properties.title === LOG_TAB);
+  if (!logTabExists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: OPS_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: LOG_TAB } } }] },
+    });
+    console.log(`Created '${LOG_TAB}' tab`);
+  }
+  await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${LOG_TAB}'!A:E` });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: OPS_ID, range: `'${LOG_TAB}'!A1`,
+    valueInputOption: 'RAW', requestBody: { values: logRows },
+  });
+  console.log(`✅ Wrote ${logRows.length - 1} task entries to '${LOG_TAB}'.`);
 } else {
   console.log(`\n(DRY RUN — re-run with --write to commit.)`);
 }

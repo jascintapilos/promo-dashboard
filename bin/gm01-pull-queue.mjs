@@ -37,6 +37,12 @@ if (existsSync(CREDS_FILE)) {
 }
 const USER = cliArgs.user ?? savedCreds.user;
 const PASS = cliArgs.pass ?? savedCreds.pass;
+if (!USER || !PASS) {
+  console.error('✗ No credentials found.');
+  console.error(`  Create ${CREDS_FILE} with {"user":"...","pass":"..."}`);
+  console.error('  or pass --user=<u> --pass=<p> on the command line.');
+  process.exit(1);
+}
 
 const { browser, context } = await ensureAuthenticated({ user: USER, pass: PASS });
 

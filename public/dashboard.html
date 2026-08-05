@@ -769,6 +769,24 @@
         <div class="wk-grid" id="cap-weekly-grid"></div>
       </div>
     </div>
+    <p class="section-label">Insights</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="card-title">What the numbers say</div>
+      <div class="card-hint" id="util-insights-hint">Auto-generated from current YTD % and weekly trend data</div>
+      <div id="util-insights-list" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <p class="section-label">Work Focus</p>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="card-title">Where the hours are going</div>
+      <div class="card-hint" id="focus-hint">Auto-generated from logged task entries</div>
+      <div id="focus-team-tiles" style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;"></div>
+      <div id="focus-callout" style="margin-top:14px;"></div>
+    </div>
+    <div class="card" style="margin-bottom:28px;">
+      <div class="card-title">Per-person focus</div>
+      <div class="card-hint">Top categories by logged hours, same period as above</div>
+      <div id="focus-per-person" style="margin-top:14px;display:flex;flex-direction:column;gap:2px;"></div>
+    </div>
     </div><!-- /view-util -->
     <div id="view-sop" style="display:none;">
     <p class="section-label">Standard operating procedures</p>
@@ -1336,8 +1354,8 @@
 <script>
 const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
 const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health','Homepage Banner Status'];
-const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth','homepageBannerStatus'];
+const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health','Homepage Banner Status','Work Log'];
+const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth','homepageBannerStatus','workLog'];
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -1993,6 +2011,8 @@ function renderCapacity(){
   document.getElementById('cap-highlights').innerHTML=notes.join('');
   if(_capTab==='weekly') renderWeeklyCapacity();
   renderUtilSummary();
+  renderUtilInsights();
+  renderWorkFocus();
 }
 
 function renderUtilSummary(){
@@ -2072,6 +2092,236 @@ function renderUtilBuckets(withPct){
     wrap.appendChild(list);
     container.appendChild(wrap);
   }
+}
+
+// ── UTILIZATION INSIGHTS (live — recomputes against whatever _filterFrom/_filterTo
+// the date-range picker currently holds; "all time" when no range is selected) ──
+function renderUtilInsights(){
+  const container = document.getElementById('util-insights-list');
+  if (!container) return;
+  const hint = document.getElementById('util-insights-hint');
+  if (hint) hint.textContent = `Auto-generated for ${rangeNote()}`;
+
+  const RAMP_WEEKS  = 4;    // fewer than this many TOTAL weekly rows = still ramping up (tenure fact, not range-scoped)
+  const ZERO_FLOOR  = 0.2;  // actual/expected below this on the latest COMPLETED in-range week = possible unlogged absence
+  const TREND_DELTA = 15;   // percentage-point swing (last 2 in-range weeks vs prior 2) worth flagging
+
+  const wkData = (_fullData && _fullData.utilWeekly) || [];
+  const staffNames = [...new Set(wkData.map(w => w.Staff).filter(Boolean))]
+    .filter(s => !HIDDEN_STAFF.has(s) && !RESIGNED_STAFF.has(s));
+
+  const inRange = wk => {
+    if (!_filterFrom && !_filterTo) return true;
+    const d = new Date(wk);
+    if (_filterFrom && d < _filterFrom) return false;
+    if (_filterTo   && d > _filterTo)   return false;
+    return true;
+  };
+
+  // The current week is still in progress (partial "Expected", hours not all logged yet),
+  // so a 0h reading there is normal reporting lag, not a real signal — excluded from every
+  // %-based computation below, regardless of the selected range. If "This Week" is the
+  // selected range, that means no completed week to analyze yet, and the card says so.
+  const curWeek = thisWeekMonday();
+
+  const perStaff = staffNames.map(staff => {
+    const all = wkData
+      .filter(w => w.Staff === staff && w.Expected !== undefined && w.Expected !== '' && parseFloat(w.Expected) > 0)
+      .sort((a,b) => a.Week < b.Week ? -1 : a.Week > b.Week ? 1 : 0)
+      .map(w => ({ week: w.Week, exp: parseFloat(w.Expected)||0, act: parseFloat(w.Hours)||0 }));
+    const weeks = all.filter(w => w.week !== curWeek && inRange(w.week));
+    const expSum = weeks.reduce((s,w)=>s+w.exp,0);
+    const actSum = weeks.reduce((s,w)=>s+w.act,0);
+    return { staff, allWeeksCount: all.length, weeks, pct: expSum > 0 ? actSum/expSum*100 : NaN };
+  }).filter(p => p.weeks.length > 0); // nothing to say about someone with zero completed weeks in the selected range
+
+  // "shortHistory" is a tenure fact (total weeks ever tracked), computed independent of the
+  // selected range — could be a new joiner ramping up or someone just back from leave. Either
+  // way their % isn't a reliable signal yet, so it's excluded from the other rules below.
+  const shortHistory = new Set(perStaff.filter(p => p.allWeeksCount < RAMP_WEEKS).map(p=>p.staff));
+  const insights = [];
+  const alreadyFlagged = new Set(); // staff already covered by a more specific rule — skip in later, weaker rules
+
+  // Bucket composition — split "under target" into short-history vs established so a
+  // batch of new/returning joiners doesn't read as a sudden team-wide utilization problem.
+  const under60 = perStaff.filter(p => !isNaN(p.pct) && p.pct < 60);
+  const under60Short       = under60.filter(p => shortHistory.has(p.staff));
+  const under60Established = under60.filter(p => !shortHistory.has(p.staff));
+  if (under60Short.length && under60Established.length) {
+    insights.push({ type:'neutral', text:
+      `${under60.length} people are under 60% utilization in this period, but ${under60Short.map(p=>p.staff).join(', ')} `+
+      `${under60Short.length>1?'have':'has'} limited tracked history so far — only ${under60Established.map(p=>p.staff).join(', ')} `+
+      `${under60Established.length>1?'are':'is'} below target with a full tracking window.` });
+  } else if (under60Established.length) {
+    insights.push({ type:'warn', text:
+      `${under60Established.map(p=>p.staff).join(', ')} ${under60Established.length>1?'are':'is'} below the 60% floor `+
+      `in this period, with a full tracking window.` });
+  }
+  if (shortHistory.size) {
+    const inThisSet = [...shortHistory].filter(s => perStaff.some(p=>p.staff===s));
+    if (inThisSet.length) insights.push({ type:'neutral', text:
+      `${inThisSet.join(', ')} ${inThisSet.length>1?'have':'has'} fewer than ${RAMP_WEEKS} tracked weeks in total — `+
+      `${inThisSet.length>1?'their':'their'} % isn't a reliable signal yet.` });
+  }
+
+  // p.weeks is already curWeek-excluded (see above), so no further filtering needed here.
+  // Most recent completed in-range week near-zero — likely an unlogged absence rather than a real drop.
+  for (const p of perStaff) {
+    if (shortHistory.has(p.staff)) continue;
+    const last = p.weeks[p.weeks.length-1];
+    if (last.exp > 0 && last.act / last.exp < ZERO_FLOOR) {
+      insights.push({ type:'risk', text:
+        `${p.staff} logged only ${last.act.toFixed(1)}h of ${last.exp}h expected in the week of ${last.week} — `+
+        `check whether this is unlogged leave before treating it as a drop.` });
+      alreadyFlagged.add(p.staff);
+    }
+  }
+
+  // Trend: last 2 completed in-range weeks avg vs the 2 before — needs 4+ such weeks to be meaningful.
+  // Skips anyone already flagged above so one zero week doesn't generate two overlapping insights.
+  let sharpestDrop = null, sharpestRise = null;
+  for (const p of perStaff) {
+    if (shortHistory.has(p.staff) || alreadyFlagged.has(p.staff) || p.weeks.length < 4) continue;
+    const pctOf = w => w.exp > 0 ? w.act / w.exp * 100 : null;
+    const recent = p.weeks.slice(-2).map(pctOf).filter(v => v !== null);
+    const prior  = p.weeks.slice(-4,-2).map(pctOf).filter(v => v !== null);
+    if (!recent.length || !prior.length) continue;
+    const avgRecent = recent.reduce((a,b)=>a+b,0) / recent.length;
+    const avgPrior  = prior.reduce((a,b)=>a+b,0) / prior.length;
+    const delta = avgRecent - avgPrior;
+    if (delta <= -TREND_DELTA && (!sharpestDrop || delta < sharpestDrop.delta)) sharpestDrop = { staff:p.staff, delta };
+    if (delta >=  TREND_DELTA && (!sharpestRise || delta > sharpestRise.delta)) sharpestRise = { staff:p.staff, delta };
+  }
+  if (sharpestDrop) insights.push({ type:'risk', text:
+    `${sharpestDrop.staff} is trending down ${Math.abs(sharpestDrop.delta).toFixed(0)} points over the last 2 weeks `+
+    `vs. the 2 before — worth a quick check-in.` });
+  if (sharpestRise) insights.push({ type:'good', text:
+    `${sharpestRise.staff} is trending up ${sharpestRise.delta.toFixed(0)} points over the last 2 weeks — `+
+    `note what changed in case it's repeatable for others.` });
+
+  // Team average vs. the healthy floor — hours-weighted (sum of actual / sum of expected across
+  // the range), matching the "Team avg" row methodology in the weekly grid above, rather than a
+  // naive mean of individual %s.
+  const totalExp = perStaff.reduce((s,p)=>s+p.weeks.reduce((a,w)=>a+w.exp,0),0);
+  const totalAct = perStaff.reduce((s,p)=>s+p.weeks.reduce((a,w)=>a+w.act,0),0);
+  const teamAvg = totalExp > 0 ? totalAct/totalExp*100 : NaN;
+  if (!isNaN(teamAvg)) {
+    if (teamAvg < 60) insights.push({ type:'risk', text: `Team average (${teamAvg.toFixed(1)}%) is below the 60% healthy floor.` });
+    else if (teamAvg <= 65) insights.push({ type:'neutral', text: `Team average (${teamAvg.toFixed(1)}%) is inside the healthy band but close to the 60% floor.` });
+  }
+
+  if (!insights.length) {
+    container.innerHTML = '<div class="empty-state"><i class="ti ti-mood-smile"></i>No notable patterns for this period.</div>';
+    return;
+  }
+  const ICON  = { risk:'ti-alert-triangle', warn:'ti-alert-circle', good:'ti-trending-up', neutral:'ti-info-circle' };
+  const STYLE = {
+    risk:    'background:var(--risk-soft);color:var(--risk);',
+    warn:    'background:var(--risk-soft);color:var(--risk);',
+    good:    'background:var(--good-soft);color:var(--good);',
+    neutral: 'background:var(--line);color:var(--ink2);',
+  };
+  container.innerHTML = insights.map(i =>
+    `<div class="cap-note-item" style="${STYLE[i.type]}align-items:flex-start;"><i class="ti ${ICON[i.type]}" style="margin-top:2px;flex-shrink:0;"></i><span>${i.text}</span></div>`
+  ).join('');
+}
+
+// ── WORK FOCUS (live — categorizes raw task-log entries within the selected date
+// range into focus areas; recomputes on every date-range change) ──
+// Ordered keyword rules, first match wins. Deliberately simple/keyword-based rather
+// than a fixed taxonomy from the source data (there isn't one — trackers are free text) —
+// easy to extend with one more { key, re } entry as new task vocabulary shows up.
+const FOCUS_CATEGORIES = [
+  // "code(s)" + an action word, checked either order ("run code" / "code run") — real task
+  // text isn't consistent about which comes first, or plural vs singular.
+  { key:'Promo Code Creation',    re:/\bP\d{2,4}\b|promo ?codes?|codes? p\d|(?=.*\bcodes?\b)(?=.*\b(run|creat\w*|change|update)\b)/i },
+  { key:'QC & QA',                re:/\bqc\b|\bqa\b|quality|audit/i },
+  { key:'Banners',                re:/banner/i },
+  { key:'CRM & Campaigns',        re:/\bcrm\b|vm blast|dormant|reactivation|uncontactable|mass assignment|rc campaign|smartico|campaign|rebate|blacklist/i },
+  { key:'Training & Onboarding',  re:/train\w*|on ?boarding|hands on|handover|refresher|learn\w*/i },
+  { key:'Meetings & Coordination',re:/meeting|standup|catch ?up|zoom|call with|google meet|townhall|discussion|briefing|coordination|1:1|sync\b/i },
+  { key:'Reporting',              re:/report|data revenue/i },
+  { key:'Automation & Tooling',   re:/claude|codex|automation|dashboard|qc hub/i },
+  // Game upload/sorting checked either order, same reasoning as Promo Code above.
+  { key:'Ops Checks',             re:/domain|test sms|sms blast|shortenlink|(?=.*\bgame)(?=.*\b(upload|sort))/i },
+  { key:'Media Buyer',            re:/media buyer|advertorial|facebook account|ads ?power/i },
+];
+function categorizeFocus(task){
+  for (const c of FOCUS_CATEGORIES) if (c.re.test(task)) return c.key;
+  return 'Other';
+}
+const FOCUS_ICONS = {
+  'Promo Code Creation':'ti-ticket', 'QC & QA':'ti-checkbox', 'Banners':'ti-photo',
+  'CRM & Campaigns':'ti-send', 'Training & Onboarding':'ti-book', 'Meetings & Coordination':'ti-users',
+  'Reporting':'ti-file-text', 'Automation & Tooling':'ti-robot', 'Ops Checks':'ti-circle-check',
+  'Media Buyer':'ti-speakerphone', 'Other':'ti-dots',
+};
+
+function renderWorkFocus(){
+  const teamEl = document.getElementById('focus-team-tiles');
+  const perEl  = document.getElementById('focus-per-person');
+  const calloutEl = document.getElementById('focus-callout');
+  if (!teamEl || !perEl) return;
+  const hint = document.getElementById('focus-hint');
+  if (hint) hint.textContent = `For ${rangeNote()}`;
+
+  const log = (_fullData && _fullData.workLog) || [];
+  const inRange = r => {
+    if (!r.Date) return false;
+    const d = new Date(r.Date);
+    if (isNaN(d)) return false;
+    if (_filterFrom && d < _filterFrom) return false;
+    if (_filterTo   && d > _filterTo)   return false;
+    return true;
+  };
+  const rows = log.filter(r => r.Staff && !HIDDEN_STAFF.has(r.Staff) && !RESIGNED_STAFF.has(r.Staff) && inRange(r));
+
+  if (!rows.length) {
+    teamEl.innerHTML = '<div class="empty-state"><i class="ti ti-calendar-stats"></i>No logged tasks for this period.</div>';
+    perEl.innerHTML = '';
+    if (calloutEl) calloutEl.innerHTML = '';
+    return;
+  }
+
+  const byCat = {};
+  const byPerson = {};
+  let totalH = 0;
+  for (const r of rows) {
+    const h = parseFloat(r.Hours) || 0;
+    if (h <= 0) continue;
+    const cat = categorizeFocus(r.Task || '');
+    byCat[cat] = (byCat[cat] || 0) + h;
+    totalH += h;
+    if (!byPerson[r.Staff]) byPerson[r.Staff] = {};
+    byPerson[r.Staff][cat] = (byPerson[r.Staff][cat] || 0) + h;
+  }
+
+  const catList = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
+  teamEl.innerHTML = catList.map(([cat,h]) => {
+    const pct = totalH > 0 ? h/totalH*100 : 0;
+    return `<div class="kpi"><div class="kpi-icon" style="background:var(--accent-soft);color:var(--accent);"><i class="ti ${FOCUS_ICONS[cat]||'ti-dots'}"></i></div>`
+      + `<div class="lab">${cat}</div><div class="val">${pct.toFixed(0)}%</div><div class="note">${h.toFixed(1)}h</div></div>`;
+  }).join('');
+
+  if (calloutEl) {
+    const top2 = catList.slice(0,2);
+    const top2H = top2.reduce((s,[,h])=>s+h,0);
+    const top2Pct = totalH > 0 ? top2H/totalH*100 : 0;
+    calloutEl.innerHTML = top2.length
+      ? `<div class="cap-note-item" style="background:var(--line);color:var(--ink2);"><i class="ti ti-info-circle" style="margin-top:2px;flex-shrink:0;"></i>`
+        + `<span>${top2Pct.toFixed(0)}% of logged time this period went to ${top2.map(([c])=>c).join(' and ')}.</span></div>`
+      : '';
+  }
+
+  const order = TRACKERS_ORDER.filter(s => byPerson[s]);
+  perEl.innerHTML = order.map(staff => {
+    const cats = Object.entries(byPerson[staff]).sort((a,b) => b[1]-a[1]);
+    const total = cats.reduce((s,[,h])=>s+h,0);
+    const top = cats.slice(0,2).map(([c,h]) => `${c} (${(h/total*100).toFixed(0)}%)`).join(', ');
+    return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--line2);">`
+      + `<span style="font-weight:600;white-space:nowrap;">${staff}</span>`
+      + `<span style="color:var(--ink2);font-size:12.5px;text-align:right;">${top}</span></div>`;
+  }).join('');
 }
 
 function switchCapTab(tab){
@@ -2234,7 +2484,7 @@ function renderWeeklyCapacity(){
   container.innerHTML=html;
 }
 
-const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Kasturi','Michelle'];
+const TRACKERS_ORDER=['Jascinta','Wen','Alysa','Elyssa','Gaby','Bangun','Kasturi','Ridwan','Carmen','Michelle'];
 const HIDDEN_STAFF=new Set([]); // no one hidden
 const RESIGNED_STAFF=new Set(['Michelle']); // shown in muted style; still counted in team avg for their active weeks
 
@@ -2889,7 +3139,10 @@ function switchView(v){
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
-  const showCtrl = v==='ops';
+  // date-btn drives _filterFrom/_filterTo, which renderWeeklyCapacity() (Utilization
+  // tab's weekly grid) already reads on every rerender — so Utilization only needed
+  // the control shown, not new filtering logic.
+  const showCtrl = v==='ops' || v==='util';
   document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
   document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
   if(v==='hk') renderHousekeepingTab();
