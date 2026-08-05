@@ -234,8 +234,8 @@ if (doTriage) {
   }
 
   if (bt === 'free spin') {
-    if (!p.game && !p.game_by_brand) {
-      reject('parsed.game', 'Free Spin game missing', 'Add the game name/code in source details and re-ingest');
+    if (!p.game && !p.game_by_brand && !flags['fs-game']) {
+      reject('parsed.game', 'Free Spin game missing', 'Add the game name/code in source details and re-ingest, or pass --fs-game=<VendorDisplayCode>');
     }
     if (!p.game_provider && !p.game_provider_by_brand) {
       note('parsed.game_provider', 'Free Spin provider not explicit; mapper will use its default/provider resolver', 'Confirm provider only if game is not under the default resolver');
@@ -429,7 +429,8 @@ if (doPlan) {
         }
         if (promCur) {
           const rows = Object.values(promCur);
-          const isPlaytech = /playtech/i.test(src.parsed?.game_provider || '');
+          const brandProvider = src.parsed?.game_provider_by_brand?.[brand] ?? src.parsed?.game_provider ?? '';
+          const isPlaytech = /playtech/i.test(brandProvider);
           const expectedApl = expectedFsAmountPerLine(p.value_per_spin, { isPlaytech });
           for (const row of rows) {
             const label = row.currency || row.currency_id || '?';
@@ -519,8 +520,10 @@ if (doPlan) {
     }
 
     // ── Campaign prefix (FAIL at plan stage — code is now built, fixing requires re-dry-run) ──
+    // IGMP/WS1 codes use FT_ prefix convention that omits ADHOC_/RET_ etc. — downgrade to WARN.
     const campFindings = checkCampaignPrefix(bundle.promo_code, src.campaign, src.campaign_owner, src.no_deposit);
-    for (const f of campFindings) findings.push({ sev: 'FAIL', field: 'promo_code', msg: f });
+    const campSev = platform === 'igmp' ? 'WARN' : 'FAIL';
+    for (const f of campFindings) findings.push({ sev: campSev, field: 'promo_code', msg: f });
 
     // ── Print brand row ────────────────────────────────────────────────────────
     const hasFail = findings.some((i) => i.sev === 'FAIL');

@@ -204,12 +204,22 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   const recWithSite = siteIdOverride
     ? { ...rec, __site_override: siteIdOverride }
     : rec;
-  // For WS1/WS2 sites, resolve promotion_name_en to the WS-specific half before
-  // passing to buildTncRow — the raw value may be "generic\nWS1/WS2: unique" and
-  // buildTncRow would otherwise return the generic (non-WS) name as PromotionRewardName.
+  // For WS1/WS2 sites, resolve both EN and ZH names to the WS-specific half
+  // before passing to buildTncRow — the raw value may be "generic\nWS1/WS2: unique"
+  // and buildTncRow would otherwise leak the raw multi-line string into player-facing fields.
   const isWsSite = Boolean(recWithSite.__site_override);
-  const resolvedRec = (isWsSite && typeof recWithSite.promotion_name_en === 'string')
-    ? { ...recWithSite, promotion_name_en: splitDualPromoName(recWithSite.promotion_name_en).generic }
+  const resolvedRec = isWsSite
+    ? {
+        ...recWithSite,
+        promotion_name_en: typeof recWithSite.promotion_name_en === 'string'
+          ? splitDualPromoName(recWithSite.promotion_name_en).ws1Unique
+          : recWithSite.promotion_name_en,
+        promotion_name_zh_id: typeof recWithSite.promotion_name_zh_id === 'string'
+          ? (siteIdOverride === 'ws2'
+              ? splitDualPromoName(recWithSite.promotion_name_zh_id).generic
+              : splitDualPromoName(recWithSite.promotion_name_zh_id).ws1Unique)
+          : recWithSite.promotion_name_zh_id,
+      }
     : recWithSite;
   const locales = ['en'];
   if (needsZh(resolvedRec)) locales.push('zh');
@@ -496,9 +506,12 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
         : null;
       const ws2Code = ws2Line ? ws2Line.replace(/^WS2:\s*/i, '').trim() : null;
       // With FT prefix: prefer the FT_ code. Without: prefer the non-FT_ code.
-      const primary = ws2Code || (ftPrefix
+      const rawPrimary = ws2Code || (ftPrefix
         ? (codes.find((c) => c.startsWith('FT_')) || codes[0])
         : (codes.find((c) => !c.startsWith('FT_')) || codes[0]));
+      // Strip brand-list annotation prefix e.g. "QPRO, WS1, WS2: ACQ_TSM_..."
+      // These labels appear when the sheet uses different codes per platform group.
+      const primary = rawPrimary.replace(/^[A-Za-z0-9]+(?:[,/ ]+[A-Za-z0-9]+)+:\s*/, '').trim() || rawPrimary;
       normalizedRec.promo_code = primary;
     }
   }
@@ -508,8 +521,21 @@ export function buildIgmpPlan(rec, { siteId, ftPrefix = false } = {}) {
     normalizedRec.promo_code = applyIgmpFtPrefix(normalizedRec.promo_code, ftPrefix);
   }
 
+  // When game_provider_by_brand has a site-specific entry, override the
+  // top-level game_provider so T&C content uses the correct provider label.
+  // parsed.game_provider is sourced from the QPRO "(Provider)" annotation and
+  // is wrong for WS1/WS2 when they use a different game+provider (e.g. P053
+  // QPRO gets "Playtech" but WS1/WS2 get "PP2 - Pragmatic Play").
+  if (siteId && rec.parsed?.game_provider_by_brand) {
+    const brand = siteId === 'ws2' ? 'WS2' : 'WS1';
+    const siteProvider = rec.parsed.game_provider_by_brand[brand];
+    if (siteProvider) {
+      normalizedRec.parsed = { ...rec.parsed, game_provider: siteProvider };
+    }
+  }
+
   // Fall through parsed.* to top-level for fields the ingest leaves nested.
-  const p = rec.parsed || {};
+  const p = normalizedRec.parsed || rec.parsed || {};
   if (normalizedRec.min_deposit == null && p.min_deposit != null) normalizedRec.min_deposit = p.min_deposit;
   if (normalizedRec.bonus_pct == null && p.bonus_rate_pct != null) normalizedRec.bonus_pct = p.bonus_rate_pct;
   if (normalizedRec.turnover_multiplier == null && p.to_multiplier != null) normalizedRec.turnover_multiplier = p.to_multiplier;

@@ -411,7 +411,7 @@ function buildCurrencyBlockFS(resolved, currencyLabel) {
   const spinCount     = o.spin_count      ?? r.spin_count      ?? 0;
   const aplRaw        = o.amount_per_line ?? r.amount_per_line ?? null;
   const valuePerSpin  = o.value_per_spin  ?? r.value_per_spin  ?? null;
-  const bet = resolveFreeSpinBet({ provider: r.game_provider, valuePerSpin, amountPerLine: aplRaw });
+  const bet = resolveFreeSpinBet({ provider: r.game_provider || DEFAULT_FS_PROVIDER_LABEL, valuePerSpin, amountPerLine: aplRaw });
   // Playtech games take amount_per_line as a direct currency bet amount
   // (BO's accepted-bet list is denominations like 0.20/0.30/.../500.00) —
   // confirmed 2026-07-10 via a live HTTP 422 on P053 ("Fire Blaze: Green

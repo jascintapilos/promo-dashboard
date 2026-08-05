@@ -73,6 +73,7 @@ function runValidator(args, label) {
   if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
   if (flags['ft-prefix']) forwarded.push('--ft-prefix');
   if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
+  if (flags['fs-game']) forwarded.push(`--fs-game=${flags['fs-game']}`);
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,
@@ -221,6 +222,8 @@ function runCanary(job) {
     if (flags['allow-recreate']) args.push('--allow-recreate');
     // Forward allow-dup-name so IGMP can save despite a PromotionName collision (operator override).
     if (flags['allow-dup-name']) args.push('--allow-dup-name');
+    // Forward skip-name-check so IGMP skips the slow name-uniqueness pagination (fast path for bulk ops).
+    if (flags['skip-name-check']) args.push('--skip-name-check');
     // Forward fs-game override (VendorDisplayCode) so IGMP FS resolves to a specific game skin.
     if (flags['fs-game']) args.push(`--fs-game=${flags['fs-game']}`);
     const siteTag = site ? `@${site.replace(/^ws1-v3-/, '')}` : '';
@@ -308,6 +311,7 @@ if (!commit && worst === 0) {
   if (flags.exclude) forwarded.push(`--exclude=${flags.exclude}`);
   if (flags['ft-prefix']) forwarded.push('--ft-prefix');
   if (flags['no-ft-prefix']) forwarded.push('--no-ft-prefix');
+  if (flags['fs-game']) forwarded.push(`--fs-game=${flags['fs-game']}`);
   const res = spawnSync(process.execPath, [path.resolve('bin', 'canary-validate.js'), handle, ...forwarded], {
     stdio: 'inherit',
     shell: false,
