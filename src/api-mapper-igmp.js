@@ -204,12 +204,22 @@ function buildPromotionRewardContents(rec, bonusType, siteIdOverride) {
   const recWithSite = siteIdOverride
     ? { ...rec, __site_override: siteIdOverride }
     : rec;
-  // For WS1/WS2 sites, resolve promotion_name_en to the WS-specific half before
-  // passing to buildTncRow — the raw value may be "generic\nWS1/WS2: unique" and
-  // buildTncRow would otherwise return the generic (non-WS) name as PromotionRewardName.
+  // For WS1/WS2 sites, resolve both EN and ZH names to the WS-specific half
+  // before passing to buildTncRow — the raw value may be "generic\nWS1/WS2: unique"
+  // and buildTncRow would otherwise leak the raw multi-line string into player-facing fields.
   const isWsSite = Boolean(recWithSite.__site_override);
-  const resolvedRec = (isWsSite && typeof recWithSite.promotion_name_en === 'string')
-    ? { ...recWithSite, promotion_name_en: splitDualPromoName(recWithSite.promotion_name_en).generic }
+  const resolvedRec = isWsSite
+    ? {
+        ...recWithSite,
+        promotion_name_en: typeof recWithSite.promotion_name_en === 'string'
+          ? splitDualPromoName(recWithSite.promotion_name_en).ws1Unique
+          : recWithSite.promotion_name_en,
+        promotion_name_zh_id: typeof recWithSite.promotion_name_zh_id === 'string'
+          ? (siteIdOverride === 'ws2'
+              ? splitDualPromoName(recWithSite.promotion_name_zh_id).generic
+              : splitDualPromoName(recWithSite.promotion_name_zh_id).ws1Unique)
+          : recWithSite.promotion_name_zh_id,
+      }
     : recWithSite;
   const locales = ['en'];
   if (needsZh(resolvedRec)) locales.push('zh');

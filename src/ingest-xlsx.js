@@ -187,7 +187,7 @@ const HEADER_ALIASES = {
   promo_code:           [/^promo\s*code/i],
   promotion_name_en:    [/^promotion\s*names?\s*\(en\)/i, /^name\s*\(en\)/i],
   promotion_name_zh_id: [/^promotion\s*names?\s*\(zh.*id\)/i, /^promotion\s*names?\s*\(zh\)/i, /^name\s*\(zh/i],
-  inbox_message:        [/^inbox\s*message/i],
+  inbox_message:        [/^inbox\s*message/i, /^t\s*&\s*c\s*[/]\s*inbox\s*message/i],
   popup_dialog:         [/^pop.?up\s*dialog/i, /^popup/i],
   validity:             [/^validity\b/i],
   rewards_validity:     [/^reward(s)?\s*validity/i],
@@ -318,11 +318,20 @@ export function rowToRecord(cells, colMap, sourceLine, header = []) {
     locales,
     campaign: String(get('campaign') ?? ''),
     bonus_type: bonus.type,
-    bonus_sub_type: bonus.subType,
+    // Infer sub_type from campaign when the Bonus Type cell lacks it.
+    // "ACQ (WELCOME BONUS)" or WELC code token → Welcome.
+    bonus_sub_type: bonus.subType || (() => {
+      if (!bonus.type) return null;
+      const campLower = String(get('campaign') ?? '').toLowerCase();
+      const codeLower = String(promoCode ?? '').toLowerCase();
+      if ((bonus.type === 'Free Spin' || bonus.type === 'Deposit') &&
+          (/\bwelcome\b/.test(campLower) || /\bwelc\b/.test(codeLower))) return 'Welcome';
+      return null;
+    })(),
     name_details_raw: detailsRaw,
     promo_code: promoCode,
     promotion_name_en: String(get('promotion_name_en') ?? ''),
-    promotion_name_zh_id: String(get('promotion_name_zh_id') ?? ''),
+    promotion_name_zh_id: String(get('promotion_name_zh_id') ?? '').trim(),
     // inbox_message / popup_dialog: any non-blank non-"no/false" content
     // enables. Operator may write "true" OR free-text (e.g. a reference to
     // an existing inbox code on another brand).

@@ -22,6 +22,19 @@ import { BRAND_TO_SITE } from './ingest.js';
 
 const CURRENCY_PREFIX = { MYR: 'MYR', SGD: 'SGD', IDR: 'IDR', THB: 'THB', KHR: 'KHR' };
 
+// Vendor code → human display name for FS game T&C copy.
+// Codes added when a BO-specific skin differs from the game's marketing name.
+const FS_VENDOR_DISPLAY = {
+  'vs20mb88gates': 'MB8 Gates of Olympus',
+  'vs20olympgate': 'Gates of Olympus',
+  'vs20olympgold': 'Gates of Olympus Super Scatter',
+};
+
+function fsGameDisplay(rec) {
+  const code = rec.parsed?.game || rec.fs_game || '';
+  return FS_VENDOR_DISPLAY[code] || code;
+}
+
 // ZH is only added for MY and SG regions.
 const ZH_REGIONS = new Set(['MY', 'SG']);
 
@@ -319,7 +332,7 @@ function campaignIntroEn(rec, bonusType) {
 
   if (bt.includes('free spin') || bt === 'fs') {
     const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
-    const game = rec.parsed?.game || rec.fs_game || '';
+    const game = fsGameDisplay(rec);
     const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
     const minPart = minD > 0 ? ` with just ${pref} ${minD}` : '';
     if (tier.includes('vip') || tier.includes('diamond') || tier.includes('platinum'))
@@ -368,7 +381,7 @@ function campaignIntroZh(rec, bonusType) {
 
   if (bt.includes('free spin') || bt === 'fs') {
     const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
-    const game = rec.parsed?.game || rec.fs_game || '';
+    const game = fsGameDisplay(rec);
     const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
     const minPart = minD > 0 ? `仅需存款 ${pref} ${minD}，` : '';
     if (tier.includes('vip') || tier.includes('diamond') || tier.includes('platinum'))
@@ -553,7 +566,7 @@ function buildFcZh(rec) {
 
 function fsHowToApplyEn(rec) {
   const provider = gameProviderName(rec);
-  const game = rec.parsed?.game || rec.fs_game || '';
+  const game = fsGameDisplay(rec);
   const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
   const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const isClaim = minD === 0;
@@ -573,7 +586,7 @@ function fsHowToApplyEn(rec) {
 
 function fsHowToApplyZh(rec) {
   const provider = gameProviderName(rec);
-  const game = rec.parsed?.game || rec.fs_game || '';
+  const game = fsGameDisplay(rec);
   const rounds = Number(rec.fs_rounds ?? rec.parsed?.spin_count ?? 0);
   const minD = Number(rec.min_deposit ?? rec.parsed?.min_deposit ?? 0);
   const isClaim = minD === 0;
