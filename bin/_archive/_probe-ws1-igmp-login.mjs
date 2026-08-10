@@ -12,8 +12,12 @@ const canonicalCodes = new Set(Object.keys(SOURCE));
 console.log(`Canonical TLEO codes from qpro2: ${canonicalCodes.size}\n`);
 
 // Credentials
-const USERNAME = 'promo_testbot';
-const PASSWORD = 'Promo111!';
+const USERNAME = process.env.IGMP_USER;
+const PASSWORD = process.env.IGMP_PASS;
+if (!USERNAME || !PASSWORD) {
+  console.error('Set IGMP_USER and IGMP_PASS env vars (see igmp-creds.local.json for the real values).');
+  process.exit(1);
+}
 
 const sites = [
   { name: 'IGMP-MY', url: 'https://kioskmy.best-in-asia.com' },

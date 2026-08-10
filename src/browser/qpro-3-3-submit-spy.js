@@ -47,7 +47,7 @@ try {
   await page.locator('input[formcontrolname="merchant_code"]').waitFor({ timeout: 10000 });
   await page.locator('input[formcontrolname="merchant_code"]').fill(site.loginMerchantCode);
   await page.locator('input[formcontrolname="username"]').fill(site.username);
-  console.error(`\n>>> Login form pre-filled. Type the password (Promo111!) and click Login. <<<\n`);
+  console.error(`\n>>> Login form pre-filled. Type the password and click Login. <<<\n`);
 } catch {
   console.error(`[spy] already logged in.`);
 }

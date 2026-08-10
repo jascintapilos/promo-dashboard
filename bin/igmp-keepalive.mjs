@@ -37,17 +37,19 @@ function loadCreds(siteId) {
   if (!existsSync(CREDS_FILE)) {
     throw new Error(
       `Missing ${CREDS_FILE}.\nCreate it with:\n` +
-      `  { "default": { "username": "promo_testbot", "password": "123456" },\n` +
-      `    "overrides": { "ws1-v3-my": { "password": "Promo111!" } } }`,
+      `  { "default": { "username": "<username>", "password": "<password>" },\n` +
+      `    "overrides": { "ws1-v3-my": { "password": "<override-password>" } } }`,
     );
   }
   const cfg = JSON.parse(readFileSync(CREDS_FILE, 'utf8'));
   const d = cfg.default || {};
   const o = cfg.overrides?.[siteId] || {};
-  return {
-    username: o.username || d.username || 'promo_testbot',
-    password: o.password || d.password || '123456',
-  };
+  const username = o.username || d.username;
+  const password = o.password || d.password;
+  if (!username || !password) {
+    throw new Error(`${CREDS_FILE}: no username/password resolved for site "${siteId}" (check "default" and "overrides").`);
+  }
+  return { username, password };
 }
 
 // ── Session store ────────────────────────────────────────────────────

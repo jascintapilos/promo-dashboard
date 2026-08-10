@@ -104,7 +104,7 @@ console.error(``);
 console.error(`╔════════════════════════════════════════════════════════════════════════╗`);
 console.error(`║  MANUAL STEPS                                                          ║`);
 console.error(`║                                                                        ║`);
-console.error(`║  1. Type password (Jcalpha123! / Promo111!) and Login                  ║`);
+console.error(`║  1. Type the password and Login                                        ║`);
 console.error(`║  2. Navigate: 3. Promotions → 3.3 Promotion Contents                   ║`);
 console.error(`║  3. Click "+ Create" (the modal will open)                             ║`);
 console.error(`║  4. Pause briefly so the form renders                                  ║`);

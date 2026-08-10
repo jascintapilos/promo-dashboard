@@ -4,8 +4,12 @@
 import fs from 'node:fs';
 import { chromium } from 'playwright';
 
-const USERNAME = 'promo_testbot';
-const PASSWORD = 'Promo111!';
+const USERNAME = process.env.IGMP_USER;
+const PASSWORD = process.env.IGMP_PASS;
+if (!USERNAME || !PASSWORD) {
+  console.error('Set IGMP_USER and IGMP_PASS env vars (see igmp-creds.local.json for the real values).');
+  process.exit(1);
+}
 
 const browser = await chromium.launch({ headless: false, channel: 'chrome' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });

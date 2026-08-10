@@ -150,9 +150,9 @@ Everything user-editable lives in **one file**: `bo-sites.json` (gitignored).
   "sites": {
     "ibc22": {
       "label": "IBC22 BO (qtp777)",
-      "baseUrl": "https://ibc22.qtp777.com",
-      "apiHost": "https://54505721qp2api.960806.com",
-      "reqSignKey": "kbXbAEotZ64nueRXt0+fWKBndGADLrQiaL6VrhM+mSw=",
+      "baseUrl": "https://example.com",
+      "apiHost": "https://api.example.com",
+      "reqSignKey": "FIND_IN_main.<hash>.js_grep_for_reqSignKey",
       "loginMerchantCode": "I22",
       "username": "...",
       "password": "..."

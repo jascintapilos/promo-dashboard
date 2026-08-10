@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "defaultSite": "ibc22",
   "sites": {
-    "ibc22": {
-      "label": "IBC22 BO — QP2A/B/C/D (qtp777)",
+    "ibc22-example": {
+      "label": "QP2 example — merchant BO (qtp777)",
       "platform": "qp2",
-      "baseUrl": "https://ibc22.qtp777.com",
-      "apiHost": "https://54505721qp2api.960806.com",
-      "reqSignKey": "kbXbAEotZ64nueRXt0+fWKBndGADLrQiaL6VrhM+mSw=",
-      "loginMerchantCode": "I22",
+      "baseUrl": "https://example.com",
+      "apiHost": "https://api.example.com",
+      "reqSignKey": "FIND_IN_main.<hash>.js_grep_for_reqSignKey",
+      "loginMerchantCode": "ABC",
       "username": "REPLACE_ME"
     },
     "qpro1-example": {

@@ -149,7 +149,7 @@ The popup_fill_currency handler is **field-agnostic** — iterates row keys and 
 - **Layer 1 game-provider exclusions** (all platforms): `918KISS, 918KAYA, ALLBET, EKOR, HABANERO, KINGMIDAS, MEGA888, DG, SSG`.
 - **Layer 1 category exclusions** (all platforms): `ARCADE, COCK FIGHT, LOTTERY, TABLE`.
 - **Frequency default**: `Daily Max`.
-- **`reqSignKey` (shared)**: `kbXbAEotZ64nueRXt0+fWKBndGADLrQiaL6VrhM+mSw=`.
+- **`reqSignKey` (shared)**: not stable enough to hardcode in memory — grep the live QPRO frontend bundle (`main.<hash>.js`) for `reqSignKey` to get the current value. (A stale copy of this was previously committed here in plaintext; removed 2026-08-10 as part of a credential-leak cleanup — treat any old value as compromised.)
 - **Locale → currency mapping**: MY→MYR, SG→SGD, ID→IDR, TH→THB, KH→KHR, AU→AUD.
 - **Promo Sub-Type options** (QPRO): Deposit→Welcome/Reload; Free Credit→Free Credit; Free Spin→Welcome/Reload (NOT "Free Spin").
 

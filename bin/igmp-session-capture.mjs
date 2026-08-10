@@ -6,7 +6,7 @@
 //
 //   node bin/igmp-session-capture.mjs --site=ws1-v3-my
 //   node bin/igmp-session-capture.mjs --brand=MB8
-//   node bin/igmp-session-capture.mjs --brand=MB8 --user=promo_testbot --pass=Promo111!
+//   node bin/igmp-session-capture.mjs --brand=MB8 --user=<username> --pass=<password>
 //
 // Quits when login is detected (auto mode) or the user closes the browser
 // (manual mode). The cookie file is gitignored.
