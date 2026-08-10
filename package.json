@@ -18,7 +18,8 @@
     "sessions": "node bin/sessions.js",
     "browser": "node src/browser/phase1-browser.js",
     "test": "node --test test/*.test.mjs",
-    "test:free-spin": "node bin/test-free-spin-conformance.mjs"
+    "test:free-spin": "node bin/test-free-spin-conformance.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -32,6 +33,11 @@
     "telegram": "^2.26.22"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "sharp": "^0.34.5"
+  },
+  "lint-staged": {
+    "*": "node bin/check-secrets.mjs"
   }
 }
