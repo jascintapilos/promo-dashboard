@@ -4,8 +4,12 @@ import { chromium } from 'playwright';
 import { igmpBaseUrl } from '../src/igmp-client.js';
 
 const siteId = process.argv[2] || 'ws1-v3-my';
-const user = process.argv[3] || 'promo_testbot';
-const pass = process.argv[4] || '123456';
+const user = process.argv[3] || process.env.IGMP_USER;
+const pass = process.argv[4] || process.env.IGMP_PASS;
+if (!user || !pass) {
+  console.error('Usage: node _igmp-login-debug.mjs <siteId> <user> <pass>  (or set IGMP_USER/IGMP_PASS env vars)');
+  process.exit(1);
+}
 const loginUrl = `${igmpBaseUrl(siteId)}/Login#PM`;
 
 const browser = await chromium.launch({ headless: false, channel: 'chrome' });

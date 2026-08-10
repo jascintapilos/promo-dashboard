@@ -4,8 +4,12 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { igmpBaseUrl, listIgmpSites } from '../src/igmp-client.js';
 
-const user = process.argv[2] || 'promo_testbot';
-const pass = process.argv[3] || '123456';
+const user = process.argv[2] || process.env.IGMP_USER;
+const pass = process.argv[3] || process.env.IGMP_PASS;
+if (!user || !pass) {
+  console.error('Usage: node _igmp-capture-all.mjs <user> <pass>  (or set IGMP_USER/IGMP_PASS env vars)');
+  process.exit(1);
+}
 const COOKIE_FILE = path.resolve('igmp-sessions.local.json');
 const store = existsSync(COOKIE_FILE) ? JSON.parse(readFileSync(COOKIE_FILE, 'utf8')) : { sessions: {} };
 store.sessions = store.sessions || {};
