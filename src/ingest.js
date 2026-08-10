@@ -154,9 +154,12 @@ export function splitMarkdownRow(line) {
 export function parseBonusType(raw) {
   // "Free Spin - Welcome"  → { type: 'Free Spin', subType: 'Welcome' }
   // "Deposit - Reload"     → { type: 'Deposit',   subType: 'Reload' }
+  // "Deposit Reload"       → { type: 'Deposit',   subType: 'Reload' }  (no-dash variant)
   // "Free Credit"          → { type: 'Free Credit', subType: null }
   if (!raw) return { type: null, subType: null };
-  const parts = raw.split(/\s*-\s*/);
+  // Normalise no-dash compound types before splitting
+  const normalised = raw.replace(/^(Deposit|Free Spin)\s+(Reload|Welcome)$/i, '$1 - $2');
+  const parts = normalised.split(/\s*-\s*/);
   return {
     type:    (parts[0] || '').trim() || null,
     subType: (parts[1] || '').trim() || null,
@@ -356,7 +359,8 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
   const fcMatch =
        text.match(new RegExp(String.raw`Free\s+Credit\s+${CCY_PREFIX}(\d+(?:\.\d+)?)`, 'i'))
     || text.match(/(\d+(?:\.\d+)?)\s*FC\b/i)
-    || text.match(/(\d+(?:\.\d+)?)\s+Free\s+Credits?\b/i);
+    || text.match(/(\d+(?:\.\d+)?)\s+Free\s+Credits?\b/i)
+    || text.match(/\bFC\s*:\s*(\d+(?:\.\d+)?)/i);
   if (fcMatch) parsed.free_credit_amount = Number(fcMatch[1]);
 
   // Deposit Bonus: percentage rate
@@ -447,6 +451,15 @@ export function parseDetails(raw, { bonusType, promoCode } = {}) {
     const tokens = text.split(/[,\s]+/).map(t => t.trim().toUpperCase()).filter(Boolean);
     for (const t of tokens) {
       if (GAME_ALIASES[t]) { parsed.game = GAME_ALIASES[t]; break; }
+    }
+    // Standalone game-name on its own line: "Free Spin N, Min Dep X\nGates of Olympus Super Scatter"
+    // text has newlines collapsed to spaces; read from raw (pre-normalisation) instead.
+    // Only triggers if no other pattern matched; requires proper-name casing and no mechanics content.
+    if (!parsed.game) {
+      const lastLine = (raw.split('\n').pop() || '').trim();
+      if (lastLine && /^[A-Z][a-z]/.test(lastLine) && !/\d|RM|SGD|IDR|THB|\bMin\b|\bDep\b|\bspin\b/i.test(lastLine)) {
+        parsed.game = GAME_ALIASES[lastLine.toUpperCase()] || lastLine;
+      }
     }
   }
 
@@ -688,7 +701,16 @@ export function parseRow(line) {
     locales,
     campaign: get('campaign'),
     bonus_type: bonus.type,
-    bonus_sub_type: bonus.subType,
+    // Infer sub_type from campaign name when the Bonus Type cell lacks it.
+    // "ACQ (WELCOME BONUS)" or "WELCOME" → Welcome; promo code "WELC" token as secondary signal.
+    bonus_sub_type: bonus.subType || (() => {
+      if (!bonus.type) return null;
+      const campLower = String(get('campaign') || '').toLowerCase();
+      const codeLower = String(promoCode || '').toLowerCase();
+      const isWelcomeCampaign = /\bwelcome\b/.test(campLower) || /\bwelc\b/.test(codeLower);
+      if ((bonus.type === 'Free Spin' || bonus.type === 'Deposit') && isWelcomeCampaign) return 'Welcome';
+      return null;
+    })(),
     name_details_raw: detailsRaw,
     promo_code: promoCode,
     promotion_name_en: get('promotion_name_en'),
@@ -1060,6 +1082,28 @@ export function parseInstructions(remark, nameDetails, changeDetails, inboxMessa
           signals.push("J':game_categories_field");
         }
       }
+    }
+  }
+
+  // J''. Bare category token as a standalone comma-separated item in
+  // nameDetails (no "only" marker, no "Game Categories:" prefix needed).
+  // Matches patterns like "88%, Min Dep RM500, ..., Slots, TO 3X" where
+  // "Slots" or "LC" appears surrounded by commas (or at start/end).
+  if (!categoriesOnly) {
+    const bareRe = /(?:^|,)\s*(SLOTS?|LC|LIVE\s*CASINO|SPORTS?|FISHING|E-?SPORTS?|CRASH|CRICKET|TABLE|ARCADE)\s*(?:,|$)/gi;
+    const toks = [];
+    let tm;
+    while ((tm = bareRe.exec(n)) !== null) {
+      const raw = tm[1].toUpperCase().replace(/\s+/g, ' ');
+      const norm = ({ 'SLOT': 'SLOTS', 'SLOTS': 'SLOTS', 'LC': 'LIVE CASINO', 'LIVE CASINO': 'LIVE CASINO',
+                       'SPORT': 'SPORT', 'SPORTS': 'SPORT', 'FISHING': 'FISHING',
+                       'ESPORT': 'E-SPORTS', 'ESPORTS': 'E-SPORTS', 'E-SPORT': 'E-SPORTS', 'E-SPORTS': 'E-SPORTS',
+                       'CRASH': 'CRASH', 'CRICKET': 'CRICKET', 'TABLE': 'TABLE', 'ARCADE': 'ARCADE' })[raw];
+      if (norm && !toks.includes(norm)) toks.push(norm);
+    }
+    if (toks.length) {
+      categoriesOnly = toks;
+      signals.push("J'':bare_category_in_name_details");
     }
   }
 

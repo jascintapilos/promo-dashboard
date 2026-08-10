@@ -56,6 +56,7 @@ await (async () => {
   }
   const commit = flags.commit === true;
   const allowDupName = flags['allow-dup-name'] === true; // operator override: save even if PromotionName already exists on the BO
+  const skipNameCheck = flags['skip-name-check'] === true; // operator override: skip name-uniqueness pagination entirely (fast path for bulk ops)
   const allowRecreate = flags['allow-recreate'] === true; // operator override: proceed even if code exists but is inactive (deactivated promo)
   const testMode = flags.test === true; // prepend TEST_ to the resolved FT_ code
   const forceFt = flags['ft-prefix'] === true;
@@ -342,7 +343,7 @@ await (async () => {
   }
 
   // ── PromotionName uniqueness check ──────────────────────────────────
-  {
+  if (!skipNameCheck) {
     const plannedName = plan.body.PromotionName;
     if (plannedName) {
       console.log('');

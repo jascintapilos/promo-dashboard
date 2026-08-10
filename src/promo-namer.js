@@ -44,13 +44,25 @@ import { findCampaignRule, resolveConvention } from './campaign-prefix-rules.js'
 // fields. Falls back to the raw value unchanged when there's no dual-name
 // marker (single-line names, i.e. non-WS1-inclusive requests), so requests
 // that never had WS1 in scope are unaffected.
+//
+// Handles two annotation formats:
+//   "WS1/WS2: <name>"          — original slash format
+//   "QP2, WS1, WS2: <name>"    — comma-separated brand-list format
 export function splitDualPromoName(raw) {
   const str = String(raw ?? '');
-  const marker = /\n\s*WS1\/WS2:\s*/;
-  const idx = str.search(marker);
-  if (idx === -1) return { generic: str, ws1Unique: str };
-  const generic = str.slice(0, idx).trim();
-  const ws1Unique = str.slice(idx).replace(marker, '').trim();
+  const lines = str.split('\n');
+  // Find the first continuation line whose leading label contains WS1 or WS2.
+  // Label format: "<BRAND>[, <BRAND>]*:" or "<BRAND>[/<BRAND>]*:"
+  const wsIdx = lines.findIndex((l, i) => {
+    if (i === 0) return false;
+    const colonPos = l.indexOf(':');
+    if (colonPos === -1) return false;
+    const label = l.slice(0, colonPos);
+    return /\bWS[12]\b/.test(label) && /^[A-Za-z0-9]+(?:[,/ ]+[A-Za-z0-9]+)*$/.test(label.trim());
+  });
+  if (wsIdx === -1) return { generic: str, ws1Unique: str };
+  const generic = lines.slice(0, wsIdx).join('\n').trim();
+  const ws1Unique = lines[wsIdx].replace(/^[^:]+:\s*/, '').trim();
   return { generic, ws1Unique: ws1Unique || generic };
 }
 

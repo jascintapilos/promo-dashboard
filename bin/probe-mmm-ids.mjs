@@ -55,3 +55,4 @@ for (const { site, rewardId, label } of TARGETS) {
 
 if (!COMMIT) console.log('\n→ Dry-run. Add --commit to apply.');
 else console.log('\nDone.');
+
