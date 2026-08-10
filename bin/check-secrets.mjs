@@ -32,8 +32,12 @@ const SAFE_PLACEHOLDERS = new Set([
   'your-password', 'password', 'todo', 'tbd', 'n/a', 'none',
 ]);
 
+// The optional [\"'`]? right after the key name matches a JSON-style key's
+// closing quote ("password": "x") — without it, this only matched bare JS
+// keys (password: "x") and silently missed every JSON-formatted leak in the
+// original incident, including bo-sites.example.json's reqSignKey.
 const KEY_PATTERN =
-  /\b(password|passwd|pwd|secret|api[-_]?key|sign[-_]?key|reqsignkey|access[-_]?token|auth[-_]?token)\b\s*[:=]\s*(['"`])((?:(?!\2).){4,})\2/gi;
+  /\b(password|passwd|pwd|secret|api[-_]?key|sign[-_]?key|reqsignkey|access[-_]?token|auth[-_]?token)\b['"`]?\s*[:=]\s*(['"`])((?:(?!\2).){4,})\2/gi;
 
 let violations = [];
 
