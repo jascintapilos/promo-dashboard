@@ -105,7 +105,7 @@ src/dashboard.js  →  POST status=QC_Required to Apps Script web app
 ## BO inventory
 
 - **Platform `qp2`** — single BO at `ibc22.qtp777.com`, four merchants: IBC22 (QP2A), KING333 (QP2B), ACE66 (QP2C), SPADE66 (QP2D). Service account `promo_testbot`. Shared `reqSignKey`.
-- **Platform `qpro`** — 19 separate BOs at `qpro<N>bo.mei707.com` (QPRO1 is at the bare `bo.mei707.com`). One brand per BO. **QPRO11 now uses `promo_testbot`** (was jascinta); QPRO1 uses promo_testbot too; QPRO2–10, 12–19 use jascinta. Same login mechanism as QP2 — same endpoint, same AES-CBC password scheme, same reqSignKey.
+- **Platform `qpro`** — 19 separate BOs at `qpro<N>bo.mei707.com` (QPRO1 is at the bare `bo.mei707.com`). One brand per BO. All QPRO1–17 sites use `promo_testbot` (migrated off personal accounts). Same login mechanism as QP2 — same endpoint, same AES-CBC password scheme, same reqSignKey.
 
 Passwords live in `bo-sites.local.json` (gitignored), keyed by username — sites reference by `username` and the password is merged in at load time.
 

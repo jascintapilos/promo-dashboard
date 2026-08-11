@@ -262,7 +262,7 @@ After each B-ID's `--commit` run succeeds (banner/carousel record created, `stat
 - Probe summary: [captures/ws1-directus-probe-summary.md](../../../captures/ws1-directus-probe-summary.md)
 - Brand → site map: [src/banner-schedule.js](../../../src/banner-schedule.js) :: `BANNER_BRAND_TO_SITE`
 - BO config: [bo-sites.json](../../../bo-sites.json) (sites `ws1`, `ws1-classic-my`, `ws2`)
-- Password store: [bo-sites.local.json](../../../bo-sites.local.json) :: `passwords.jascinta`
+- Password store: [bo-sites.local.json](../../../bo-sites.local.json) :: `passwords.promo_testbot` (all three sites log in as `promo_testbot`, per bo-sites.json)
 
 ## When to use this vs. running a script directly
 

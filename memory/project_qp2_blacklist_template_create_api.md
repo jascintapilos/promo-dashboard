@@ -1,6 +1,6 @@
 ---
 name: project-qp2-blacklist-template-create-api
-description: QP2 blacklist template create/edit API shape + per-account permissions (promo_testbot is view-only; use jascinta login).
+description: QP2 blacklist template create/edit API shape + per-account permissions (promo_testbot is view-only; needs a create-rights login added on demand).
 metadata: 
   node_type: memory
   type: project
@@ -14,7 +14,7 @@ QP2 (ibc22 BO) blacklist template endpoints, discovered 2026-07-16 via SPA bundl
 - `GET /api/bo/gameprovider/duplicateBlacklistTemplate/{id}` — dialog data only, does NOT create
 - `POST /api/bo/gameprovider/updateBlacklistTemplate` — create AND edit. Body: `{blacklist_template_id: null→create | id→edit, blacklist_template_name, blacklist_template_remark, status, black_list_sub_categories: [...]}`. Send only status=1 subcats; drop entries with empty sub_categories (mirrors BO dialog filtering).
 
-**Permissions:** `promo_testbot` is view-only for blacklist templates — create and duplicate both 422 ("no permission"). The `jascinta` account (password in bo-sites.local.json passwords map) has create rights. To log in as her without clobbering the bot's cached session, clone the site object with a distinct id: `{...getSite('ibc22'), id: 'ibc22-jascinta', username: 'jascinta', password: passwords.jascinta}`.
+**Permissions:** `promo_testbot` is view-only for blacklist templates — create and duplicate both 422 ("no permission"). Jascinta's personal `ibc22` login has create rights, but her password is intentionally NOT kept in `bo-sites.local.json` (removed 2026-08-10 at her request). To create or edit a template, she adds a temporary `passwords.jascinta` entry herself, then the site object can be cloned with a distinct id so it doesn't clobber the bot's cached session: `{...getSite('ibc22'), id: 'ibc22-jascinta', username: 'jascinta', password: passwords.jascinta}` — remove the entry again once done.
 
 Template id=11 "Live Casino and Sports Only" created 2026-07-16 (merged id=3 Live Casino Only + id=2 Sports Only, 25 entries). Working script: `bin/_create-bl-template-lc-sports-jas.mjs`.
 
