@@ -18,14 +18,42 @@
 // when you're certain the value isn't real.
 
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
-// base64-encoded so this file's own source doesn't contain the literal
-// strings — otherwise this script would fail its own check on every commit.
-const LEAKED_VALUES = [
-  'UHJvbW8xMTEh',
-  'SmNhbHBoYTEyMyE=',
-  'a2JYYkFFb3RaNjRudWVSWHQwK2ZXS0JuZEdBRExyUWlhTDZWcmhNK21Tdz0=',
-].map(b64 => Buffer.from(b64, 'base64').toString('utf8'));
+// SHA-256 hashes only — base64 was reversible in one line, which defeats the
+// point of a regression guard (the tool's own source could be decoded back
+// into the real secrets). A hash can confirm a match without the plaintext
+// ever existing in this file. Substring detection (not just whole-line
+// equality) still works via a sliding window sized to each hash's known
+// plaintext length — see findLeakedValue().
+const LEAKED_HASHES = [
+  { length: 9,  label: 'the QPRO/QP2 bot password',      sha256: 'cb356f5b9d96485e6c038cab702d88b2a85c49f16962f14236bdb2e9da11ae70' },
+  { length: 11, label: 'a personal Workspace password',   sha256: 'd0f2f08bfe0a8d761c1a8a41a2992e807731d6e12ca866b839185f60103d680d' },
+  { length: 44, label: 'the QP2 reqSignKey',              sha256: 'f2f07e0e5ebe53dc8088875da35f54ff704ea46d1a316f81df48c256cd16f4c9' },
+];
+
+function sha256(s) {
+  return createHash('sha256').update(s, 'utf8').digest('hex');
+}
+
+// Slides a window of each known plaintext length across the line and hashes
+// every candidate substring — this is what lets a hash-only approach still
+// catch the value appearing ANYWHERE in the line (mid-string, inside a
+// larger template literal, etc.), not just when the whole line matches.
+// Returns every distinct leaked value found, not just the first — some of
+// the original leak's console-reminder lines had two different leaked
+// credentials embedded side by side in one string, and both need to be
+// reported, not just whichever is checked first.
+function findLeakedValues(line) {
+  const found = new Set();
+  for (const entry of LEAKED_HASHES) {
+    if (line.length < entry.length) continue;
+    for (let i = 0; i <= line.length - entry.length; i++) {
+      if (sha256(line.slice(i, i + entry.length)) === entry.sha256) { found.add(entry.label); break; }
+    }
+  }
+  return [...found];
+}
 
 const SAFE_PLACEHOLDERS = new Set([
   'replace_me', 'change_me', 'changeme', 'placeholder', 'your_password',
@@ -52,10 +80,8 @@ function scanFile(path) {
   lines.forEach((line, i) => {
     if (/nosecret/i.test(line)) return;
 
-    for (const leaked of LEAKED_VALUES) {
-      if (line.includes(leaked)) {
-        violations.push({ path, line: i + 1, reason: `contains a previously-leaked credential value ("${leaked.slice(0, 4)}...")` });
-      }
+    for (const label of findLeakedValues(line)) {
+      violations.push({ path, line: i + 1, reason: `contains a previously-leaked credential value (${label})` });
     }
 
     for (const m of line.matchAll(KEY_PATTERN)) {
