@@ -58,14 +58,51 @@ function findLeakedValues(line) {
 const SAFE_PLACEHOLDERS = new Set([
   'replace_me', 'change_me', 'changeme', 'placeholder', 'your_password',
   'your-password', 'password', 'todo', 'tbd', 'n/a', 'none',
+  // README.md + bo-sites.example.json's reqSignKey placeholder — an
+  // instruction ("go find the real value"), not a value itself.
+  'find_in_main.<hash>.js_grep_for_reqsignkey',
 ]);
 
+// No leading \b before the key-name alternation (only a trailing one) —
+// deliberately, so this also catches the trigger word as a camelCase or
+// snake_case SUFFIX (dbPassword, totp_secret, myApiKey), not just a
+// standalone key. The trailing \b still blocks matching it as a PREFIX of
+// an unrelated word (passwordless, secretary), since there's no boundary
+// between "password"/"secret" and "less"/"ary".
+//
+// secret[-_]?key is listed explicitly (same trick as api[-_]?key and
+// sign[-_]?key above) so the trigger word is ALSO caught as a PREFIX in the
+// one compound where that legitimately matters: secretKey / secret_key /
+// secret-key. This can't be done with a generic "allow any camelCase
+// continuation after the trigger word" rule — this pattern has the /i flag
+// for case-insensitive trigger words (PASSWORD, Password, password all need
+// to match), and /i makes [A-Z] match lowercase too, so a
+// "continuation must start with a capital letter" guard silently matches
+// "secretary" (secret + ary) as well as "secretKey". Listing the one
+// compound that's actually worth catching, the same way the existing
+// api/sign-key entries do, avoids that trap entirely.
+//
+// The value side accepts either a quoted literal or a bare .env-style
+// unquoted one (KEY=value with no quotes at all) — group 2/3 for quoted,
+// group 4 for bare; exactly one of the two is set per match.
 // The optional [\"'`]? right after the key name matches a JSON-style key's
 // closing quote ("password": "x") — without it, this only matched bare JS
 // keys (password: "x") and silently missed every JSON-formatted leak in the
 // original incident, including bo-sites.example.json's reqSignKey.
 const KEY_PATTERN =
-  /\b(password|passwd|pwd|secret|api[-_]?key|sign[-_]?key|reqsignkey|access[-_]?token|auth[-_]?token)\b['"`]?\s*[:=]\s*(['"`])((?:(?!\2).){4,})\2/gi;
+  /(password|passwd|pwd|secret[-_]?key|secret|api[-_]?key|sign[-_]?key|reqsignkey|access[-_]?token|auth[-_]?token)\b['"`]?\s*[:=]\s*(?:(['"`])((?:(?!\2).){4,})\2|([^\s'"`]{4,}))/gi;
+
+// Bare/unquoted values (group 4) are only trustworthy as "this is a literal"
+// on .env-shaped files. There, KEY=value is always a literal — the format
+// has no syntax for expressions. In .js/.mjs/.json, an unquoted value after
+// `:`/`=` is normal CODE (a variable, `o.password`, `await getToken()`,
+// `null`, a template literal) — sweeping the real codebase surfaced ~50
+// such lines, none of them an actual secret. So bare-value matching is
+// gated to files that look like .env/.env.<name>; every other file still
+// requires an actual quoted string literal (group 3) to be flagged.
+function isEnvFile(path) {
+  return /\.env(\.[a-z0-9_-]+)?$/i.test(path);
+}
 
 let violations = [];
 
@@ -76,6 +113,7 @@ function scanFile(path) {
   } catch {
     return; // deleted/binary/unreadable — nothing to scan
   }
+  const envLike = isEnvFile(path);
   const lines = text.split('\n');
   lines.forEach((line, i) => {
     if (/nosecret/i.test(line)) return;
@@ -85,7 +123,8 @@ function scanFile(path) {
     }
 
     for (const m of line.matchAll(KEY_PATTERN)) {
-      const value = m[3];
+      const value = m[3] ?? (envLike ? m[4] : undefined); // group 3 = quoted literal; group 4 = bare .env-style value, .env files only
+      if (value === undefined) continue;
       if (SAFE_PLACEHOLDERS.has(value.toLowerCase())) continue;
       if (/^<.*>$/.test(value)) continue; // <password>, <username>, etc.
       violations.push({ path, line: i + 1, reason: `"${m[1]}" assigned a hardcoded literal ("${value.slice(0, 3)}...")` });

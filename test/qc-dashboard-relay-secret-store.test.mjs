@@ -82,7 +82,7 @@ test('read: invalid JSON → { present: false }, no throw', () => {
 
 test('read: JSON with short secret → { present: false }', () => {
   const file = scratchFile();
-  writeFileSync(file, JSON.stringify({ secret: 'short' }));
+  writeFileSync(file, JSON.stringify({ secret: 'short' })); // nosecret — test fixture, not a real credential
   const r = readPersistedSecret({ file });
   assert.equal(r.present, false);
   rmSync(path.dirname(file), { recursive: true, force: true });
@@ -146,7 +146,7 @@ test('effective: file used when env is unset', () => {
 test('effective: too-short env fallback to file', () => {
   const file = scratchFile();
   const { secret } = rotateSecret({ actorEmail: 'admin@x', file });
-  const eff = readEffectiveSecret({ file, env: { RELAY_SECRET: 'short' } });
+  const eff = readEffectiveSecret({ file, env: { RELAY_SECRET: 'short' } }); // nosecret — test fixture, not a real credential
   assert.equal(eff, secret, 'short env value must not defeat the persisted secret');
   rmSync(path.dirname(file), { recursive: true, force: true });
 });
@@ -187,7 +187,7 @@ test('rotate: uses atomic rename (a partial write from a previous crash does NOT
   const file = scratchFile();
   // Simulate a stale .tmp from a prior crashed rotate — the current
   // rotate must NOT accidentally pick it up as the effective secret.
-  writeFileSync(`${file}.tmp-stale`, '{"secret":"stale-nope"}');
+  writeFileSync(`${file}.tmp-stale`, '{"secret":"stale-nope"}'); // nosecret — test fixture, not a real credential
   const { secret } = rotateSecret({ actorEmail: 'admin@x', file });
   const eff = readEffectiveSecret({ file, env: {} });
   assert.equal(eff, secret, 'effective secret must come from the final file, not a stale sibling');

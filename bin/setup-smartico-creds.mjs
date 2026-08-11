@@ -48,7 +48,7 @@ if (has2FA) {
   console.log('  • Open Google Authenticator → tap the account → tap the pencil/edit icon');
   console.log('  • Or: export a QR-code screenshot and run: node bin/decode-ga-export.mjs <screenshot>');
   console.log('  • It looks like: JBSWY3DPEHPK3PXP (uppercase letters and 2-7 digits, no spaces)\n');
-  totpSecret = (await ask(rl, 'TOTP Base32 secret: ')).trim().replace(/\s+/g, '').toUpperCase();
+  totpSecret = (await ask(rl, 'TOTP Base32 secret: ')).trim().replace(/\s+/g, '').toUpperCase(); // nosecret — prompt text, not a literal
   if (!totpSecret) { console.warn('Warning: no TOTP secret entered — 2FA will not be automated.'); }
 }
 

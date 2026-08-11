@@ -71,7 +71,7 @@ test('R16: one broken site does not poison other sites in the loader', async () 
         platform: 'qpro',
         baseUrl: 'https://qpro1.example.com',
         username: 'real-user',
-        password: 'real-pass',
+        password: 'real-pass', // nosecret — test fixture, not a real credential
       },
     },
   }, null, 2));
@@ -158,7 +158,7 @@ test('sites.js SITE_CONFIG_INCOMPLETE error carries publicMessage + code + siteI
         platform: 'qp2',
         baseUrl: 'https://example.com',
         apiHost: 'https://api.example.com',
-        reqSignKey: 'test-sign-key',
+        reqSignKey: 'test-sign-key', // nosecret — test fixture, not a real credential
         loginMerchantCode: 'test-merchant',
         username: 'REPLACE_ME',
         password: 'x',
