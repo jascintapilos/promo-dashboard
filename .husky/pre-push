@@ -1,0 +1,73 @@
+#!/usr/bin/env sh
+# ─── pre-push guardrail ───────────────────────────────────────────────────────
+# Blocks a push if any commit being pushed introduces:
+#   • a blob larger than MAX_MB (default 5 MB)  — stops node_modules/renders/zips
+#   • a *.local.json file                        — stops secrets/sessions/tokens
+#   • anything under output/ or outputs/         — stops heavy export folders
+#
+# This is what prevents a repeat of the Bitbucket qc-dashboard size bloat, where
+# large export folders got swept into a commit and pushed to the production repo.
+#
+# Legitimate one-off large push (rare): re-run with the override —
+#   ALLOW_LARGE_PUSH=1 git push <remote> <branch>
+# ------------------------------------------------------------------------------
+
+remote_name="$1"
+MAX_MB="${MAX_PUSH_MB:-5}"
+MAX_BYTES=$((MAX_MB * 1024 * 1024))
+
+if [ "$ALLOW_LARGE_PUSH" = "1" ]; then
+  echo "pre-push: ALLOW_LARGE_PUSH=1 set — size/secret guardrail skipped."
+  exit 0
+fi
+
+TMP="$(git rev-parse --git-dir)/pre-push-guardrail.$$"
+: > "$TMP"
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>  (one line per ref)
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # skip branch deletions (local sha is all zeros)
+  echo "$local_sha" | grep -qE '^0+$' && continue
+
+  if echo "$remote_sha" | grep -qE '^0+$'; then
+    # new branch on the remote: scan commits not already on any remote-tracking ref
+    set -- "$local_sha" --not --remotes
+  else
+    # updating an existing branch: scan only the new commits
+    set -- "$remote_sha..$local_sha"
+  fi
+
+  git rev-list --objects "$@" 2>/dev/null \
+    | git cat-file --batch-check='%(objecttype) %(objectsize) %(rest)' 2>/dev/null \
+    | awk -v max="$MAX_BYTES" '
+        $1 == "blob" {
+          size = $2
+          path = ""
+          for (i = 3; i <= NF; i++) path = path (i > 3 ? " " : "") $i
+          if (path == "") next
+          reason = ""
+          if (size + 0 > max)                              reason = reason " large(" int(size/1048576) "MB)"
+          if (path ~ /\.local\.json$/)                     reason = reason " secret"
+          if (path ~ /^output\// || path ~ /^outputs\//)   reason = reason " export-dir"
+          if (reason != "") { sub(/^ /, "", reason); printf "%s\t%s\n", reason, path }
+        }' >> "$TMP"
+done
+
+sort -u "$TMP" -o "$TMP" 2>/dev/null
+
+if [ -s "$TMP" ]; then
+  echo ""
+  echo "✗ pre-push BLOCKED — these objects must not be pushed:"
+  echo "  ------------------------------------------------------------------"
+  awk -F'\t' '{ printf "    [%s]  %s\n", $1, $2 }' "$TMP"
+  echo "  ------------------------------------------------------------------"
+  echo "  Fix: untrack them (git rm --cached <path>), amend/rebase the commit,"
+  echo "       and/or add the path to .gitignore — then push again."
+  echo "  Override for a genuine large file:  ALLOW_LARGE_PUSH=1 git push $remote_name ..."
+  echo ""
+  rm -f "$TMP"
+  exit 1
+fi
+
+rm -f "$TMP"
+exit 0
