@@ -22,6 +22,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { BASE, ensureAuthenticated, failScreenshot } from '../src/gm01-session.js';
+import { readMarker, writeMarker, getRole, loadMarkerConfig } from '../src/gm01-shared-marker.js';
 
 const ROOT        = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER_FILE = path.join(ROOT, 'gm01-submit-ledger.local.json');
@@ -146,6 +147,24 @@ if (!force && allKeys.every(k => ledger[k])) {
   process.exit(2);
 }
 
+// ── Shared-marker check (cross-VDI dedup) ─────────────────────────────────────
+// Both primary (10:00) and backup (10:30) VDIs consult a Google Sheet before
+// submitting. If the primary already succeeded for this date, backup exits
+// without submitting — preventing double payout across machines.
+const role = getRole();
+if (loadMarkerConfig() && !force) {
+  try {
+    const marker = await readMarker(runDate);
+    if (marker && marker.status === 'SUCCESS') {
+      console.log(`✓ ALREADY SUBMITTED cross-VDI — ${marker.machine} (${marker.role}) succeeded at ${marker.timestamp.slice(0, 19)}.`);
+      console.log(`  ${marker.combos_ok} combos ok, ${marker.combos_err} errors. Skipping to prevent double payout.`);
+      process.exit(0);
+    }
+  } catch (err) {
+    console.warn(`⚠ Shared marker read failed: ${err.message} — proceeding without cross-VDI check.`);
+  }
+}
+
 // ── Authenticate (reuse saved state; pause for manual login if expired) ───────
 const { browser, context } = await ensureAuthenticated({ user: USER, pass: PASS });
 
@@ -219,6 +238,18 @@ try {
   console.log(`\n  ${passed} submitted, ${skipped} skipped, ${failed} failed.`);
   if (failed > 0) {
     console.log('\n  ⚠ Some submissions failed. Re-run to retry only the failed combos.');
+  }
+
+  // ── Write shared marker (cross-VDI dedup) ──────────────────────────────────
+  // Any run that had at least one successful submission and no failures gets
+  // marked SUCCESS so the other VDI's backup task exits cleanly.
+  if (loadMarkerConfig() && passed > 0 && failed === 0) {
+    try {
+      await writeMarker(runDate, { role, status: 'SUCCESS', combosOk: passed, combosErr: failed });
+      console.log(`  ✓ Shared marker written (${role}, SUCCESS).`);
+    } catch (err) {
+      console.warn(`  ⚠ Shared marker write failed: ${err.message}`);
+    }
   }
 } catch (err) {
   console.error(`\n✗ Submission run failed: ${err.message}`);

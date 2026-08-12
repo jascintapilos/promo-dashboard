@@ -1,6 +1,10 @@
 # GM01 Daily Commission Submission - Windows Task Scheduler setup
-# Run once on Gaby's machine to register the 10 AM daily task.
-#   .\bin\gm01-submit-daily-setup.ps1
+# Run once per machine to register the daily submit task.
+#   .\bin\gm01-submit-daily-setup.ps1                    # primary  - 10:00 AM (Gaby's VDI)
+#   .\bin\gm01-submit-daily-setup.ps1 -Time "10:30AM"    # backup   - 10:30 AM (Jascinta's VDI)
+param(
+    [string]$Time = '10:00AM'
+)
 
 $Root          = Split-Path $PSScriptRoot -Parent
 $TaskName      = 'GM01-DailySubmit'
@@ -22,7 +26,7 @@ $action = New-ScheduledTaskAction `
 # Daily at 10:00 AM. StartWhenAvailable means it fires on login if the machine
 # was off at 10 AM (e.g. Gaby logs on at 10:05 - task still runs that day).
 # 60s delay gives the keepalive time to establish the session before submitting.
-$trigger = New-ScheduledTaskTrigger -Daily -At '10:00AM'
+$trigger = New-ScheduledTaskTrigger -Daily -At $Time
 $trigger.Delay = 'PT60S'
 
 # Retry 3x at 5-min intervals - gives the keepalive time to warm up the session
@@ -49,7 +53,7 @@ Register-ScheduledTask `
     -Force
 
 Write-Host ""
-Write-Host "Task '$TaskName' registered - runs daily at 10:00 AM."
+Write-Host "Task '$TaskName' registered - runs daily at $Time."
 Write-Host ""
 Write-Host "To test immediately (without waiting for 10 AM):"
 Write-Host "  Start-ScheduledTask -TaskName '$TaskName'"
