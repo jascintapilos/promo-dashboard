@@ -27,7 +27,9 @@ $action = New-ScheduledTaskAction `
 # was off at 10 AM (e.g. Gaby logs on at 10:05 - task still runs that day).
 # 60s delay gives the keepalive time to establish the session before submitting.
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
-$trigger.Delay = 'PT60S'
+# Daily triggers don't expose Delay on PS 5.1 (only AtLogOn does). Best-effort;
+# not critical because the always-on keepalive should have the session ready.
+try { $trigger.Delay = 'PT60S' } catch { Write-Host "(Delay not supported on this trigger type - skipping)" }
 
 # Retry 3x at 5-min intervals - gives the keepalive time to warm up the session
 # in the unlikely event the machine just booted.
