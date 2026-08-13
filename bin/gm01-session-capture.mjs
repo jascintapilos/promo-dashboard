@@ -14,13 +14,14 @@
 // is never printed. Cookies/tokens/session contents are never logged.
 
 import { chromium } from 'playwright';
-import { mkdirSync, unlinkSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, unlinkSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const ROOT               = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORAGE_STATE_FILE = path.join(ROOT, 'gm01-storage-state.local.json');
 const DEAD_FLAG          = path.join(ROOT, 'gm01-session-dead.local.json');
+const CREDS_FILE         = path.join(ROOT, 'gm01-credentials.local.json');
 const SHOT_DIR = path.join(ROOT, 'captures');
 const BASE_URL = 'https://utn.bo5w.com';
 const LOGIN_URL = `${BASE_URL}/`;
@@ -31,8 +32,18 @@ for (const a of process.argv.slice(2)) {
   const m = a.match(/^--([^=]+)(?:=(.*))?$/);
   if (m) args[m[1]] = m[2] ?? true;
 }
-const username = args.user || args.username || null;
-const password = args.pass || args.password || null;
+
+// Credentials: CLI args first, then gm01-credentials.local.json (gitignored).
+// Pre-filling only saves typing — you still solve the CAPTCHA manually.
+function loadCredsFile() {
+  if (existsSync(CREDS_FILE)) {
+    try { return JSON.parse(readFileSync(CREDS_FILE, 'utf8')); } catch { /* fall through */ }
+  }
+  return {};
+}
+const savedCreds = loadCredsFile();
+const username = args.user || args.username || savedCreds.user || null;
+const password = args.pass || args.password || savedCreds.pass || null;
 
 function isLoggedIn(url) {
   return url.startsWith(BASE_URL)
