@@ -12,7 +12,7 @@
 //   B: timestamp     (ISO of the write)
 //   C: machine       (hostname of the writing VDI)
 //   D: role          ("primary" | "backup")
-//   E: status        ("SUCCESS" | "PARTIAL")
+//   E: status        ("RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED")
 //   F: combos_ok     (count of successful combos, cumulative across VDIs)
 //   G: combos_err    (count of combos not yet successful, cumulative)
 //   H: combo_keys_ok (JSON array of submissionKey() values confirmed successful
@@ -20,10 +20,20 @@
 //                     machine skip combos the OTHER machine already completed,
 //                     even after a partial-failure run wrote no marker before)
 //
-// status is SUCCESS only once every combo for the date is accounted for
-// (cumulatively); otherwise PARTIAL. A run only writes a row at all if it has
-// at least one newly-or-previously successful combo to report — a run with
-// zero successes writes nothing, same as before this file existed.
+// Status semantics:
+//   RUNNING — a run is in progress. Written BEFORE authentication so a CAPTCHA
+//             hang still leaves a signal. The other VDI's backup, if it sees a
+//             RUNNING marker < 25 min old, exits without submitting.
+//   SUCCESS — every combo for the date is accounted for (cumulatively across
+//             both VDIs). Backup exits clean.
+//   PARTIAL — some combos succeeded, some remain. Backup merges combo_keys_ok
+//             into its local ledger and retries only the missing ones.
+//   FAILED  — run terminated abnormally (auth failure, crash, session death).
+//             Treated like PARTIAL for merge purposes but signals the primary
+//             died mid-run — backup should proceed.
+//
+// A terminal write (SUCCESS/PARTIAL/FAILED) supersedes any RUNNING row because
+// readMarker returns only the LATEST row for a given date.
 
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

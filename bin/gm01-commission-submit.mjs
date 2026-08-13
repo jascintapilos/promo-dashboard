@@ -134,6 +134,13 @@ const allKeys = levelsToRun.flatMap(lv => submitTypeCodes.map(tc => submissionKe
 // skipped — not just a full-SUCCESS marker, which was the original gap: a run
 // with even one failure wrote no marker at all, so the other VDI re-attempted
 // every combo, including ones already paid out.
+//
+// Also handles the start-of-run race: if the primary is actively running (RUNNING
+// marker within the last RUNNING_STALE_MS), backup exits to avoid double-submit.
+// Otherwise a primary stuck at CAPTCHA writes nothing and backup would happily
+// re-submit every combo — the exact double-payout scenario this file exists to
+// prevent.
+const RUNNING_STALE_MS = 25 * 60 * 1000; // 25 min — shorter than the 30-min stagger
 const role = getRole();
 if (loadMarkerConfig() && !force) {
   try {
@@ -142,6 +149,16 @@ if (loadMarkerConfig() && !force) {
       console.log(`✓ ALREADY SUBMITTED cross-VDI — ${marker.machine} (${marker.role}) succeeded at ${marker.timestamp.slice(0, 19)}.`);
       console.log(`  ${marker.combos_ok} combos ok, ${marker.combos_err} errors. Skipping to prevent double payout.`);
       process.exit(0);
+    }
+    if (marker && marker.status === 'RUNNING') {
+      const ageMs = Date.now() - new Date(marker.timestamp).getTime();
+      if (ageMs < RUNNING_STALE_MS) {
+        console.log(`⚠ ANOTHER RUN IN PROGRESS — ${marker.machine} (${marker.role}) started ${Math.round(ageMs/60000)} min ago.`);
+        console.log('  Skipping to avoid double-submission. If that run has actually failed, wait 25 min and re-run.');
+        process.exit(0);
+      } else {
+        console.log(`⚠ Stale RUNNING marker from ${marker.machine} (${marker.role}, ${Math.round(ageMs/60000)} min ago) — treating as abandoned and proceeding.`);
+      }
     }
     if (marker && marker.combo_keys_ok?.length) {
       for (const k of marker.combo_keys_ok) {
@@ -171,6 +188,28 @@ if (!force && allKeys.every(k => ledger[k])) {
   console.log(`  ${bonusType} | ${startDate} → ${endDate} | ${submitTypes.join(', ')}`);
   console.log('  Re-run with --force to submit again.');
   process.exit(2);
+}
+
+// ── Write RUNNING marker BEFORE authentication ───────────────────────────────
+// Authentication can hang on a CAPTCHA challenge (visible browser opens waiting
+// for a human). Without this write, a stuck primary leaves NO marker at all —
+// backup then treats the day as unsubmitted and double-pays. Seed the marker
+// with whatever keys are already known-successful (local ledger + merged from
+// the other VDI) so the cumulative record survives if this run also fails.
+const seededKeys = allKeys.filter(k => ledger[k]);
+if (loadMarkerConfig() && !force) {
+  try {
+    await writeMarker(runDate, {
+      role,
+      status: 'RUNNING',
+      combosOk: seededKeys.length,
+      combosErr: allKeys.length - seededKeys.length,
+      comboKeysOk: seededKeys,
+    });
+    console.log(`  ⏵ Shared marker written (${role}, RUNNING).`);
+  } catch (err) {
+    console.warn(`  ⚠ RUNNING marker write failed: ${err.message} — cross-VDI dedup degraded for this run.`);
+  }
 }
 
 // ── Authenticate (reuse saved state; pause for manual login if expired) ───────
@@ -280,6 +319,24 @@ try {
 } catch (err) {
   console.error(`\n✗ Submission run failed: ${err.message}`);
   await failScreenshot(context, 'submit-error');
+  // Write FAILED marker so the RUNNING row we wrote pre-auth doesn't stay as
+  // the latest status and block the other VDI's backup run. Preserves whatever
+  // combos DID succeed before the crash so those don't get re-submitted.
+  if (loadMarkerConfig()) {
+    const doneKeys = allKeys.filter(k => ledger[k]);
+    try {
+      await writeMarker(runDate, {
+        role,
+        status: 'FAILED',
+        combosOk: doneKeys.length,
+        combosErr: allKeys.length - doneKeys.length,
+        comboKeysOk: doneKeys,
+      });
+      console.error(`  ⚠ Shared marker written (${role}, FAILED).`);
+    } catch (mErr) {
+      console.warn(`  ⚠ FAILED marker write failed: ${mErr.message}`);
+    }
+  }
   await browser.close().catch(() => {});
   process.exit(1);
 }

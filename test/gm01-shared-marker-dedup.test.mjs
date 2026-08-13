@@ -39,3 +39,38 @@ test('a PARTIAL marker\'s combo keys get merged into the local ledger, not just 
   assert.match(source, /marker\.combo_keys_ok/);
   assert.match(source, /if \(!ledger\[k\]\) ledger\[k\] = marker\.timestamp;/);
 });
+
+// Regression guard for the start-of-run race (found by strategic-design-advisor
+// 2026-08-13): if the primary hangs at CAPTCHA and writes no marker, backup
+// used to run and double-submit. Fix — primary writes a RUNNING marker BEFORE
+// authentication, backup exits if it sees one within RUNNING_STALE_MS.
+
+test('a fresh RUNNING marker blocks the run to prevent double-submit', () => {
+  assert.match(source, /RUNNING_STALE_MS/);
+  assert.match(source, /marker\.status === 'RUNNING'/);
+  assert.match(source, /ANOTHER RUN IN PROGRESS/);
+});
+
+test('a stale RUNNING marker (> RUNNING_STALE_MS old) does not block the run', () => {
+  assert.match(source, /Stale RUNNING marker/);
+  assert.match(source, /treating as abandoned/);
+});
+
+test('the RUNNING marker is written BEFORE authentication', () => {
+  const runningWriteIdx = source.indexOf("status: 'RUNNING'");
+  // Match the CALL site (`await ensureAuthenticated(`), not the import line —
+  // otherwise the import at the top of the file trivially precedes everything
+  // and the test always passes even if the write actually happens after auth.
+  const authCallIdx = source.indexOf('await ensureAuthenticated(');
+  assert.ok(runningWriteIdx > -1, "expected a writeMarker call with status 'RUNNING'");
+  assert.ok(authCallIdx > -1, 'expected an await ensureAuthenticated(...) call');
+  assert.ok(
+    runningWriteIdx < authCallIdx,
+    'RUNNING marker must be written BEFORE authentication so a CAPTCHA hang still leaves a signal'
+  );
+});
+
+test('a run that crashes writes a FAILED marker so the RUNNING row does not stay latest', () => {
+  assert.match(source, /status: 'FAILED'/);
+  assert.match(source, /catch \(err\)[\s\S]{0,2000}writeMarker[\s\S]{0,300}'FAILED'/);
+});
