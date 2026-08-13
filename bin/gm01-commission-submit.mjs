@@ -128,6 +128,32 @@ function recordSubmission(key) {
 const ledger = loadLedger();
 const allKeys = levelsToRun.flatMap(lv => submitTypeCodes.map(tc => submissionKey(lv, tc)));
 
+// ── Shared-marker check (cross-VDI dedup) ─────────────────────────────────────
+// Read BEFORE the local "already submitted" check below, so a PARTIAL marker's
+// already-successful keys get merged into this run's ledger and are correctly
+// skipped — not just a full-SUCCESS marker, which was the original gap: a run
+// with even one failure wrote no marker at all, so the other VDI re-attempted
+// every combo, including ones already paid out.
+const role = getRole();
+if (loadMarkerConfig() && !force) {
+  try {
+    const marker = await readMarker(runDate);
+    if (marker && marker.status === 'SUCCESS') {
+      console.log(`✓ ALREADY SUBMITTED cross-VDI — ${marker.machine} (${marker.role}) succeeded at ${marker.timestamp.slice(0, 19)}.`);
+      console.log(`  ${marker.combos_ok} combos ok, ${marker.combos_err} errors. Skipping to prevent double payout.`);
+      process.exit(0);
+    }
+    if (marker && marker.combo_keys_ok?.length) {
+      for (const k of marker.combo_keys_ok) {
+        if (!ledger[k]) ledger[k] = marker.timestamp;
+      }
+      console.log(`  (merged ${marker.combo_keys_ok.length} already-successful combo(s) from ${marker.machine}/${marker.role})`);
+    }
+  } catch (err) {
+    console.warn(`⚠ Shared marker read failed: ${err.message} — proceeding without cross-VDI check.`);
+  }
+}
+
 if (force) {
   const alreadyDone = allKeys.filter(k => ledger[k]);
   if (alreadyDone.length > 0) {
@@ -147,24 +173,6 @@ if (!force && allKeys.every(k => ledger[k])) {
   process.exit(2);
 }
 
-// ── Shared-marker check (cross-VDI dedup) ─────────────────────────────────────
-// Both primary (10:00) and backup (10:30) VDIs consult a Google Sheet before
-// submitting. If the primary already succeeded for this date, backup exits
-// without submitting — preventing double payout across machines.
-const role = getRole();
-if (loadMarkerConfig() && !force) {
-  try {
-    const marker = await readMarker(runDate);
-    if (marker && marker.status === 'SUCCESS') {
-      console.log(`✓ ALREADY SUBMITTED cross-VDI — ${marker.machine} (${marker.role}) succeeded at ${marker.timestamp.slice(0, 19)}.`);
-      console.log(`  ${marker.combos_ok} combos ok, ${marker.combos_err} errors. Skipping to prevent double payout.`);
-      process.exit(0);
-    }
-  } catch (err) {
-    console.warn(`⚠ Shared marker read failed: ${err.message} — proceeding without cross-VDI check.`);
-  }
-}
-
 // ── Authenticate (reuse saved state; pause for manual login if expired) ───────
 const { browser, context } = await ensureAuthenticated({ user: USER, pass: PASS });
 
@@ -180,6 +188,11 @@ try {
   console.log('');
 
   const results = [];
+  // Seeded with everything already known-successful (this machine's own prior
+  // runs + whatever was merged in from the other VDI's marker above) so the
+  // marker written at the end always carries the full cumulative picture,
+  // not just this run's own contribution.
+  const succeededKeysForMarker = new Set(allKeys.filter(k => ledger[k]));
   for (const levelCode of levelsToRun) {
     for (const typeCode of submitTypeCodes) {
       const lvLabel = LEVEL_LABELS[levelCode] ?? levelCode;
@@ -217,7 +230,7 @@ try {
       console.log(success ? '✓' : `✗ (${res.status()} → ${loc || 'no redirect'})`);
 
       // Record immediately on success so a partial failure doesn't lose completed work.
-      if (success) recordSubmission(key);
+      if (success) { recordSubmission(key); succeededKeysForMarker.add(key); }
 
       results.push({ level: lvLabel, submissionType: tvLabel, status: success ? 'SUCCESS' : 'ERROR' });
       await new Promise(r => setTimeout(r, 300));
@@ -238,15 +251,28 @@ try {
   console.log(`\n  ${passed} submitted, ${skipped} skipped, ${failed} failed.`);
   if (failed > 0) {
     console.log('\n  ⚠ Some submissions failed. Re-run to retry only the failed combos.');
+    // Non-zero so Task Scheduler's retry policy and the operator both see
+    // that this run needs attention — a partial failure used to exit 0.
+    process.exitCode = 1;
   }
 
   // ── Write shared marker (cross-VDI dedup) ──────────────────────────────────
-  // Any run that had at least one successful submission and no failures gets
-  // marked SUCCESS so the other VDI's backup task exits cleanly.
-  if (loadMarkerConfig() && passed > 0 && failed === 0) {
+  // Cumulative across both VDIs: status is SUCCESS only once every combo for
+  // today is accounted for (merged-in + this run's own), else PARTIAL — so a
+  // run with some failures still records what DID succeed, and the other
+  // VDI's next run (or this machine's own retry) picks up only what's left,
+  // instead of silently writing nothing and re-attempting everything.
+  if (loadMarkerConfig() && succeededKeysForMarker.size > 0) {
+    const allDone = succeededKeysForMarker.size === allKeys.length;
     try {
-      await writeMarker(runDate, { role, status: 'SUCCESS', combosOk: passed, combosErr: failed });
-      console.log(`  ✓ Shared marker written (${role}, SUCCESS).`);
+      await writeMarker(runDate, {
+        role,
+        status: allDone ? 'SUCCESS' : 'PARTIAL',
+        combosOk: succeededKeysForMarker.size,
+        combosErr: allKeys.length - succeededKeysForMarker.size,
+        comboKeysOk: [...succeededKeysForMarker],
+      });
+      console.log(`  ${allDone ? '✓' : '⚠'} Shared marker written (${role}, ${allDone ? 'SUCCESS' : 'PARTIAL'}).`);
     } catch (err) {
       console.warn(`  ⚠ Shared marker write failed: ${err.message}`);
     }
