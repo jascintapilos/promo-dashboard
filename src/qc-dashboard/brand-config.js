@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { brandToSite, QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES } from '../live-codes.js';
+import { brandToSite, QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES } from '../brand-ids.js';
 import { getSite } from '../sites.js';
 
 const CONFIG_PATH = 'data/qc-dashboard-brands.json';

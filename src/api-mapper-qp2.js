@@ -25,6 +25,7 @@ import { gameAcronym, splitDualPromoName } from './promo-namer.js';
 import { isHardExcludedGameProvider } from './game-provider-exclusions.js';
 import { isBrandAuthorized } from './request-requirements.js';
 import { resolveFreeSpinBet } from './free-spin-bet.js';
+import { QP2_BRAND_TO_IDS } from './brand-ids.js';
 
 // Eligible member group NAMES (normalized UPPERCASE). Source: QP2A's
 // operator-verified selection 2026-05-15 (26 of 31 QP2A groups). Excluded:
@@ -336,12 +337,11 @@ export function filterQp2ProvidersByCat(categoriesOnly) {
 // site_ids 1–4). Popups are scoped to a single merchant via this field —
 // to deploy one popup template to all 4 merchants, POST 4 popups with
 // different site_id values + link each via dialog_popup_list.
-export const QP2_BRAND_TO_IDS = {
-  QP2A: { siteId: 1, merchantId: 1 }, // IBC22
-  QP2B: { siteId: 2, merchantId: 2 }, // KING333
-  QP2C: { siteId: 3, merchantId: 3 }, // ACE66
-  QP2D: { siteId: 4, merchantId: 4 }, // SPADE66
-};
+// QP2_BRAND_TO_IDS now lives in ./brand-ids.js (a no-heavy-imports data module)
+// so the QC dashboard can reach the brand constants without loading this mapper
+// and its promo write-path chain. Re-exported here unchanged so the ~20 existing
+// importers of it from this module keep working. (imported at top of file.)
+export { QP2_BRAND_TO_IDS };
 
 // FS game provider name prefix → provider id (QP2-specific table, distinct
 // from QPRO's). Confirmed 2026-05-15:

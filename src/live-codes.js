@@ -6,41 +6,17 @@
 // ("refactor, don't fork — one check library, one log, two triggers").
 import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs';
 import { getAllPromotions } from './api-client.js';
-import { QP2_BRAND_TO_IDS } from './api-mapper-qp2.js';
 import { igmpPost } from './igmp-client.js';
 import { getSheetsClient } from './sheets-client.js';
 import { getOpsSheetId } from './ops-sheet.js';
+import { QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES, brandToSite } from './brand-ids.js';
 
-export const QPRO_BRANDS = Array.from({ length: 17 }, (_, i) => ({ brand: `QPRO${i + 1}`, siteId: `qpro${i + 1}` }));
-// R20-fix: QP2 shared BO lives in bo-sites.json under id 'ibc22' (all four
-// QP2 merchants — QP2A/B/C/D — share ibc22.qtp777.com). src/ingest.js:75-78
-// is already 'ibc22'; this file was drifted to a fictional 'qp2' siteId that
-// no bo-sites.json ever had. Fix aligns QC Hub with the daily canary flow.
-export const QP2_MERCHANTS = Object.entries(QP2_BRAND_TO_IDS).map(([brand, ids]) => ({ brand, merchantId: ids.merchantId, siteId: 'ibc22' }));
-// Brand label must match bundleBrand() in bin/canary-api-igmp.js exactly —
-// that's what qc-bundle filenames are keyed by (WS1_MY, WS1_SG, ... but WS2
-// stays single since it has only one region).
-export const IGMP_SITES = [
-  { siteId: 'ws1-v3-my', brand: 'WS1_MY', region: 'MY' },
-  { siteId: 'ws1-v3-sg', brand: 'WS1_SG', region: 'SG' },
-  { siteId: 'ws1-v3-id', brand: 'WS1_ID', region: 'ID' },
-  { siteId: 'ws1-v3-th', brand: 'WS1_TH', region: 'TH' },
-  { siteId: 'ws1-v3-kh', brand: 'WS1_KH', region: 'KH' },
-  { siteId: 'ws2', brand: 'WS2', region: 'MY' },
-];
-
-// brand -> { platform, siteId, merchantId? } — for callers that need to
-// re-fetch a single code's live detail given only the brand label from a
-// findings/state file (which doesn't carry siteId).
-export function brandToSite(brand) {
-  const qpro = QPRO_BRANDS.find((b) => b.brand === brand);
-  if (qpro) return { platform: 'qpro', siteId: qpro.siteId };
-  const qp2 = QP2_MERCHANTS.find((b) => b.brand === brand);
-  if (qp2) return { platform: 'qp2', siteId: qp2.siteId, merchantId: qp2.merchantId };
-  const igmp = IGMP_SITES.find((b) => b.brand === brand);
-  if (igmp) return { platform: 'igmp', siteId: igmp.siteId, region: igmp.region };
-  return null;
-}
+// QPRO_BRANDS / QP2_MERCHANTS / IGMP_SITES / brandToSite moved to ./brand-ids.js
+// (a no-heavy-imports data module) so the QC dashboard's brand-config can pull
+// them without loading this file's live-BO clients. Re-exported unchanged so
+// existing importers of them from this module keep working
+// (bin/find-ai-review-candidates.mjs, bin/qc-acceptance-inventory.mjs).
+export { QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES, brandToSite };
 
 // ── Index local qc-bundles once: brand::promo_code -> {handle, savedAt} ──
 export function buildBundleIndex() {
