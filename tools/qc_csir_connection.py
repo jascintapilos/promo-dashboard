@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import socket
 import subprocess
@@ -22,10 +21,20 @@ from pathlib import Path
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-HOST = "127.0.0.1"
-PORT = 8223
-EXPECTED_TUNNEL_HOSTNAME = "https://chdb-pzqgvmxrwfnjkstd.enigmagames.cc"
-DEFAULT_ENV_FILE = Path.home() / "Downloads" / "env.env"
+
+# CSIR endpoint, credentials and client all come from csir_config.py at the repo root.
+sys.path.insert(0, str(PROJECT_ROOT))
+from csir_config import (  # noqa: E402
+    BASE_URL,
+    DEFAULT_ENV_FILE,
+    HOST,
+    IS_TUNNEL,
+    MODE,
+    PORT,
+    resolve_credentials,
+)
+from csir_config import TUNNEL_HOSTNAME as EXPECTED_TUNNEL_HOSTNAME  # noqa: E402
+
 DEFAULT_REPORT_DIR = PROJECT_ROOT / "outputs" / "csir_connection_qc"
 READ_ONLY_SETTINGS = {
     "readonly": 1,
@@ -57,7 +66,7 @@ class HttpClickHouseClient:
 
     def query(self, sql: str, settings: dict[str, Any]) -> QueryResult:
         parameters = urllib.parse.urlencode(settings)
-        url = f"http://{HOST}:{PORT}/?{parameters}"
+        url = f"{BASE_URL}/?{parameters}"
         statement = f"{sql.rstrip().rstrip(';')} FORMAT JSON"
         request = urllib.request.Request(
             url,
@@ -96,49 +105,6 @@ def json_safe(value: Any) -> Any:
     return str(value)
 
 
-def load_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.exists():
-        return values
-    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-            value = value[1:-1]
-        values[key] = value
-    return values
-
-
-def resolve_credentials(env_file: Path) -> tuple[str, str, str]:
-    file_values = load_env_file(env_file)
-    username = (
-        os.getenv("CSIR_CLICKHOUSE_USER")
-        or os.getenv("CLICKHOUSE_USER_CSIR")
-        or file_values.get("CLICKHOUSE_USER_CSIR")
-    )
-    password = (
-        os.getenv("CSIR_CLICKHOUSE_PASSWORD")
-        or os.getenv("CLICKHOUSE_PASSWORD_CSIR")
-        or file_values.get("CLICKHOUSE_PASSWORD_CSIR")
-    )
-    source = "environment variables" if (
-        os.getenv("CSIR_CLICKHOUSE_USER")
-        or os.getenv("CLICKHOUSE_USER_CSIR")
-        or os.getenv("CSIR_CLICKHOUSE_PASSWORD")
-        or os.getenv("CLICKHOUSE_PASSWORD_CSIR")
-    ) else str(env_file)
-    if not username or not password:
-        raise RuntimeError(
-            "Credentials were not found in the supported environment variables "
-            f"or {env_file}."
-        )
-    return username, password, source
-
-
 def listener_process() -> dict[str, Any] | None:
     try:
         netstat = subprocess.run(
@@ -151,7 +117,7 @@ def listener_process() -> dict[str, Any] | None:
     except (OSError, subprocess.SubprocessError):
         return None
     listener = re.search(
-        r"(?mi)^\s*TCP\s+127\.0\.0\.1:8223\s+\S+\s+LISTENING\s+(\d+)\s*$",
+        r"(?mi)^\s*TCP\s+" + re.escape(f"{HOST}:{PORT}") + r"\s+\S+\s+LISTENING\s+(\d+)\s*$",
         netstat.stdout,
     )
     if netstat.returncode != 0 or not listener:
@@ -259,68 +225,90 @@ def main() -> int:
         with socket.create_connection((HOST, PORT), timeout=3):
             checks.append(
                 Check(
-                    "Local tunnel listener",
+                    "Endpoint reachable",
                     "PASS",
-                    f"A TCP listener accepted a connection on {HOST}:{PORT}.",
-                    {"host": HOST, "port": PORT},
+                    f"A TCP connection was accepted on {HOST}:{PORT}.",
+                    {"host": HOST, "port": PORT, "mode": MODE, "endpoint": BASE_URL},
                 )
             )
     except OSError as exc:
         checks.append(
             Check(
-                "Local tunnel listener",
+                "Endpoint reachable",
                 "FAIL",
-                "The CSIR tunnel is not running.",
-                {"host": HOST, "port": PORT, "error": str(exc)},
-            )
-        )
-
-    process = listener_process()
-    if process:
-        executable = str(process.get("executable_path") or "")
-        process_name = str(process.get("process_name") or "")
-        expected_binary = PROJECT_ROOT / "bin" / "cloudflared.exe"
-        correct_binary = (
-            process_name.lower() == "cloudflared"
-            and Path(executable).resolve() == expected_binary.resolve()
-        )
-        tunnel_script = PROJECT_ROOT / "start_csir_tunnel.ps1"
-        tunnel_config = (
-            tunnel_script.read_text(encoding="utf-8-sig")
-            if tunnel_script.exists()
-            else ""
-        )
-        correct_target = EXPECTED_TUNNEL_HOSTNAME in tunnel_config
-        correct_listener = "127.0.0.1:8223" in tunnel_config
-        checks.append(
-            Check(
-                "Tunnel process fingerprint",
-                "PASS" if correct_binary and correct_target and correct_listener else "FAIL",
                 (
-                    "The listener belongs to the project cloudflared binary and "
-                    "the tunnel configuration targets the approved CSIR hostname."
-                    if correct_binary and correct_target and correct_listener
-                    else "The listener process or tunnel configuration is not approved."
+                    "The CSIR tunnel is not running."
+                    if IS_TUNNEL
+                    else f"Nothing accepted a connection on {HOST}:{PORT}."
                 ),
                 {
-                    "process_id": process.get("process_id"),
-                    "process_name": process_name,
-                    "executable_path": executable,
-                    "expected_hostname": EXPECTED_TUNNEL_HOSTNAME,
-                    "configured_hostname_match": correct_target,
-                    "configured_listener_match": correct_listener,
+                    "host": HOST,
+                    "port": PORT,
+                    "mode": MODE,
+                    "endpoint": BASE_URL,
+                    "error": str(exc),
                 },
             )
         )
-    else:
+
+    # The fingerprint proves the local listener really is our cloudflared tunnel
+    # pointed at the approved hostname. It only means something in tunnel mode.
+    if not IS_TUNNEL:
         checks.append(
             Check(
                 "Tunnel process fingerprint",
-                "WARN",
-                "The listener process could not be fingerprinted.",
-                {"expected_hostname": EXPECTED_TUNNEL_HOSTNAME},
+                "SKIP",
+                f"Not applicable -- connecting directly to {BASE_URL} (CSIR_MODE={MODE}).",
+                {"mode": MODE, "endpoint": BASE_URL},
             )
         )
+    else:
+        process = listener_process()
+        if process:
+            executable = str(process.get("executable_path") or "")
+            process_name = str(process.get("process_name") or "")
+            expected_binary = PROJECT_ROOT / "bin" / "cloudflared.exe"
+            correct_binary = (
+                process_name.lower() == "cloudflared"
+                and Path(executable).resolve() == expected_binary.resolve()
+            )
+            tunnel_script = PROJECT_ROOT / "start_csir_tunnel.ps1"
+            tunnel_config = (
+                tunnel_script.read_text(encoding="utf-8-sig")
+                if tunnel_script.exists()
+                else ""
+            )
+            correct_target = EXPECTED_TUNNEL_HOSTNAME in tunnel_config
+            correct_listener = f"{HOST}:{PORT}" in tunnel_config
+            checks.append(
+                Check(
+                    "Tunnel process fingerprint",
+                    "PASS" if correct_binary and correct_target and correct_listener else "FAIL",
+                    (
+                        "The listener belongs to the project cloudflared binary and "
+                        "the tunnel configuration targets the approved CSIR hostname."
+                        if correct_binary and correct_target and correct_listener
+                        else "The listener process or tunnel configuration is not approved."
+                    ),
+                    {
+                        "process_id": process.get("process_id"),
+                        "process_name": process_name,
+                        "executable_path": executable,
+                        "expected_hostname": EXPECTED_TUNNEL_HOSTNAME,
+                        "configured_hostname_match": correct_target,
+                        "configured_listener_match": correct_listener,
+                    },
+                )
+            )
+        else:
+            checks.append(
+                Check(
+                    "Tunnel process fingerprint",
+                    "WARN",
+                    "The listener process could not be fingerprinted.",
+                    {"expected_hostname": EXPECTED_TUNNEL_HOSTNAME},
+                )
+            )
 
     try:
         username, password, credential_source = resolve_credentials(args.env_file)
@@ -644,7 +632,10 @@ WHERE SITE_edit = '{site}'
         "qc_status": status,
         "generated_at": generated_at.isoformat(),
         "scope": {
-            "approved_tunnel_hostname": EXPECTED_TUNNEL_HOSTNAME,
+            "csir_mode": MODE,
+            "endpoint": BASE_URL,
+            "via_tunnel": IS_TUNNEL,
+            "approved_tunnel_hostname": EXPECTED_TUNNEL_HOSTNAME if IS_TUNNEL else None,
             "local_listener": f"{HOST}:{PORT}",
             "site": site,
             "currency": currency,
