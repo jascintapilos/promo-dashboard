@@ -115,12 +115,12 @@ roi = {
     "incremental_per_rm": per_rm,                            # on non-cashback bonus
     "incremental_ngr_lift_with_cashback_7d": round(tot_incr_all),  # distorted by ring-fenced cashback — transparency, NOT headlined
     "cashback_bonus_ringfenced": round(b_bonus),
-    "note": (f"Total-value ratio ({round(tot_ngr / tot_bonus, 1)}x) is CONTEXT only — most VIP NGR is non-incremental "
-             f"(whales would play anyway). The honest incremental read EXCLUDES the ring-fenced cashback lane (its 7-day NGR "
-             f"is a loss give-back, invalid here): ex-cashback the program is ~break-even "
-             f"({'+' if tot_incr >= 0 else ''}RM{round(tot_incr):,}, {'+' if (per_rm or 0) >= 0 else ''}{per_rm}/RM). "
-             f"Cashback (RM{round(b_bonus):,}) is judged on forward-margin + per-tier break-even (see cashback_validation), "
-             f"not this window. Directional; a matched control is the proof step."),
+    "note": (f"Total value vs. bonus ({round(tot_ngr / tot_bonus, 1)}x) is background context only — most VIP net revenue is not extra profit "
+             f"(the big players would play anyway). The honest extra-profit read leaves out the kept-separate money-back lane (its 7-day net revenue "
+             f"is really a loss give-back, so it does not count here): setting the money-back aside, the program is about paying for itself (zero) "
+             f"({'+' if tot_incr >= 0 else ''}RM{round(tot_incr):,}, {'+' if (per_rm or 0) >= 0 else ''}{per_rm} back for every RM1). "
+             f"Money-back (RM{round(b_bonus):,}) is judged on its forward margin and whether each tier pays for itself (zero) (see cashback_validation), "
+             f"not this window. This is a read, not proof; a matched control group is the proof step."),
 }
 
 # ---- recidivism ----

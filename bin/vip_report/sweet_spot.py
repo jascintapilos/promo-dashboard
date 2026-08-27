@@ -83,7 +83,7 @@ m["sweet_spot"] = {
     "zones": {"sweet": sweet_z, "dead": dead_z, "program": prog_z},
     "frequency_decay": freq,
     "grid": {"forms": FORMS, "bands": BANDS, "cells": grid_cells},
-    "caveat": "Bands are the ACTUAL bonus amount given per claim (variable 'up-to' bonuses average RM497 but pay up to RM15,500, so per-code averaging hid the range). The read: cheap-form (mini-game/check-in) pays across sizes; free-credit bleeds and its worst is the big claims (RM500+ = −0.86/RM on RM2.16M). Mini-game per-RM is inflated by a near-zero denominator (the win is real, the multiple isn't literal) and rides the deposit that triggered it. Cut the big free-credit only after a matched holdout.",
+    "caveat": "Each bonus is filed by the actual amount it paid out, not its average — some promos pay a wide range (usually small, but up to RM15,500), which averaging hid. What it shows: cheap game rewards make money at every size; big free-credit loses money, worst on the big payouts (over RM500 lost RM2.16M). Note: the mini-game numbers look huge because each play costs next to nothing — the wins are real, but don't read the big multiples literally, and remember the player deposited to play. Don't cut the big free-credit until a proper controlled test proves it's safe.",
 }
 json.dump(m, open(VIP / "vip-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 json.load(open(VIP / "vip-metrics-MY.json", encoding="utf-8"))  # round-trip verify

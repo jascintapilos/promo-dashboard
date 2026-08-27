@@ -8,7 +8,7 @@ bonus -> break-even = 0.
   GATE is_winback                                          -> Hold        (judged on the VIP tab)
   GATE matured_7 < VOL_FLOOR                               -> Monitor     (money window not observed / too few)
   GATE matured_30 < VOL_FLOOR (but matured_7 ok)           -> Watch-money (money observed, redeposit not matured -> provisional)
-  MATRIX money = NGR Lift per RM, incr = uplift > +DEADBAND (materially above the tier x mechanic norm):
+  MATRIX money = NGR Lift back for every RM1, incr = uplift > +DEADBAND (materially above the tier x mechanic norm):
         money < 0  & not incr            -> Stop
         money < 0  & incr                -> Reduce
         0 <= money < GIVE_FLOOR          -> Optimise (thin / right-size)
@@ -40,45 +40,45 @@ codes = f["codes"]
 
 DO = {
     "Scale": "Grow it — more budget / wider eligibility. It brings players back AND makes money.",
-    "Maintain": "Keep as-is — profitable and retaining. Re-check next cycle.",
-    "Optimise-target": "Tighten who gets it — profitable, but it's reaching players who'd redeposit anyway.",
-    "Optimise-rework": "Rework the offer — it makes money but retains BELOW its type's norm; it isn't the reason they came back.",
-    "Optimise-size": "Right-size the offer — it barely clears break-even for what it gives. Cut bonus % or raise min-deposit.",
-    "Reduce": "Trim the giveaway — it retains players but the offer is too generous to profit.",
-    "Stop": "Stop or replace — loses money and doesn't retain better than its type's norm.",
-    "Monitor": "Watch — the money window isn't observed yet or too few players to judge.",
-    "Watch-money": "Directional read now, firm call at 30 days — money is observed but redeposit is still maturing.",
-    "Hold": "Judged on the VIP tab — win-back / reactivation sits there (near-zero baseline inflates its lift).",
+    "Maintain": "Keep as-is — profitable and keeps players. Re-check next cycle.",
+    "Optimise-target": "Tighten who gets it — profitable, but it's reaching players who'd deposit again anyway.",
+    "Optimise-rework": "Rework the offer — it makes money but keeps FEWER players than its type usually does; it isn't the reason they came back.",
+    "Optimise-size": "Right-size the offer — it barely pays for itself for what it gives. Cut bonus % or raise min-deposit.",
+    "Reduce": "Trim the giveaway — it keeps players playing but the offer is too generous to profit.",
+    "Stop": "Stop or replace — loses money and doesn't keep players any better than its type's.",
+    "Monitor": "Watch — we can't see the money yet, or there are too few players to judge.",
+    "Watch-money": "A read now, not proof — firm call at 30 days — the money is in but we're still waiting to see who deposits again.",
+    "Hold": "Judged on the VIP tab — winning back players who'd stopped sits there (starting from almost nothing makes any gain look huge).",
 }
 
 def decide(c):
     money, up = c["ngr_lift_per_rm"], c["redeposit_uplift"]
-    mech = c["mechanic"] or "type"
+    mech = {"reload":"deposit bonus","free-credit":"free-credit","free-spins":"free-spins","mini-game":"mini-game"}.get(c["mechanic"], c["mechanic"] or "type")
     if c["is_winback"]:
-        return "Hold", "Win-back / reactivation promo — held for the VIP tab (near-zero baseline inflates its lift).", DO["Hold"], False
+        return "Hold", "A promo to win back players who'd stopped — held for the VIP tab (starting from almost nothing makes any gain look huge).", DO["Hold"], False
     if (c["matured_7"] or 0) < VOL_FLOOR or money is None:
-        why = "no 7-day money window yet (too new)" if not c["matured_7"] else f"only {c['matured_7']} players with an observed money window"
+        why = "we can't see the first 7 days of money yet (too new)" if not c["matured_7"] else f"only {c['matured_7']} players we've watched long enough to see the money"
         return "Monitor", f"Too little to judge — {why}.", DO["Monitor"], False
     if c["matured_30"] < VOL_FLOOR:
-        d = "clearly losing" if money < 0 else "strong" if money >= SCALE_HI else "around break-even"
-        return "Watch-money", f"Money observed (RM{money:.2f} per RM, {d}) but redeposit not matured — directional, firm at 30 days.", DO["Watch-money"], True
+        d = "clearly losing" if money < 0 else "strong" if money >= SCALE_HI else "around paying for itself"
+        return "Watch-money", f"Money seen so far (RM{money:.2f} back for every RM1, {d}) but the repeat deposits haven't had time yet — a read, not proof; firm at 30 days.", DO["Watch-money"], True
     incr = (up is not None and up > DEADBAND)
     below = (up is not None and up < -DEADBAND)
     if money < 0 and not incr:
-        return "Stop", f"Loses money (RM{money:.2f} back per RM) and doesn't retain above the {mech} norm.", DO["Stop"], False
+        return "Stop", f"Loses money (RM{money:.2f} back for every RM1) and doesn't keep players any better than the {mech}.", DO["Stop"], False
     if money < 0 and incr:
-        return "Reduce", f"Retains above the {mech} norm (+{up:.0f}pp) but loses money (RM{money:.2f} per RM) — too generous.", DO["Reduce"], False
+        return "Reduce", f"Keeps more players than the {mech} average (+{up:.0f}pp) but loses money (RM{money:.2f} back for every RM1) — too generous.", DO["Reduce"], False
     if money < GIVE_FLOOR:
         cpr = c.get("cost_per_retained")
-        tag = f" — RM{cpr:,}/retained is steep" if (cpr and cpr > OVER_REWARD_CPR) else ""
-        return "Optimise", f"Only RM{money:.2f} back per RM — clears break-even but thin{tag}. Right-size it.", DO["Optimise-size"], False
+        tag = f" — RM{cpr:,} per kept player is steep" if (cpr and cpr > OVER_REWARD_CPR) else ""
+        return "Optimise", f"Only RM{money:.2f} back for every RM1 — it barely pays for itself and margins are thin{tag}. Right-size it.", DO["Optimise-size"], False
     if not incr:
         if below:
-            return "Optimise", f"Profitable (RM{money:.2f} per RM) but redeposit is BELOW the {mech} norm ({up:.0f}pp) — the offer isn't retaining; rework it.", DO["Optimise-rework"], False
-        return "Optimise", f"Profitable (RM{money:.2f} per RM) but redeposit is about the {mech} norm — largely paying players who'd return anyway; tighten targeting.", DO["Optimise-target"], False
+            return "Optimise", f"Profitable (RM{money:.2f} back for every RM1) but they deposited again LESS than the {mech} average ({up:.0f}pp) — the offer isn't keeping players; rework it.", DO["Optimise-rework"], False
+        return "Optimise", f"Profitable (RM{money:.2f} back for every RM1) but they deposited again about the {mech} average — mostly paying players who'd come back anyway; tighten who gets it.", DO["Optimise-target"], False
     if money < SCALE_HI:
-        return "Maintain", f"Profitable (RM{money:.2f} per RM) and retaining above the {mech} norm (+{up:.0f}pp).", DO["Maintain"], False
-    return "Scale", f"Strong return (RM{money:.2f} per RM) and retains above the {mech} norm (+{up:.0f}pp).", DO["Scale"], False
+        return "Maintain", f"Profitable (RM{money:.2f} back for every RM1) and keeping more players than the {mech} average (+{up:.0f}pp).", DO["Maintain"], False
+    return "Scale", f"Strong return (RM{money:.2f} back for every RM1) and keeps more players than the {mech} average (+{up:.0f}pp).", DO["Scale"], False
 
 for c in codes:
     d, why, do, prov = decide(c)
@@ -87,22 +87,22 @@ for c in codes:
     if d == "Scale" and share and share > CONC_HARD:
         # too concentrated to confidently grow budget, even if the ex-whale number holds
         d, do = "Maintain", DO["Maintain"]
-        why = f"Profitable but held back from Scale — {int(share*100)}% of the NGR gain is a SINGLE player, too concentrated to grow budget on."
+        why = f"Profitable but held back from Scale — {int(share*100)}% of the profit came from ONE player — too dependent on a single person to grow the budget on."
     elif d == "Scale" and share and share > CONC_SHARE and ex1 is not None and ex1 < SCALE_HI:
         if ex1 < GIVE_FLOOR:
             d, do = "Optimise", DO["Optimise-size"]
-            why = f"Looks strong (RM{c['ngr_lift_per_rm']:.2f} per RM) but {int(share*100)}% of the gain is ONE player; without them it's RM{ex1:.2f} per RM. Treat as thin — right-size."
+            why = f"Looks strong (RM{c['ngr_lift_per_rm']:.2f} per RM) but {int(share*100)}% of the profit comes from ONE player; without them it's RM{ex1:.2f} back for every RM1. Treat as thin — right-size."
         else:
             d, do = "Maintain", DO["Maintain"]
-            why = f"Profitable but held back from Scale — {int(share*100)}% of the NGR gain is ONE player; without them it's RM{ex1:.2f} per RM (not Scale-strong)."
+            why = f"Profitable but held back from Scale — {int(share*100)}% of the profit comes from ONE player; without them it's RM{ex1:.2f} back for every RM1 (not Scale-strong)."
     c["decision"], c["reason"], c["do"], c["provisional"] = d, why, do, prov
     flags = []
     if c.get("implied_tier") and c.get("target_purity") is not None and c["target_purity"] < 50:
-        flags.append(f"off-target: named '{c['implied_tier']}' but {c['target_purity']:.0f}% reached that tier")
+        flags.append(f"wrong players: labelled '{c['implied_tier']}' but {c['target_purity']:.0f}% actually reached that group")
     if c.get("cost_per_retained") and c["cost_per_retained"] > OVER_REWARD_CPR and (c["ngr_lift_per_rm"] or 0) < GIVE_FLOOR:
-        flags.append(f"over-generous: RM{c['cost_per_retained']:,}/retained")
+        flags.append(f"over-generous: RM{c['cost_per_retained']:,} per kept player")
     if share and share > CONC_SHARE:
-        flags.append(f"one-player-heavy: {int(share*100)}% of NGR from a single member")
+        flags.append(f"one-player-heavy: {int(share*100)}% of net revenue from a single player")
     c["flags"] = flags
 
 # ---- money-to-move (Stop + Reduce; Watch-money surfaced separately, not yet actioned) ----
@@ -112,17 +112,17 @@ money_to_move = round(sp.get("Stop", 0) + sp.get("Reduce", 0))
 f["thresholds"] = {
     "vol_floor": VOL_FLOOR, "give_floor": GIVE_FLOOR, "scale_hi": SCALE_HI, "deadband_pp": DEADBAND,
     "conc_share": CONC_SHARE, "break_even": 0,
-    "incr_rule": f"redeposit-uplift > +{DEADBAND}pp above the tier x mechanic norm",
-    "note": ("Draft, from the code distribution. Money = NGR Lift per RM (net of bonus, break-even 0). "
-             "Verdicts directional (own-population comparator); a matched control is the proof step. "
-             "Win-back held; single-whale Scales demoted; money gate at 7d, incremental split at 30d."),
+    "incr_rule": f"repeat-deposit rate is more than +{DEADBAND}pp above what that type of player normally does",
+    "note": ("Draft, from how the codes spread out. Money = net revenue back for every RM1 (after the bonus is paid; zero means it paid for itself). "
+             "Verdicts are a read, not proof (compared against the promo's own players); a matched control group is the proof step. "
+             "Win-back promos are held; Scales driven by one big player are downgraded; money is checked at 7 days, extra-profit split at 30 days."),
 }
 f["money_to_move"] = {
     "stop_reduce": money_to_move, "optimise": round(sp.get("Optimise", 0)), "scale": round(sp.get("Scale", 0)),
     "watch_money": round(sp.get("Watch-money", 0)),
-    "line": (f"RM{money_to_move:,} sits in Stop/Reduce promos — redeploy it into the Scale winners "
+    "line": (f"RM{money_to_move:,} sits in Stop/Reduce promos — move it into the Scale winners "
              f"(RM{round(sp.get('Scale',0)):,} today). RM{round(sp.get('Optimise',0)):,} in Optimise promos is "
-             f"partly reclaimable by right-sizing; RM{round(sp.get('Watch-money',0)):,} is directional (redeposit still maturing)."),
+             f"partly recoverable by right-sizing; RM{round(sp.get('Watch-money',0)):,} is a read, not proof yet (still waiting to see who deposits again)."),
 }
 json.dump(f, open(RET / "ret-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 

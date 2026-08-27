@@ -68,6 +68,10 @@
   .kpi .foot{font-size:13.5px;color:var(--muted);margin-top:10px}
   .kpi.hi{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
   .kpi.hi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+  .kpi.key{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:0 0 0 1.5px var(--accent),var(--shadow)}
+  .kpi.key::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent)}
+  .kpi .keytag{display:none}
+  .kpi.key .keytag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);padding:2px 8px;border-radius:20px;margin-bottom:9px}
   .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:15px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:18px 20px 15px;box-shadow:var(--shadow);min-width:0}
   .col7{grid-column:span 7}.col5{grid-column:span 5}.col6{grid-column:span 6}.col12{grid-column:span 12}
@@ -274,16 +278,16 @@
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Whale Detection <span class="badge">soon</span></button>
+    <button class="tab" data-tab="whale">Big-player detection <span class="badge">soon</span></button>
     <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
   <div class="panel" id="panel-summary" hidden>
     <div class="exec-note" id="s_banner"></div>
-    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · YTD</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single ROI), and the money sitting in the wrong place.</p><div id="s_portfolio"></div></div>
-    <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>NGR per RM · money-is-judge</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Acquisition cost <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Cashback spend <span>VIP loss-rescue</span></h4><div id="s_trendCb"></div></div></div></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and the money sitting in the wrong place.</p><div id="s_portfolio"></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
-      <div class="card col6"><div class="card-h"><h3>Spend-efficiency frontier</h3><span class="hint">money-is-judge pillars</span></div><p class="sub2">Every promo ranked best-to-worst return. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (reallocatable).</p><div id="s_frontier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Best-to-worst return on spend</h3><span class="hint">money is the test</span></div><p class="sub2">Every promo ranked best-to-worst return. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (can be moved elsewhere).</p><div id="s_frontier"></div></div>
       <div class="card col6"><div class="card-h"><h3>How much can we trust this?</h3><span class="hint">coverage &amp; confidence</span></div><div id="s_confidence"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
@@ -302,7 +306,7 @@
 
   <div class="card col12" style="margin-bottom:15px">
     <div class="card-h"><h3>Decision rules</h3></div>
-    <p class="sub2">Each verdict comes from the thresholds below — set from where the codes actually fall, and tunable without any rebuild.</p>
+    <p class="sub2">Each verdict comes from the thresholds below — set from where the codes actually fall, and can be changed without rebuilding the report.</p>
     <div class="rulewrap">
       <div class="rule"><h4>Thresholds</h4><div id="ruleLines"></div></div>
       <div class="rule"><h4>Verdicts &amp; actions</h4><div id="ruleDefs"></div></div>
@@ -312,26 +316,26 @@
 
   <div class="grid">
     <div class="card col6"><div class="card-h"><h3>Cost per first-time depositor</h3><span class="hint">lower is better</span></div><p class="sub2">What each new depositor cost us, by code (graded codes only). Colour = the recommended decision.</p><div id="chartBars"></div></div>
-    <div class="card col6"><div class="card-h"><h3>Cost vs stickiness</h3><span class="hint">the sweet spot</span></div><p class="sub2">Cost per depositor vs how many come back in 30 days. Bottom-left is best: cheap and they stay.</p><div id="chartScatter"></div></div>
-    <div class="card col6"><div class="card-h"><h3>By mechanic</h3><span class="hint">which type acquires best</span></div><p class="sub2">Cost per depositor and 30-day stick-rate for each bonus type.</p><div id="chartMech"></div></div>
-    <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month across all acquisition bonuses.</p><div id="chartTrend"></div></div>
+    <div class="card col6"><div class="card-h"><h3>Cost vs coming back</h3><span class="hint">the sweet spot</span></div><p class="sub2">Cost per depositor vs how many come back in 30 days. Bottom-left is best: cheap and they stay.</p><div id="chartScatter"></div></div>
+    <div class="card col6"><div class="card-h"><h3>By bonus type</h3><span class="hint">which type wins the most new depositors</span></div><p class="sub2">Cost per depositor and how many came back within 30 days, for each bonus type.</p><div id="chartMech"></div></div>
+    <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month across all new-player bonuses.</p><div id="chartTrend"></div></div>
   </div>
 
   <div class="card col12" style="margin-top:15px">
     <div class="card-h"><h3>Decision table</h3><span class="hint">every code · sorted by spend</span></div>
-    <p class="sub2">One row per bonus. The call follows from cost per new depositor and 30-day stickiness. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a reload, judged in Retention.</p>
+    <p class="sub2">One row per bonus. The call follows from cost per new depositor and how many came back within 30 days. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a deposit bonus, judged in Retention.</p>
     <div class="tbl-wrap"><table id="tbl"></table></div>
   </div>
 
   <div class="notes">
     <h3>Notes</h3>
     <ul>
-      <li><b>Cost per new depositor</b> = <b>new-player</b> bonus spend ÷ new depositors. Bonus paid to existing players (reloads) is <b>not</b> charged to acquisition — otherwise a mostly-reload "welcome" looks falsely expensive.</li>
-      <li><b>New %</b> = share of takers who were genuinely new (no prior deposit). Below 40%, the code is really a reload for existing players and is routed to the Retention tab, not graded here.</li>
-      <li><b>Wk-1 NGR</b> = net revenue in the first 7 days, shown as context. Real acquisition offers often run this negative by design; a strongly positive figure usually means the code reached existing players (check New %).</li>
-      <li><b>30-day stick</b> = share of new depositors who came back within 30 days. The <span style="color:var(--muted)">(x/y)</span> is how many of the FTDs have a matured 30-day window — a faded % rests on a minority and is still settling.</li>
-      <li class="warn"><b>This ranks bonuses against each other</b>, not against running no bonus. True incrementality needs a holdout test (recommended next).</li>
-      <li><b>Base</b> = people who used the bonus (redeemed/active); figures cover 1 Jan–25 Aug, data to 26 Aug. August is a partial month (dashed on the trend); 30-day stick uses matured claims (to 28 Jul).</li>
+      <li><b>Cost per new depositor</b> = <b>new-player</b> bonus spend ÷ new depositors. Bonus paid to existing players (deposit bonuses) is <b>not</b> charged to winning new depositors — otherwise a mostly deposit-bonus "welcome" looks falsely expensive.</li>
+      <li><b>New %</b> = share of takers who were genuinely new (no prior deposit). Below 40%, the code is really a deposit bonus for existing players and is routed to the Retention tab, not graded here.</li>
+      <li><b>Week-1 net revenue</b> = the profit kept in the first 7 days, shown as context. Real new-player offers often run this negative by design; a strongly positive figure usually means the code reached existing players (check New %).</li>
+      <li><b>Came back in 30 days</b> = share of new depositors who came back within 30 days. The <span style="color:var(--muted)">(x/y)</span> is how many of the new depositors have had the full 30 days pass — a faded % rests on a minority and is still settling.</li>
+      <li class="warn"><b>This ranks bonuses against each other</b>, not against running no bonus. Proving the bonus adds extra needs a proper controlled test (recommended next).</li>
+      <li><b>Base</b> = people who used the bonus (redeemed/active); figures cover 1 Jan–25 Aug, data to 26 Aug. August is a partial month (dashed on the trend); the 30-day came-back figure uses claims where the full 30 days has passed (to 28 Jul).</li>
     </ul>
   </div>
   </div><!-- /panel-acquisition -->
@@ -346,7 +350,7 @@
     <section class="kpis" id="r_kpis"></section>
     <div class="card col12" style="margin-bottom:15px">
       <div class="card-h"><h3>Decision rules</h3></div>
-      <p class="sub2">Money is the judge here: NGR Lift per RM is the extra net revenue a bonus keeps (after its own cost) for every RM spent. "Retains" = deposits again above what that player type normally would.</p>
+      <p class="sub2">Money is the judge here: Net revenue back for every RM1 is the extra net revenue a bonus keeps (after its own cost) for every RM1 spent. "Retains" = deposits again above what that player type normally would.</p>
       <div class="rulewrap">
         <div class="rule"><h4>Thresholds</h4><div id="r_ruleLines"></div></div>
         <div class="rule"><h4>Verdicts &amp; actions</h4><div id="r_ruleDefs"></div></div>
@@ -354,14 +358,14 @@
       <div class="rule" style="margin-top:20px"><h4>Decision matrix</h4><div id="r_ruleMatrix"></div></div>
     </div>
     <div class="grid">
-      <div class="card col6"><div class="card-h"><h3>NGR Lift per RM, by promo</h3><span class="hint">higher is better · 0 = break-even</span></div><p class="sub2">Extra net revenue kept per RM of bonus, top promos by spend. Colour = the recommended call.</p><div id="r_chartNgr"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Net revenue back for every RM1, by promo</h3><span class="hint">higher is better · zero means it just paid for itself</span></div><p class="sub2">Extra net revenue kept for every RM1 of bonus, top promos by spend. Colour = the recommended call.</p><div id="r_chartNgr"></div></div>
       <div class="card col6"><div class="card-h"><h3>Money × retention</h3><span class="hint">the quadrant</span></div><p class="sub2">Makes money (right) vs retains above its type's norm (up). Top-right = scale; bottom-left = stop. Bubble = spend.</p><div id="r_chartQuad"></div></div>
-      <div class="card col6"><div class="card-h"><h3>By player tier</h3><span class="hint">read within a mechanic, not across</span></div><p class="sub2">NGR Lift per RM by tier. The gradient is mostly a bonus-type mix effect — see the grid before steering budget by tier.</p><div id="r_chartTier"></div></div>
-      <div class="card col6"><div class="card-h"><h3>Bonus type × tier</h3><span class="hint">the budget-steering map</span></div><p class="sub2">NGR Lift per RM for each type at each tier. Reload earns well at every tier; free-credit loses almost everywhere.</p><div id="r_chartGrid"></div></div>
+      <div class="card col6"><div class="card-h"><h3>By player tier</h3><span class="hint">read within a bonus type, not across</span></div><p class="sub2">Net revenue back for every RM1, by tier. The pattern is mostly caused by the mix of bonus types — see the grid before steering budget by tier.</p><div id="r_chartTier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Bonus type × tier</h3><span class="hint">the budget-steering map</span></div><p class="sub2">Net revenue back for every RM1, for each type at each tier. Deposit bonuses earn well at every tier; free-credit loses almost everywhere.</p><div id="r_chartGrid"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px">
       <div class="card-h"><h3>Decision table</h3><span class="hint">grouped by call · top spend first</span></div>
-      <p class="sub2">One row per promo. Uplift = redeposit vs its type's tier-normal (directional). Win-back promos are held for the VIP tab.</p>
+      <p class="sub2">One row per promo. Uplift = deposited more than that type of player usually does (a read, not proof). Win-back promos are held for the VIP tab.</p>
       <div id="r_tbl"></div>
     </div>
     <div class="notes" id="r_notes"></div>
@@ -372,20 +376,20 @@
     <div class="exec-note" id="v_exec"></div>
     <section class="kpis" id="v_kpis"></section>
     <div class="grid">
-      <div class="card col6"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">spend-share ÷ NGR-share · 1.0 = balanced</span></div><p class="sub2">Above 1.0 = over-funded for the value it returns; below = starved. Bronze is over-funded; Platinum &amp; Diamond carry more NGR than the budget they get.</p><div id="v_fund"></div></div>
-      <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of positive NGR</span></div><p class="sub2">A thin slice of players carries most of the NGR — and the declining ones (value-at-risk) are the program's biggest single risk.</p><div id="v_whale"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">spend-share ÷ net-revenue-share · 1.0 = balanced</span></div><p class="sub2">Above 1.0 = over-funded for the value it returns; below = starved. Bronze is over-funded; Platinum &amp; Diamond carry more net revenue than the budget they get.</p><div id="v_fund"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of positive net revenue</span></div><p class="sub2">A thin slice of players carries most of the net revenue — and the declining ones (money we could lose if they leave) are the program's biggest single risk.</p><div id="v_whale"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>The three big moves</h3><span class="hint">money to move</span></div><div id="v_moves"></div></div>
-    <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The clearest lever: an RM of VIP bonus pays as a <b>cheap-form reward</b> (mini-game / check-in) and bleeds as <b>big free-credit</b>. The grid below bands every claim by its <b>actual amount given</b>, so variable "up-to" bonuses (avg RM497 but up to RM15,500) show their full range — cheap-form pays at any size, big free-credit (RM500+) is the bleed. Tier multiplies the cheap-form payoff.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × bonus amount given <span style="font-weight:400;color:var(--muted);font-size:12px">NGR per RM · each claim in its actual-amount band · green pays, red bleeds</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
+    <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The simple rule: VIP bonus money <b>makes money as a cheap game reward</b> (mini-game or check-in) and <b>loses money as big free-credit</b>. In the table below, each bonus is filed by the <b>actual amount paid out</b> — so a promo that can pay "up to RM15,500" shows its big payouts, not just its average. Cheap rewards make money at every size; big free-credit is where the money leaks — and the higher the player's tier, the more the cheap rewards pay.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × amount paid out <span style="font-weight:400;color:var(--muted);font-size:12px">profit for every RM1 given · each payout in its real size · green makes money, red loses</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
     <section class="call"><div class="call-lead" id="v_callLead"></div></section>
     <div class="tally" id="v_tally" style="margin-bottom:18px"></div>
-    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>How each lane is judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each lane is graded on its own — never one metric across all. NGR is net of the bonus (break-even 0).</p><div id="v_rules"></div></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>How each group is judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each group is graded on its own — never one metric across all. Net revenue is after the bonus cost (zero means it just paid for itself).</p><div id="v_rules"></div></div>
     <div id="v_lanes"></div>
     <div class="notes" id="v_notes"></div>
     <div class="soon" id="v_soon"></div>
   </div>
   <div class="panel" id="panel-whale" hidden>
-    <div class="placeholder"><span class="ptag">Queued</span><h3>Whale Detection</h3><p>Probe / scout / groom promos used to find and grow high-value players. Built after the core pillars.</p></div>
+    <div class="placeholder"><span class="ptag">Queued</span><h3>Big-player detection</h3><p>Promos used to find and grow high-value players. Built after the core pillars.</p></div>
   </div>
   <div class="panel" id="panel-branding" hidden>
     <div class="placeholder"><span class="ptag">Different shape</span><h3>Branding</h3><p>Production, ambassador and sponsorship spend — brand-marketing, not player giveaways. This pillar's spend lives outside the promo-code system, so it needs a separate data source and a different layout.</p></div>
@@ -414,6 +418,8 @@ const DEC = {
   'Low volume':{c:'var(--lowvol)',bg:'var(--lowvol-bg)',d:'too few'}
 };
 const ACTIONS = ['Scale','Maintain','Optimise','Reduce','Stop'];
+const MECHLAB = {'reload':'Deposit bonus','free-credit':'Free credit','free-spins':'Free spins','mini-game':'Mini-game'};
+const mechLabel = m => MECHLAB[m] || m || '';
 const CV = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const SVGNS='http://www.w3.org/2000/svg';
 const el=(t,a={})=>{const n=document.createElementNS(SVGNS,t);for(const k in a)n.setAttribute(k,a[k]);return n;};
@@ -444,37 +450,37 @@ const trimSpend = codes.filter(c=>c.decision==='Reduce'||c.decision==='Stop').re
 document.getElementById('callLead').innerHTML =
   `<p><b>${cnt.Scale}</b> to <b>scale</b>, <b>${cnt.Maintain}</b> to <b>hold</b>, <b>${cnt.Optimise}</b> to <b>tune</b>`+
   (trimStop?`, <b>${trimStop}</b> to <b>trim / stop</b> (<span class="money">${SYM}${fmt(trimSpend)}</span>)`:`, and none losing money on new depositors`)+`. `+
-  (reloadSpend?`<span class="reload-hi">${SYM}${fmt(reloadSpend)}</span> of "welcome" spend is really <b>reloads</b> for existing players — its value shows on the <b>Retention</b> tab, not here.`:``)+`</p>`+
-  `<p class="fine">${cnt.Reload} reload code(s) routed to Retention; ${cnt.Referral} referral code(s) tracked separately (win = the referee's deposit); ${cnt['Low volume']} too few takers to grade.</p>`;
+  (reloadSpend?`<span class="reload-hi">${SYM}${fmt(reloadSpend)}</span> of "welcome" spend is really <b>deposit bonuses</b> for existing players — its value shows on the <b>Retention</b> tab, not here.`:``)+`</p>`+
+  `<p class="fine">${cnt.Reload} deposit-bonus code(s) routed to Retention; ${cnt.Referral} referral code(s) tracked separately (win = the referee's deposit); ${cnt['Low volume']} too few takers to grade.</p>`;
 document.getElementById('tally').innerHTML = ACTIONS.map(k=>
   `<div class="t" style="--tc:${DEC[k].c}"><div class="n">${cnt[k]}</div><div class="a" style="color:${DEC[k].c}">${k}</div><div class="d">${DEC[k].d}</div></div>`).join('');
 
 // kpis
-[['Acquisition spend',SYM+fmt(K.spend),'all TL-tagged acquisition codes',0],
- ['New depositors (FTD)',fmt(K.ftd),'first-ever deposits won',0],
- ['Cost per new depositor',K.cost_per_ftd!=null?SYM+K.cost_per_ftd:'—','new-player spend ÷ new depositors',1],
- ['30-day stick-rate',K.stick_30!=null?K.stick_30+'%':'—','came back within 30 days',1]
+[['New-player spend',SYM+fmt(K.spend),'every code marked as a new-player offer',0],
+ ['New depositors',fmt(K.ftd),'first-ever deposits won',0],
+ ['Cost per new depositor',K.cost_per_ftd!=null?SYM+K.cost_per_ftd:'—','new-player spend ÷ new depositors',1,1],
+ ['% who came back in 30 days',K.stick_30!=null?K.stick_30+'%':'—','came back within 30 days',1]
 ].forEach(k=>{
-  const d=document.createElement('div'); d.className='kpi'+(k[3]?' hi':'');
-  d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;
+  const d=document.createElement('div'); d.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');
+  d.innerHTML=`${k[4]?'<span class="keytag">Key metric</span>':''}<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;
   document.getElementById('kpis').append(d);
 });
 
 // decision rule panel
 document.getElementById('ruleLines').innerHTML =
   `<div class="rline"><span class="rk">Enough to judge</span><span class="rv">≥ ${THR.floor_claimers} people used it</span></div>`+
-  `<div class="rline"><span class="rk">Cheap to acquire</span><span class="rv">≤ ${SYM}${THR.cost_per_ftd_p25} per new depositor</span></div>`+
+  `<div class="rline"><span class="rk">Cheap to win a player</span><span class="rv">≤ ${SYM}${THR.cost_per_ftd_p25} per new depositor</span></div>`+
   `<div class="rline"><span class="rk">Mid cost</span><span class="rv">${SYM}${THR.cost_per_ftd_p25}–${SYM}${THR.cost_per_ftd_p75}</span></div>`+
   `<div class="rline"><span class="rk">Expensive</span><span class="rv">≥ ${SYM}${THR.cost_per_ftd_p75} per new depositor</span></div>`+
-  `<div class="rline"><span class="rk">Sticky</span><span class="rv">≥ ${THR.stick_median}% come back in 30 days</span></div>`+
-  `<div class="rline"><span class="rk">Real acquisition</span><span class="rv">≥ ${THR.reload_purity||40}% of takers are new players</span></div>`;
+  `<div class="rline"><span class="rk">They come back</span><span class="rv">≥ ${THR.stick_median}% come back in 30 days</span></div>`+
+  `<div class="rline"><span class="rk">Truly new players</span><span class="rv">≥ ${THR.reload_purity||40}% of takers are new players</span></div>`;
 const defs=[
  ['Scale','cheap to win a depositor AND they come back','put more budget behind it, offer it to more of the eligible players, and feature it more prominently — keep the amount as is'],
  ['Maintain','fair cost, decent return','leave the amount, budget and targeting as they are — keep watching it'],
- ['Optimise','too expensive OR too few come back (one problem)','test a smaller bonus / higher wagering to cut the cost, and tighten who it is shown to — A/B test before rolling wider'],
- ['Reduce','too expensive AND too few come back','shrink it — lower the amount, cut the budget, or limit it to a narrower, higher-intent audience'],
+ ['Optimise','too expensive OR too few come back (one problem)','test a smaller bonus / higher wagering to cut the cost, and tighten who it is shown to — run a proper controlled test before rolling wider'],
+ ['Reduce','too expensive AND too few come back','shrink it — lower the amount, cut the budget, or limit it to a smaller group of more serious players'],
  ['Stop','buys no new depositors','turn it off — the spend is wasted'],
- ['Reload','mostly existing players, not new ones','this is a reload/retention offer wearing a "welcome" label — judge its value on the Retention tab (its week-1 NGR), not as acquisition cost'],
+ ['Reload','mostly existing players, not new ones','this is a deposit-bonus/retention offer wearing a "welcome" label — judge its value on the Retention tab (its week-1 net revenue), not as new-player cost'],
  ['Referral','win is the referee’s deposit','measure it by the referee’s deposit, not this code’s own new depositors (separate tracking)'],
  ['Low volume','fewer than '+THR.floor_claimers+' takers','let it gather more takers before deciding, or fold it into a similar offer']];
 document.getElementById('ruleDefs').innerHTML = defs.map(d=>
@@ -483,12 +489,12 @@ const mc = v => `<div class="mc" style="color:${DEC[v].c};background:${DEC[v].bg
 const band = (lbl, a, b) => `<div class="mrl">${lbl}</div>${mc(a)}${mc(b)}`;
 document.getElementById('ruleMatrix').innerHTML =
   `<div class="matrix">`+
-  `<div class="corner"></div><div class="mh">Sticky (≥ ${THR.stick_median}% return)</div><div class="mh">Not sticky (&lt; ${THR.stick_median}%)</div>`+
-  band(`Cheap (≤ ${SYM}${THR.cost_per_ftd_p25} / FTD)`, 'Scale', 'Optimise')+
+  `<div class="corner"></div><div class="mh">They come back (≥ ${THR.stick_median}% return)</div><div class="mh">They don't come back (&lt; ${THR.stick_median}%)</div>`+
+  band(`Cheap to win (≤ ${SYM}${THR.cost_per_ftd_p25} per new depositor)`, 'Scale', 'Optimise')+
   band('Mid cost', 'Maintain', 'Optimise')+
-  band(`Expensive (≥ ${SYM}${THR.cost_per_ftd_p75} / FTD)`, 'Optimise', 'Reduce')+
+  band(`Expensive (≥ ${SYM}${THR.cost_per_ftd_p75} per new depositor)`, 'Optimise', 'Reduce')+
   `</div>`+
-  `<div class="rmatnote"><b>Checked first (before the grid):</b> low-purity codes (&lt; ${THR.reload_purity||40}% new) are reloads → judged in Retention · referral codes scored separately · fewer than ${THR.floor_claimers} users → "too few to judge" · zero new depositors → Stop. <b>Cost = new-player spend ÷ new depositors</b> (existing-player reload spend is not charged to acquisition).</div>`;
+  `<div class="rmatnote"><b>Checked first (before the grid):</b> codes with few new players (&lt; ${THR.reload_purity||40}% new) are deposit bonuses → judged in Retention · referral codes scored separately · fewer than ${THR.floor_claimers} users → "too few to judge" · zero new depositors → Stop. <b>Cost = new-player spend ÷ new depositors</b> (money spent on existing players' deposit bonuses is not counted here).</div>`;
 
 // charts
 function bars(){
@@ -496,14 +502,14 @@ function bars(){
   if(!d.length)return; const W=480,H=300,left=168,right=46,top=8,bot=22;
   const rh=(H-top-bot)/d.length, bh=Math.min(13,rh-5);
   const max=Math.max(...d.map(x=>x.cost_per_ftd)), sx=v=>left+(v/max)*(W-left-right);
-  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per FTD by code');
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per new depositor by code');
   [100,200,300,400,500,600].forEach(g=>{if(g>max)return;const x=sx(g);s.append(el('line',{x1:x,y1:top,x2:x,y2:H-bot+2,class:'gridline'}));const t=el('text',{x,y:H-6,'text-anchor':'middle',class:'axlab'});t.textContent=g;s.append(t);});
   d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,c=CV(DEC[x.decision].c.slice(4,-1));
     const nm=el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12px'});const _l=x.code.replace('FT_','');nm.textContent=_l.length>26?_l.slice(0,25)+'…':_l;s.append(nm);
     s.append(el('rect',{x:left,y,width:Math.max(3,sx(x.cost_per_ftd)-left),height:bh,rx:3,fill:c}));
     const vl=el('text',{x:sx(x.cost_per_ftd)+6,y:y+bh/2+4,class:'vlab',style:'font-size:12px'});vl.textContent=SYM+x.cost_per_ftd;s.append(vl);
     const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});
-    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost / FTD</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div><div class="tt-r"><span>Decision</span><span>${x.decision}</span></div>`));
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost per new depositor</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div><div class="tt-r"><span>Decision</span><span>${x.decision}</span></div>`));
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
   document.getElementById('chartBars').append(s);
 }
@@ -515,33 +521,33 @@ function scatter(){
   const xmax=Math.max(60, Math.min(dmax*1.1, (THR.cost_per_ftd_p75||200)*1.6));
   const ymax=Math.max(70,...d.map(x=>x.stick_30))*1.05;
   const sx=v=>l+(Math.min(v,xmax)/xmax)*(W-l-r), sy=v=>H-b-(v/ymax)*(H-t-b);
-  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per FTD vs 30-day stick');
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per new depositor vs came back in 30 days');
   const step=xmax<=150?25:xmax<=320?50:100;
   const gx=[]; for(let g=0; g<=xmax; g+=step) gx.push(g);
   gx.forEach(g=>{const x=sx(g);s.append(el('line',{x1:x,y1:t,x2:x,y2:H-b,class:'gridline'}));const tx=el('text',{x,y:H-b+17,'text-anchor':'middle',class:'axlab'});tx.textContent=SYM+g;s.append(tx);});
   [0,20,40,60].forEach(g=>{if(g>ymax)return;const y=sy(g);s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,class:'gridline'}));const ty=el('text',{x:l-8,y:y+4,'text-anchor':'end',class:'axlab'});ty.textContent=g+'%';s.append(ty);});
   s.append(el('line',{x1:sx(THR.cost_per_ftd_p50),y1:t,x2:sx(THR.cost_per_ftd_p50),y2:H-b,stroke:CV('--line-2'),'stroke-dasharray':'3 4','stroke-width':1}));
   s.append(el('line',{x1:l,y1:sy(THR.stick_median),x2:W-r,y2:sy(THR.stick_median),stroke:CV('--line-2'),'stroke-dasharray':'3 4','stroke-width':1}));
-  const q=el('text',{x:sx(xmax*0.02),y:sy(ymax*0.95),class:'axlab',style:'font-weight:700;fill:'+CV('--scale')});q.textContent='cheap · sticky';s.append(q);
+  const q=el('text',{x:sx(xmax*0.02),y:sy(ymax*0.95),class:'axlab',style:'font-weight:700;fill:'+CV('--scale')});q.textContent='cheap · they come back';s.append(q);
   d.forEach(x=>{const c=CV(DEC[x.decision].c.slice(4,-1)),rad=7+Math.sqrt(x.ftd)/6,off=x.cost_per_ftd>xmax;
     const pt=el('circle',{cx:sx(x.cost_per_ftd),cy:sy(x.stick_30),r:rad,fill:c,'fill-opacity':.85,stroke:off?CV('--ink'):CV('--surface'),'stroke-width':2,'stroke-dasharray':off?'2 2':'','style':'cursor:pointer'});
-    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost / FTD</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>30-day stick</span><span>${x.stick_30}%</span></div><div class="tt-r"><span>FTDs</span><span>${x.ftd}</span></div>`));
+    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost per new depositor</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>Came back in 30 days</span><span>${x.stick_30}%</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div>`));
     pt.addEventListener('mouseleave',hideTip);s.append(pt);});
-  const ax=el('text',{x:(l+W-r)/2,y:H-3,'text-anchor':'middle',class:'axlab'});ax.textContent='Cost per FTD →';s.append(ax);
+  const ax=el('text',{x:(l+W-r)/2,y:H-3,'text-anchor':'middle',class:'axlab'});ax.textContent='Cost per new depositor →';s.append(ax);
   document.getElementById('chartScatter').append(s);
 }
 function mech(){
   const rows=P.by_mechanic.filter(m=>m.cost_per_ftd!=null);
   const W=480,H=300,top=20,left=120,barW=248; const slot=(H-top-10)/rows.length;
   const cmax=Math.max(...rows.map(r=>r.cost_per_ftd));
-  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','By mechanic');
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','By bonus type');
   rows.forEach((r,i)=>{const y=top+i*slot+slot/2-24;
     s.append(Object.assign(el('text',{x:0,y:y+17,class:'barlab'}),{textContent:r.mech_label||r.mechanic}));
     const bw=(r.cost_per_ftd/cmax)*barW;
     s.append(el('rect',{x:left,y:y+6,width:barW,height:14,rx:4,fill:CV('--inset')}));
     s.append(el('rect',{x:left,y:y+6,width:Math.max(4,bw),height:14,rx:4,fill:CV('--accent')}));
-    s.append(Object.assign(el('text',{x:left+bw+8,y:y+17,class:'vlab'}),{textContent:SYM+r.cost_per_ftd+' / FTD'}));
-    s.append(Object.assign(el('text',{x:0,y:y+43,class:'axlab'}),{textContent:'30-day stick'}));
+    s.append(Object.assign(el('text',{x:left+bw+8,y:y+17,class:'vlab'}),{textContent:SYM+r.cost_per_ftd+' per new depositor'}));
+    s.append(Object.assign(el('text',{x:0,y:y+43,class:'axlab'}),{textContent:'Came back in 30 days'}));
     const sbw=((r.stick_30||0)/60)*barW;
     s.append(el('rect',{x:left,y:y+33,width:barW,height:10,rx:3,fill:CV('--inset')}));
     s.append(el('rect',{x:left,y:y+33,width:Math.max(4,sbw),height:10,rx:3,fill:CV('--seq3')}));
@@ -571,7 +577,7 @@ function trend(){
     s.append(Object.assign(el('text',{x:sx(i),y:H-9,'text-anchor':'middle',class:'axlab'}),{textContent:v.month}));
     if(part)s.append(Object.assign(el('text',{x:sx(i),y:sy(v.ftd)-11,'text-anchor':'middle',class:'axlab',style:'font-size:11px;font-style:italic'}),{textContent:'partial'}));
     const hit=el('rect',{x:sx(i)-18,y:t,width:36,height:H-t-b,fill:'transparent',style:'cursor:pointer'});
-    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${v.month} 2026${part?' — partial':''}</div><div class="tt-r"><span>New depositors</span><span>${v.ftd}</span></div>${part?'<div class="tt-r"><span>still accruing (data to 26 Aug)</span></div>':''}`));
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${v.month} 2026${part?' — partial':''}</div><div class="tt-r"><span>New depositors</span><span>${v.ftd}</span></div>${part?'<div class="tt-r"><span>still counting (data to 26 Aug)</span></div>':''}`));
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
   document.getElementById('chartTrend').append(s);
 }
@@ -583,8 +589,8 @@ function table(){
   const stickCell=x=>{ if(x.stick_30==null) return na(null);
     const imm=(x.stick_mature_share!=null&&x.stick_mature_share<60);
     const hint=(x.ftd_mature!=null&&x.ftd!=null&&x.ftd_mature<x.ftd)?` <span style="color:var(--muted);font-size:11.5px">(${x.ftd_mature}/${x.ftd})</span>`:'';
-    return `<span${imm?' style="opacity:.55" title="based on a minority of FTDs — still maturing"':''}>${x.stick_30}%</span>${hint}`; };
-  const head=`<thead><tr><th class="l" style="width:34px">#</th><th class="l">Bonus code</th><th class="l" style="padding-left:14px">Decision</th><th>Type</th><th>Users</th><th>FTDs</th><th>Cost / new dep.</th><th>New %</th><th>Wk-1 NGR</th><th>30-day stick</th></tr></thead>`;
+    return `<span${imm?' style="opacity:.55" title="based on only some new depositors — result still forming"':''}>${x.stick_30}%</span>${hint}`; };
+  const head=`<thead><tr><th class="l" style="width:34px">#</th><th class="l">Bonus code</th><th class="l" style="padding-left:14px">Decision</th><th>Type</th><th>Users</th><th>New deps</th><th>Cost / new dep.</th><th>New %</th><th>Wk-1 net revenue</th><th>Came back (30d)</th></tr></thead>`;
   const body=d.map((x,i)=>{const dc=DEC[x.decision]||DEC['Low volume'];return `<tr>
     <td class="l" style="color:var(--muted);font-weight:600">${i+1}</td>
     <td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div></td>
@@ -611,7 +617,7 @@ table();bars();scatter();mech();trend();
 const RDEC = {
   Scale:{c:'var(--scale)',bg:'var(--scale-bg)',d:'grow it'}, Maintain:{c:'var(--maintain)',bg:'var(--maintain-bg)',d:'keep as-is'},
   Optimise:{c:'var(--optimise)',bg:'var(--optimise-bg)',d:'tune it'}, Reduce:{c:'var(--reduce)',bg:'var(--reduce-bg)',d:'trim it'},
-  Stop:{c:'var(--stop)',bg:'var(--stop-bg)',d:'stop it'}, 'Watch-money':{c:'var(--gold)',bg:'color-mix(in srgb,var(--gold) 15%,transparent)',d:'firm at 30d'},
+  Stop:{c:'var(--stop)',bg:'var(--stop-bg)',d:'stop it'}, 'Watch-money':{c:'var(--gold)',bg:'color-mix(in srgb,var(--gold) 15%,transparent)',d:'confirm at 30 days'},
   Monitor:{c:'var(--lowvol)',bg:'var(--lowvol-bg)',d:'too new/thin'}, Hold:{c:'var(--referral)',bg:'var(--referral-bg)',d:'VIP tab'}
 };
 const RACT=['Scale','Maintain','Optimise','Reduce','Stop'];
@@ -632,7 +638,7 @@ function rNgrBars(){
     // labels always on the open side of zero so extreme-negative values never collide with the code names
     const vl=el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:11.5px'});vl.textContent=RSYM+v.toFixed(2);s.append(vl);
     const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});
-    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>NGR Lift / RM</span><span>${RSYM}${v.toFixed(2)}</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div><div class="tt-r"><span>Call</span><span>${x.decision}</span></div>`));
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Net revenue back per RM1</span><span>${RSYM}${v.toFixed(2)}</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div><div class="tt-r"><span>Call</span><span>${x.decision}</span></div>`));
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
   box.append(s);
 }
@@ -651,9 +657,9 @@ function rQuad(){
   const smax=Math.max(...d.map(x=>x.spend));
   d.forEach(x=>{const c=rcv(x.decision),rad=5+Math.sqrt(x.spend/smax)*15;
     const pt=el('circle',{cx:sx(x.ngr_lift_per_rm),cy:sy(x.redeposit_uplift),r:rad,fill:c,'fill-opacity':.7,stroke:CV('--surface'),'stroke-width':1.5,style:'cursor:pointer'});
-    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>NGR Lift/RM</span><span>${RSYM}${x.ngr_lift_per_rm.toFixed(2)}</span></div><div class="tt-r"><span>Redeposit uplift</span><span>${x.redeposit_uplift>0?'+':''}${x.redeposit_uplift}pp</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div>`));
+    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Net revenue back per RM1</span><span>${RSYM}${x.ngr_lift_per_rm.toFixed(2)}</span></div><div class="tt-r"><span>Deposited more than usual</span><span>${x.redeposit_uplift>0?'+':''}${x.redeposit_uplift}pp</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div>`));
     pt.addEventListener('mouseleave',hideTip);s.append(pt);});
-  const ax=el('text',{x:(l+W-r)/2,y:H-2,'text-anchor':'middle',class:'axlab'});ax.textContent='NGR Lift per RM →  ·  ↑ retains above norm';s.append(ax);
+  const ax=el('text',{x:(l+W-r)/2,y:H-2,'text-anchor':'middle',class:'axlab'});ax.textContent='Net revenue back per RM1 →  ·  ↑ deposits more than usual';s.append(ax);
   box.append(s);
 }
 function rTierBars(){
@@ -671,7 +677,7 @@ function rTierBars(){
 }
 function rGrid(){
   const box=document.getElementById('r_chartGrid'); if(!box)return; box.innerHTML='';
-  const mechs=[['reload','Reload'],['free-credit','Free credit'],['free-spins','Free spins']];
+  const mechs=[['reload','Deposit bonus'],['free-credit','Free credit'],['free-spins','Free spins']];
   const tiers=['Bronze','Silver','Gold','Platinum','Diamond','Classic','Unknown'];
   const g={}; RET.mech_tier_grid.forEach(c=>{g[c.mechanic+'|'+c.tier]=c;});
   const present=tiers.filter(t=>mechs.some(m=>g[m[0]+'|'+t]));
@@ -685,7 +691,7 @@ function rGrid(){
       else if(cell.low_n){d.textContent=cell.ngr_lift_per_rm.toFixed(1);d.style.color='var(--muted)';d.style.background='var(--inset)';d.title=`too few players (n=${cell.n})`;}
       else{const v=cell.ngr_lift_per_rm,good=v>=0,mag=Math.min(1,Math.abs(v)/2.5);
         d.style.background=`color-mix(in srgb, var(--${good?'scale':'stop'}) ${Math.round(16+mag*44)}%, var(--surface))`;
-        d.style.color='var(--ink)';d.textContent=RSYM+v.toFixed(2);d.title=`${ml} · ${t}: ${RSYM}${v.toFixed(2)}/RM · ${cell.n} players`;}
+        d.style.color='var(--ink)';d.textContent=RSYM+v.toFixed(2);d.title=`${ml} · ${t}: ${RSYM}${v.toFixed(2)} per RM1 · ${cell.n} players`;}
       heat.appendChild(d);});});
   box.appendChild(heat);
 }
@@ -705,10 +711,10 @@ function rTable(){
       const mv=x.ngr_lift_per_rm, mTxt=mv==null?na(null):`<span style="font-weight:700;color:${mv>0?'var(--ink)':'var(--reduce)'}">${RSYM}${mv.toFixed(2)}</span>`;
       const flag=(x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'';
       return `<tr><td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div>${flag}</td>
-        <td><span class="mech">${x.mechanic||''}</span></td><td>${RSYM}${fmt(x.spend)}</td><td>${mTxt}</td><td>${upTxt}</td>
+        <td><span class="mech">${mechLabel(x.mechanic)}</span></td><td>${RSYM}${fmt(x.spend)}</td><td>${mTxt}</td><td>${upTxt}</td>
         <td>${x.redeposit_rate!=null?x.redeposit_rate+'%':na(null)}</td>
         <td class="l" style="max-width:32ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.reason||''}</td></tr>`;}).join('');
-    bwrap.innerHTML=`<table><thead><tr><th class="l">Promo</th><th>Type</th><th>Spend</th><th>NGR/RM</th><th>Uplift</th><th>Redep</th><th class="l">Why</th></tr></thead><tbody>${body}</tbody></table>`;
+    bwrap.innerHTML=`<table><thead><tr><th class="l">Promo</th><th>Type</th><th>Spend</th><th>Back per RM1</th><th>Extra deposits</th><th>Deposited again</th><th class="l">Why</th></tr></thead><tbody>${body}</tbody></table>`;
     h.addEventListener('click',()=>{const col=grp.classList.toggle('collapsed');h.querySelector('.gchev').textContent=col?'▸':'▾';});
     grp.append(h,bwrap); box.append(grp);
   });
@@ -722,53 +728,53 @@ function renderRetention(){
     `<div class="m"><span class="k">Market</span><span class="v">${RET.market==='MY'?'Malaysia':RET.market} · ${RET.currency}</span></div>`+
     `<div class="m"><span class="k">Scope</span><span class="v">${RET.codes.length} retention promos</span></div><div class="sep"></div>`+
     `<div class="m"><span class="k">Base</span><span class="v">existing players who used the bonus</span></div>`;
-  document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div>On this tab <b>money is the judge</b> — the opposite of Acquisition. These players already deposit, so "did they come back" barely separates good from bad; what matters is whether the bonus kept a player who <b>added net revenue</b>. NGR here is net of the bonus (verified), so a positive figure is profit after the giveaway.</div>`;
+  document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div>On this tab <b>money is the judge</b> — the opposite of Acquisition. These players already deposit, so "did they come back" barely tells good from bad; what matters is whether the bonus kept a player who <b>brought in extra money</b>. The net-revenue figures here already have the bonus cost taken out, so anything above zero is profit after the giveaway.</div>`;
   document.getElementById('r_callLead').innerHTML=
-    `<p>Retention <b>makes money</b>: ${RSYM}${fmt(RK.spend)} spent kept <span style="font-weight:700;color:var(--scale)">+${RSYM}${fmt(RK.ngr_lift)}</span> of extra net revenue — <b>${RSYM}${RK.ngr_lift_per_rm}</b> back per RM. So the job here isn't to cut — it's to <b>move budget from what loses to what pays</b>.</p>`+
-    `<p><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — redeploy into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).`+(mtm.watch_money?` ${RSYM}${fmt(mtm.watch_money)} is directional (redeposit still maturing).`:``)+`</p>`+
-    `<p class="fine">${rc.Hold} win-back promo(s) held for the VIP tab (their lift is inflated by near-zero baselines); ${rc.Monitor} too new / too few players to grade.</p>`;
+    `<p>Retention <b>makes money</b>: ${RSYM}${fmt(RK.spend)} spent kept <span style="font-weight:700;color:var(--scale)">+${RSYM}${fmt(RK.ngr_lift)}</span> of extra net revenue — <b>${RSYM}${RK.ngr_lift_per_rm}</b> back for every RM1. So the job here isn't to cut — it's to <b>move budget from what loses to what pays</b>.</p>`+
+    `<p><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — move the money into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).`+(mtm.watch_money?` ${RSYM}${fmt(mtm.watch_money)} is a read, not proof — whether they deposited again is still being measured.`:``)+`</p>`+
+    `<p class="fine">${rc.Hold} win-back promo(s) held for the VIP tab (their gain looks huge only because these players barely deposited before); ${rc.Monitor} too new / too few players to grade.</p>`;
   document.getElementById('r_tally').innerHTML=RACT.map(k=>`<div class="t" style="--tc:${RDEC[k].c}"><div class="n">${rc[k]}</div><div class="a" style="color:${RDEC[k].c}">${k}</div><div class="d">${RDEC[k].d}</div></div>`).join('');
   [['Retention spend',RSYM+fmt(RK.spend),`+ ${RSYM}${fmt(RK.winback_spend_held)} win-back held`,0],
-   ['NGR Lift (net)','+'+RSYM+fmt(RK.ngr_lift),'extra net revenue kept, after the bonus',1],
-   ['NGR Lift per RM',RSYM+RK.ngr_lift_per_rm,'break-even = '+RSYM+'0',1],
-   ['Redeposit rate',RK.redeposit_rate+'%','near-universal → why money leads',0]
-  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'');d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('r_kpis').append(d);});
+   ['Extra net revenue','+'+RSYM+fmt(RK.ngr_lift),'extra net revenue kept, after the bonus',1],
+   ['Back for every RM1',RSYM+RK.ngr_lift_per_rm,'pays for itself at '+RSYM+'0',1,1],
+   ['Deposited-again rate',RK.redeposit_rate+'%','almost everyone does → why money leads',0]
+  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');d.innerHTML=`${k[4]?'<span class="keytag">Key metric</span>':''}<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('r_kpis').append(d);});
   document.getElementById('r_ruleLines').innerHTML=
-    `<div class="rline"><span class="rk">Enough to judge</span><span class="rv">≥ ${T.vol_floor} players (30-day window)</span></div>`+
-    `<div class="rline"><span class="rk">Makes money</span><span class="rv">NGR Lift per RM &gt; ${RSYM}0</span></div>`+
-    `<div class="rline"><span class="rk">Give-to-take floor</span><span class="rv">≥ ${RSYM}${T.give_floor} back per RM</span></div>`+
-    `<div class="rline"><span class="rk">Strong</span><span class="rv">≥ ${RSYM}${T.scale_hi} back per RM</span></div>`+
-    `<div class="rline"><span class="rk">Retains</span><span class="rv">redeposit above its type's tier norm</span></div>`;
-  const rdefs=[['Scale','strong return AND retains above its type norm','grow budget / widen eligibility — keep the amount'],
-   ['Maintain','profitable and retaining','keep as-is; re-check next cycle'],
-   ['Optimise','profitable but not incrementally retaining, or thin margin','tighten targeting or right-size the offer'],
-   ['Reduce','retains above norm but loses money','trim the giveaway — too generous to profit'],
-   ['Stop','loses money and no better than its type norm','stop or replace — the spend is wasted'],
-   ['Watch-money','money observed, redeposit still maturing','directional now; firm call at 30 days'],
+    `<div class="rline"><span class="rk">Enough to judge</span><span class="rv">≥ ${T.vol_floor} players (after waiting 30 days to see the result)</span></div>`+
+    `<div class="rline"><span class="rk">Makes money</span><span class="rv">back for every RM1 &gt; ${RSYM}0</span></div>`+
+    `<div class="rline"><span class="rk">Minimum return</span><span class="rv">≥ ${RSYM}${T.give_floor} back for every RM1</span></div>`+
+    `<div class="rline"><span class="rk">Strong</span><span class="rv">≥ ${RSYM}${T.scale_hi} back for every RM1</span></div>`+
+    `<div class="rline"><span class="rk">Retains</span><span class="rv">deposited again more than that type of player usually does</span></div>`;
+  const rdefs=[['Scale','strong return AND keeps players better than that type usually does','grow budget / let more players in — keep the amount'],
+   ['Maintain','profitable and keeps players coming back','keep as-is; re-check next cycle'],
+   ['Optimise','profitable but not really bringing extra players back, or barely profitable','tighten targeting or right-size the offer'],
+   ['Reduce','keeps players better than usual but loses money','trim the giveaway — too generous to profit'],
+   ['Stop','loses money and no better than that type usually does','stop or replace — the spend is wasted'],
+   ['Watch-money','money seen; whether they deposited again is still being measured','a read for now; firm call after 30 days'],
    ['Monitor','too new or too few players','wait for more data'],
-   ['Hold','win-back / reactivation','judged on the VIP tab — inflated by near-zero baselines']];
+   ['Hold','win-back / reactivation','judged on the VIP tab — the gain looks huge only because these players barely deposited before']];
   document.getElementById('r_ruleDefs').innerHTML=rdefs.map(d=>`<div class="ddef"><span class="lbl"><span class="dot" style="background:${RDEC[d[0]].c}"></span>${d[0]}</span><span class="txt">${d[1]}. <b style="color:var(--ink)">Do:</b> <span style="color:var(--muted)">${d[2]}</span></span></div>`).join('');
   const rmc=(txt,col)=>`<div class="mc" style="color:${col};background:color-mix(in srgb,${col} 15%,transparent)">${txt}</div>`;
   document.getElementById('r_ruleMatrix').innerHTML=`<div class="matrix">`+
-    `<div class="corner"></div><div class="mh">Retains (above norm)</div><div class="mh">At / below norm</div>`+
-    `<div class="mrl">Strong (≥ ${RSYM}${T.scale_hi}/RM)</div>`+rmc('Scale','var(--scale)')+rmc('Optimise','var(--optimise)')+
+    `<div class="corner"></div><div class="mh">Keeps players (better than usual)</div><div class="mh">Same or worse than usual</div>`+
+    `<div class="mrl">Strong (≥ ${RSYM}${T.scale_hi} back per RM1)</div>`+rmc('Scale','var(--scale)')+rmc('Optimise','var(--optimise)')+
     `<div class="mrl">Makes money (${RSYM}${T.give_floor}–${T.scale_hi})</div>`+rmc('Maintain','var(--maintain)')+rmc('Optimise','var(--optimise)')+
     `<div class="mrl">Loses money (&lt; ${RSYM}0)</div>`+rmc('Reduce','var(--reduce)')+rmc('Stop','var(--stop)')+
-    `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} matured players → Monitor · money seen but redeposit not matured → Watch-money · a Scale carried mostly by one player is demoted. Thin margin (${RSYM}0–${T.give_floor}/RM) → Optimise (right-size).</div>`;
+    `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} players with enough time to judge → Monitor · money seen but not enough time yet to tell if they deposited again → Watch-money · a Scale carried mostly by one player is demoted. Barely profitable (${RSYM}0–${T.give_floor} back per RM1) → Optimise (right-size).</div>`;
   rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable();
-  document.getElementById('r_notes').innerHTML=`<h3>Notes</h3><ul>`+
-    `<li><b>NGR Lift per RM</b> = extra net revenue (already net of the bonus) kept per RM spent — 7-day window vs the player's own 14-day baseline. Break-even = 0.</li>`+
-    `<li><b>Redeposit uplift</b> = this promo's redeposit rate minus its <b>type's</b> tier-normal. Reloads need a deposit to claim, so they're compared only to other reloads, never to free-credit.</li>`+
-    `<li><b>Retains</b> uses a 30-day window (matures to 28 Jul); the money read matures at 7 days, so a few recent promos show as <b>Watch-money</b> — money seen, redeposit pending.</li>`+
-    `<li class="warn"><b>Win-back is held, not scaled.</b> A lapsed player's baseline is ~0, so reactivating them mechanically inflates lift-per-RM. Those promos are judged on the VIP tab.</li>`+
-    `<li class="warn"><b>Directional, not proven.</b> Uplift is vs a look-alike population, not a matched control. A holdout test is the proof step (below).</li>`+
-    `<li><b>Single-player guard.</b> A promo whose gain is mostly one big player can't earn a Scale on that alone (flagged ⚑, demoted).</li></ul>`;
+  document.getElementById('r_notes').innerHTML=`<h3>Good to know</h3><ul>`+
+    `<li><b>Profit for every RM1 given</b> = the extra net revenue kept (bonus cost already taken out) for each RM1 spent — the 7 days after a claim vs the player's own recent 14 days. Zero means it just paid for itself.</li>`+
+    `<li><b>Deposited more than usual</b> = how much more this promo's players deposited compared to what that <b>type</b> of player normally does. Deposit bonuses need a deposit to claim, so they're only compared to other deposit bonuses, never to free-credit.</li>`+
+    `<li><b>"Kept them"</b> is measured over 30 days; the money read is ready after 7 days, so a few recent promos show as <b>Watch-money</b> — money seen, the come-back still pending.</li>`+
+    `<li class="warn"><b>Win-back promos are held, not scaled.</b> A lapsed player barely deposited before, so bringing them back automatically looks great for every RM1 spent. Those promos are judged on the VIP tab instead.</li>`+
+    `<li class="warn"><b>These are reads, not proof.</b> We compare to similar players, not a proper control group. A controlled test is the way to prove it (below).</li>`+
+    `<li><b>One-player check.</b> A promo whose gain comes mostly from one big player can't earn a top rating on that alone (marked ⚑, downgraded).</li></ul>`;
   document.getElementById('r_soon').innerHTML=`<h3>Coming soon</h3><p class="sub2">On the roadmap once new data lands — not computed in this version.</p>`+
     [['Bonus abuse / cash-and-dash','needs withdrawal data — flag players who take the bonus and leave'],
-     ['Wagering / revenue quality','needs turnover + promo config — did they truly play it through'],
-     ['Tenure & clean lapsed-vs-new split','needs registration date — separate true-new from long-lapsed players'],
-     ['Right-size levers & true targeting','needs promo config — offer size, min-deposit, target list'],
-     ['Proven incrementality','a matched non-participant control (difference-in-differences) — turns "directional" into causal']]
+     ['Real play quality','needs how much they bet + promo settings — did they truly play it through'],
+     ['Time as a customer + clean new-vs-lapsed split','needs registration date — separate true-new from long-lapsed players'],
+     ['Offer-size tuning & sharper targeting','needs promo settings — offer size, min-deposit, target list'],
+     ['Proven extra impact','a proper controlled test against similar players who did not take part — turns a read into proof']]
     .map(s=>`<div class="srow"><span class="sbadge">Soon</span><span class="stxt"><b>${s[0]}</b> — ${s[1]}</span></div>`).join('');
 }
 renderRetention();
@@ -776,7 +782,7 @@ renderRetention();
 // ===== VIP (4-lane portfolio) =====
 const VDEC = {
   Scale:{c:'var(--scale)',d:'grow it'}, Maintain:{c:'var(--maintain)',d:'hold'}, Optimise:{c:'var(--optimise)',d:'tune'},
-  Reduce:{c:'var(--reduce)',d:'trim'}, Stop:{c:'var(--stop)',d:'stop'}, 'Watch-money':{c:'var(--gold)',d:'firm at 30d'},
+  Reduce:{c:'var(--reduce)',d:'trim'}, Stop:{c:'var(--stop)',d:'stop'}, 'Watch-money':{c:'var(--gold)',d:'confirm at 30 days'},
   Monitor:{c:'var(--lowvol)',d:'too new/thin'}, Keep:{c:'var(--scale)',d:'keep'}, Review:{c:'var(--gold)',d:'hold & test'},
   Trim:{c:'var(--reduce)',d:'trim'}, Entitlement:{c:'var(--referral)',d:'not graded'}
 };
@@ -827,52 +833,52 @@ function renderVIP(){
     `<div class="m"><span class="k">Period</span><span class="v">${VIP.period}</span></div><div class="sep"></div>`+
     `<div class="m"><span class="k">Market</span><span class="v">${VIP.market==='MY'?'Malaysia':VIP.market} · ${VIP.currency}</span></div>`+
     `<div class="m"><span class="k">Scope</span><span class="v">${VIP.codes.length} VIP promos · ${P.members.toLocaleString()} members</span></div><div class="sep"></div>`+
-    `<div class="m"><span class="k">Lanes</span><span class="v">Performance · Cashback · Engagement · Entitlement</span></div>`;
-  document.getElementById('v_exec').innerHTML=`<span class="ico">◆</span><div>VIP is the biggest spend (<b>${vM(P.total_bonus)}</b>) and does <b>four different jobs</b> — so no single number grades it. The portfolio read is what matters to the house: the program returns <b>${vM(P.total_ytd_ngr)}</b> of net revenue (${R.total_value_ratio}× bonus), but that's mostly money whales would spend anyway. On the <b>incremental</b> read — the extra the bonus actually moves — the program is <b>~break-even ex-cashback (${vM(R.incremental_ngr_lift)}, ${R.incremental_per_rm>=0?'+':''}${R.incremental_per_rm}/RM)</b>. The decisions live in the portfolio: who we subsidise, where the budget sits vs the value, and how few players carry it.</div>`;
+    `<div class="m"><span class="k">Lanes</span><span class="v">Performance · Money-back · Engagement · Entitlement</span></div>`;
+  document.getElementById('v_exec').innerHTML=`<span class="ico">◆</span><div>VIP is the biggest spend (<b>${vM(P.total_bonus)}</b>) and does <b>four different jobs</b>, so no single number grades it. What matters to the house: the program brings in <b>${vM(P.total_ytd_ngr)}</b> of net revenue (${R.total_value_ratio}× the bonus) — but most of that is money the big players would spend anyway. Counting only the <b>extra</b> the bonus actually drives, the program <b>roughly breaks even once you set the money-back promo aside (${vM(R.incremental_ngr_lift)}, ${R.incremental_per_rm>=0?'+':''}${VSYM}${R.incremental_per_rm} back for every RM1)</b>. The real decisions are about the whole picture: which players we lose money on, whether the budget goes where the value is, and how few players carry it.</div>`;
   // KPIs
-  [['VIP bonus',vM(P.total_bonus),VIP.codes.length+' promos · 4 lanes',0],
-   ['YTD net revenue',vM(P.total_ytd_ngr),R.total_value_ratio+'× bonus — mostly non-incremental',0],
-   ['Incremental (ex-cashback)',(R.incremental_ngr_lift>=0?'+':'')+vM(R.incremental_ngr_lift),'the honest ROI: '+(R.incremental_per_rm>=0?'+':'')+R.incremental_per_rm+'/RM — ~break-even',1],
-   ['Net-negative subsidy',vM(P.subsidy_rm),P.net_negative_share_pct+'% of VIPs the house loses on',1],
-   ['Whale concentration',W.top1pct_ngr_share+'%',W.top1pct_members+' players = a third of all NGR',1]
-  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'');d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('v_kpis').append(d);});
+  [['VIP bonus',vM(P.total_bonus),VIP.codes.length+' promos · 4 groups',0],
+   ['Net revenue this year',vM(P.total_ytd_ngr),R.total_value_ratio+'× bonus — mostly not extra',0],
+   ['Extra (not counting money-back)',(R.incremental_ngr_lift>=0?'+':'')+vM(R.incremental_ngr_lift),'the honest read: '+(R.incremental_per_rm>=0?'+':'')+R.incremental_per_rm+' per RM1 — about zero',1,1],
+   ['Players we lose money on',vM(P.subsidy_rm),P.net_negative_share_pct+'% of VIPs the house loses on',1],
+   ['Reliance on big players',W.top1pct_ngr_share+'%',W.top1pct_members+' players = a third of all net revenue',1]
+  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');d.innerHTML=`${k[4]?'<span class="keytag">Key metric</span>':''}<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('v_kpis').append(d);});
   // Funding balance bars
   const tiers=P.by_tier.filter(t=>['Bronze','Silver','Gold','Platinum','Diamond'].includes(t.tier));
   vBars('v_fund',tiers,{value:t=>t.funding_index,label:t=>t.tier,ref:1.0,refLabel:'balanced',left:80,H:230,bh:22,
     colorFn:(t,v)=>v>1.15?CV('--reduce'):v<0.85?CV('--seq3'):CV('--maintain'),
     vlab:(t,v)=>v.toFixed(2),
-    tip:t=>`<div class="tt-h">${t.tier}</div><div class="tt-r"><span>Spend share</span><span>${t.spend_share_pct}%</span></div><div class="tt-r"><span>NGR share</span><span>${t.ngr_share_pct}%</span></div><div class="tt-r"><span>Funding index</span><span>${t.funding_index} ${t.funding_index>1.15?'(over)':t.funding_index<0.85?'(starved)':'(ok)'}</span></div><div class="tt-r"><span>Reach</span><span>${t.reach_pct}%</span></div>`});
+    tip:t=>`<div class="tt-h">${t.tier}</div><div class="tt-r"><span>Spend share</span><span>${t.spend_share_pct}%</span></div><div class="tt-r"><span>Net revenue share</span><span>${t.ngr_share_pct}%</span></div><div class="tt-r"><span>Budget vs value</span><span>${t.funding_index} ${t.funding_index>1.15?'(over)':t.funding_index<0.85?'(starved)':'(ok)'}</span></div><div class="tt-r"><span>Reach</span><span>${t.reach_pct}%</span></div>`});
   // Whale concentration (HTML segmented bar + VaR)
   const t1=W.top1pct_ngr_share,t10=W.top10pct_ngr_share;
   document.getElementById('v_whale').innerHTML=
     `<div class="concbar"><div class="cseg" style="width:${t1}%;background:var(--stop)"></div><div class="cseg" style="width:${t10-t1}%;background:var(--optimise)"></div><div class="cseg" style="width:${100-t10}%;background:var(--line-2)"></div></div>`+
     `<div class="conclegend"><span><i style="background:var(--stop)"></i>Top 1% (${W.top1pct_members}) · ${t1}%</span><span><i style="background:var(--optimise)"></i>Next 9% · ${(t10-t1).toFixed(1)}%</span><span><i style="background:var(--line-2)"></i>Rest 90% · ${(100-t10).toFixed(1)}%</span></div>`+
-    `<div class="varbox"><span class="ico">⚠</span><div><b>Value at risk: ${vM(W.value_at_risk_ngr)}</b> — ${W.value_at_risk_members} top-decile players whose deposits are already declining (H2 &lt; 70% of H1). Losing them costs more than any promo saving. The top 1% also collect ${W.top1pct_bonus_share}% of the bonus.</div></div>`;
+    `<div class="varbox"><span class="ico">⚠</span><div><b>Money we could lose if they leave: ${vM(W.value_at_risk_ngr)}</b> — ${W.value_at_risk_members} of our top 10% players whose deposits are already dropping (their second-half deposits under 70% of the first half). Losing them costs more than any promo saving. The top 1% also collect ${W.top1pct_bonus_share}% of the bonus.</div></div>`;
   // Money moves
   document.getElementById('v_moves').innerHTML=
     `<div class="moves">`+
-      `<div class="mv"><div class="mvn">${vM(MM.net_negative_subsidy)}</div><div class="mva">Subsidy to cut</div><div class="mvd">${P.net_negative_members.toLocaleString()} VIPs (27%) the house loses money on</div></div>`+
-      `<div class="mv"><div class="mvn">${vM(MM.cashback_trim)}</div><div class="mva">Cashback to trim</div><div class="mvd">Gold/Silver rescue that fails its break-even — dead-weight</div></div>`+
-      `<div class="mv"><div class="mvn">${vM(MM.cashback_review)}</div><div class="mva">Cashback to review</div><div class="mvd">Diamond rescue — inconclusive; hold &amp; run a holdout</div></div>`+
-      `<div class="mv"><div class="mvn">${vM(MM.laneA_stop_reduce)}</div><div class="mva">Perf. to right-size</div><div class="mvd">Big-ticket free-credit that loses money incrementally</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.net_negative_subsidy)}</div><div class="mva">Losses to cut</div><div class="mvd">${P.net_negative_members.toLocaleString()} VIPs (27%) the house loses money on</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.cashback_trim)}</div><div class="mva">Money-back to trim</div><div class="mvd">Gold/Silver rescue that doesn't pay for itself — money paid to players who'd have played anyway</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.cashback_review)}</div><div class="mva">Money-back to review</div><div class="mvd">Diamond rescue — unclear; hold and run a proper controlled test</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.laneA_stop_reduce)}</div><div class="mva">Performance to right-size</div><div class="mvd">Big free-credit that loses money even counting only the extra it drives</div></div>`+
     `</div><p class="fine" style="margin-top:12px">${MM.line}</p>`;
   // Lane tally
   document.getElementById('v_callLead').innerHTML=
-    `<p>VIP is judged by <b>lane</b>, not one metric. <b>Performance</b> (${LS['A-performance'].codes} promos, ${vM(LS['A-performance'].spend)}) earns ${LS['A-performance'].ngr_lift_per_rm>=0?'+':''}${LS['A-performance'].ngr_lift_per_rm}/RM — the small-ticket rewards pay, the big-ticket free-credit loses. <b>Cashback</b> (${vM(LS['B-cashback'].spend)}) is loss-insurance, judged on whether it keeps whales; <b>Engagement</b> (${vM(LS['D-engagement'].spend)}) pays for itself; <b>Entitlement</b> (${vM(LS['C-entitlement'].spend)}) is relationship gifts, not graded.</p>`;
+    `<p>VIP is judged in <b>four groups</b>, not one number. <b>Performance</b> rewards (${LS['A-performance'].codes} promos, ${vM(LS['A-performance'].spend)}) make ${LS['A-performance'].ngr_lift_per_rm>=0?'+':''}${VSYM}${LS['A-performance'].ngr_lift_per_rm} back for every RM1 — the small rewards pay, the big free-credit loses. <b>Money-back</b> (${vM(LS['B-cashback'].spend)}) softens losses, judged on whether it keeps the big players; <b>Engagement</b> (${vM(LS['D-engagement'].spend)}) pays for itself; <b>Gifts</b> (${vM(LS['C-entitlement'].spend)}) are relationship perks, not scored.</p>`;
   const laneRow=(name,key,codes,note)=>{const L=LS[key];const rc={};codes.forEach(c=>rc[c.decision]=(rc[c.decision]||0)+1);
     const chips=Object.entries(rc).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`<span class="lchip" style="color:${(VDEC[d]||{}).c||'var(--muted)'}">${n} ${d}</span>`).join('');
-    return `<div class="lt"><div class="lth"><span class="ltn">${name}</span><span class="ltm">${L.codes} promos · ${vM(L.spend)} · ${L.ngr_lift_per_rm>=0?'+':''}${L.ngr_lift_per_rm}/RM</span></div><div class="ltnote">${note}</div><div class="ltchips">${chips}</div></div>`;};
+    return `<div class="lt"><div class="lth"><span class="ltn">${name}</span><span class="ltm">${L.codes} promos · ${vM(L.spend)} · ${L.ngr_lift_per_rm>=0?'+':''}${L.ngr_lift_per_rm} per RM1</span></div><div class="ltnote">${note}</div><div class="ltchips">${chips}</div></div>`;};
   document.getElementById('v_tally').innerHTML=
-    laneRow('A · Performance','A-performance',LA,'Money is the judge — NGR Lift per RM (tier×mechanic).')+
-    laneRow('B · Cashback','B-cashback',LB,'Loss-insurance — does it keep whales past the break-even bar?')+
+    laneRow('A · Performance','A-performance',LA,'Money is the judge — net revenue back for every RM1 (by tier and reward type).')+
+    laneRow('B · Money-back','B-cashback',LB,'Loss cover — does it keep big players once it has paid for itself?')+
     laneRow('D · Engagement','D-engagement',LD,'Check-ins + Lucky Wheel / Scratch Card mini-games (renewed monthly). Does it pay for itself?')+
-    laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not graded on ROI.');
+    laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not scored on return.');
   // Rules
   document.getElementById('v_rules').innerHTML=[
-    ['A · Performance','NGR Lift per RM × redeposit-uplift vs the tier×mechanic norm. Big-ticket whale rewards that lose money are shrunk, not killed (loyalty risk).','var(--scale)'],
-    ['B · Cashback','Per-tier break-even: does the cashback keep whales <i>incrementally</i> (vs no-cashback)? CLEARS→Keep, FAILS→Trim, sign-flips→Review + prove with a holdout.','var(--gold)'],
-    ['D · Engagement','Pays for itself (house GGR > bonus) AND builds a habit rather than feeding habitual free-money collectors.','var(--maintain)'],
-    ['C · Entitlement','Not graded on ROI — birthday/welcome gifts protect the relationship. Only flagged if they leak to dormant accounts.','var(--referral)']
+    ['A · Performance','Net revenue back for every RM1, weighed against how much more that type of player usually deposits, vs the norm for that tier and reward type. Big free-credit rewards for big players that lose money are shrunk, not killed (loyalty risk).','var(--scale)'],
+    ['B · Money-back','Per tier, does it pay for itself: does the money-back keep big players <i>on top of what they\'d do anyway</i> (vs no money-back)? CLEARS→Keep, FAILS→Trim, sign-flips→Review + prove with a proper controlled test.','var(--gold)'],
+    ['D · Engagement','Pays for itself (house winnings > bonus) AND builds a habit rather than feeding habitual free-money collectors.','var(--maintain)'],
+    ['C · Entitlement','Not scored on return — birthday/welcome gifts protect the relationship. Only flagged if they reach inactive accounts.','var(--referral)']
   ].map(r=>`<div class="ddef"><span class="lbl"><span class="dot" style="background:${r[2]}"></span>${r[0]}</span><span class="txt">${r[1]}</span></div>`).join('');
   // ---- Lanes ----
   const lanes=document.getElementById('v_lanes');
@@ -881,61 +887,61 @@ function renderVIP(){
   lanes.innerHTML=
     // LANE A
     `<div class="lanehdr" style="border-color:var(--scale)"><span class="lanetag" style="background:var(--scale)">A</span><h2>Performance rewards</h2><span class="lanesub">${LS['A-performance'].codes} promos · ${vM(LS['A-performance'].spend)} · money is the judge</span></div>`+
-    `<div class="varbox" style="margin-bottom:14px"><span class="ico">◆</span><div><b>Why it loses money — and is getting worse.</b> It's an <b>offer + targeting problem, not a mix or demand-decline problem</b> (rebalancing free-credit vs reload explains ≤13%). Confirmed from the assignment log: whale-FC is <b>81% VM-assigned, 0% player self-claim</b> (vs check-ins at 46% self-claim) — players don't ask for it, VMs push it, so the cap below is literally a VM assignment rule. It's <b>concentrated</b> — ~2 flagship <b>RM400+ free-credit</b> codes drive about half the recent loss, top 10 drive ~86% — in the <b>Diamond / Gold / Platinum</b> big-ticket offers. The engine is <b>dead-weight on already-active whales</b>: recent-depositor claims now lose <b>−2.04/RM</b> (vs −0.75 for reactivations), and a <b>2nd/3rd claim loses ~2× a first</b> (−1.58 vs −0.86) — the offer increasingly re-pays whales for play they'd do anyway (GGR held flat while NGR fell — a clean overpay signal). <b>Fix:</b> cap whale-FC frequency per member (a 1-per-quarter cap frees <b>~RM228k of bonus for certain</b>, up to ~RM375k if capped whales don't pull back), withhold/condition big FC from recently-active whales, and raise wagering / shrink the RM400+ offer. Prove the cap with a holdout before scaling — the upside is an observational upper bound.</div></div>`+
-    `<div class="grid"><div class="card col6"><div class="card-h"><h3>Return by offer size</h3><span class="hint">${VSYM}/RM · break-even 0</span></div><p class="sub2">The clearest lever: small-ticket rewards pay back, big-ticket free-credit loses. The bulk of Performance spend sits in the losing bands.</p><div id="v_sizeBars"></div></div>`+
-    `<div class="card col6"><div class="card-h"><h3>Return by wagering requirement</h3><span class="hint">${VSYM}/RM</span></div><p class="sub2">Low/no-wagering micro-rewards clear; the high-value 5–8× VIP free-credit does not. Raising wagering is the right-size lever.</p><div id="v_wagBars"></div></div></div>`+
-    `<div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Performance decisions</h3><span class="hint">grouped by call · top spend</span></div><p class="sub2">One row per promo. Uplift = redeposit vs its tier×type norm (directional). Big-ticket whale rewards are trimmed, not killed.</p><div id="v_tblA"></div></div>`+
+    `<div class="varbox" style="margin-bottom:14px"><span class="ico">◆</span><div><b>Why it loses money — and is getting worse.</b> It's an <b>offer and targeting problem, not a reward-mix or falling-demand problem</b> (shifting between free-credit and deposit bonus explains ≤13%). Confirmed from the assignment log: big-player free-credit is <b>81% assigned by VIP managers, 0% claimed by the player</b> (vs check-ins at 46% claimed by players themselves) — players don't ask for it, VIP managers push it, so the cap below is literally a VIP-manager assignment rule. It's <b>concentrated</b> — ~2 flagship <b>RM400+ free-credit</b> codes drive about half the recent loss, top 10 drive ~86% — in the <b>Diamond / Gold / Platinum</b> big-ticket offers. The engine is <b>money paid to big players who were already active</b>: claims by players who just deposited now lose <b>−2.04 for every RM1</b> (vs −0.75 for winning back inactive players), and a <b>2nd/3rd claim loses ~2× a first</b> (−1.58 vs −0.86) — the offer increasingly re-pays big players for play they'd do anyway (house winnings held flat while net revenue fell — a clear sign of overpaying). <b>Fix:</b> cap how often each member can get big-player free-credit (a 1-per-quarter cap frees <b>~RM228k of bonus for certain</b>, up to ~RM375k if capped big players don't pull back), withhold or add conditions to big free-credit for recently-active big players, and raise wagering / shrink the RM400+ offer. Prove the cap with a proper controlled test before scaling — the upside is a best-case read, not proof.</div></div>`+
+    `<div class="grid"><div class="card col6"><div class="card-h"><h3>Return by offer size</h3><span class="hint">${VSYM} per RM1 · zero means it just paid for itself</span></div><p class="sub2">The clearest lever: small-ticket rewards pay back, big-ticket free-credit loses. The bulk of Performance spend sits in the losing bands.</p><div id="v_sizeBars"></div></div>`+
+    `<div class="card col6"><div class="card-h"><h3>Return by wagering requirement</h3><span class="hint">net rev per RM1</span></div><p class="sub2">Low/no-wagering micro-rewards pay back; the high-value 5–8× VIP free-credit does not. Raising wagering is the right-size lever.</p><div id="v_wagBars"></div></div></div>`+
+    `<div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Performance decisions</h3><span class="hint">grouped by call · top spend</span></div><p class="sub2">One row per promo. Uplift = how much more they deposited vs the norm for that tier and type (a read, not proof). Big free-credit rewards for big players are trimmed, not killed.</p><div id="v_tblA"></div></div>`+
     // LANE B
-    `<div class="lanehdr" style="border-color:var(--gold)"><span class="lanetag" style="background:var(--gold)">B</span><h2>Weekly Rescue cashback</h2><span class="lanesub">${vM(LS['B-cashback'].spend)} · loss-insurance for VIPs · confirmed cashback</span></div>`+
-    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div><b>${LS['B-cashback'].kept_playing.toLocaleString()} of ${LS['B-cashback'].claimers.toLocaleString()}</b> claimers kept playing after a losing week — but that's the trap: <b>losing VIPs redeposit ~96% with no cashback at all</b>. So the question isn't "did they come back" — it's whether the give-back moves money <i>incrementally</i>, tier by tier.</div></div>`+
-    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Cashback by tier — does it pay for itself?</h3><span class="hint">break-even = incremental forward NGR > 0</span></div><div id="v_cbTiers"></div></div>`+
+    `<div class="lanehdr" style="border-color:var(--gold)"><span class="lanetag" style="background:var(--gold)">B</span><h2>Weekly Rescue money-back</h2><span class="lanesub">${vM(LS['B-cashback'].spend)} · loss cover for VIPs · confirmed money-back</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div><b>${LS['B-cashback'].kept_playing.toLocaleString()} of ${LS['B-cashback'].claimers.toLocaleString()}</b> claimers kept playing after a losing week — but that's the trap: <b>losing VIPs deposit again ~96% of the time with no money-back at all</b>. So the question isn't "did they come back" — it's whether the give-back moves money <i>on top of what they'd do anyway</i>, tier by tier.</div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Money-back by tier — does it pay for itself?</h3><span class="hint">pays for itself = extra net revenue afterwards is above zero</span></div><div id="v_cbTiers"></div></div>`+
     `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>The Diamond question</h3><span class="hint">${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — the biggest single bet</span></div><div id="v_diamond"></div></div>`+
-    `<div class="card col12" style="margin-top:0"><div class="card-h"><h3>Cashback decisions</h3><span class="hint">reconciled to the break-even test</span></div><div id="v_tblB"></div></div>`+
+    `<div class="card col12" style="margin-top:0"><div class="card-h"><h3>Money-back decisions</h3><span class="hint">matched to the pay-for-itself test</span></div><div id="v_tblB"></div></div>`+
     // LANE D
-    `<div class="lanehdr" style="border-color:var(--maintain)"><span class="lanetag" style="background:var(--maintain)">D</span><h2>Engagement &amp; mini-games</h2><span class="lanesub">3 mini-game programs + ${LD.filter(c=>!['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} check-ins · ${vM(LS['D-engagement'].spend)} · ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm}/RM</span></div>`+
-    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Engagement &amp; gamification — daily check-ins plus the <b>Lucky Wheel</b>, <b>Scratch Card</b> and <b>Mystery Ang Pow</b> mini-games (a WS1 product, folded here per the team). Each mini-game is <b>re-issued with a fresh code set each period</b> (old codes expire when it ends), so the ${LD.filter(c=>['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} codes are really <b>three ongoing programs</b>. This lane <b>pays for itself handsomely</b> — ${LS['D-engagement'].ggr_coverage}× GGR-coverage, ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm}/RM.</div></div>`+
-    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Recurring mini-game programs</h3><span class="hint">renewed monthly · rolled up</span></div><p class="sub2">The same two mini-games, aggregated across their monthly code renewals (Jan–Aug). Both comfortably pay for themselves — they're deposit-triggered, so the house GGR dwarfs the prize cost.</p><div id="v_mgPrograms"></div></div>`+
+    `<div class="lanehdr" style="border-color:var(--maintain)"><span class="lanetag" style="background:var(--maintain)">D</span><h2>Engagement &amp; mini-games</h2><span class="lanesub">3 mini-game programs + ${LD.filter(c=>!['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} check-ins · ${vM(LS['D-engagement'].spend)} · ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm} per RM1</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Engagement &amp; mini-games — daily check-ins plus the <b>Lucky Wheel</b>, <b>Scratch Card</b> and <b>Mystery Ang Pow</b> mini-games (a WS1 product, folded here per the team). Each mini-game is <b>re-issued with a fresh code set each period</b> (old codes expire when it ends), so the ${LD.filter(c=>['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} codes are really <b>three ongoing programs</b>. This group <b>pays for itself handsomely</b> — ${LS['D-engagement'].ggr_coverage}× the house winnings cover its cost, and makes ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm} back for every RM1.</div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Recurring mini-game programs</h3><span class="hint">renewed monthly · rolled up</span></div><p class="sub2">The same two mini-games, combined across their monthly code renewals (Jan–Aug). Both comfortably pay for themselves — they're deposit-triggered, so the house winnings dwarf the prize cost.</p><div id="v_mgPrograms"></div></div>`+
     `<div class="card col12"><div class="card-h"><h3>Check-in decisions</h3><span class="hint">World Cup daily check-in variants</span></div><div id="v_tblD"></div></div>`+
     // LANE C
-    `<div class="lanehdr" style="border-color:var(--referral)"><span class="lanetag" style="background:var(--referral)">C</span><h2>Entitlement gifts</h2><span class="lanesub">${LS['C-entitlement'].codes} promos · ${vM(LS['C-entitlement'].spend)} · not graded on ROI</span></div>`+
-    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not an ROI play. Reported for transparency; the only action is tightening eligibility if a gift leaks to a dormant account.</div></div>`+
+    `<div class="lanehdr" style="border-color:var(--referral)"><span class="lanetag" style="background:var(--referral)">C</span><h2>Entitlement gifts</h2><span class="lanesub">${LS['C-entitlement'].codes} promos · ${vM(LS['C-entitlement'].spend)} · not scored on return</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not a return play. Reported for transparency; the only action is tightening eligibility if a gift reaches an inactive account.</div></div>`+
     `<div class="card col12"><div class="card-h"><h3>Entitlement register</h3></div><div id="v_tblC"></div></div>`;
   // Lane A charts + table
   vBars('v_sizeBars',VIP.by_size,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:78,H:210,bh:24,
     colorFn:(b,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(b,v)=>VSYM+v.toFixed(2),
-    tip:b=>`<div class="tt-h">${b.band}</div><div class="tt-r"><span>Promos</span><span>${b.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(b.spend)}</span></div><div class="tt-r"><span>NGR/RM</span><span>${VSYM}${b.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+    tip:b=>`<div class="tt-h">${b.band}</div><div class="tt-r"><span>Promos</span><span>${b.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(b.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${b.ngr_lift_per_rm.toFixed(2)}</span></div>`});
   vBars('v_wagBars',VIP.by_wagering.filter(w=>w.spend>10000).sort((a,b)=>b.spend-a.spend),{value:w=>w.ngr_lift_per_rm,label:w=>w.wagering,ref:0,left:70,H:210,bh:22,
     colorFn:(w,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(w,v)=>VSYM+v.toFixed(2),
-    tip:w=>`<div class="tt-h">${w.wagering} wagering</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>NGR/RM</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+    tip:w=>`<div class="tt-h">${w.wagering} wagering</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
   const naSpan='<span style="color:var(--muted)">—</span>';
   const cName=x=>`<div class="code">${x.code}</div><div class="cname">${x.name||''}</div>`+((x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'');
   const mnum=(v,pos)=>v==null?naSpan:`<span style="font-weight:700;color:${v>0?'var(--ink)':'var(--reduce)'}">${VSYM}${v.toFixed(2)}</span>`;
   vGroupTable('v_tblA',LA,['Scale','Maintain','Optimise','Reduce','Stop','Watch-money','Monitor'],[
-    {h:'Promo',cls:'l',get:cName},{h:'Type',get:x=>`<span class="mech">${x.mechanic||''}</span>`},{h:'Tier',get:x=>x.tier_top||naSpan},
-    {h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'NGR/RM',get:x=>mnum(x.ngr_lift_per_rm)},
-    {h:'Uplift',get:x=>x.redeposit_uplift==null?naSpan:`<span style="color:${x.redeposit_uplift>0?'var(--scale)':x.redeposit_uplift<0?'var(--reduce)':'var(--muted)'}">${vPct(x.redeposit_uplift).replace('%','pp')}</span>`},
+    {h:'Promo',cls:'l',get:cName},{h:'Type',get:x=>`<span class="mech">${mechLabel(x.mechanic)}</span>`},{h:'Tier',get:x=>x.tier_top||naSpan},
+    {h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'Back per RM1',get:x=>mnum(x.ngr_lift_per_rm)},
+    {h:'Extra deposits',get:x=>x.redeposit_uplift==null?naSpan:`<span style="color:${x.redeposit_uplift>0?'var(--scale)':x.redeposit_uplift<0?'var(--reduce)':'var(--muted)'}">${vPct(x.redeposit_uplift).replace('%','pp')}</span>`},
     {h:'Why',cls:'l',get:x=>`<span style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
   // Lane B — per-tier cashback cards
   const cbByTier=[['Diamond','tier_3e'],['Platinum','tier_3d'],['Gold','tier_3c'],['Silver','tier_3b']].map(([t])=>{
     const be=beV[t]||{},im=imv[t]||{},w=wm[t]||{},b=br[t]||{};
     return {tier:t,be,im,w,b};});
-  document.getElementById('v_cbTiers').innerHTML=`<p class="sub2">The dispositive test is <b>incremental</b> forward NGR — measured two ways (a matched no-cashback group, and the same member's own no-cashback weeks). When both agree it's a clean call; when they disagree, the data can't settle it.</p>`+
+  document.getElementById('v_cbTiers').innerHTML=`<p class="sub2">The deciding test is the <b>extra</b> net revenue afterwards — measured two ways (a matched no-money-back group, and the same member's own no-money-back weeks). When both agree it's a clean call; when they disagree, the data can't settle it.</p>`+
     `<div class="cbgrid">`+cbByTier.map(r=>{const v=r.be.verdict||'';const col=beColor(v);
       return `<div class="cbcard" style="border-top-color:${col}"><div class="cbt">${r.tier}</div><div class="cbcost">${vM(r.be.cashback_cost)}<span> cashback</span></div>`+
         `<div class="cbverdict" style="color:${col}">${v.replace(' (sign flips by method)','')}</div>`+
-        `<div class="cbrow"><span>Matched vs no-cashback</span><span style="color:${(r.im.inc_ngr30||0)>=0?'var(--scale)':'var(--reduce)'}">${vM(r.im.inc_ngr30)}/wk</span></div>`+
+        `<div class="cbrow"><span>Matched vs no money-back</span><span style="color:${(r.im.inc_ngr30||0)>=0?'var(--scale)':'var(--reduce)'}">${vM(r.im.inc_ngr30)}/wk</span></div>`+
         `<div class="cbrow"><span>Same-member cross-check</span><span style="color:${(r.w.within_inc_ngr30||0)>=0?'var(--scale)':'var(--reduce)'}">${vM(r.w.within_inc_ngr30)}/wk</span></div>`+
-        `<div class="cbrow"><span>Base redeposit (no cashback)</span><span>${r.b.untreated_redep!=null?r.b.untreated_redep+'%':'—'}</span></div></div>`;}).join('')+`</div>`;
+        `<div class="cbrow"><span>Base deposit-again rate (no money-back)</span><span>${r.b.untreated_redep!=null?r.b.untreated_redep+'%':'—'}</span></div></div>`;}).join('')+`</div>`;
   // Lane B — Diamond downside
   document.getElementById('v_diamond').innerHTML=
-    `<p class="sub2">Diamond is ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — over half the whole rescue budget. The two incremental estimates <b>bracket zero and flip sign</b>, so observational data can neither justify nor condemn it:</p>`+
-    `<div class="bracket"><div class="bk neg"><span>Matched control</span><b>${vM((imv.Diamond||{}).inc_ngr30)}/wk</b><small>selection-biased down</small></div><div class="bkmid">vs</div><div class="bk pos"><span>Within-member</span><b>+${vM((wm.Diamond||{}).within_inc_ngr30).replace(VSYM,VSYM)}/wk</b><small>mean-reversion-biased up</small></div></div>`+
-    `<div class="varbox" style="margin-top:14px"><span class="ico">⚠</span><div><b>The downside is asymmetric.</b> The top Diamond alone generates ${vM((dd.top_diamond_ytd_ngr||[0])[0])} of YTD NGR — <b>churning just ${dd.churns_to_wipe_saving} of them wipes the entire ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} "saving."</b> That's why the call is <b>hold &amp; test</b>, not cut. ${CVAL.read||''}</div></div>`;
+    `<p class="sub2">Diamond is ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — over half the whole rescue budget. The two estimates of the extra it drives <b>land on both sides of zero and flip sign</b>, so this kind of data (without a proper control) can neither justify nor condemn it:</p>`+
+    `<div class="bracket"><div class="bk neg"><span>Matched group</span><b>${vM((imv.Diamond||{}).inc_ngr30)}/wk</b><small>likely understates</small></div><div class="bkmid">vs</div><div class="bk pos"><span>Same member</span><b>+${vM((wm.Diamond||{}).within_inc_ngr30).replace(VSYM,VSYM)}/wk</b><small>likely overstates</small></div></div>`+
+    `<div class="varbox" style="margin-top:14px"><span class="ico">⚠</span><div><b>The downside is asymmetric.</b> The top Diamond alone generates ${vM((dd.top_diamond_ytd_ngr||[0])[0])} of this year's net revenue — <b>losing just ${dd.churns_to_wipe_saving} of them wipes the entire ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} "saving."</b> That's why the call is <b>hold &amp; test</b>, not cut. ${CVAL.read||''}</div></div>`;
   vGroupTable('v_tblB',LB,['Review','Keep','Trim','Monitor'],[
     {h:'Promo',cls:'l',get:x=>`<div class="code">${x.code.replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</div><div class="cname">${x.name||''}</div>`},
     {h:'Tier',get:x=>x.tier_top||naSpan},{h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'Claims',get:x=>x.claims?x.claims.toLocaleString():naSpan},
     {h:'Kept',get:x=>x.retention_after_loss!=null?x.retention_after_loss+'%':naSpan},
-    {h:'Fwd 30d',get:x=>mnum2(x.fwd_ngr_30)},
+    {h:'Net rev after 30d',get:x=>mnum2(x.fwd_ngr_30)},
     {h:'Why',cls:'l',get:x=>`<span style="max-width:36ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
   // Lane D — roll mini-games up by PROGRAM (they're renewed monthly, so many codes = few programs); check-ins stay per-code
   const MG=['lucky-wheel','scratch-card','mystery-angpow'];
@@ -947,29 +953,29 @@ function renderVIP(){
     const calls=Object.entries(dec).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`<span class="lchip" style="color:${(VDEC[d]||{}).c||'var(--muted)'}">${n} ${d}</span>`).join(' ');
     return `<tr><td class="l"><b>${name}</b><div class="cname">${desc} · ${cs.length} code sets</div></td><td>${VSYM}${fmt(spend)}</td><td>${claims.toLocaleString()}</td><td>${ggr.toFixed(0)}×</td>`+
       `<td><span style="font-weight:700;color:${perRm>0?'var(--scale)':'var(--reduce)'}">${VSYM}${perRm.toFixed(2)}</span></td><td class="l">${calls}</td></tr>`;};
-  document.getElementById('v_mgPrograms').innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Program</th><th>Spend</th><th>Claims</th><th>GGR-cov</th><th>NGR/RM</th><th class="l">How the monthly codes graded</th></tr></thead><tbody>`+
+  document.getElementById('v_mgPrograms').innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Program</th><th>Spend</th><th>Claims</th><th>Covers cost</th><th>Back per RM1</th><th class="l">How the monthly codes graded</th></tr></thead><tbody>`+
     mgRow('lucky-wheel','Lucky Wheel','spin-for-a-prize · renewed monthly')+mgRow('scratch-card','Scratch Card','scratch-for-a-prize · renewed monthly')+mgRow('mystery-angpow','Mystery Ang Pow','red-packet reveal · CNY campaign')+`</tbody></table></div>`;
   vGroupTable('v_tblD',LDcheck,['Keep','Trim','Monitor'],[
     {h:'Promo',cls:'l',get:cName},{h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'Claimers',get:x=>x.claimers?x.claimers.toLocaleString():naSpan},
-    {h:'GGR-cov',get:x=>x.ggr_coverage!=null?x.ggr_coverage+'×':naSpan},{h:'Habitual',get:x=>x.habitual_share!=null?x.habitual_share+'%':naSpan},
+    {h:'Covers cost',get:x=>x.ggr_coverage!=null?x.ggr_coverage+'×':naSpan},{h:'Free-money regulars',get:x=>x.habitual_share!=null?x.habitual_share+'%':naSpan},
     {h:'Why',cls:'l',get:x=>`<span style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
   vGroupTable('v_tblC',LC,['Entitlement'],[
     {h:'Promo',cls:'l',get:cName},{h:'Tier',get:x=>x.tier_top||naSpan},{h:'Spend',get:x=>VSYM+fmt(x.spend)},
-    {h:'Recipients',get:x=>x.recipients?x.recipients.toLocaleString():naSpan},{h:'Leakage',get:x=>x.leakage_share!=null?x.leakage_share+'%':naSpan},
+    {h:'Recipients',get:x=>x.recipients?x.recipients.toLocaleString():naSpan},{h:'Leaked to inactive',get:x=>x.leakage_share!=null?x.leakage_share+'%':naSpan},
     {h:'Why',cls:'l',get:x=>`<span style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
   // Notes + soon
-  document.getElementById('v_notes').innerHTML=`<h3>Notes</h3><ul>`+
-    `<li><b>NGR is net of the bonus</b> (verified), so break-even is 0 and a positive figure is profit after the giveaway. The 7-day claim-window lift is measured vs each player's own 14-day baseline.</li>`+
-    `<li><b>Total value vs incremental.</b> The ${R.total_value_ratio}× "return" is context — most VIP NGR is non-incremental (whales play regardless). The honest read is the incremental lift, which excludes the ring-fenced cashback lane (its 7-day NGR is a loss give-back, invalid as a lift).</li>`+
-    `<li><b>Cashback is directional, not proven.</b> 98% of eligible losers claim, so there's no clean untreated group; the two incremental estimates bracket zero for Diamond. A rate-crossover holdout is the proof step (below).</li>`+
-    `<li class="warn"><b>Whale dependency is the real risk.</b> The top 1% carry a third of NGR; ${W.value_at_risk_members} of them are already declining. Protecting them outranks any promo saving.</li>`+
-    `<li><b>Directional comparators.</b> Uplift is vs a look-alike norm, not a matched control; single-whale-carried wins are demoted (⚑).</li></ul>`;
+  document.getElementById('v_notes').innerHTML=`<h3>Good to know</h3><ul>`+
+    `<li><b>Net revenue already has the bonus cost taken out</b>, so anything above zero is profit after the giveaway. We look at how a player behaves in the 7 days after they claim, compared to their own recent 14 days.</li>`+
+    `<li><b>Total money brought in vs the extra the bonus drives.</b> The ${R.total_value_ratio}× "return" is just context — most of it is money the big players spend anyway. The honest read is the <b>extra</b> the bonus drives, which leaves out the money-back promo (that give-back after a loss can't be counted as a gain).</li>`+
+    `<li><b>The money-back is a read, not proof.</b> 98% of losing players claim it, so there's no clean group to compare against; for Diamond the estimate lands on both sides of zero. A proper controlled test is the way to settle it (see below).</li>`+
+    `<li class="warn"><b>Leaning on a few big players is the real risk.</b> The top 1% bring in a third of all net revenue, and ${W.value_at_risk_members} of them are already slowing down. Keeping them matters more than any promo saving.</li>`+
+    `<li><b>These are comparisons, not proof.</b> We compare each promo to similar players, not a proper control group; a win carried by one big player alone doesn't earn a top rating (marked ⚑).</li></ul>`;
   document.getElementById('v_soon').innerHTML=`<h3>Coming soon</h3><p class="sub2">On the roadmap — not computed in this version.</p>`+
-    [['Cashback rate-crossover holdout','the proof step — withhold/step-down cashback for a matched slice and measure forward 60–90d NGR; settles the Diamond question the observational data can\'t'],
-     ['Per-VIP behavioural tracker','deposit cadence, game mix and at-risk signals per player — turn the whale value-at-risk list into an early-warning system'],
-     ['LTV & cohort payback','needs registration dates — does a VIP\'s lifetime value clear the cumulative bonus, by tenure cohort'],
-     ['Cash-and-dash / abuse leakage','needs withdrawal data — flag rescue-and-run and cross-code bonus farming beyond the current watchlist'],
-     ['Wagering / revenue quality','did the bonus turn into real played-through revenue, not just a redeposit']]
+    [['Money-back proper controlled test','the proof step — withhold or step down money-back for a matched group and measure net revenue 60–90 days ahead; settles the Diamond question this kind of data can\'t'],
+     ['Per-VIP behavioural tracker','deposit timing, game mix and at-risk signals per player — turn the at-risk big-player list into an early-warning system'],
+     ['Lifetime value payback','needs registration dates — does a VIP\'s lifetime value cover the total bonus, grouped by how long they\'ve been a member'],
+     ['Cash-and-dash / bonus abuse','needs withdrawal data — flag rescue-and-run and cross-code bonus farming beyond the current watchlist'],
+     ['Real play quality','did the bonus turn into real played-through revenue, not just another deposit']]
     .map(s=>`<div class="srow"><span class="sbadge">Soon</span><span class="stxt"><b>${s[0]}</b> — ${s[1]}</span></div>`).join('');
 }
 const mnum2=v=>v==null?'<span style="color:var(--muted)">—</span>':`<span style="color:${v>0?'var(--scale)':'var(--reduce)'}">${vM(v)}</span>`;
@@ -1015,7 +1021,7 @@ function ssGrid(boxId, grid){
       else{const v=c.per_rm,good=v>=0,mag=Math.min(1,Math.abs(v)/2.5);
         d.style.background=`color-mix(in srgb, var(--${good?'scale':'stop'}) ${Math.round(16+mag*46)}%, var(--surface))`;
         d.style.color='var(--ink)'; d.innerHTML=`${v>=0?'+':''}${v.toFixed(2)}<span style="display:block;font-size:9px;color:var(--muted);font-weight:400">${VSYM}${(c.spend/1000).toFixed(0)}k</span>`;
-        d.title=`${FLAB[f]} · ${b}: ${VSYM}${v.toFixed(2)}/RM · ${VSYM}${c.spend.toLocaleString()} · ${c.n} claims`;}
+        d.title=`${FLAB[f]} · ${b}: ${VSYM}${v.toFixed(2)} per RM1 · ${VSYM}${c.spend.toLocaleString()} · ${c.n} claims`;}
       heat.appendChild(d);});});
   box.appendChild(heat);
 }
@@ -1030,13 +1036,13 @@ function renderSweetSpot(){
   ssGrid('v_sweetGrid',SS.grid);
   const z=SS.zones, pct=v=>Math.round(v/z.program.spend*100);
   document.getElementById('v_sweetZones').innerHTML=`<div class="ssz">`+
-    `<div class="szrow"><span>Sweet zone — small (&lt;RM50)</span><span class="szv">${VSYM}${fmt(z.sweet.spend)} · ${pct(z.sweet.spend)}%</span></div>`+
+    `<div class="szrow"><span>Small bonuses (under RM50)</span><span class="szv">${VSYM}${fmt(z.sweet.spend)} · ${pct(z.sweet.spend)}%</span></div>`+
     `<div class="szbar"><div style="width:${pct(z.sweet.spend)}%;background:var(--scale)"></div></div>`+
-    `<div class="szret" style="color:var(--scale)">→ +${VSYM}${fmt(z.sweet.ngr)} net revenue (${VSYM}${z.sweet.per_rm}/RM)</div>`+
-    `<div class="szrow" style="margin-top:13px"><span>Dead zone — big free-credit (≥RM150)</span><span class="szv">${VSYM}${fmt(z.dead.spend)} · ${pct(z.dead.spend)}%</span></div>`+
+    `<div class="szret" style="color:var(--scale)">→ made <b>+${VSYM}${fmt(z.sweet.ngr)}</b> (${VSYM}${z.sweet.per_rm} back for every RM1)</div>`+
+    `<div class="szrow" style="margin-top:13px"><span>Big free-credit (RM150+)</span><span class="szv">${VSYM}${fmt(z.dead.spend)} · ${pct(z.dead.spend)}%</span></div>`+
     `<div class="szbar"><div style="width:${pct(z.dead.spend)}%;background:var(--stop)"></div></div>`+
-    `<div class="szret" style="color:var(--reduce)">→ ${VSYM}${fmt(z.dead.ngr)} net revenue (${VSYM}${z.dead.per_rm}/RM)</div>`+
-    `<p class="fine" style="margin-top:13px">The whole program nets just <b>${VSYM}${z.program.per_rm}/RM</b> — a small profit engine dragging a big loss-maker. The lever is <b>moving budget from big free-credit into small cheap-form rewards</b>, and leaning harder into it the higher the tier.</p></div>`;
+    `<div class="szret" style="color:var(--reduce)">→ lost <b>${VSYM}${fmt(Math.abs(z.dead.ngr))}</b> (loses ${VSYM}${Math.abs(z.dead.per_rm)} for every RM1)</div>`+
+    `<p class="fine" style="margin-top:13px">The whole program <b>barely breaks even</b> (about ${VSYM}${z.program.per_rm} back for every RM1). It's a small money-maker dragging a big money-loser — the fix is to <b>move budget out of big free-credit and into cheap game rewards</b>, more so for higher-tier players.</p></div>`;
   document.getElementById('v_sweetCaveat').innerHTML='⚑ '+SS.caveat;
 }
 renderSweetSpot();
@@ -1053,17 +1059,17 @@ function renderSummary(){
   const totSpend=K.spend+(RET?RET.kpis.spend:0)+(VIP?VIP.program.total_bonus:0);
   const totMove=acqMove+retMove+vipMove, nP=1+(RET?1:0)+(VIP?1:0);
   // ---- exec banner ----
-  document.getElementById('s_banner').innerHTML=`<span class="ico">◆</span><div>Across the <b>${nP} pillars analysed</b> we spend <b>${sM(totSpend)}</b> on promos this year. Each pillar is judged on its own job — new depositors for Acquisition, net revenue kept for Retention, portfolio health for VIP — so there's no single ROI number. The actionable headline: <b>${sM(totMove)}</b> sits in promos flagged to trim, stop or right-size — budget that can move to what pays. Whale Detection &amp; Branding aren't analysed yet.</div>`;
+  document.getElementById('s_banner').innerHTML=`<span class="ico">◆</span><div>Across the <b>${nP} areas we've looked at</b> we spend <b>${sM(totSpend)}</b> on promos this year. Each area is judged on its own job — new depositors for Acquisition, money kept for Retention, overall health for VIP — so there's no single score. The number to act on: <b>${sM(totMove)}</b> is tied up in promos we've flagged to cut back, stop, or shrink — money that can move to what actually pays. Big-player detection &amp; Branding aren't done yet.</div>`;
   // ---- portfolio table ----
   const rows=[
-    {name:'Acquisition',tab:'acquisition',spend:K.spend,buy:`${fmt(K.ftd)} new depositors<div class="sub-muted">${SYM}${K.cost_per_ftd}/FTD · ${K.stick_30}% stick</div>`,move:acqMove,calls:chip(cnt.Scale,'scale','var(--scale)')+chip(cnt.Optimise,'tune','var(--optimise)')+chip(cnt.Reload,'reload','var(--accent-ink)')},
-    RET&&{name:'Retention',tab:'retention',spend:RET.kpis.spend,buy:`<span style="color:var(--scale);font-weight:700">+${sM(RET.kpis.ngr_lift)}</span> net revenue<div class="sub-muted">${RSYM}${RET.kpis.ngr_lift_per_rm}/RM kept</div>`,move:retMove,calls:chip(rc.Scale,'scale','var(--scale)')+chip(rc.Optimise,'tune','var(--optimise)')+chip((rc.Reduce||0)+(rc.Stop||0),'trim','var(--reduce)')},
-    VIP&&{name:'VIP',tab:'vip',spend:VIP.program.total_bonus,buy:`${sM(VIP.program.roi.incremental_ngr_lift)} incremental*<div class="sub-muted">${VIP.program.roi.total_value_ratio}× total-value · *ex-cashback</div>`,move:vipMove,calls:chip(vc.Scale,'scale','var(--scale)')+chip((vc.Reduce||0)+(vc.Stop||0)+(vc.Trim||0),'trim','var(--reduce)')+chip(vc.Review,'review','var(--gold)')}
+    {name:'Acquisition',tab:'acquisition',spend:K.spend,buy:`${fmt(K.ftd)} new depositors<div class="sub-muted">${SYM}${K.cost_per_ftd} to win each new depositor · ${K.stick_30}% came back in 30 days</div>`,move:acqMove,calls:chip(cnt.Scale,'scale','var(--scale)')+chip(cnt.Optimise,'tune','var(--optimise)')+chip(cnt.Reload,'reload','var(--accent-ink)')},
+    RET&&{name:'Retention',tab:'retention',spend:RET.kpis.spend,buy:`<span style="color:var(--scale);font-weight:700">+${sM(RET.kpis.ngr_lift)}</span> net revenue<div class="sub-muted">${RSYM}${RET.kpis.ngr_lift_per_rm} kept for every RM1</div>`,move:retMove,calls:chip(rc.Scale,'scale','var(--scale)')+chip(rc.Optimise,'tune','var(--optimise)')+chip((rc.Reduce||0)+(rc.Stop||0),'trim','var(--reduce)')},
+    VIP&&{name:'VIP',tab:'vip',spend:VIP.program.total_bonus,buy:`${sM(VIP.program.roi.incremental_ngr_lift)} extra on top*<div class="sub-muted">${VIP.program.roi.total_value_ratio}× total value · *not counting money-back</div>`,move:vipMove,calls:chip(vc.Scale,'scale','var(--scale)')+chip((vc.Reduce||0)+(vc.Stop||0)+(vc.Trim||0),'trim','var(--reduce)')+chip(vc.Review,'review','var(--gold)')}
   ].filter(Boolean);
   document.getElementById('s_portfolio').innerHTML=
-    `<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Pillar</th><th>Spend</th><th>Share</th><th class="l">What it buys (own yardstick)</th><th>To move</th><th class="l">Top calls</th><th></th></tr></thead><tbody>`+
+    `<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Pillar</th><th>Spend</th><th>Share</th><th class="l">What it buys (its own measure)</th><th>To move</th><th class="l">Top actions</th><th></th></tr></thead><tbody>`+
     rows.map(r=>`<tr><td class="l"><b>${r.name}</b></td><td>${sM(r.spend)}</td><td>${Math.round(r.spend/totSpend*100)}%</td><td class="l">${r.buy}</td><td style="color:var(--reduce);font-weight:700">${sM(r.move)}</td><td class="l">${r.calls||'<span style="color:var(--muted)">—</span>'}</td><td><button class="plink sm" data-goto="${r.tab}">Open ▸</button></td></tr>`).join('')+
-    `<tr class="ptot"><td class="l"><b>Total</b></td><td><b>${sM(totSpend)}</b></td><td>100%</td><td class="l sub-muted">${nP} of 6 pillars analysed</td><td style="color:var(--reduce)"><b>${sM(totMove)}</b></td><td colspan="2" class="l sub-muted">reallocatable / to right-size</td></tr>`+
+    `<tr class="ptot"><td class="l"><b>Total</b></td><td><b>${sM(totSpend)}</b></td><td>100%</td><td class="l sub-muted">${nP} of 6 pillars analysed</td><td style="color:var(--reduce)"><b>${sM(totMove)}</b></td><td colspan="2" class="l sub-muted">money that can be moved / to shrink</td></tr>`+
     `</tbody></table></div>`;
   // ---- spend-efficiency frontier ----
   const fpts=[];
@@ -1093,10 +1099,10 @@ function renderSummary(){
     // y ticks
     [minY,0,maxY].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-7,y:y+4,'text-anchor':'end',class:'axlab',style:'font-size:10.5px'});ty.textContent=sM(g);s.append(ty);});
     // x axis label
-    const ax=el('text',{x:(l+W-r)/2,y:H-4,'text-anchor':'middle',class:'axlab'});ax.textContent='cumulative spend →';s.append(ax);
+    const ax=el('text',{x:(l+W-r)/2,y:H-4,'text-anchor':'middle',class:'axlab'});ax.textContent='total spent so far →';s.append(ax);
     box.append(s);
     const tailSpend=TS-peakX, giveBack=peakY-TN;
-    box.insertAdjacentHTML('beforeend',`<p class="fine" style="margin-top:8px">The best promos build to <b style="color:var(--scale)">+${sM(peakY)}</b> of net revenue by <b>${sM(peakX)}</b> spent. The remaining <b>${sM(tailSpend)}</b> of spend gives <b style="color:var(--reduce)">${sM(giveBack)}</b> of that back — the reallocatable tail.</p>`);
+    box.insertAdjacentHTML('beforeend',`<p class="fine" style="margin-top:8px">The best promos build to <b style="color:var(--scale)">+${sM(peakY)}</b> of net revenue by <b>${sM(peakX)}</b> spent. The remaining <b>${sM(tailSpend)}</b> of spend gives <b style="color:var(--reduce)">${sM(giveBack)}</b> of that back — the part that can be moved elsewhere.</p>`);
   }
   // ---- confidence ----
   const firm=d=>!['Monitor','Watch-money','Low volume'].includes(d);
@@ -1107,11 +1113,11 @@ function renderSummary(){
   const mpct=Math.round(meas/tot*100);
   document.getElementById('s_confidence').innerHTML=
     `<div class="concbar" style="margin-top:2px"><div class="cseg" style="width:${mpct}%;background:var(--scale)"></div><div class="cseg" style="width:${100-mpct}%;background:var(--line-2)"></div></div>`+
-    `<div class="conclegend"><span><i style="background:var(--scale)"></i>Graded on matured data · ${mpct}%</span><span><i style="background:var(--line-2)"></i>Still maturing · ${100-mpct}%</span></div>`+
+    `<div class="conclegend"><span><i style="background:var(--scale)"></i>Graded after we waited to see results · ${mpct}%</span><span><i style="background:var(--line-2)"></i>Still too early to tell · ${100-mpct}%</span></div>`+
     `<div class="conflist">`+
-     `<div class="cfr"><span class="cfk" style="color:var(--scale)">✓ Verified</span><span>NGR is <b>net of the bonus</b> (empirically checked) — break-even is 0, and no cost is double-counted.</span></div>`+
-     `<div class="cfr"><span class="cfk" style="color:var(--gold)">~ Directional</span><span>Uplift is vs a look-alike norm, <b>not a matched control</b>. Solid for ranking promos against each other; not yet causal.</span></div>`+
-     `<div class="cfr"><span class="cfk" style="color:var(--reduce)">✗ Unproven</span><span>The VIP cashback's incremental effect can't be settled on observational data — a <b>rate-crossover holdout</b> is the proof step.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--scale)">✓ Verified</span><span>Net revenue is <b>already after the bonus cost</b> (checked against the data) — zero means it just paid for itself, and no cost is counted twice.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--gold)">~ A read, not proof</span><span>The extra is measured against similar players, <b>not a proper controlled test</b>. Good for ranking promos against each other; not yet proof of cause.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--reduce)">✗ Unproven</span><span>The VIP money-back's extra effect can't be settled just by watching the data — a <b>proper controlled test</b> is the proof step.</span></div>`+
     `</div>`;
   // ---- action ledger ----
   const led=[];
@@ -1122,12 +1128,12 @@ function renderSummary(){
   led.sort((a,b)=>b.spend-a.spend);
   const top=led.slice(0,14);
   document.getElementById('s_ledger').innerHTML=
-    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Call</th><th class="l">Why</th></tr></thead><tbody>`+
+    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Why</th></tr></thead><tbody>`+
     top.map(x=>`<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
       `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
       `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
       `<td class="l" style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`).join('')+
-    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} actionable across pillars. Click a pillar to see the full list.</p>`;
+    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} to act on, across pillars. Click a pillar to see the full list.</p>`;
   // ---- pillar cards (nav) ----
   const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
   const money=n=>SYM+(n/1000).toFixed(1)+'K';
@@ -1138,16 +1144,16 @@ function renderSummary(){
   let ret='';
   if(RET){ret=`<div class="pcard"><div class="peyebrow">${RET.market==='MY'?'Malaysia':RET.market} · YTD</div><div class="ptitle">Retention</div>`+
       `<div class="pstat">${sM(RET.kpis.spend)} spend · <span style="color:var(--scale)">+${sM(RET.kpis.ngr_lift)}</span> net revenue</div>`+
-      `<div class="pmetrics">${RSYM}${RET.kpis.ngr_lift_per_rm} back per RM · ${sM(RET.money_to_move.stop_reduce)} to move</div>`+
+      `<div class="pmetrics">${RSYM}${RET.kpis.ngr_lift_per_rm} back for every RM1 · ${sM(RET.money_to_move.stop_reduce)} to move</div>`+
       `<button class="plink" data-goto="retention">Open Retention &#9656;</button></div>`;}
   let vip='';
   if(VIP){vip=`<div class="pcard"><div class="peyebrow">${VIP.market==='MY'?'Malaysia':VIP.market} · YTD</div><div class="ptitle">VIP</div>`+
       `<div class="pstat">${sM(VIP.program.total_bonus)} spend · <span style="color:var(--scale)">${sM(VIP.program.total_ytd_ngr)}</span> net revenue</div>`+
-      `<div class="pmetrics">${VIP.program.roi.incremental_per_rm>=0?'+':''}${VIP.program.roi.incremental_per_rm}/RM incremental · ${sM(VIP.program.subsidy_rm)} subsidy to cut</div>`+
+      `<div class="pmetrics">${VIP.program.roi.incremental_per_rm>=0?'+':''}${VIP.program.roi.incremental_per_rm} extra for every RM1 · ${sM(VIP.program.subsidy_rm)} of money-losing spend to cut</div>`+
       `<button class="plink" data-goto="vip">Open VIP &#9656;</button></div>`;}
   document.getElementById('summaryGrid').innerHTML = acq + (ret||pend('Retention','Did bonuses keep players depositing, profitably.')) +
     (vip||pend('VIP','High-value retention & recovery.')) +
-    pend('Whale Detection','Probe / scout / groom — finding and growing high-value players.') +
+    pend('Big-player detection','Probe / scout / groom — finding and growing high-value players.') +
     pend('Branding','Production, ambassador & sponsorship spend — separate data source.');
 }
 renderSummary();
@@ -1216,7 +1222,7 @@ function renderTrend(){
   let pf=n; for(let i=0;i<n;i++){if(T.partial[T.months[i]]){pf=i;break;}}
   const money=v=>{const a=Math.abs(v);return TS+(a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?Math.round(v/1e3)+'K':Math.round(v));};
   const rd=T.read;
-  document.getElementById('s_trendRead').innerHTML=`Two opposite stories under "money-is-judge": <b style="color:var(--scale)">Retention stays profitable</b> every month (${TS}${rd.ret_late}/RM lately) while <b style="color:var(--reduce)">VIP big-ticket performance rewards lose money and are worsening</b> (${TS}${rd.vip_early}→${TS}${rd.vip_late}/RM). The blended promo RM is propped up by retention. (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the cashback bill both <b>peaked in January</b> (Chinese New Year). Acquisition cost holds steady around <b>${TS}68–81</b>/FTD. <span class="warn" style="display:block;margin-top:7px">The lever is <b>reallocation</b> (the frontier below) — VIP performance rewards are the prime candidate. <b>Aug is provisional</b> (*) AND a genuine wind-down (the World Cup engagement campaign ended) — not a data lag that will "catch up."</span>`;
+  document.getElementById('s_trendRead').innerHTML=`Two opposite stories when we judge by money kept: <b style="color:var(--scale)">Retention stays profitable</b> every month (${TS}${rd.ret_late} for every RM1 lately) while <b style="color:var(--reduce)">VIP big-ticket performance rewards lose money and are worsening</b> (${TS}${rd.vip_early}→${TS}${rd.vip_late} for every RM1). The overall promo return per RM1 is held up by retention. (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in January</b> (Chinese New Year). Cost to win a new depositor holds steady around <b>${TS}68–81</b> to win each new depositor. <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate. <b>Aug is still partial</b> (*) AND a genuine wind-down (the World Cup engagement campaign ended) — not a delay in the numbers that will "catch up."</span>`;
   tStack('s_trendSpend',L,[
     {name:'VIP',color:CV('--referral'),data:T.spend_by_pillar.vip},
     {name:'Retention',color:CV('--maintain'),data:T.spend_by_pillar.ret},
@@ -1225,7 +1231,7 @@ function renderTrend(){
   tLines('s_trendEff',L,[
     {name:'Retention',color:CV('--scale'),vals:T.efficiency.map(e=>e.per_rm_ret)},
     {name:'VIP performance',color:CV('--reduce'),vals:T.efficiency.map(e=>e.per_rm_vip)}
-  ],{pf,ref:0,refLabel:'break-even',fmt:v=>TS+v.toFixed(1)});
+  ],{pf,ref:0,refLabel:'paid for itself',fmt:v=>TS+v.toFixed(1)});
   tLine('s_trendCpa',L,T.acq.map(a=>a.cost_per_ftd),{pf,color:CV('--reduce'),fmt:v=>TS+Math.round(v)});
   tLine('s_trendCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
 }
