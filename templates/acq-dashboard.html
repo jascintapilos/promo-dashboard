@@ -1,0 +1,1272 @@
+<title>Promo Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700&display=swap">
+<style>
+  :root{
+    --sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --bg:#F1F4F4; --surface:#FFFFFF; --surface-2:#F6F9F8; --inset:#EEF3F2;
+    --ink:#152420; --muted:#54655F; --line:#E2E9E7; --line-2:#D3DEDB;
+    --accent:#0E7C7B; --accent-ink:#0B5F5E; --gold:#8A6714;
+    --scale:#1C9C58; --maintain:#2E77B5; --optimise:#C68612; --reduce:#D66A28; --stop:#CE3B36; --referral:#7A57A6; --lowvol:#8A9793;
+    --scale-bg:#E4F3EA; --maintain-bg:#E3EEF8; --optimise-bg:#F8EFD9; --reduce-bg:#F9E9DD; --stop-bg:#F8E1E0; --referral-bg:#EEE8F5; --lowvol-bg:#EEF1F0;
+    --grid:#EAF0EF; --shadow:0 1px 2px rgba(18,40,36,.05),0 6px 20px -12px rgba(18,40,36,.16);
+    --seq3:#3E9E9B;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0D1514; --surface:#15201E; --surface-2:#1A2624; --inset:#101917;
+    --ink:#EAF0EE; --muted:#A3B6B2; --line:#243330; --line-2:#2E3E3B;
+    --accent:#41B2B0; --accent-ink:#7CD2D0; --gold:#C7A24E;
+    --scale:#3ABE72; --maintain:#5A99DA; --optimise:#E8B44E; --reduce:#EC8D57; --stop:#E8635D; --referral:#A98BD6; --lowvol:#8FA09B;
+    --scale-bg:#123322; --maintain-bg:#122a3f; --optimise-bg:#33290f; --reduce-bg:#33210f; --stop-bg:#331917; --referral-bg:#241a33; --lowvol-bg:#1f2927;
+    --grid:#1E2C2A; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.6); --seq3:#2E8B88;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0D1514; --surface:#15201E; --surface-2:#1A2624; --inset:#101917;
+    --ink:#EAF0EE; --muted:#A3B6B2; --line:#243330; --line-2:#2E3E3B;
+    --accent:#41B2B0; --accent-ink:#7CD2D0; --gold:#C7A24E;
+    --scale:#3ABE72; --maintain:#5A99DA; --optimise:#E8B44E; --reduce:#EC8D57; --stop:#E8635D; --referral:#A98BD6; --lowvol:#8FA09B;
+    --scale-bg:#123322; --maintain-bg:#122a3f; --optimise-bg:#33290f; --reduce-bg:#33210f; --stop-bg:#331917; --referral-bg:#241a33; --lowvol-bg:#1f2927;
+    --grid:#1E2C2A; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.6); --seq3:#2E8B88;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:30px 24px 68px}
+  .num{font-variant-numeric:tabular-nums}
+  h1,h2,h3{margin:0;text-wrap:balance}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:8px}
+  h1{font-weight:700;font-size:32px;letter-spacing:-.015em;line-height:1.1}
+  .sub{color:var(--muted);margin-top:8px;max-width:62ch;font-size:16.5px}
+  .sub b{color:var(--ink);font-weight:600}
+  .head-r{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .toggle{border:1px solid var(--line-2);background:var(--surface);color:var(--muted);border-radius:9px;padding:8px 13px;font:inherit;font-size:14px;cursor:pointer;display:flex;gap:8px;align-items:center}
+  .toggle:hover{color:var(--ink);border-color:var(--accent)}
+  .draftpill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 34%,transparent);padding:5px 11px;border-radius:999px}
+  .draftpill b{width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin:20px 0 0;padding:13px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  .meta .m{display:flex;gap:8px;align-items:baseline}
+  .meta .m .k{color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+  .meta .m .v{color:var(--ink);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+  .meta .sep{width:1px;height:17px;background:var(--line-2)}
+  .call{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:center;margin:15px 0 18px;padding:20px 24px;border-radius:15px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));box-shadow:var(--shadow)}
+  .call-lead .eyebrow{color:var(--accent-ink)}
+  .call-lead p{margin:9px 0 0;font-size:18px;line-height:1.5}
+  .call-lead b{font-weight:700}
+  .call .money{font-weight:700;color:var(--reduce);font-variant-numeric:tabular-nums}
+  .call .reload-hi{font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+  .call .fine{font-size:13.5px;color:var(--muted);margin-top:8px}
+  .tally{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+  .tally .t{text-align:center;padding:11px 4px 10px;border-radius:11px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--tc)}
+  .tally .t .n{font-size:26px;font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .tally .t .a{font-size:12.5px;font-weight:700;margin-top:5px}
+  .tally .t .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:15px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:18px 19px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .kpi .eyebrow{display:block;margin-bottom:11px}
+  .kpi .v{font-size:33px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .kpi .foot{font-size:13.5px;color:var(--muted);margin-top:10px}
+  .kpi.hi{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+  .kpi.hi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:15px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:18px 20px 15px;box-shadow:var(--shadow);min-width:0}
+  .col7{grid-column:span 7}.col5{grid-column:span 5}.col6{grid-column:span 6}.col12{grid-column:span 12}
+  .card-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}
+  .card-h h3{font-size:17px;font-weight:700}
+  .card-h .hint{font-size:13px;color:var(--muted)}
+  .card .sub2{font-size:14px;color:var(--muted);margin:3px 0 15px}
+  .grid>.card .sub2{min-height:44px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  text{font-family:"Source Sans 3",system-ui,sans-serif}
+  .axlab{fill:var(--muted);font-size:12.5px}
+  .vlab{fill:var(--ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .barlab{fill:var(--ink);font-size:14px;font-weight:600}
+  .gridline{stroke:var(--grid);stroke-width:1}
+  .tbl-wrap{overflow-x:auto;margin:6px -4px 0}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  thead th{text-align:right;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+  thead th.l{text-align:left}
+  tbody td{padding:12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tbody td.l{text-align:left}
+  tbody tr:hover{background:var(--surface-2)}
+  .code{font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .cname{color:var(--muted);font-size:13px;margin-top:2px;white-space:normal;max-width:34ch}
+  .mech{display:inline-block;font-size:12.5px;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:2px 9px}
+  .act{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px;padding:5px 12px;border-radius:8px}
+  .dot{width:9px;height:9px;border-radius:3px;flex:none;display:inline-block}
+  .rulewrap{display:grid;grid-template-columns:1fr 1.25fr;gap:26px}
+  .rule h4{font-size:13px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin:0 0 11px}
+  .rline{display:flex;gap:10px;font-size:14.5px;padding:5px 0;align-items:baseline}
+  .rline .rk{color:var(--muted);min-width:118px}
+  .rline .rv{font-weight:600;font-variant-numeric:tabular-nums}
+  .ddef{display:flex;gap:10px;align-items:baseline;padding:6px 0;font-size:14.5px}
+  .ddef .lbl{font-weight:700;min-width:96px;display:inline-flex;align-items:center;gap:7px}
+  .ddef .txt{color:var(--ink)}
+  .matrix{display:grid;grid-template-columns:170px 1fr 1fr;gap:6px;max-width:660px}
+  .matrix .mh{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;padding:2px 0 6px;align-self:end}
+  .matrix .corner{border-bottom:1px solid var(--line)}
+  .matrix .mrl{font-size:13.5px;color:var(--muted);font-weight:600;display:flex;align-items:center}
+  .matrix .mc{text-align:center;font-weight:700;font-size:13.5px;padding:10px 6px;border-radius:8px}
+  .rmatnote{font-size:13px;color:var(--muted);margin-top:11px;line-height:1.5}
+  .notes{margin-top:24px;background:var(--surface-2);border:1px solid var(--line);border-radius:15px;padding:20px 22px}
+  .notes h3{font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:13px}
+  .notes ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+  .notes li{font-size:14.5px;color:var(--ink);padding-left:21px;position:relative;line-height:1.5}
+  .notes li::before{content:"";position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+  .notes li b{font-weight:600}
+  .notes li.warn::before{background:var(--optimise)}
+  #tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--ink);color:var(--surface);font-size:13.5px;padding:9px 12px;border-radius:9px;box-shadow:0 6px 20px -6px rgba(0,0,0,.4);z-index:10;max-width:240px;line-height:1.45}
+  #tip .tt-h{font-weight:700;font-size:13px;margin-bottom:4px}
+  #tip .tt-r{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
+  footer{margin-top:28px;color:var(--muted);font-size:13.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  /* collapsible */
+  .card-h,.notes h3{cursor:pointer;user-select:none}
+  .chev{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;display:inline-block}
+  .card-h:hover h3,.notes h3:hover{color:var(--accent)}
+  .card.collapsed > *:not(.card-h){display:none}
+  .notes.collapsed > *:not(h3){display:none}
+  .grid>.card.collapsed{align-self:start}
+  /* tabs + panels */
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:22px 0 0;border-bottom:1px solid var(--line)}
+  .tab{appearance:none;background:none;border:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:8px 8px 0 0}
+  .tab:hover{color:var(--ink);background:var(--surface-2)}
+  .tab.active{color:var(--accent-ink);border-bottom-color:var(--accent)}
+  .tab .badge{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--inset);border-radius:5px;padding:1px 6px;margin-left:6px;text-transform:uppercase;letter-spacing:.03em}
+  .panel[hidden]{display:none}
+  .ctabs{display:inline-flex;gap:3px;background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:3px;margin:22px 0 0}
+  .ctab{appearance:none;background:none;border:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--muted);padding:8px 20px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center}
+  .ctab.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .ctab:hover:not(.active){color:var(--ink)}
+  .ctab .badge{margin-left:6px}
+  .country[hidden]{display:none}
+  .placeholder{background:var(--surface);border:1px dashed var(--line-2);border-radius:15px;padding:56px 30px;text-align:center;margin-top:16px;box-shadow:var(--shadow)}
+  .placeholder h3{color:var(--ink);font-size:21px;margin-bottom:10px}
+  .placeholder p{max-width:56ch;margin:0 auto;font-size:15px;color:var(--muted);line-height:1.55}
+  .placeholder .ptag{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent);padding:5px 12px;border-radius:999px;margin-bottom:16px}
+  /* summary pillar grid */
+  .pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:16px}
+  .pcard{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:20px 22px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .pcard.pending{border-style:dashed}
+  .pcard .peyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .pcard .ptitle{font-size:20px;font-weight:700;margin:5px 0 10px}
+  .pcard .pstat{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .pcard .pmetrics{font-size:14px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
+  .pcard .pcall{margin:12px 0 16px;font-size:14px;color:var(--ink)}
+  .pcard .plink{margin-top:auto;align-self:flex-start;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+  .pcard .plink:hover{filter:brightness(1.07)}
+  .pcard .ppending{margin-top:14px;font-size:15px;color:var(--muted)}
+  /* retention-specific */
+  .exec-note{display:flex;gap:11px;align-items:flex-start;margin:15px 0 0;padding:12px 16px;border-radius:11px;background:color-mix(in srgb,var(--gold) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 32%,var(--line));font-size:14.5px;color:var(--ink)}
+  .exec-note .ico{color:var(--gold);font-weight:700;flex:none}
+  .exec-note b{font-weight:700}
+  .call .reload-hi{font-weight:700;color:var(--accent-ink)}
+  .heat{display:grid;gap:4px;font-variant-numeric:tabular-nums;overflow-x:auto}
+  .heat .hc{padding:7px 4px;border-radius:6px;text-align:center;font-size:12.5px;font-weight:600}
+  .heat .hh{font-size:11.5px;color:var(--muted);font-weight:600;text-align:center;padding:2px 0}
+  .heat .hr{font-size:12.5px;color:var(--ink);font-weight:600;display:flex;align-items:center;padding-right:6px}
+  .grp{margin-top:12px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .grp-h{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;background:var(--surface-2)}
+  .grp-h:hover{background:var(--inset)}
+  .grp-h .gdot{width:10px;height:10px;border-radius:3px;flex:none}
+  .grp-h .gname{font-weight:700;font-size:14.5px}
+  .grp-h .gmeta{color:var(--muted);font-size:13px;margin-left:auto;font-variant-numeric:tabular-nums}
+  .grp-h .gchev{color:var(--muted);font-size:12px;width:12px}
+  .grp.collapsed .grp-b{display:none}
+  .grp-b{overflow-x:auto}
+  .grp-b table{min-width:680px}
+  .grp-b td:last-child,.grp-b th:last-child{width:230px;min-width:200px}
+  .soon{margin-top:24px;background:var(--surface-2);border:1px dashed var(--line-2);border-radius:15px;padding:20px 22px}
+  .soon h3{font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .soon .sub2{margin:0 0 14px}
+  .soon .srow{display:flex;gap:12px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px}
+  /* VIP */
+  .concbar{display:flex;height:26px;border-radius:7px;overflow:hidden;margin:4px 0 12px}
+  .concbar .cseg{height:100%}
+  .conclegend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--muted)}
+  .conclegend span{display:inline-flex;align-items:center;gap:6px}
+  .conclegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .varbox{display:flex;gap:11px;align-items:flex-start;margin-top:14px;padding:12px 15px;border-radius:11px;background:color-mix(in srgb,var(--stop) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--stop) 30%,var(--line));font-size:14px}
+  .varbox .ico{color:var(--stop);font-weight:700;flex:none}
+  .moves{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+  .mv{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
+  .mv .mvn{font-size:25px;font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .mv .mva{font-size:13px;font-weight:700;margin-top:7px;color:var(--reduce)}
+  .mv .mvd{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+  .lt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:9px}
+  .lt .lth{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .lt .ltn{font-size:15px;font-weight:700;color:var(--ink)}
+  .lt .ltm{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .lt .ltnote{font-size:13px;color:var(--muted);margin:4px 0 8px}
+  .lt .ltchips{display:flex;flex-wrap:wrap;gap:8px}
+  .lt .lchip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--inset);border:1px solid var(--line)}
+  .lanehdr{display:flex;align-items:center;gap:12px;margin:26px 0 14px;padding-left:13px;border-left:4px solid var(--line)}
+  .lanehdr .lanetag{width:28px;height:28px;border-radius:8px;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+  .lanehdr h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:0}
+  .lanehdr .lanesub{font-size:13px;color:var(--muted);margin-left:auto;text-align:right}
+  .cbgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-top:6px}
+  .cbcard{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--line);border-radius:11px;padding:13px 14px}
+  .cbcard .cbt{font-size:15px;font-weight:700;color:var(--ink)}
+  .cbcard .cbcost{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0 6px}
+  .cbcard .cbcost span{font-size:12px;font-weight:400;color:var(--muted)}
+  .cbcard .cbverdict{font-size:12.5px;font-weight:700;margin-bottom:9px}
+  .cbcard .cbrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-top:1px solid var(--line);color:var(--muted)}
+  .cbcard .cbrow span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+  .bracket{display:flex;align-items:stretch;gap:12px;margin-top:6px}
+  .bracket .bk{flex:1;text-align:center;padding:13px;border-radius:11px;background:var(--surface);border:1px solid var(--line)}
+  .bracket .bk span{display:block;font-size:12.5px;color:var(--muted)}
+  .bracket .bk b{display:block;font-size:23px;font-weight:700;margin:5px 0 3px;font-variant-numeric:tabular-nums}
+  .bracket .bk small{font-size:11.5px;color:var(--muted)}
+  .bracket .bk.neg b{color:var(--reduce)} .bracket .bk.pos b{color:var(--scale)}
+  .bracket .bkmid{display:flex;align-items:center;font-size:13px;color:var(--muted);font-weight:700}
+  /* Exec summary */
+  .sub-muted{font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+  .tbl-wrap{overflow-x:auto}
+  .ptbl,.ledtbl{min-width:640px}
+  .ptbl td,.ptbl th{vertical-align:top;padding:10px 12px}
+  .ptbl .ptot td{border-top:2px solid var(--line);font-variant-numeric:tabular-nums}
+  .plink.sm{padding:5px 11px;font-size:12px;margin-top:0;white-space:nowrap}
+  .pilltag{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--inset);border:1px solid var(--line);cursor:pointer;color:var(--muted);white-space:nowrap}
+  .pilltag:hover{border-color:var(--accent);color:var(--ink)}
+  .ledtbl td,.ledtbl th{padding:9px 12px;vertical-align:top}
+  .conflist{margin-top:14px}
+  .cfr{display:flex;gap:11px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .cfr .cfk{font-weight:700;min-width:92px;flex:none}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin-top:12px}
+  .tchart h4{font-size:14px;font-weight:700;margin:0 0 4px}
+  .tchart h4 span{font-weight:400;color:var(--muted);font-size:12px;margin-left:5px}
+  .tlegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--muted);margin-top:4px}
+  .tlegend span{display:inline-flex;align-items:center;gap:5px}
+  .tlegend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .ssrule{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .ssr{font-size:12.5px;background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+  .ssr b{color:var(--muted);font-weight:700;margin-right:5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+  .ssz{font-size:13px}
+  .ssz .szrow{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+  .ssz .szv{font-variant-numeric:tabular-nums;color:var(--muted)}
+  .ssz .szbar{height:8px;background:var(--inset);border-radius:5px;margin:4px 0;overflow:hidden}
+  .ssz .szbar div{height:100%}
+  .ssz .szret{font-size:12px;font-weight:700}
+  .soon .sbadge{flex:none;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);background:color-mix(in srgb,var(--gold) 13%,transparent);border:1px solid color-mix(in srgb,var(--gold) 32%,transparent);padding:3px 9px;border-radius:999px}
+  .soon .stxt b{font-weight:600;color:var(--ink)}
+  @media (max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}.call,.rulewrap,.pgrid{grid-template-columns:1fr}.col7,.col5,.col6{grid-column:span 12}.notes ul{grid-template-columns:1fr}h1{font-size:27px}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1>Promo Report</h1>
+    </div>
+    <div class="head-r">
+      <button class="toggle" id="themeBtn" aria-label="Toggle light or dark theme"><span id="themeIcon">●</span><span id="themeTxt">Dark</span></button>
+    </div>
+  </header>
+
+  <nav class="ctabs" id="ctabs">
+    <button class="ctab active" data-country="my">Malaysia</button>
+    <button class="ctab" data-country="sg">Singapore <span class="badge">soon</span></button>
+  </nav>
+
+  <div class="country" id="country-my">
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-tab="summary">Summary</button>
+    <button class="tab active" data-tab="acquisition">Acquisition</button>
+    <button class="tab" data-tab="retention">Retention</button>
+    <button class="tab" data-tab="vip">VIP</button>
+    <button class="tab" data-tab="whale">Whale Detection <span class="badge">soon</span></button>
+    <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
+  </nav>
+
+  <div class="panel" id="panel-summary" hidden>
+    <div class="exec-note" id="s_banner"></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · YTD</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single ROI), and the money sitting in the wrong place.</p><div id="s_portfolio"></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>NGR per RM · money-is-judge</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Acquisition cost <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Cashback spend <span>VIP loss-rescue</span></h4><div id="s_trendCb"></div></div></div></div>
+    <div class="grid">
+      <div class="card col6"><div class="card-h"><h3>Spend-efficiency frontier</h3><span class="hint">money-is-judge pillars</span></div><p class="sub2">Every promo ranked best-to-worst return. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (reallocatable).</p><div id="s_frontier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>How much can we trust this?</h3><span class="hint">coverage &amp; confidence</span></div><div id="s_confidence"></div></div>
+    </div>
+    <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
+    <div class="card col12" style="margin:18px 0 8px"><div class="card-h"><h3>Open a pillar</h3></div><div id="summaryGrid" class="pgrid"></div></div>
+  </div>
+
+  <div class="panel" id="panel-acquisition">
+  <div class="meta" id="meta"></div>
+
+  <section class="call">
+    <div class="call-lead" id="callLead"></div>
+    <div class="tally" id="tally"></div>
+  </section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="card col12" style="margin-bottom:15px">
+    <div class="card-h"><h3>Decision rules</h3></div>
+    <p class="sub2">Each verdict comes from the thresholds below — set from where the codes actually fall, and tunable without any rebuild.</p>
+    <div class="rulewrap">
+      <div class="rule"><h4>Thresholds</h4><div id="ruleLines"></div></div>
+      <div class="rule"><h4>Verdicts &amp; actions</h4><div id="ruleDefs"></div></div>
+    </div>
+    <div class="rule" style="margin-top:20px"><h4>Decision matrix</h4><div id="ruleMatrix"></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card col6"><div class="card-h"><h3>Cost per first-time depositor</h3><span class="hint">lower is better</span></div><p class="sub2">What each new depositor cost us, by code (graded codes only). Colour = the recommended decision.</p><div id="chartBars"></div></div>
+    <div class="card col6"><div class="card-h"><h3>Cost vs stickiness</h3><span class="hint">the sweet spot</span></div><p class="sub2">Cost per depositor vs how many come back in 30 days. Bottom-left is best: cheap and they stay.</p><div id="chartScatter"></div></div>
+    <div class="card col6"><div class="card-h"><h3>By mechanic</h3><span class="hint">which type acquires best</span></div><p class="sub2">Cost per depositor and 30-day stick-rate for each bonus type.</p><div id="chartMech"></div></div>
+    <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month across all acquisition bonuses.</p><div id="chartTrend"></div></div>
+  </div>
+
+  <div class="card col12" style="margin-top:15px">
+    <div class="card-h"><h3>Decision table</h3><span class="hint">every code · sorted by spend</span></div>
+    <p class="sub2">One row per bonus. The call follows from cost per new depositor and 30-day stickiness. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a reload, judged in Retention.</p>
+    <div class="tbl-wrap"><table id="tbl"></table></div>
+  </div>
+
+  <div class="notes">
+    <h3>Notes</h3>
+    <ul>
+      <li><b>Cost per new depositor</b> = <b>new-player</b> bonus spend ÷ new depositors. Bonus paid to existing players (reloads) is <b>not</b> charged to acquisition — otherwise a mostly-reload "welcome" looks falsely expensive.</li>
+      <li><b>New %</b> = share of takers who were genuinely new (no prior deposit). Below 40%, the code is really a reload for existing players and is routed to the Retention tab, not graded here.</li>
+      <li><b>Wk-1 NGR</b> = net revenue in the first 7 days, shown as context. Real acquisition offers often run this negative by design; a strongly positive figure usually means the code reached existing players (check New %).</li>
+      <li><b>30-day stick</b> = share of new depositors who came back within 30 days. The <span style="color:var(--muted)">(x/y)</span> is how many of the FTDs have a matured 30-day window — a faded % rests on a minority and is still settling.</li>
+      <li class="warn"><b>This ranks bonuses against each other</b>, not against running no bonus. True incrementality needs a holdout test (recommended next).</li>
+      <li><b>Base</b> = people who used the bonus (redeemed/active); figures cover 1 Jan–25 Aug, data to 26 Aug. August is a partial month (dashed on the trend); 30-day stick uses matured claims (to 28 Jul).</li>
+    </ul>
+  </div>
+  </div><!-- /panel-acquisition -->
+
+  <div class="panel" id="panel-retention" hidden>
+    <div class="meta" id="r_meta"></div>
+    <div class="exec-note" id="r_exec"></div>
+    <section class="call">
+      <div class="call-lead" id="r_callLead"></div>
+      <div class="tally" id="r_tally"></div>
+    </section>
+    <section class="kpis" id="r_kpis"></section>
+    <div class="card col12" style="margin-bottom:15px">
+      <div class="card-h"><h3>Decision rules</h3></div>
+      <p class="sub2">Money is the judge here: NGR Lift per RM is the extra net revenue a bonus keeps (after its own cost) for every RM spent. "Retains" = deposits again above what that player type normally would.</p>
+      <div class="rulewrap">
+        <div class="rule"><h4>Thresholds</h4><div id="r_ruleLines"></div></div>
+        <div class="rule"><h4>Verdicts &amp; actions</h4><div id="r_ruleDefs"></div></div>
+      </div>
+      <div class="rule" style="margin-top:20px"><h4>Decision matrix</h4><div id="r_ruleMatrix"></div></div>
+    </div>
+    <div class="grid">
+      <div class="card col6"><div class="card-h"><h3>NGR Lift per RM, by promo</h3><span class="hint">higher is better · 0 = break-even</span></div><p class="sub2">Extra net revenue kept per RM of bonus, top promos by spend. Colour = the recommended call.</p><div id="r_chartNgr"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Money × retention</h3><span class="hint">the quadrant</span></div><p class="sub2">Makes money (right) vs retains above its type's norm (up). Top-right = scale; bottom-left = stop. Bubble = spend.</p><div id="r_chartQuad"></div></div>
+      <div class="card col6"><div class="card-h"><h3>By player tier</h3><span class="hint">read within a mechanic, not across</span></div><p class="sub2">NGR Lift per RM by tier. The gradient is mostly a bonus-type mix effect — see the grid before steering budget by tier.</p><div id="r_chartTier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Bonus type × tier</h3><span class="hint">the budget-steering map</span></div><p class="sub2">NGR Lift per RM for each type at each tier. Reload earns well at every tier; free-credit loses almost everywhere.</p><div id="r_chartGrid"></div></div>
+    </div>
+    <div class="card col12" style="margin-top:15px">
+      <div class="card-h"><h3>Decision table</h3><span class="hint">grouped by call · top spend first</span></div>
+      <p class="sub2">One row per promo. Uplift = redeposit vs its type's tier-normal (directional). Win-back promos are held for the VIP tab.</p>
+      <div id="r_tbl"></div>
+    </div>
+    <div class="notes" id="r_notes"></div>
+    <div class="soon" id="r_soon"></div>
+  </div>
+  <div class="panel" id="panel-vip" hidden>
+    <div class="meta" id="v_meta"></div>
+    <div class="exec-note" id="v_exec"></div>
+    <section class="kpis" id="v_kpis"></section>
+    <div class="grid">
+      <div class="card col6"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">spend-share ÷ NGR-share · 1.0 = balanced</span></div><p class="sub2">Above 1.0 = over-funded for the value it returns; below = starved. Bronze is over-funded; Platinum &amp; Diamond carry more NGR than the budget they get.</p><div id="v_fund"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of positive NGR</span></div><p class="sub2">A thin slice of players carries most of the NGR — and the declining ones (value-at-risk) are the program's biggest single risk.</p><div id="v_whale"></div></div>
+    </div>
+    <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>The three big moves</h3><span class="hint">money to move</span></div><div id="v_moves"></div></div>
+    <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The clearest lever: an RM of VIP bonus pays as a <b>small, cheap-form reward</b> and bleeds as a <b>big deposit bonus</b> — at every tier. Tier is a multiplier: the same small reward pays more the higher you go. (Robust — survives controlling for tier, form &amp; wagering.)</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × bonus range offered <span style="font-weight:400;color:var(--muted);font-size:12px">NGR per RM · green pays, red bleeds — the cell to move money out of</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
+    <section class="call"><div class="call-lead" id="v_callLead"></div></section>
+    <div class="tally" id="v_tally" style="margin-bottom:18px"></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>How each lane is judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each lane is graded on its own — never one metric across all. NGR is net of the bonus (break-even 0).</p><div id="v_rules"></div></div>
+    <div id="v_lanes"></div>
+    <div class="notes" id="v_notes"></div>
+    <div class="soon" id="v_soon"></div>
+  </div>
+  <div class="panel" id="panel-whale" hidden>
+    <div class="placeholder"><span class="ptag">Queued</span><h3>Whale Detection</h3><p>Probe / scout / groom promos used to find and grow high-value players. Built after the core pillars.</p></div>
+  </div>
+  <div class="panel" id="panel-branding" hidden>
+    <div class="placeholder"><span class="ptag">Different shape</span><h3>Branding</h3><p>Production, ambassador and sponsorship spend — brand-marketing, not player giveaways. This pillar's spend lives outside the promo-code system, so it needs a separate data source and a different layout.</p></div>
+  </div>
+  </div><!-- /country-my -->
+
+  <div class="country" id="country-sg" hidden>
+    <div class="placeholder"><span class="ptag">Coming next</span><h3>Singapore</h3><p>Singapore promos will appear here once its data is pulled — the same pillar tabs and layout as Malaysia.</p></div>
+  </div>
+
+  <footer><span id="footL"></span><span>Thresholds tunable without a rebuild</span></footer>
+</div>
+<div id="tip"></div>
+
+<script>
+const PAYLOAD = /*__ACQ_PAYLOAD__*/ null;
+const RET = /*__RET_PAYLOAD__*/ null;
+const VIP = /*__VIP_PAYLOAD__*/ null;
+const TREND = /*__TREND_PAYLOAD__*/ null;
+const P = PAYLOAD, SYM = P.sym || 'RM';
+const DEC = {
+  Scale:{c:'var(--scale)',bg:'var(--scale-bg)',d:'grow it'}, Maintain:{c:'var(--maintain)',bg:'var(--maintain-bg)',d:'hold steady'},
+  Optimise:{c:'var(--optimise)',bg:'var(--optimise-bg)',d:'tune it'}, Reduce:{c:'var(--reduce)',bg:'var(--reduce-bg)',d:'pull back'},
+  Stop:{c:'var(--stop)',bg:'var(--stop-bg)',d:'kill it'},
+  Reload:{c:'var(--accent-ink)',bg:'var(--inset)',d:'judge in Retention'}, Referral:{c:'var(--referral)',bg:'var(--referral-bg)',d:'tracked apart'},
+  'Low volume':{c:'var(--lowvol)',bg:'var(--lowvol-bg)',d:'too few'}
+};
+const ACTIONS = ['Scale','Maintain','Optimise','Reduce','Stop'];
+const CV = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SVGNS='http://www.w3.org/2000/svg';
+const el=(t,a={})=>{const n=document.createElementNS(SVGNS,t);for(const k in a)n.setAttribute(k,a[k]);return n;};
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const tip=document.getElementById('tip');
+const showTip=(e,h)=>{tip.innerHTML=h;tip.style.opacity=1;moveTip(e);};
+const moveTip=e=>{const p=12,w=tip.offsetWidth,ht=tip.offsetHeight;let x=e.clientX+p,y=e.clientY+p;if(x+w>innerWidth)x=e.clientX-w-p;if(y+ht>innerHeight)y=e.clientY-ht-p;tip.style.left=x+'px';tip.style.top=y+'px';};
+const hideTip=()=>tip.style.opacity=0;
+const codes=P.codes, K=P.kpis, THR=P.thresholds;
+
+// meta + eyebrow + footer
+document.getElementById('eyebrow').textContent = 'WS1';
+document.getElementById('meta').innerHTML =
+  `<div class="m"><span class="k">Period</span><span class="v">${P.period}</span></div>`+
+  `<div class="sep"></div>`+
+  `<div class="m"><span class="k">Market</span><span class="v">${P.market==='MY'?'Malaysia':P.market} · ${P.currency}</span></div>`+
+  `<div class="m"><span class="k">Scope</span><span class="v">${codes.length} acquisition codes</span></div>`+
+  `<div class="sep"></div>`+
+  `<div class="m"><span class="k">Base</span><span class="v">people who used the bonus</span></div>`;
+document.getElementById('footL').textContent = `WS1 · ${P.market==='MY'?'Malaysia':P.market} · figures from live data`;
+
+// the call
+const cnt={}; ACTIONS.concat(['Reload','Referral','Low volume']).forEach(k=>cnt[k]=0);
+codes.forEach(c=>{cnt[c.decision]=(cnt[c.decision]||0)+1;});
+const trimStop = cnt.Reduce+cnt.Stop;
+const reloadSpend = codes.filter(c=>c.decision==='Reload').reduce((a,c)=>a+c.spend,0);
+const trimSpend = codes.filter(c=>c.decision==='Reduce'||c.decision==='Stop').reduce((a,c)=>a+c.spend,0);
+document.getElementById('callLead').innerHTML =
+  `<p><b>${cnt.Scale}</b> to <b>scale</b>, <b>${cnt.Maintain}</b> to <b>hold</b>, <b>${cnt.Optimise}</b> to <b>tune</b>`+
+  (trimStop?`, <b>${trimStop}</b> to <b>trim / stop</b> (<span class="money">${SYM}${fmt(trimSpend)}</span>)`:`, and none losing money on new depositors`)+`. `+
+  (reloadSpend?`<span class="reload-hi">${SYM}${fmt(reloadSpend)}</span> of "welcome" spend is really <b>reloads</b> for existing players — its value shows on the <b>Retention</b> tab, not here.`:``)+`</p>`+
+  `<p class="fine">${cnt.Reload} reload code(s) routed to Retention; ${cnt.Referral} referral code(s) tracked separately (win = the referee's deposit); ${cnt['Low volume']} too few takers to grade.</p>`;
+document.getElementById('tally').innerHTML = ACTIONS.map(k=>
+  `<div class="t" style="--tc:${DEC[k].c}"><div class="n">${cnt[k]}</div><div class="a" style="color:${DEC[k].c}">${k}</div><div class="d">${DEC[k].d}</div></div>`).join('');
+
+// kpis
+[['Acquisition spend',SYM+fmt(K.spend),'all TL-tagged acquisition codes',0],
+ ['New depositors (FTD)',fmt(K.ftd),'first-ever deposits won',0],
+ ['Cost per new depositor',K.cost_per_ftd!=null?SYM+K.cost_per_ftd:'—','new-player spend ÷ new depositors',1],
+ ['30-day stick-rate',K.stick_30!=null?K.stick_30+'%':'—','came back within 30 days',1]
+].forEach(k=>{
+  const d=document.createElement('div'); d.className='kpi'+(k[3]?' hi':'');
+  d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;
+  document.getElementById('kpis').append(d);
+});
+
+// decision rule panel
+document.getElementById('ruleLines').innerHTML =
+  `<div class="rline"><span class="rk">Enough to judge</span><span class="rv">≥ ${THR.floor_claimers} people used it</span></div>`+
+  `<div class="rline"><span class="rk">Cheap to acquire</span><span class="rv">≤ ${SYM}${THR.cost_per_ftd_p25} per new depositor</span></div>`+
+  `<div class="rline"><span class="rk">Mid cost</span><span class="rv">${SYM}${THR.cost_per_ftd_p25}–${SYM}${THR.cost_per_ftd_p75}</span></div>`+
+  `<div class="rline"><span class="rk">Expensive</span><span class="rv">≥ ${SYM}${THR.cost_per_ftd_p75} per new depositor</span></div>`+
+  `<div class="rline"><span class="rk">Sticky</span><span class="rv">≥ ${THR.stick_median}% come back in 30 days</span></div>`+
+  `<div class="rline"><span class="rk">Real acquisition</span><span class="rv">≥ ${THR.reload_purity||40}% of takers are new players</span></div>`;
+const defs=[
+ ['Scale','cheap to win a depositor AND they come back','put more budget behind it, offer it to more of the eligible players, and feature it more prominently — keep the amount as is'],
+ ['Maintain','fair cost, decent return','leave the amount, budget and targeting as they are — keep watching it'],
+ ['Optimise','too expensive OR too few come back (one problem)','test a smaller bonus / higher wagering to cut the cost, and tighten who it is shown to — A/B test before rolling wider'],
+ ['Reduce','too expensive AND too few come back','shrink it — lower the amount, cut the budget, or limit it to a narrower, higher-intent audience'],
+ ['Stop','buys no new depositors','turn it off — the spend is wasted'],
+ ['Reload','mostly existing players, not new ones','this is a reload/retention offer wearing a "welcome" label — judge its value on the Retention tab (its week-1 NGR), not as acquisition cost'],
+ ['Referral','win is the referee’s deposit','measure it by the referee’s deposit, not this code’s own new depositors (separate tracking)'],
+ ['Low volume','fewer than '+THR.floor_claimers+' takers','let it gather more takers before deciding, or fold it into a similar offer']];
+document.getElementById('ruleDefs').innerHTML = defs.map(d=>
+  `<div class="ddef"><span class="lbl"><span class="dot" style="background:${DEC[d[0]].c}"></span>${d[0]}</span><span class="txt">${d[1]}. <b style="color:var(--ink)">Do:</b> <span style="color:var(--muted)">${d[2]}</span></span></div>`).join('');
+const mc = v => `<div class="mc" style="color:${DEC[v].c};background:${DEC[v].bg}">${v}</div>`;
+const band = (lbl, a, b) => `<div class="mrl">${lbl}</div>${mc(a)}${mc(b)}`;
+document.getElementById('ruleMatrix').innerHTML =
+  `<div class="matrix">`+
+  `<div class="corner"></div><div class="mh">Sticky (≥ ${THR.stick_median}% return)</div><div class="mh">Not sticky (&lt; ${THR.stick_median}%)</div>`+
+  band(`Cheap (≤ ${SYM}${THR.cost_per_ftd_p25} / FTD)`, 'Scale', 'Optimise')+
+  band('Mid cost', 'Maintain', 'Optimise')+
+  band(`Expensive (≥ ${SYM}${THR.cost_per_ftd_p75} / FTD)`, 'Optimise', 'Reduce')+
+  `</div>`+
+  `<div class="rmatnote"><b>Checked first (before the grid):</b> low-purity codes (&lt; ${THR.reload_purity||40}% new) are reloads → judged in Retention · referral codes scored separately · fewer than ${THR.floor_claimers} users → "too few to judge" · zero new depositors → Stop. <b>Cost = new-player spend ÷ new depositors</b> (existing-player reload spend is not charged to acquisition).</div>`;
+
+// charts
+function bars(){
+  const d=codes.filter(c=>ACTIONS.includes(c.decision)&&c.cost_per_ftd!=null).sort((a,b)=>b.cost_per_ftd-a.cost_per_ftd);
+  if(!d.length)return; const W=480,H=300,left=168,right=46,top=8,bot=22;
+  const rh=(H-top-bot)/d.length, bh=Math.min(13,rh-5);
+  const max=Math.max(...d.map(x=>x.cost_per_ftd)), sx=v=>left+(v/max)*(W-left-right);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per FTD by code');
+  [100,200,300,400,500,600].forEach(g=>{if(g>max)return;const x=sx(g);s.append(el('line',{x1:x,y1:top,x2:x,y2:H-bot+2,class:'gridline'}));const t=el('text',{x,y:H-6,'text-anchor':'middle',class:'axlab'});t.textContent=g;s.append(t);});
+  d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,c=CV(DEC[x.decision].c.slice(4,-1));
+    const nm=el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12px'});const _l=x.code.replace('FT_','');nm.textContent=_l.length>26?_l.slice(0,25)+'…':_l;s.append(nm);
+    s.append(el('rect',{x:left,y,width:Math.max(3,sx(x.cost_per_ftd)-left),height:bh,rx:3,fill:c}));
+    const vl=el('text',{x:sx(x.cost_per_ftd)+6,y:y+bh/2+4,class:'vlab',style:'font-size:12px'});vl.textContent=SYM+x.cost_per_ftd;s.append(vl);
+    const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost / FTD</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div><div class="tt-r"><span>Decision</span><span>${x.decision}</span></div>`));
+    hit.addEventListener('mouseleave',hideTip);s.append(hit);});
+  document.getElementById('chartBars').append(s);
+}
+function scatter(){
+  const d=codes.filter(c=>ACTIONS.includes(c.decision)&&c.cost_per_ftd!=null&&c.stick_30!=null);
+  if(!d.length)return; const W=480,H=300,l=44,r=16,t=14,b=40;
+  // clamp the x-axis to ~1.6x the "expensive" line so a single dear outlier doesn't waste the width
+  const dmax=Math.max(...d.map(x=>x.cost_per_ftd));
+  const xmax=Math.max(60, Math.min(dmax*1.1, (THR.cost_per_ftd_p75||200)*1.6));
+  const ymax=Math.max(70,...d.map(x=>x.stick_30))*1.05;
+  const sx=v=>l+(Math.min(v,xmax)/xmax)*(W-l-r), sy=v=>H-b-(v/ymax)*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per FTD vs 30-day stick');
+  const step=xmax<=150?25:xmax<=320?50:100;
+  const gx=[]; for(let g=0; g<=xmax; g+=step) gx.push(g);
+  gx.forEach(g=>{const x=sx(g);s.append(el('line',{x1:x,y1:t,x2:x,y2:H-b,class:'gridline'}));const tx=el('text',{x,y:H-b+17,'text-anchor':'middle',class:'axlab'});tx.textContent=SYM+g;s.append(tx);});
+  [0,20,40,60].forEach(g=>{if(g>ymax)return;const y=sy(g);s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,class:'gridline'}));const ty=el('text',{x:l-8,y:y+4,'text-anchor':'end',class:'axlab'});ty.textContent=g+'%';s.append(ty);});
+  s.append(el('line',{x1:sx(THR.cost_per_ftd_p50),y1:t,x2:sx(THR.cost_per_ftd_p50),y2:H-b,stroke:CV('--line-2'),'stroke-dasharray':'3 4','stroke-width':1}));
+  s.append(el('line',{x1:l,y1:sy(THR.stick_median),x2:W-r,y2:sy(THR.stick_median),stroke:CV('--line-2'),'stroke-dasharray':'3 4','stroke-width':1}));
+  const q=el('text',{x:sx(xmax*0.02),y:sy(ymax*0.95),class:'axlab',style:'font-weight:700;fill:'+CV('--scale')});q.textContent='cheap · sticky';s.append(q);
+  d.forEach(x=>{const c=CV(DEC[x.decision].c.slice(4,-1)),rad=7+Math.sqrt(x.ftd)/6,off=x.cost_per_ftd>xmax;
+    const pt=el('circle',{cx:sx(x.cost_per_ftd),cy:sy(x.stick_30),r:rad,fill:c,'fill-opacity':.85,stroke:off?CV('--ink'):CV('--surface'),'stroke-width':2,'stroke-dasharray':off?'2 2':'','style':'cursor:pointer'});
+    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost / FTD</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>30-day stick</span><span>${x.stick_30}%</span></div><div class="tt-r"><span>FTDs</span><span>${x.ftd}</span></div>`));
+    pt.addEventListener('mouseleave',hideTip);s.append(pt);});
+  const ax=el('text',{x:(l+W-r)/2,y:H-3,'text-anchor':'middle',class:'axlab'});ax.textContent='Cost per FTD →';s.append(ax);
+  document.getElementById('chartScatter').append(s);
+}
+function mech(){
+  const rows=P.by_mechanic.filter(m=>m.cost_per_ftd!=null);
+  const W=480,H=300,top=20,left=120,barW=248; const slot=(H-top-10)/rows.length;
+  const cmax=Math.max(...rows.map(r=>r.cost_per_ftd));
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','By mechanic');
+  rows.forEach((r,i)=>{const y=top+i*slot+slot/2-24;
+    s.append(Object.assign(el('text',{x:0,y:y+17,class:'barlab'}),{textContent:r.mech_label||r.mechanic}));
+    const bw=(r.cost_per_ftd/cmax)*barW;
+    s.append(el('rect',{x:left,y:y+6,width:barW,height:14,rx:4,fill:CV('--inset')}));
+    s.append(el('rect',{x:left,y:y+6,width:Math.max(4,bw),height:14,rx:4,fill:CV('--accent')}));
+    s.append(Object.assign(el('text',{x:left+bw+8,y:y+17,class:'vlab'}),{textContent:SYM+r.cost_per_ftd+' / FTD'}));
+    s.append(Object.assign(el('text',{x:0,y:y+43,class:'axlab'}),{textContent:'30-day stick'}));
+    const sbw=((r.stick_30||0)/60)*barW;
+    s.append(el('rect',{x:left,y:y+33,width:barW,height:10,rx:3,fill:CV('--inset')}));
+    s.append(el('rect',{x:left,y:y+33,width:Math.max(4,sbw),height:10,rx:3,fill:CV('--seq3')}));
+    s.append(Object.assign(el('text',{x:left+sbw+8,y:y+43,class:'vlab',style:'font-size:12.5px'}),{textContent:(r.stick_30!=null?r.stick_30+'%':'—')}));
+  });
+  document.getElementById('chartMech').append(s);
+}
+function trend(){
+  const T=P.trend, W=480,H=300,l=40,r=14,t=16,b=28;
+  const max=Math.max(...T.map(x=>x.ftd))*1.15||1, sx=i=>l+i*((W-l-r)/(T.length-1)), sy=v=>H-b-(v/max)*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','New depositors by month');
+  [100,200,300,400].forEach(g=>{if(g>max)return;const y=sy(g);s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,class:'gridline'}));const ty=el('text',{x:l-8,y:y+4,'text-anchor':'end',class:'axlab'});ty.textContent=g;s.append(ty);});
+  const pIdx=T.findIndex(v=>v.month===P.trend_partial_month), partialLast=(pIdx===T.length-1);
+  const solidPts=partialLast?T.slice(0,T.length-1):T;
+  let dline='';solidPts.forEach((v,i)=>{dline+=(i?'L':'M')+sx(i)+' '+sy(v.ftd)+' ';});
+  const areaPts=solidPts;
+  const darea=`M${l} ${sy(0)} `+areaPts.map((v,i)=>`L${sx(i)} ${sy(v.ftd)}`).join(' ')+` L${sx(areaPts.length-1)} ${sy(0)} Z`;
+  const grad=el('linearGradient',{id:'ag',x1:0,y1:0,x2:0,y2:1});
+  grad.append(el('stop',{offset:'0%','stop-color':CV('--accent'),'stop-opacity':.22}));grad.append(el('stop',{offset:'100%','stop-color':CV('--accent'),'stop-opacity':0}));
+  const defs=el('defs');defs.append(grad);s.append(defs);
+  s.append(el('path',{d:darea,fill:'url(#ag)'}));
+  s.append(el('path',{d:dline,fill:'none',stroke:CV('--accent'),'stroke-width':2.5,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  if(partialLast){const i=T.length-1;
+    s.append(el('path',{d:`M${sx(i-1)} ${sy(T[i-1].ftd)} L${sx(i)} ${sy(T[i].ftd)}`,fill:'none',stroke:CV('--accent'),'stroke-width':2.5,'stroke-dasharray':'4 3','stroke-opacity':.65}));}
+  T.forEach((v,i)=>{const last=i===T.length-1,part=(i===pIdx);
+    s.append(el('circle',{cx:sx(i),cy:sy(v.ftd),r:last?5:3.2,fill:part?CV('--bg'):(last?CV('--accent'):CV('--surface')),stroke:CV('--accent'),'stroke-width':2,'stroke-dasharray':part?'2 2':''}));
+    s.append(Object.assign(el('text',{x:sx(i),y:H-9,'text-anchor':'middle',class:'axlab'}),{textContent:v.month}));
+    if(part)s.append(Object.assign(el('text',{x:sx(i),y:sy(v.ftd)-11,'text-anchor':'middle',class:'axlab',style:'font-size:11px;font-style:italic'}),{textContent:'partial'}));
+    const hit=el('rect',{x:sx(i)-18,y:t,width:36,height:H-t-b,fill:'transparent',style:'cursor:pointer'});
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${v.month} 2026${part?' — partial':''}</div><div class="tt-r"><span>New depositors</span><span>${v.ftd}</span></div>${part?'<div class="tt-r"><span>still accruing (data to 26 Aug)</span></div>':''}`));
+    hit.addEventListener('mouseleave',hideTip);s.append(hit);});
+  document.getElementById('chartTrend').append(s);
+}
+function table(){
+  const d=[...codes].sort((a,b)=>b.spend-a.spend);
+  const na=v=>v==null?'<span style="color:var(--muted)">—</span>':v;
+  const ngrCell=x=>{ if(x.ngr_w7==null) return na(null); const v=x.ngr_w7;
+    return `<span style="color:${v>0?'var(--scale)':'var(--muted)'}">${(v>=0?'+':'−')+SYM+fmt(Math.abs(v))}</span>`; };
+  const stickCell=x=>{ if(x.stick_30==null) return na(null);
+    const imm=(x.stick_mature_share!=null&&x.stick_mature_share<60);
+    const hint=(x.ftd_mature!=null&&x.ftd!=null&&x.ftd_mature<x.ftd)?` <span style="color:var(--muted);font-size:11.5px">(${x.ftd_mature}/${x.ftd})</span>`:'';
+    return `<span${imm?' style="opacity:.55" title="based on a minority of FTDs — still maturing"':''}>${x.stick_30}%</span>${hint}`; };
+  const head=`<thead><tr><th class="l" style="width:34px">#</th><th class="l">Bonus code</th><th class="l" style="padding-left:14px">Decision</th><th>Type</th><th>Users</th><th>FTDs</th><th>Cost / new dep.</th><th>New %</th><th>Wk-1 NGR</th><th>30-day stick</th></tr></thead>`;
+  const body=d.map((x,i)=>{const dc=DEC[x.decision]||DEC['Low volume'];return `<tr>
+    <td class="l" style="color:var(--muted);font-weight:600">${i+1}</td>
+    <td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div></td>
+    <td class="l" style="padding-left:14px"><span class="act" style="color:${dc.c};background:${dc.bg}"><span class="dot" style="background:${dc.c}"></span>${x.decision}</span></td>
+    <td><span class="mech">${x.mech_label||x.mechanic||''}</span></td>
+    <td>${fmt(x.claimers)}</td><td>${fmt(x.ftd)}</td>
+    <td style="font-weight:700">${x.cost_per_ftd!=null?SYM+x.cost_per_ftd:na(null)}</td>
+    <td>${x.purity}%</td>
+    <td>${ngrCell(x)}</td>
+    <td>${stickCell(x)}</td>
+  </tr>`;}).join('');
+  document.getElementById('tbl').innerHTML=head+`<tbody>${body}</tbody>`;
+}
+function paint(){['chartBars','chartScatter','chartMech','chartTrend'].forEach(id=>document.getElementById(id).innerHTML='');bars();scatter();mech();trend();if(RET){rNgrBars();rQuad();rTierBars();rGrid();}}
+const btn=document.getElementById('themeBtn');
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';try{localStorage.setItem('acqtheme',t)}catch(e){}paint();}
+btn.addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');setTheme(cur==='dark'?'light':'dark');});
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!document.documentElement.getAttribute('data-theme'))paint();});
+window.addEventListener('scroll',()=>hideTip(),{passive:true});
+(function(){let t=null;try{t=localStorage.getItem('acqtheme')}catch(e){}if(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';}})();
+table();bars();scatter();mech();trend();
+
+// ============================ RETENTION TAB ============================
+const RDEC = {
+  Scale:{c:'var(--scale)',bg:'var(--scale-bg)',d:'grow it'}, Maintain:{c:'var(--maintain)',bg:'var(--maintain-bg)',d:'keep as-is'},
+  Optimise:{c:'var(--optimise)',bg:'var(--optimise-bg)',d:'tune it'}, Reduce:{c:'var(--reduce)',bg:'var(--reduce-bg)',d:'trim it'},
+  Stop:{c:'var(--stop)',bg:'var(--stop-bg)',d:'stop it'}, 'Watch-money':{c:'var(--gold)',bg:'color-mix(in srgb,var(--gold) 15%,transparent)',d:'firm at 30d'},
+  Monitor:{c:'var(--lowvol)',bg:'var(--lowvol-bg)',d:'too new/thin'}, Hold:{c:'var(--referral)',bg:'var(--referral-bg)',d:'VIP tab'}
+};
+const RACT=['Scale','Maintain','Optimise','Reduce','Stop'];
+const RSYM=(RET&&RET.sym)||'RM';
+const rcv=x=>RDEC[x]?CV(RDEC[x].c.slice(4,-1)):CV('--muted');
+function rNgrBars(){
+  const box=document.getElementById('r_chartNgr'); if(!box)return; box.innerHTML='';
+  const d=RET.codes.filter(c=>RACT.includes(c.decision)&&c.ngr_lift_per_rm!=null).sort((a,b)=>b.spend-a.spend).slice(0,14);
+  if(!d.length)return; const W=480,H=300,left=150,right=42,top=8,bot=8;
+  const vals=d.map(x=>x.ngr_lift_per_rm), x0=Math.max(-2.5,Math.min(0,...vals)), x1=Math.min(5.5,Math.max(...vals,0.6));
+  const sx=v=>left+((Math.max(x0,Math.min(x1,v))-x0)/(x1-x0))*(W-left-right);
+  const rh=(H-top-bot)/d.length, bh=Math.min(13,rh-5), zx=sx(0);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2'),'stroke-width':1}));
+  d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,c=rcv(x.decision),v=x.ngr_lift_per_rm,bx=sx(v),pos=v>=0,clamp=v<x0;
+    const nm=el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'});const _l=x.code.replace('FT_','');nm.textContent=_l.length>22?_l.slice(0,21)+'…':_l;s.append(nm);
+    s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c,'fill-opacity':clamp?.6:1}));
+    // labels always on the open side of zero so extreme-negative values never collide with the code names
+    const vl=el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:11.5px'});vl.textContent=RSYM+v.toFixed(2);s.append(vl);
+    const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>NGR Lift / RM</span><span>${RSYM}${v.toFixed(2)}</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div><div class="tt-r"><span>Call</span><span>${x.decision}</span></div>`));
+    hit.addEventListener('mouseleave',hideTip);s.append(hit);});
+  box.append(s);
+}
+function rQuad(){
+  const box=document.getElementById('r_chartQuad'); if(!box)return; box.innerHTML='';
+  const d=RET.codes.filter(c=>RACT.includes(c.decision)&&c.ngr_lift_per_rm!=null&&c.redeposit_uplift!=null);
+  if(!d.length)return; const W=480,H=300,l=42,r=14,t=12,b=34;
+  const xlo=-2,xhi=5,ylo=-30,yhi=30,xcl=v=>Math.max(xlo,Math.min(xhi,v)),ycl=v=>Math.max(ylo,Math.min(yhi,v));
+  const sx=v=>l+((xcl(v)-xlo)/(xhi-xlo))*(W-l-r), sy=v=>H-b-((ycl(v)-ylo)/(yhi-ylo))*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:sx(0),y1:t,x2:sx(0),y2:H-b,stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+  s.append(el('line',{x1:l,y1:sy(0),x2:W-r,y2:sy(0),stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+  const q=el('text',{x:sx(4.7),y:sy(26),'text-anchor':'end',class:'axlab',style:'font-weight:700;fill:'+CV('--scale')});q.textContent='scale';s.append(q);
+  [-2,-1,0,1,2,3,4,5].forEach(g=>{const x=sx(g);const tx=el('text',{x,y:H-b+15,'text-anchor':'middle',class:'axlab',style:'font-size:11px'});tx.textContent=RSYM+g;s.append(tx);});
+  [-30,-15,0,15,30].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-6,y:y+4,'text-anchor':'end',class:'axlab',style:'font-size:11px'});ty.textContent=(g>0?'+':'')+g;s.append(ty);});
+  const smax=Math.max(...d.map(x=>x.spend));
+  d.forEach(x=>{const c=rcv(x.decision),rad=5+Math.sqrt(x.spend/smax)*15;
+    const pt=el('circle',{cx:sx(x.ngr_lift_per_rm),cy:sy(x.redeposit_uplift),r:rad,fill:c,'fill-opacity':.7,stroke:CV('--surface'),'stroke-width':1.5,style:'cursor:pointer'});
+    pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>NGR Lift/RM</span><span>${RSYM}${x.ngr_lift_per_rm.toFixed(2)}</span></div><div class="tt-r"><span>Redeposit uplift</span><span>${x.redeposit_uplift>0?'+':''}${x.redeposit_uplift}pp</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div>`));
+    pt.addEventListener('mouseleave',hideTip);s.append(pt);});
+  const ax=el('text',{x:(l+W-r)/2,y:H-2,'text-anchor':'middle',class:'axlab'});ax.textContent='NGR Lift per RM →  ·  ↑ retains above norm';s.append(ax);
+  box.append(s);
+}
+function rTierBars(){
+  const box=document.getElementById('r_chartTier'); if(!box)return; box.innerHTML='';
+  const d=RET.by_tier.filter(t=>t.ngr_lift_per_rm!=null); if(!d.length)return;
+  const W=480,H=300,left=86,right=46,top=10,bot=10;
+  const vals=d.map(x=>x.ngr_lift_per_rm),x0=Math.min(0,...vals),x1=Math.max(...vals,0.6);
+  const sx=v=>left+((v-x0)/(x1-x0))*(W-left-right); const rh=(H-top-bot)/d.length,bh=Math.min(20,rh-8),zx=sx(0);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'}); s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+  d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,v=x.ngr_lift_per_rm,bx=sx(v),pos=v>=0;
+    s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12.5px'}),{textContent:x.tier}));
+    s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:pos?CV('--seq3'):CV('--reduce')}));
+    s.append(Object.assign(el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:12px'}),{textContent:RSYM+v.toFixed(2)}));});
+  box.append(s);
+}
+function rGrid(){
+  const box=document.getElementById('r_chartGrid'); if(!box)return; box.innerHTML='';
+  const mechs=[['reload','Reload'],['free-credit','Free credit'],['free-spins','Free spins']];
+  const tiers=['Bronze','Silver','Gold','Platinum','Diamond','Classic','Unknown'];
+  const g={}; RET.mech_tier_grid.forEach(c=>{g[c.mechanic+'|'+c.tier]=c;});
+  const present=tiers.filter(t=>mechs.some(m=>g[m[0]+'|'+t]));
+  const heat=document.createElement('div'); heat.className='heat'; heat.style.gridTemplateColumns=`96px repeat(${present.length},minmax(40px,1fr))`;
+  heat.appendChild(document.createElement('div'));
+  present.forEach(t=>{const h=document.createElement('div');h.className='hh';h.textContent=t;heat.appendChild(h);});
+  mechs.forEach(([mk,ml])=>{
+    const rl=document.createElement('div');rl.className='hr';rl.textContent=ml;heat.appendChild(rl);
+    present.forEach(t=>{const cell=g[mk+'|'+t],d=document.createElement('div');d.className='hc';
+      if(!cell||cell.ngr_lift_per_rm==null){d.textContent='—';d.style.color='var(--muted)';d.style.background='var(--inset)';}
+      else if(cell.low_n){d.textContent=cell.ngr_lift_per_rm.toFixed(1);d.style.color='var(--muted)';d.style.background='var(--inset)';d.title=`too few players (n=${cell.n})`;}
+      else{const v=cell.ngr_lift_per_rm,good=v>=0,mag=Math.min(1,Math.abs(v)/2.5);
+        d.style.background=`color-mix(in srgb, var(--${good?'scale':'stop'}) ${Math.round(16+mag*44)}%, var(--surface))`;
+        d.style.color='var(--ink)';d.textContent=RSYM+v.toFixed(2);d.title=`${ml} · ${t}: ${RSYM}${v.toFixed(2)}/RM · ${cell.n} players`;}
+      heat.appendChild(d);});});
+  box.appendChild(heat);
+}
+function rTable(){
+  const box=document.getElementById('r_tbl'); if(!box)return; box.innerHTML='';
+  const order=['Scale','Maintain','Optimise','Reduce','Stop','Watch-money','Monitor','Hold'], open=new Set(['Scale','Reduce','Stop','Watch-money']);
+  const na=v=>v==null?'<span style="color:var(--muted)">—</span>':v;
+  order.forEach(dec=>{
+    const rows=RET.codes.filter(c=>c.decision===dec).sort((a,b)=>b.spend-a.spend); if(!rows.length)return;
+    const spend=rows.reduce((a,c)=>a+c.spend,0),dc=RDEC[dec],isOpen=open.has(dec);
+    const grp=document.createElement('div'); grp.className='grp'+(isOpen?'':' collapsed');
+    const h=document.createElement('div'); h.className='grp-h';
+    h.innerHTML=`<span class="gchev">${isOpen?'▾':'▸'}</span><span class="gdot" style="background:${dc.c}"></span><span class="gname" style="color:${dc.c}">${dec}</span><span class="gmeta">${rows.length} promo${rows.length>1?'s':''} · ${RSYM}${fmt(spend)}</span>`;
+    const bwrap=document.createElement('div'); bwrap.className='grp-b';
+    const body=rows.map(x=>{
+      const up=x.redeposit_uplift, upTxt=up==null?na(null):`<span style="color:${up>0?'var(--scale)':up<0?'var(--reduce)':'var(--muted)'}">${up>0?'+':''}${up}pp</span>`;
+      const mv=x.ngr_lift_per_rm, mTxt=mv==null?na(null):`<span style="font-weight:700;color:${mv>0?'var(--ink)':'var(--reduce)'}">${RSYM}${mv.toFixed(2)}</span>`;
+      const flag=(x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'';
+      return `<tr><td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div>${flag}</td>
+        <td><span class="mech">${x.mechanic||''}</span></td><td>${RSYM}${fmt(x.spend)}</td><td>${mTxt}</td><td>${upTxt}</td>
+        <td>${x.redeposit_rate!=null?x.redeposit_rate+'%':na(null)}</td>
+        <td class="l" style="max-width:32ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.reason||''}</td></tr>`;}).join('');
+    bwrap.innerHTML=`<table><thead><tr><th class="l">Promo</th><th>Type</th><th>Spend</th><th>NGR/RM</th><th>Uplift</th><th>Redep</th><th class="l">Why</th></tr></thead><tbody>${body}</tbody></table>`;
+    h.addEventListener('click',()=>{const col=grp.classList.toggle('collapsed');h.querySelector('.gchev').textContent=col?'▸':'▾';});
+    grp.append(h,bwrap); box.append(grp);
+  });
+}
+function renderRetention(){
+  if(!RET) return;
+  const RK=RET.kpis, T=RET.thresholds, mtm=RET.money_to_move;
+  const rc={}; Object.keys(RDEC).forEach(k=>rc[k]=0); RET.codes.forEach(c=>rc[c.decision]=(rc[c.decision]||0)+1);
+  document.getElementById('r_meta').innerHTML=
+    `<div class="m"><span class="k">Period</span><span class="v">${RET.period}</span></div><div class="sep"></div>`+
+    `<div class="m"><span class="k">Market</span><span class="v">${RET.market==='MY'?'Malaysia':RET.market} · ${RET.currency}</span></div>`+
+    `<div class="m"><span class="k">Scope</span><span class="v">${RET.codes.length} retention promos</span></div><div class="sep"></div>`+
+    `<div class="m"><span class="k">Base</span><span class="v">existing players who used the bonus</span></div>`;
+  document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div>On this tab <b>money is the judge</b> — the opposite of Acquisition. These players already deposit, so "did they come back" barely separates good from bad; what matters is whether the bonus kept a player who <b>added net revenue</b>. NGR here is net of the bonus (verified), so a positive figure is profit after the giveaway.</div>`;
+  document.getElementById('r_callLead').innerHTML=
+    `<p>Retention <b>makes money</b>: ${RSYM}${fmt(RK.spend)} spent kept <span style="font-weight:700;color:var(--scale)">+${RSYM}${fmt(RK.ngr_lift)}</span> of extra net revenue — <b>${RSYM}${RK.ngr_lift_per_rm}</b> back per RM. So the job here isn't to cut — it's to <b>move budget from what loses to what pays</b>.</p>`+
+    `<p><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — redeploy into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).`+(mtm.watch_money?` ${RSYM}${fmt(mtm.watch_money)} is directional (redeposit still maturing).`:``)+`</p>`+
+    `<p class="fine">${rc.Hold} win-back promo(s) held for the VIP tab (their lift is inflated by near-zero baselines); ${rc.Monitor} too new / too few players to grade.</p>`;
+  document.getElementById('r_tally').innerHTML=RACT.map(k=>`<div class="t" style="--tc:${RDEC[k].c}"><div class="n">${rc[k]}</div><div class="a" style="color:${RDEC[k].c}">${k}</div><div class="d">${RDEC[k].d}</div></div>`).join('');
+  [['Retention spend',RSYM+fmt(RK.spend),`+ ${RSYM}${fmt(RK.winback_spend_held)} win-back held`,0],
+   ['NGR Lift (net)','+'+RSYM+fmt(RK.ngr_lift),'extra net revenue kept, after the bonus',1],
+   ['NGR Lift per RM',RSYM+RK.ngr_lift_per_rm,'break-even = '+RSYM+'0',1],
+   ['Redeposit rate',RK.redeposit_rate+'%','near-universal → why money leads',0]
+  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'');d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('r_kpis').append(d);});
+  document.getElementById('r_ruleLines').innerHTML=
+    `<div class="rline"><span class="rk">Enough to judge</span><span class="rv">≥ ${T.vol_floor} players (30-day window)</span></div>`+
+    `<div class="rline"><span class="rk">Makes money</span><span class="rv">NGR Lift per RM &gt; ${RSYM}0</span></div>`+
+    `<div class="rline"><span class="rk">Give-to-take floor</span><span class="rv">≥ ${RSYM}${T.give_floor} back per RM</span></div>`+
+    `<div class="rline"><span class="rk">Strong</span><span class="rv">≥ ${RSYM}${T.scale_hi} back per RM</span></div>`+
+    `<div class="rline"><span class="rk">Retains</span><span class="rv">redeposit above its type's tier norm</span></div>`;
+  const rdefs=[['Scale','strong return AND retains above its type norm','grow budget / widen eligibility — keep the amount'],
+   ['Maintain','profitable and retaining','keep as-is; re-check next cycle'],
+   ['Optimise','profitable but not incrementally retaining, or thin margin','tighten targeting or right-size the offer'],
+   ['Reduce','retains above norm but loses money','trim the giveaway — too generous to profit'],
+   ['Stop','loses money and no better than its type norm','stop or replace — the spend is wasted'],
+   ['Watch-money','money observed, redeposit still maturing','directional now; firm call at 30 days'],
+   ['Monitor','too new or too few players','wait for more data'],
+   ['Hold','win-back / reactivation','judged on the VIP tab — inflated by near-zero baselines']];
+  document.getElementById('r_ruleDefs').innerHTML=rdefs.map(d=>`<div class="ddef"><span class="lbl"><span class="dot" style="background:${RDEC[d[0]].c}"></span>${d[0]}</span><span class="txt">${d[1]}. <b style="color:var(--ink)">Do:</b> <span style="color:var(--muted)">${d[2]}</span></span></div>`).join('');
+  const rmc=(txt,col)=>`<div class="mc" style="color:${col};background:color-mix(in srgb,${col} 15%,transparent)">${txt}</div>`;
+  document.getElementById('r_ruleMatrix').innerHTML=`<div class="matrix">`+
+    `<div class="corner"></div><div class="mh">Retains (above norm)</div><div class="mh">At / below norm</div>`+
+    `<div class="mrl">Strong (≥ ${RSYM}${T.scale_hi}/RM)</div>`+rmc('Scale','var(--scale)')+rmc('Optimise','var(--optimise)')+
+    `<div class="mrl">Makes money (${RSYM}${T.give_floor}–${T.scale_hi})</div>`+rmc('Maintain','var(--maintain)')+rmc('Optimise','var(--optimise)')+
+    `<div class="mrl">Loses money (&lt; ${RSYM}0)</div>`+rmc('Reduce','var(--reduce)')+rmc('Stop','var(--stop)')+
+    `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} matured players → Monitor · money seen but redeposit not matured → Watch-money · a Scale carried mostly by one player is demoted. Thin margin (${RSYM}0–${T.give_floor}/RM) → Optimise (right-size).</div>`;
+  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable();
+  document.getElementById('r_notes').innerHTML=`<h3>Notes</h3><ul>`+
+    `<li><b>NGR Lift per RM</b> = extra net revenue (already net of the bonus) kept per RM spent — 7-day window vs the player's own 14-day baseline. Break-even = 0.</li>`+
+    `<li><b>Redeposit uplift</b> = this promo's redeposit rate minus its <b>type's</b> tier-normal. Reloads need a deposit to claim, so they're compared only to other reloads, never to free-credit.</li>`+
+    `<li><b>Retains</b> uses a 30-day window (matures to 28 Jul); the money read matures at 7 days, so a few recent promos show as <b>Watch-money</b> — money seen, redeposit pending.</li>`+
+    `<li class="warn"><b>Win-back is held, not scaled.</b> A lapsed player's baseline is ~0, so reactivating them mechanically inflates lift-per-RM. Those promos are judged on the VIP tab.</li>`+
+    `<li class="warn"><b>Directional, not proven.</b> Uplift is vs a look-alike population, not a matched control. A holdout test is the proof step (below).</li>`+
+    `<li><b>Single-player guard.</b> A promo whose gain is mostly one big player can't earn a Scale on that alone (flagged ⚑, demoted).</li></ul>`;
+  document.getElementById('r_soon').innerHTML=`<h3>Coming soon</h3><p class="sub2">On the roadmap once new data lands — not computed in this version.</p>`+
+    [['Bonus abuse / cash-and-dash','needs withdrawal data — flag players who take the bonus and leave'],
+     ['Wagering / revenue quality','needs turnover + promo config — did they truly play it through'],
+     ['Tenure & clean lapsed-vs-new split','needs registration date — separate true-new from long-lapsed players'],
+     ['Right-size levers & true targeting','needs promo config — offer size, min-deposit, target list'],
+     ['Proven incrementality','a matched non-participant control (difference-in-differences) — turns "directional" into causal']]
+    .map(s=>`<div class="srow"><span class="sbadge">Soon</span><span class="stxt"><b>${s[0]}</b> — ${s[1]}</span></div>`).join('');
+}
+renderRetention();
+
+// ===== VIP (4-lane portfolio) =====
+const VDEC = {
+  Scale:{c:'var(--scale)',d:'grow it'}, Maintain:{c:'var(--maintain)',d:'hold'}, Optimise:{c:'var(--optimise)',d:'tune'},
+  Reduce:{c:'var(--reduce)',d:'trim'}, Stop:{c:'var(--stop)',d:'stop'}, 'Watch-money':{c:'var(--gold)',d:'firm at 30d'},
+  Monitor:{c:'var(--lowvol)',d:'too new/thin'}, Keep:{c:'var(--scale)',d:'keep'}, Review:{c:'var(--gold)',d:'hold & test'},
+  Trim:{c:'var(--reduce)',d:'trim'}, Entitlement:{c:'var(--referral)',d:'not graded'}
+};
+const VSYM=(VIP&&VIP.sym)||'RM';
+const vcv=x=>VDEC[x]?CV(VDEC[x].c.slice(4,-1)):CV('--muted');
+const vM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+VSYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
+const vPct=n=>n==null?'—':(n>0?'+':'')+n+'%';
+function vBars(boxId,data,opt){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  if(!data.length)return; const W=480,H=opt.H||280,left=opt.left||120,right=opt.right||52,top=8,bot=8;
+  const vals=data.map(opt.value),x0=Math.min(0,...vals),x1=Math.max(...vals,opt.ref||0.6);
+  const sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right);
+  const rh=(H-top-bot)/data.length,bh=Math.min(opt.bh||20,rh-7),zx=sx(0);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  if(opt.ref!=null){const rx=sx(opt.ref);s.append(el('line',{x1:rx,y1:top,x2:rx,y2:H-bot,stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+    const rl=el('text',{x:rx,y:top+9,'text-anchor':'middle',class:'axlab',style:'font-size:10px;fill:'+CV('--muted')});rl.textContent=opt.refLabel||'';s.append(rl);}
+  s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+  data.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,v=opt.value(x),bx=sx(v),c=opt.colorFn(x,v),pos=bx>=zx;
+    s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12px'}),{textContent:opt.label(x)}));
+    s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
+    s.append(Object.assign(el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:12px'}),{textContent:opt.vlab(x,v)}));
+    if(opt.tip){const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});hit.addEventListener('mousemove',e=>showTip(e,opt.tip(x)));hit.addEventListener('mouseleave',hideTip);s.append(hit);}});
+  box.append(s);
+}
+function vGroupTable(boxId,codes,order,cols){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  const na=v=>v==null?'<span style="color:var(--muted)">—</span>':v;
+  order.forEach(dec=>{
+    const rows=codes.filter(c=>c.decision===dec).sort((a,b)=>b.spend-a.spend); if(!rows.length)return;
+    const spend=rows.reduce((a,c)=>a+c.spend,0),dc=VDEC[dec]||{c:'var(--muted)'};
+    const open=['Scale','Review','Trim','Stop','Keep','Entitlement'].includes(dec)&&rows.length<=30;
+    const grp=document.createElement('div'); grp.className='grp'+(open?'':' collapsed');
+    const h=document.createElement('div'); h.className='grp-h';
+    h.innerHTML=`<span class="gchev">${open?'▾':'▸'}</span><span class="gdot" style="background:${dc.c}"></span><span class="gname" style="color:${dc.c}">${dec}</span><span class="gmeta">${rows.length} promo${rows.length>1?'s':''} · ${VSYM}${fmt(spend)}</span>`;
+    const bwrap=document.createElement('div'); bwrap.className='grp-b';
+    const body=rows.map(x=>`<tr>${cols.map(c=>`<td class="${c.cls||''}">${c.get(x,na)}</td>`).join('')}</tr>`).join('');
+    bwrap.innerHTML=`<table><thead><tr>${cols.map(c=>`<th class="${c.cls||''}">${c.h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+    h.addEventListener('click',()=>{const col=grp.classList.toggle('collapsed');h.querySelector('.gchev').textContent=col?'▸':'▾';});
+    grp.append(h,bwrap); box.append(grp);
+  });
+}
+function renderVIP(){
+  if(!VIP) return;
+  const P=VIP.program, R=P.roi, W=P.whale, MM=VIP.money_to_move, LS=VIP.lane_summary, CVAL=VIP.cashback_validation||{};
+  const LA=VIP.codes.filter(c=>c.lane==='A-performance'), LB=VIP.codes.filter(c=>c.lane==='B-cashback'),
+        LD=VIP.codes.filter(c=>c.lane==='D-engagement'), LC=VIP.codes.filter(c=>c.lane==='C-entitlement');
+  document.getElementById('v_meta').innerHTML=
+    `<div class="m"><span class="k">Period</span><span class="v">${VIP.period}</span></div><div class="sep"></div>`+
+    `<div class="m"><span class="k">Market</span><span class="v">${VIP.market==='MY'?'Malaysia':VIP.market} · ${VIP.currency}</span></div>`+
+    `<div class="m"><span class="k">Scope</span><span class="v">${VIP.codes.length} VIP promos · ${P.members.toLocaleString()} members</span></div><div class="sep"></div>`+
+    `<div class="m"><span class="k">Lanes</span><span class="v">Performance · Cashback · Engagement · Entitlement</span></div>`;
+  document.getElementById('v_exec').innerHTML=`<span class="ico">◆</span><div>VIP is the biggest spend (<b>${vM(P.total_bonus)}</b>) and does <b>four different jobs</b> — so no single number grades it. The portfolio read is what matters to the house: the program returns <b>${vM(P.total_ytd_ngr)}</b> of net revenue (${R.total_value_ratio}× bonus), but that's mostly money whales would spend anyway. On the <b>incremental</b> read — the extra the bonus actually moves — the program is <b>~break-even ex-cashback (${vM(R.incremental_ngr_lift)}, ${R.incremental_per_rm>=0?'+':''}${R.incremental_per_rm}/RM)</b>. The decisions live in the portfolio: who we subsidise, where the budget sits vs the value, and how few players carry it.</div>`;
+  // KPIs
+  [['VIP bonus',vM(P.total_bonus),VIP.codes.length+' promos · 4 lanes',0],
+   ['YTD net revenue',vM(P.total_ytd_ngr),R.total_value_ratio+'× bonus — mostly non-incremental',0],
+   ['Incremental (ex-cashback)',(R.incremental_ngr_lift>=0?'+':'')+vM(R.incremental_ngr_lift),'the honest ROI: '+(R.incremental_per_rm>=0?'+':'')+R.incremental_per_rm+'/RM — ~break-even',1],
+   ['Net-negative subsidy',vM(P.subsidy_rm),P.net_negative_share_pct+'% of VIPs the house loses on',1],
+   ['Whale concentration',W.top1pct_ngr_share+'%',W.top1pct_members+' players = a third of all NGR',1]
+  ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'');d.innerHTML=`<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('v_kpis').append(d);});
+  // Funding balance bars
+  const tiers=P.by_tier.filter(t=>['Bronze','Silver','Gold','Platinum','Diamond'].includes(t.tier));
+  vBars('v_fund',tiers,{value:t=>t.funding_index,label:t=>t.tier,ref:1.0,refLabel:'balanced',left:80,H:230,bh:22,
+    colorFn:(t,v)=>v>1.15?CV('--reduce'):v<0.85?CV('--seq3'):CV('--maintain'),
+    vlab:(t,v)=>v.toFixed(2),
+    tip:t=>`<div class="tt-h">${t.tier}</div><div class="tt-r"><span>Spend share</span><span>${t.spend_share_pct}%</span></div><div class="tt-r"><span>NGR share</span><span>${t.ngr_share_pct}%</span></div><div class="tt-r"><span>Funding index</span><span>${t.funding_index} ${t.funding_index>1.15?'(over)':t.funding_index<0.85?'(starved)':'(ok)'}</span></div><div class="tt-r"><span>Reach</span><span>${t.reach_pct}%</span></div>`});
+  // Whale concentration (HTML segmented bar + VaR)
+  const t1=W.top1pct_ngr_share,t10=W.top10pct_ngr_share;
+  document.getElementById('v_whale').innerHTML=
+    `<div class="concbar"><div class="cseg" style="width:${t1}%;background:var(--stop)"></div><div class="cseg" style="width:${t10-t1}%;background:var(--optimise)"></div><div class="cseg" style="width:${100-t10}%;background:var(--line-2)"></div></div>`+
+    `<div class="conclegend"><span><i style="background:var(--stop)"></i>Top 1% (${W.top1pct_members}) · ${t1}%</span><span><i style="background:var(--optimise)"></i>Next 9% · ${(t10-t1).toFixed(1)}%</span><span><i style="background:var(--line-2)"></i>Rest 90% · ${(100-t10).toFixed(1)}%</span></div>`+
+    `<div class="varbox"><span class="ico">⚠</span><div><b>Value at risk: ${vM(W.value_at_risk_ngr)}</b> — ${W.value_at_risk_members} top-decile players whose deposits are already declining (H2 &lt; 70% of H1). Losing them costs more than any promo saving. The top 1% also collect ${W.top1pct_bonus_share}% of the bonus.</div></div>`;
+  // Money moves
+  document.getElementById('v_moves').innerHTML=
+    `<div class="moves">`+
+      `<div class="mv"><div class="mvn">${vM(MM.net_negative_subsidy)}</div><div class="mva">Subsidy to cut</div><div class="mvd">${P.net_negative_members.toLocaleString()} VIPs (27%) the house loses money on</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.cashback_trim)}</div><div class="mva">Cashback to trim</div><div class="mvd">Gold/Silver rescue that fails its break-even — dead-weight</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.cashback_review)}</div><div class="mva">Cashback to review</div><div class="mvd">Diamond rescue — inconclusive; hold &amp; run a holdout</div></div>`+
+      `<div class="mv"><div class="mvn">${vM(MM.laneA_stop_reduce)}</div><div class="mva">Perf. to right-size</div><div class="mvd">Big-ticket free-credit that loses money incrementally</div></div>`+
+    `</div><p class="fine" style="margin-top:12px">${MM.line}</p>`;
+  // Lane tally
+  document.getElementById('v_callLead').innerHTML=
+    `<p>VIP is judged by <b>lane</b>, not one metric. <b>Performance</b> (${LS['A-performance'].codes} promos, ${vM(LS['A-performance'].spend)}) earns ${LS['A-performance'].ngr_lift_per_rm>=0?'+':''}${LS['A-performance'].ngr_lift_per_rm}/RM — the small-ticket rewards pay, the big-ticket free-credit loses. <b>Cashback</b> (${vM(LS['B-cashback'].spend)}) is loss-insurance, judged on whether it keeps whales; <b>Engagement</b> (${vM(LS['D-engagement'].spend)}) pays for itself; <b>Entitlement</b> (${vM(LS['C-entitlement'].spend)}) is relationship gifts, not graded.</p>`;
+  const laneRow=(name,key,codes,note)=>{const L=LS[key];const rc={};codes.forEach(c=>rc[c.decision]=(rc[c.decision]||0)+1);
+    const chips=Object.entries(rc).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`<span class="lchip" style="color:${(VDEC[d]||{}).c||'var(--muted)'}">${n} ${d}</span>`).join('');
+    return `<div class="lt"><div class="lth"><span class="ltn">${name}</span><span class="ltm">${L.codes} promos · ${vM(L.spend)} · ${L.ngr_lift_per_rm>=0?'+':''}${L.ngr_lift_per_rm}/RM</span></div><div class="ltnote">${note}</div><div class="ltchips">${chips}</div></div>`;};
+  document.getElementById('v_tally').innerHTML=
+    laneRow('A · Performance','A-performance',LA,'Money is the judge — NGR Lift per RM (tier×mechanic).')+
+    laneRow('B · Cashback','B-cashback',LB,'Loss-insurance — does it keep whales past the break-even bar?')+
+    laneRow('D · Engagement','D-engagement',LD,'Check-ins + Lucky Wheel / Scratch Card mini-games (renewed monthly). Does it pay for itself?')+
+    laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not graded on ROI.');
+  // Rules
+  document.getElementById('v_rules').innerHTML=[
+    ['A · Performance','NGR Lift per RM × redeposit-uplift vs the tier×mechanic norm. Big-ticket whale rewards that lose money are shrunk, not killed (loyalty risk).','var(--scale)'],
+    ['B · Cashback','Per-tier break-even: does the cashback keep whales <i>incrementally</i> (vs no-cashback)? CLEARS→Keep, FAILS→Trim, sign-flips→Review + prove with a holdout.','var(--gold)'],
+    ['D · Engagement','Pays for itself (house GGR > bonus) AND builds a habit rather than feeding habitual free-money collectors.','var(--maintain)'],
+    ['C · Entitlement','Not graded on ROI — birthday/welcome gifts protect the relationship. Only flagged if they leak to dormant accounts.','var(--referral)']
+  ].map(r=>`<div class="ddef"><span class="lbl"><span class="dot" style="background:${r[2]}"></span>${r[0]}</span><span class="txt">${r[1]}</span></div>`).join('');
+  // ---- Lanes ----
+  const lanes=document.getElementById('v_lanes');
+  const beV=CVAL.break_even||{}, beColor=v=>v&&v.startsWith('CLEARS')?'var(--scale)':v&&v.startsWith('FAILS')?'var(--stop)':'var(--gold)';
+  const dd=CVAL.top_diamond_downside||{}, br=CVAL.base_rate||{}, imv=CVAL.intensive_margin||{}, wm=CVAL.within_member||{};
+  lanes.innerHTML=
+    // LANE A
+    `<div class="lanehdr" style="border-color:var(--scale)"><span class="lanetag" style="background:var(--scale)">A</span><h2>Performance rewards</h2><span class="lanesub">${LS['A-performance'].codes} promos · ${vM(LS['A-performance'].spend)} · money is the judge</span></div>`+
+    `<div class="varbox" style="margin-bottom:14px"><span class="ico">◆</span><div><b>Why it loses money — and is getting worse.</b> It's an <b>offer + targeting problem, not a mix or demand-decline problem</b> (rebalancing free-credit vs reload explains ≤13%). Confirmed from the assignment log: whale-FC is <b>81% VM-assigned, 0% player self-claim</b> (vs check-ins at 46% self-claim) — players don't ask for it, VMs push it, so the cap below is literally a VM assignment rule. It's <b>concentrated</b> — ~2 flagship <b>RM400+ free-credit</b> codes drive about half the recent loss, top 10 drive ~86% — in the <b>Diamond / Gold / Platinum</b> big-ticket offers. The engine is <b>dead-weight on already-active whales</b>: recent-depositor claims now lose <b>−2.04/RM</b> (vs −0.75 for reactivations), and a <b>2nd/3rd claim loses ~2× a first</b> (−1.58 vs −0.86) — the offer increasingly re-pays whales for play they'd do anyway (GGR held flat while NGR fell — a clean overpay signal). <b>Fix:</b> cap whale-FC frequency per member (a 1-per-quarter cap frees <b>~RM228k of bonus for certain</b>, up to ~RM375k if capped whales don't pull back), withhold/condition big FC from recently-active whales, and raise wagering / shrink the RM400+ offer. Prove the cap with a holdout before scaling — the upside is an observational upper bound.</div></div>`+
+    `<div class="grid"><div class="card col6"><div class="card-h"><h3>Return by offer size</h3><span class="hint">${VSYM}/RM · break-even 0</span></div><p class="sub2">The clearest lever: small-ticket rewards pay back, big-ticket free-credit loses. The bulk of Performance spend sits in the losing bands.</p><div id="v_sizeBars"></div></div>`+
+    `<div class="card col6"><div class="card-h"><h3>Return by wagering requirement</h3><span class="hint">${VSYM}/RM</span></div><p class="sub2">Low/no-wagering micro-rewards clear; the high-value 5–8× VIP free-credit does not. Raising wagering is the right-size lever.</p><div id="v_wagBars"></div></div></div>`+
+    `<div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Performance decisions</h3><span class="hint">grouped by call · top spend</span></div><p class="sub2">One row per promo. Uplift = redeposit vs its tier×type norm (directional). Big-ticket whale rewards are trimmed, not killed.</p><div id="v_tblA"></div></div>`+
+    // LANE B
+    `<div class="lanehdr" style="border-color:var(--gold)"><span class="lanetag" style="background:var(--gold)">B</span><h2>Weekly Rescue cashback</h2><span class="lanesub">${vM(LS['B-cashback'].spend)} · loss-insurance for VIPs · confirmed cashback</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div><b>${LS['B-cashback'].kept_playing.toLocaleString()} of ${LS['B-cashback'].claimers.toLocaleString()}</b> claimers kept playing after a losing week — but that's the trap: <b>losing VIPs redeposit ~96% with no cashback at all</b>. So the question isn't "did they come back" — it's whether the give-back moves money <i>incrementally</i>, tier by tier.</div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Cashback by tier — does it pay for itself?</h3><span class="hint">break-even = incremental forward NGR > 0</span></div><div id="v_cbTiers"></div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>The Diamond question</h3><span class="hint">${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — the biggest single bet</span></div><div id="v_diamond"></div></div>`+
+    `<div class="card col12" style="margin-top:0"><div class="card-h"><h3>Cashback decisions</h3><span class="hint">reconciled to the break-even test</span></div><div id="v_tblB"></div></div>`+
+    // LANE D
+    `<div class="lanehdr" style="border-color:var(--maintain)"><span class="lanetag" style="background:var(--maintain)">D</span><h2>Engagement &amp; mini-games</h2><span class="lanesub">3 mini-game programs + ${LD.filter(c=>!['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} check-ins · ${vM(LS['D-engagement'].spend)} · ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm}/RM</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Engagement &amp; gamification — daily check-ins plus the <b>Lucky Wheel</b>, <b>Scratch Card</b> and <b>Mystery Ang Pow</b> mini-games (a WS1 product, folded here per the team). Each mini-game is <b>re-issued with a fresh code set each period</b> (old codes expire when it ends), so the ${LD.filter(c=>['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} codes are really <b>three ongoing programs</b>. This lane <b>pays for itself handsomely</b> — ${LS['D-engagement'].ggr_coverage}× GGR-coverage, ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm}/RM.</div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Recurring mini-game programs</h3><span class="hint">renewed monthly · rolled up</span></div><p class="sub2">The same two mini-games, aggregated across their monthly code renewals (Jan–Aug). Both comfortably pay for themselves — they're deposit-triggered, so the house GGR dwarfs the prize cost.</p><div id="v_mgPrograms"></div></div>`+
+    `<div class="card col12"><div class="card-h"><h3>Check-in decisions</h3><span class="hint">World Cup daily check-in variants</span></div><div id="v_tblD"></div></div>`+
+    // LANE C
+    `<div class="lanehdr" style="border-color:var(--referral)"><span class="lanetag" style="background:var(--referral)">C</span><h2>Entitlement gifts</h2><span class="lanesub">${LS['C-entitlement'].codes} promos · ${vM(LS['C-entitlement'].spend)} · not graded on ROI</span></div>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not an ROI play. Reported for transparency; the only action is tightening eligibility if a gift leaks to a dormant account.</div></div>`+
+    `<div class="card col12"><div class="card-h"><h3>Entitlement register</h3></div><div id="v_tblC"></div></div>`;
+  // Lane A charts + table
+  vBars('v_sizeBars',VIP.by_size,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:78,H:210,bh:24,
+    colorFn:(b,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(b,v)=>VSYM+v.toFixed(2),
+    tip:b=>`<div class="tt-h">${b.band}</div><div class="tt-r"><span>Promos</span><span>${b.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(b.spend)}</span></div><div class="tt-r"><span>NGR/RM</span><span>${VSYM}${b.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+  vBars('v_wagBars',VIP.by_wagering.filter(w=>w.spend>10000).sort((a,b)=>b.spend-a.spend),{value:w=>w.ngr_lift_per_rm,label:w=>w.wagering,ref:0,left:70,H:210,bh:22,
+    colorFn:(w,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(w,v)=>VSYM+v.toFixed(2),
+    tip:w=>`<div class="tt-h">${w.wagering} wagering</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>NGR/RM</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+  const naSpan='<span style="color:var(--muted)">—</span>';
+  const cName=x=>`<div class="code">${x.code}</div><div class="cname">${x.name||''}</div>`+((x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'');
+  const mnum=(v,pos)=>v==null?naSpan:`<span style="font-weight:700;color:${v>0?'var(--ink)':'var(--reduce)'}">${VSYM}${v.toFixed(2)}</span>`;
+  vGroupTable('v_tblA',LA,['Scale','Maintain','Optimise','Reduce','Stop','Watch-money','Monitor'],[
+    {h:'Promo',cls:'l',get:cName},{h:'Type',get:x=>`<span class="mech">${x.mechanic||''}</span>`},{h:'Tier',get:x=>x.tier_top||naSpan},
+    {h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'NGR/RM',get:x=>mnum(x.ngr_lift_per_rm)},
+    {h:'Uplift',get:x=>x.redeposit_uplift==null?naSpan:`<span style="color:${x.redeposit_uplift>0?'var(--scale)':x.redeposit_uplift<0?'var(--reduce)':'var(--muted)'}">${vPct(x.redeposit_uplift).replace('%','pp')}</span>`},
+    {h:'Why',cls:'l',get:x=>`<span style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
+  // Lane B — per-tier cashback cards
+  const cbByTier=[['Diamond','tier_3e'],['Platinum','tier_3d'],['Gold','tier_3c'],['Silver','tier_3b']].map(([t])=>{
+    const be=beV[t]||{},im=imv[t]||{},w=wm[t]||{},b=br[t]||{};
+    return {tier:t,be,im,w,b};});
+  document.getElementById('v_cbTiers').innerHTML=`<p class="sub2">The dispositive test is <b>incremental</b> forward NGR — measured two ways (a matched no-cashback group, and the same member's own no-cashback weeks). When both agree it's a clean call; when they disagree, the data can't settle it.</p>`+
+    `<div class="cbgrid">`+cbByTier.map(r=>{const v=r.be.verdict||'';const col=beColor(v);
+      return `<div class="cbcard" style="border-top-color:${col}"><div class="cbt">${r.tier}</div><div class="cbcost">${vM(r.be.cashback_cost)}<span> cashback</span></div>`+
+        `<div class="cbverdict" style="color:${col}">${v.replace(' (sign flips by method)','')}</div>`+
+        `<div class="cbrow"><span>Matched vs no-cashback</span><span style="color:${(r.im.inc_ngr30||0)>=0?'var(--scale)':'var(--reduce)'}">${vM(r.im.inc_ngr30)}/wk</span></div>`+
+        `<div class="cbrow"><span>Same-member cross-check</span><span style="color:${(r.w.within_inc_ngr30||0)>=0?'var(--scale)':'var(--reduce)'}">${vM(r.w.within_inc_ngr30)}/wk</span></div>`+
+        `<div class="cbrow"><span>Base redeposit (no cashback)</span><span>${r.b.untreated_redep!=null?r.b.untreated_redep+'%':'—'}</span></div></div>`;}).join('')+`</div>`;
+  // Lane B — Diamond downside
+  document.getElementById('v_diamond').innerHTML=
+    `<p class="sub2">Diamond is ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — over half the whole rescue budget. The two incremental estimates <b>bracket zero and flip sign</b>, so observational data can neither justify nor condemn it:</p>`+
+    `<div class="bracket"><div class="bk neg"><span>Matched control</span><b>${vM((imv.Diamond||{}).inc_ngr30)}/wk</b><small>selection-biased down</small></div><div class="bkmid">vs</div><div class="bk pos"><span>Within-member</span><b>+${vM((wm.Diamond||{}).within_inc_ngr30).replace(VSYM,VSYM)}/wk</b><small>mean-reversion-biased up</small></div></div>`+
+    `<div class="varbox" style="margin-top:14px"><span class="ico">⚠</span><div><b>The downside is asymmetric.</b> The top Diamond alone generates ${vM((dd.top_diamond_ytd_ngr||[0])[0])} of YTD NGR — <b>churning just ${dd.churns_to_wipe_saving} of them wipes the entire ${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} "saving."</b> That's why the call is <b>hold &amp; test</b>, not cut. ${CVAL.read||''}</div></div>`;
+  vGroupTable('v_tblB',LB,['Review','Keep','Trim','Monitor'],[
+    {h:'Promo',cls:'l',get:x=>`<div class="code">${x.code.replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</div><div class="cname">${x.name||''}</div>`},
+    {h:'Tier',get:x=>x.tier_top||naSpan},{h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'Claims',get:x=>x.claims?x.claims.toLocaleString():naSpan},
+    {h:'Kept',get:x=>x.retention_after_loss!=null?x.retention_after_loss+'%':naSpan},
+    {h:'Fwd 30d',get:x=>mnum2(x.fwd_ngr_30)},
+    {h:'Why',cls:'l',get:x=>`<span style="max-width:36ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
+  // Lane D — roll mini-games up by PROGRAM (they're renewed monthly, so many codes = few programs); check-ins stay per-code
+  const MG=['lucky-wheel','scratch-card','mystery-angpow'];
+  const LDmini=LD.filter(c=>MG.includes(c.sub_type)), LDcheck=LD.filter(c=>!MG.includes(c.sub_type));
+  const mgRow=(st,name,desc)=>{const cs=LDmini.filter(c=>c.sub_type===st); if(!cs.length)return '';
+    const spend=cs.reduce((a,c)=>a+c.spend,0), ngr=cs.reduce((a,c)=>a+(c.ngr_lift||0),0), claims=cs.reduce((a,c)=>a+(c.claims||0),0);
+    const ggr=spend?cs.reduce((a,c)=>a+(c.ggr_coverage||0)*c.spend,0)/spend:0, perRm=spend?ngr/spend:0;
+    const dec={}; cs.forEach(c=>dec[c.decision]=(dec[c.decision]||0)+1);
+    const calls=Object.entries(dec).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`<span class="lchip" style="color:${(VDEC[d]||{}).c||'var(--muted)'}">${n} ${d}</span>`).join(' ');
+    return `<tr><td class="l"><b>${name}</b><div class="cname">${desc} · ${cs.length} code sets</div></td><td>${VSYM}${fmt(spend)}</td><td>${claims.toLocaleString()}</td><td>${ggr.toFixed(0)}×</td>`+
+      `<td><span style="font-weight:700;color:${perRm>0?'var(--scale)':'var(--reduce)'}">${VSYM}${perRm.toFixed(2)}</span></td><td class="l">${calls}</td></tr>`;};
+  document.getElementById('v_mgPrograms').innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Program</th><th>Spend</th><th>Claims</th><th>GGR-cov</th><th>NGR/RM</th><th class="l">How the monthly codes graded</th></tr></thead><tbody>`+
+    mgRow('lucky-wheel','Lucky Wheel','spin-for-a-prize · renewed monthly')+mgRow('scratch-card','Scratch Card','scratch-for-a-prize · renewed monthly')+mgRow('mystery-angpow','Mystery Ang Pow','red-packet reveal · CNY campaign')+`</tbody></table></div>`;
+  vGroupTable('v_tblD',LDcheck,['Keep','Trim','Monitor'],[
+    {h:'Promo',cls:'l',get:cName},{h:'Spend',get:x=>VSYM+fmt(x.spend)},{h:'Claimers',get:x=>x.claimers?x.claimers.toLocaleString():naSpan},
+    {h:'GGR-cov',get:x=>x.ggr_coverage!=null?x.ggr_coverage+'×':naSpan},{h:'Habitual',get:x=>x.habitual_share!=null?x.habitual_share+'%':naSpan},
+    {h:'Why',cls:'l',get:x=>`<span style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
+  vGroupTable('v_tblC',LC,['Entitlement'],[
+    {h:'Promo',cls:'l',get:cName},{h:'Tier',get:x=>x.tier_top||naSpan},{h:'Spend',get:x=>VSYM+fmt(x.spend)},
+    {h:'Recipients',get:x=>x.recipients?x.recipients.toLocaleString():naSpan},{h:'Leakage',get:x=>x.leakage_share!=null?x.leakage_share+'%':naSpan},
+    {h:'Why',cls:'l',get:x=>`<span style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px;display:inline-block">${x.reason||''}</span>`}]);
+  // Notes + soon
+  document.getElementById('v_notes').innerHTML=`<h3>Notes</h3><ul>`+
+    `<li><b>NGR is net of the bonus</b> (verified), so break-even is 0 and a positive figure is profit after the giveaway. The 7-day claim-window lift is measured vs each player's own 14-day baseline.</li>`+
+    `<li><b>Total value vs incremental.</b> The ${R.total_value_ratio}× "return" is context — most VIP NGR is non-incremental (whales play regardless). The honest read is the incremental lift, which excludes the ring-fenced cashback lane (its 7-day NGR is a loss give-back, invalid as a lift).</li>`+
+    `<li><b>Cashback is directional, not proven.</b> 98% of eligible losers claim, so there's no clean untreated group; the two incremental estimates bracket zero for Diamond. A rate-crossover holdout is the proof step (below).</li>`+
+    `<li class="warn"><b>Whale dependency is the real risk.</b> The top 1% carry a third of NGR; ${W.value_at_risk_members} of them are already declining. Protecting them outranks any promo saving.</li>`+
+    `<li><b>Directional comparators.</b> Uplift is vs a look-alike norm, not a matched control; single-whale-carried wins are demoted (⚑).</li></ul>`;
+  document.getElementById('v_soon').innerHTML=`<h3>Coming soon</h3><p class="sub2">On the roadmap — not computed in this version.</p>`+
+    [['Cashback rate-crossover holdout','the proof step — withhold/step-down cashback for a matched slice and measure forward 60–90d NGR; settles the Diamond question the observational data can\'t'],
+     ['Per-VIP behavioural tracker','deposit cadence, game mix and at-risk signals per player — turn the whale value-at-risk list into an early-warning system'],
+     ['LTV & cohort payback','needs registration dates — does a VIP\'s lifetime value clear the cumulative bonus, by tenure cohort'],
+     ['Cash-and-dash / abuse leakage','needs withdrawal data — flag rescue-and-run and cross-code bonus farming beyond the current watchlist'],
+     ['Wagering / revenue quality','did the bonus turn into real played-through revenue, not just a redeposit']]
+    .map(s=>`<div class="srow"><span class="sbadge">Soon</span><span class="stxt"><b>${s[0]}</b> — ${s[1]}</span></div>`).join('');
+}
+const mnum2=v=>v==null?'<span style="color:var(--muted)">—</span>':`<span style="color:${v>0?'var(--scale)':'var(--reduce)'}">${vM(v)}</span>`;
+renderVIP();
+
+// ===== VIP sweet spot by tier =====
+function ssBars(boxId, data){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  if(!data.length)return;
+  const W=440,H=210,l=64,r=46,t=10,b=14;
+  const vals=data.flatMap(d=>[d.sweet_per_rm||0,d.dead_per_rm||0]);
+  const x0=Math.min(-1.5,...vals), x1=Math.max(...vals,1);
+  const sx=v=>l+((Math.max(x0,Math.min(x1,v))-x0)/((x1-x0)||1))*(W-l-r);
+  const rh=(H-t-b)/data.length, bh=Math.min(11,rh/2-3), zx=sx(0);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:zx,y1:t,x2:zx,y2:H-b,stroke:CV('--line-2')}));
+  data.forEach((d,i)=>{const yc=t+i*rh+rh/2;
+    s.append(Object.assign(el('text',{x:l-8,y:yc+4,'text-anchor':'end',class:'barlab',style:'font-size:12px'}),{textContent:d.tier}));
+    const sv=d.sweet_per_rm||0, sbx=sx(sv), sy0=yc-bh-1;
+    s.append(el('rect',{x:Math.min(zx,sbx),y:sy0,width:Math.max(2,Math.abs(sbx-zx)),height:bh,rx:2,fill:CV('--scale')}));
+    s.append(Object.assign(el('text',{x:sbx+4,y:sy0+bh-1,'text-anchor':'start',style:'font-size:10.5px;font-weight:700;fill:'+CV('--scale')}),{textContent:'+'+sv.toFixed(2)}));
+    const dv=d.dead_per_rm||0, dbx=sx(dv), dy0=yc+1;
+    s.append(el('rect',{x:Math.min(zx,dbx),y:dy0,width:Math.max(2,Math.abs(dbx-zx)),height:bh,rx:2,fill:CV('--stop')}));
+    s.append(Object.assign(el('text',{x:dbx-4,y:dy0+bh-1,'text-anchor':'end',style:'font-size:10.5px;font-weight:700;fill:'+CV('--stop')}),{textContent:dv.toFixed(2)}));});
+  box.append(s);
+  box.insertAdjacentHTML('beforeend',`<div class="tlegend"><span><i style="background:${CV('--scale')}"></i>Small cheap-form (&lt;RM50)</span><span><i style="background:${CV('--stop')}"></i>Big free-credit (≥RM150)</span></div>`);
+}
+function ssGrid(boxId, grid){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  if(!grid||!grid.cells)return;
+  const cm={}; grid.cells.forEach(c=>cm[c.form+'|'+c.band]=c);
+  const present=grid.bands.filter(b=>grid.forms.some(f=>cm[f+'|'+b]));
+  const fpresent=grid.forms.filter(f=>present.some(b=>cm[f+'|'+b]));
+  const FLAB={'mini-game':'Mini-game','check-in':'Check-in','free-spins':'Free-spins','reload':'Reload','free-credit':'Free-credit'};
+  const heat=document.createElement('div'); heat.className='heat'; heat.style.minWidth=(120+present.length*58)+'px'; heat.style.gridTemplateColumns=`120px repeat(${present.length},minmax(56px,1fr))`;
+  heat.appendChild(document.createElement('div'));
+  present.forEach(b=>{const h=document.createElement('div');h.className='hh';h.textContent=b;heat.appendChild(h);});
+  fpresent.forEach(f=>{
+    const rl=document.createElement('div');rl.className='hr';rl.textContent=FLAB[f]||f;heat.appendChild(rl);
+    present.forEach(b=>{const c=cm[f+'|'+b],d=document.createElement('div');d.className='hc';
+      if(!c){d.textContent='';d.style.background='var(--inset)';}
+      else if(c.low_n){d.textContent=c.per_rm.toFixed(1);d.style.color='var(--muted)';d.style.background='var(--inset)';d.title=`too few to judge (n=${c.n})`;}
+      else{const v=c.per_rm,good=v>=0,mag=Math.min(1,Math.abs(v)/2.5);
+        d.style.background=`color-mix(in srgb, var(--${good?'scale':'stop'}) ${Math.round(16+mag*46)}%, var(--surface))`;
+        d.style.color='var(--ink)'; d.innerHTML=`${v>=0?'+':''}${v.toFixed(2)}<span style="display:block;font-size:9px;color:var(--muted);font-weight:400">${VSYM}${(c.spend/1000).toFixed(0)}k</span>`;
+        d.title=`${FLAB[f]} · ${b}: ${VSYM}${v.toFixed(2)}/RM · ${VSYM}${c.spend.toLocaleString()} · ${c.n} claims`;}
+      heat.appendChild(d);});});
+  box.appendChild(heat);
+}
+function renderSweetSpot(){
+  const SS=VIP&&VIP.sweet_spot; if(!SS)return;
+  document.getElementById('v_sweetCard').hidden=false;
+  const rl=SS.rule;
+  document.getElementById('v_sweetRule').innerHTML=`<div class="ssrule">`+
+    [['Form',rl.form],['Size',rl.size],['Wagering',rl.wagering],['Frequency',rl.frequency],['Tier',rl.tier],['Target',rl.target]]
+    .map(x=>`<span class="ssr"><b>${x[0]}</b>${x[1]}</span>`).join('')+`</div>`;
+  ssBars('v_sweetBars',SS.by_tier);
+  ssGrid('v_sweetGrid',SS.grid);
+  const z=SS.zones, pct=v=>Math.round(v/z.program.spend*100);
+  document.getElementById('v_sweetZones').innerHTML=`<div class="ssz">`+
+    `<div class="szrow"><span>Sweet zone — small (&lt;RM50)</span><span class="szv">${VSYM}${fmt(z.sweet.spend)} · ${pct(z.sweet.spend)}%</span></div>`+
+    `<div class="szbar"><div style="width:${pct(z.sweet.spend)}%;background:var(--scale)"></div></div>`+
+    `<div class="szret" style="color:var(--scale)">→ +${VSYM}${fmt(z.sweet.ngr)} net revenue (${VSYM}${z.sweet.per_rm}/RM)</div>`+
+    `<div class="szrow" style="margin-top:13px"><span>Dead zone — big free-credit (≥RM150)</span><span class="szv">${VSYM}${fmt(z.dead.spend)} · ${pct(z.dead.spend)}%</span></div>`+
+    `<div class="szbar"><div style="width:${pct(z.dead.spend)}%;background:var(--stop)"></div></div>`+
+    `<div class="szret" style="color:var(--reduce)">→ ${VSYM}${fmt(z.dead.ngr)} net revenue (${VSYM}${z.dead.per_rm}/RM)</div>`+
+    `<p class="fine" style="margin-top:13px">The whole program nets just <b>${VSYM}${z.program.per_rm}/RM</b> — a small profit engine dragging a big loss-maker. The lever is <b>moving budget from big free-credit into small cheap-form rewards</b>, and leaning harder into it the higher the tier.</p></div>`;
+  document.getElementById('v_sweetCaveat').innerHTML='⚑ '+SS.caveat;
+}
+renderSweetSpot();
+
+// ===== Executive Summary (cross-pillar synthesis) =====
+function renderSummary(){
+  const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
+  const chip=(n,l,c)=>n>0?`<span class="lchip" style="color:${c}">${n} ${l}</span>`:'';
+  const rc={}; if(RET)RET.codes.forEach(c=>rc[c.decision]=(rc[c.decision]||0)+1);
+  const vc={}; if(VIP)VIP.codes.forEach(c=>vc[c.decision]=(vc[c.decision]||0)+1);
+  const acqMove=codes.filter(c=>['Optimise','Reduce','Stop'].includes(c.decision)).reduce((a,c)=>a+c.spend,0);
+  const retMove=RET?RET.money_to_move.stop_reduce:0;
+  const vipMove=VIP?(VIP.money_to_move.laneA_stop_reduce+VIP.money_to_move.cashback_trim):0;
+  const totSpend=K.spend+(RET?RET.kpis.spend:0)+(VIP?VIP.program.total_bonus:0);
+  const totMove=acqMove+retMove+vipMove, nP=1+(RET?1:0)+(VIP?1:0);
+  // ---- exec banner ----
+  document.getElementById('s_banner').innerHTML=`<span class="ico">◆</span><div>Across the <b>${nP} pillars analysed</b> we spend <b>${sM(totSpend)}</b> on promos this year. Each pillar is judged on its own job — new depositors for Acquisition, net revenue kept for Retention, portfolio health for VIP — so there's no single ROI number. The actionable headline: <b>${sM(totMove)}</b> sits in promos flagged to trim, stop or right-size — budget that can move to what pays. Whale Detection &amp; Branding aren't analysed yet.</div>`;
+  // ---- portfolio table ----
+  const rows=[
+    {name:'Acquisition',tab:'acquisition',spend:K.spend,buy:`${fmt(K.ftd)} new depositors<div class="sub-muted">${SYM}${K.cost_per_ftd}/FTD · ${K.stick_30}% stick</div>`,move:acqMove,calls:chip(cnt.Scale,'scale','var(--scale)')+chip(cnt.Optimise,'tune','var(--optimise)')+chip(cnt.Reload,'reload','var(--accent-ink)')},
+    RET&&{name:'Retention',tab:'retention',spend:RET.kpis.spend,buy:`<span style="color:var(--scale);font-weight:700">+${sM(RET.kpis.ngr_lift)}</span> net revenue<div class="sub-muted">${RSYM}${RET.kpis.ngr_lift_per_rm}/RM kept</div>`,move:retMove,calls:chip(rc.Scale,'scale','var(--scale)')+chip(rc.Optimise,'tune','var(--optimise)')+chip((rc.Reduce||0)+(rc.Stop||0),'trim','var(--reduce)')},
+    VIP&&{name:'VIP',tab:'vip',spend:VIP.program.total_bonus,buy:`${sM(VIP.program.roi.incremental_ngr_lift)} incremental*<div class="sub-muted">${VIP.program.roi.total_value_ratio}× total-value · *ex-cashback</div>`,move:vipMove,calls:chip(vc.Scale,'scale','var(--scale)')+chip((vc.Reduce||0)+(vc.Stop||0)+(vc.Trim||0),'trim','var(--reduce)')+chip(vc.Review,'review','var(--gold)')}
+  ].filter(Boolean);
+  document.getElementById('s_portfolio').innerHTML=
+    `<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Pillar</th><th>Spend</th><th>Share</th><th class="l">What it buys (own yardstick)</th><th>To move</th><th class="l">Top calls</th><th></th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td class="l"><b>${r.name}</b></td><td>${sM(r.spend)}</td><td>${Math.round(r.spend/totSpend*100)}%</td><td class="l">${r.buy}</td><td style="color:var(--reduce);font-weight:700">${sM(r.move)}</td><td class="l">${r.calls||'<span style="color:var(--muted)">—</span>'}</td><td><button class="plink sm" data-goto="${r.tab}">Open ▸</button></td></tr>`).join('')+
+    `<tr class="ptot"><td class="l"><b>Total</b></td><td><b>${sM(totSpend)}</b></td><td>100%</td><td class="l sub-muted">${nP} of 6 pillars analysed</td><td style="color:var(--reduce)"><b>${sM(totMove)}</b></td><td colspan="2" class="l sub-muted">reallocatable / to right-size</td></tr>`+
+    `</tbody></table></div>`;
+  // ---- spend-efficiency frontier ----
+  const fpts=[];
+  if(RET)RET.codes.forEach(c=>{if(c.ngr_lift_per_rm!=null&&c.ngr_lift!=null)fpts.push({r:c.ngr_lift_per_rm,spend:c.spend,ngr:c.ngr_lift,code:c.code,p:'Ret'});});
+  if(VIP)VIP.codes.forEach(c=>{if(c.lane==='A-performance'&&c.ngr_lift_per_rm!=null&&c.ngr_lift!=null)fpts.push({r:c.ngr_lift_per_rm,spend:c.spend,ngr:c.ngr_lift,code:c.code,p:'VIP'});});
+  fpts.sort((a,b)=>b.r-a.r);
+  const box=document.getElementById('s_frontier'); box.innerHTML='';
+  if(fpts.length){
+    let cx=0,cy=0; const cum=[{x:0,y:0}]; let peakY=-1e18,peakX=0;
+    fpts.forEach(p=>{cx+=p.spend;cy+=p.ngr;cum.push({x:cx,y:cy});if(cy>peakY){peakY=cy;peakX=cx;}});
+    const TS=cx,TN=cy,W=480,H=300,l=58,r=16,t=16,b=32;
+    const minY=Math.min(0,...cum.map(p=>p.y)),maxY=Math.max(...cum.map(p=>p.y));
+    const sx=v=>l+(v/TS)*(W-l-r), sy=v=>H-b-((v-minY)/((maxY-minY)||1))*(H-t-b);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    // zero line
+    s.append(el('line',{x1:l,y1:sy(0),x2:W-r,y2:sy(0),stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+    // shaded losing tail (x>peakX)
+    const tail=cum.filter(p=>p.x>=peakX);
+    if(tail.length>1){let d=`M ${sx(peakX)} ${sy(peakY)}`;tail.forEach(p=>d+=` L ${sx(p.x)} ${sy(p.y)}`);d+=` L ${sx(TS)} ${sy(peakY)} Z`;
+      s.append(el('path',{d,fill:CV('--stop'),'fill-opacity':.12}));}
+    // curve
+    let pl='';cum.forEach((p,i)=>pl+=(i?'L':'M')+sx(p.x)+' '+sy(p.y)+' ');
+    s.append(el('path',{d:pl,fill:'none',stroke:CV('--accent'),'stroke-width':2.2}));
+    // peak marker
+    s.append(el('line',{x1:sx(peakX),y1:t,x2:sx(peakX),y2:H-b,stroke:CV('--scale'),'stroke-dasharray':'2 3','stroke-width':1.3}));
+    const pk=el('text',{x:sx(peakX)-5,y:t+11,'text-anchor':'end',class:'axlab',style:'fill:'+CV('--scale')+';font-weight:700;font-size:11px'});pk.textContent='peak '+sM(peakY);s.append(pk);
+    // y ticks
+    [minY,0,maxY].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-7,y:y+4,'text-anchor':'end',class:'axlab',style:'font-size:10.5px'});ty.textContent=sM(g);s.append(ty);});
+    // x axis label
+    const ax=el('text',{x:(l+W-r)/2,y:H-4,'text-anchor':'middle',class:'axlab'});ax.textContent='cumulative spend →';s.append(ax);
+    box.append(s);
+    const tailSpend=TS-peakX, giveBack=peakY-TN;
+    box.insertAdjacentHTML('beforeend',`<p class="fine" style="margin-top:8px">The best promos build to <b style="color:var(--scale)">+${sM(peakY)}</b> of net revenue by <b>${sM(peakX)}</b> spent. The remaining <b>${sM(tailSpend)}</b> of spend gives <b style="color:var(--reduce)">${sM(giveBack)}</b> of that back — the reallocatable tail.</p>`);
+  }
+  // ---- confidence ----
+  const firm=d=>!['Monitor','Watch-money','Low volume'].includes(d);
+  let meas=0,tot=0;
+  codes.forEach(c=>{tot+=c.spend;if(firm(c.decision))meas+=c.spend;});
+  if(RET)RET.codes.forEach(c=>{tot+=c.spend;if(firm(c.decision))meas+=c.spend;});
+  if(VIP)VIP.codes.forEach(c=>{tot+=c.spend;if(firm(c.decision))meas+=c.spend;});
+  const mpct=Math.round(meas/tot*100);
+  document.getElementById('s_confidence').innerHTML=
+    `<div class="concbar" style="margin-top:2px"><div class="cseg" style="width:${mpct}%;background:var(--scale)"></div><div class="cseg" style="width:${100-mpct}%;background:var(--line-2)"></div></div>`+
+    `<div class="conclegend"><span><i style="background:var(--scale)"></i>Graded on matured data · ${mpct}%</span><span><i style="background:var(--line-2)"></i>Still maturing · ${100-mpct}%</span></div>`+
+    `<div class="conflist">`+
+     `<div class="cfr"><span class="cfk" style="color:var(--scale)">✓ Verified</span><span>NGR is <b>net of the bonus</b> (empirically checked) — break-even is 0, and no cost is double-counted.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--gold)">~ Directional</span><span>Uplift is vs a look-alike norm, <b>not a matched control</b>. Solid for ranking promos against each other; not yet causal.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--reduce)">✗ Unproven</span><span>The VIP cashback's incremental effect can't be settled on observational data — a <b>rate-crossover holdout</b> is the proof step.</span></div>`+
+    `</div>`;
+  // ---- action ledger ----
+  const led=[];
+  const push=(c,pillar,tab,dec,col)=>led.push({code:c.code,pillar,tab,spend:c.spend,dec,why:c.reason||'',col});
+  codes.filter(c=>['Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Acquisition','acquisition',c.decision,DEC[c.decision]?DEC[c.decision].c:'var(--muted)'));
+  if(RET)RET.codes.filter(c=>['Scale','Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Retention','retention',c.decision,RDEC[c.decision]?RDEC[c.decision].c:'var(--muted)'));
+  if(VIP)VIP.codes.filter(c=>['Scale','Reduce','Stop','Trim','Review'].includes(c.decision)).forEach(c=>push(c,'VIP','vip',c.decision,VDEC[c.decision]?VDEC[c.decision].c:'var(--muted)'));
+  led.sort((a,b)=>b.spend-a.spend);
+  const top=led.slice(0,14);
+  document.getElementById('s_ledger').innerHTML=
+    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Call</th><th class="l">Why</th></tr></thead><tbody>`+
+    top.map(x=>`<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
+      `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
+      `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
+      `<td class="l" style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`).join('')+
+    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} actionable across pillars. Click a pillar to see the full list.</p>`;
+  // ---- pillar cards (nav) ----
+  const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
+  const money=n=>SYM+(n/1000).toFixed(1)+'K';
+  const acq=`<div class="pcard"><div class="peyebrow">${P.market==='MY'?'Malaysia':P.market} · YTD</div><div class="ptitle">Acquisition</div>`+
+    `<div class="pstat">${money(K.spend)} spend · ${K.ftd.toLocaleString()} new depositors</div>`+
+    `<div class="pmetrics">${SYM}${K.cost_per_ftd} per new depositor · ${K.stick_30}% come back</div>`+
+    `<button class="plink" data-goto="acquisition">Open Acquisition &#9656;</button></div>`;
+  let ret='';
+  if(RET){ret=`<div class="pcard"><div class="peyebrow">${RET.market==='MY'?'Malaysia':RET.market} · YTD</div><div class="ptitle">Retention</div>`+
+      `<div class="pstat">${sM(RET.kpis.spend)} spend · <span style="color:var(--scale)">+${sM(RET.kpis.ngr_lift)}</span> net revenue</div>`+
+      `<div class="pmetrics">${RSYM}${RET.kpis.ngr_lift_per_rm} back per RM · ${sM(RET.money_to_move.stop_reduce)} to move</div>`+
+      `<button class="plink" data-goto="retention">Open Retention &#9656;</button></div>`;}
+  let vip='';
+  if(VIP){vip=`<div class="pcard"><div class="peyebrow">${VIP.market==='MY'?'Malaysia':VIP.market} · YTD</div><div class="ptitle">VIP</div>`+
+      `<div class="pstat">${sM(VIP.program.total_bonus)} spend · <span style="color:var(--scale)">${sM(VIP.program.total_ytd_ngr)}</span> net revenue</div>`+
+      `<div class="pmetrics">${VIP.program.roi.incremental_per_rm>=0?'+':''}${VIP.program.roi.incremental_per_rm}/RM incremental · ${sM(VIP.program.subsidy_rm)} subsidy to cut</div>`+
+      `<button class="plink" data-goto="vip">Open VIP &#9656;</button></div>`;}
+  document.getElementById('summaryGrid').innerHTML = acq + (ret||pend('Retention','Did bonuses keep players depositing, profitably.')) +
+    (vip||pend('VIP','High-value retention & recovery.')) +
+    pend('Whale Detection','Probe / scout / groom — finding and growing high-value players.') +
+    pend('Branding','Production, ambassador & sponsorship spend — separate data source.');
+}
+renderSummary();
+
+// ===== Month-over-month trend =====
+function tStack(boxId,labels,stacks,opt){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  const W=440,H=210,l=44,r=10,t=12,b=26,n=labels.length;
+  const totals=labels.map((_,i)=>stacks.reduce((a,st)=>a+(st.data[i]||0),0));
+  const ymax=Math.max(...totals,1),bw=Math.min(30,(W-l-r)/n*0.6);
+  const cx=i=>l+(i+0.5)/n*(W-l-r),sy=v=>H-b-(v/ymax)*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  [0,ymax/2,ymax].forEach(g=>{const y=sy(g);s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,stroke:CV('--line'),'stroke-opacity':.5}));const ty=el('text',{x:l-5,y:y+3,'text-anchor':'end',class:'axlab',style:'font-size:9.5px'});ty.textContent=opt.fmt?opt.fmt(g):Math.round(g);s.append(ty);});
+  labels.forEach((lb,i)=>{let y0=H-b;const partial=opt.pf!=null&&i>=opt.pf;
+    stacks.forEach(st=>{const h=((st.data[i]||0)/ymax)*(H-t-b);s.append(el('rect',{x:cx(i)-bw/2,y:y0-h,width:bw,height:Math.max(0,h),fill:st.color,'fill-opacity':partial?.42:1}));y0-=h;});
+    const tx=el('text',{x:cx(i),y:H-b+13,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent=lb+(partial?'*':'');s.append(tx);
+    const hit=el('rect',{x:cx(i)-bw/2-2,y:t,width:bw+4,height:H-t-b,fill:'transparent',style:'cursor:pointer'});
+    hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${lb}${partial?' (partial)':''}</div>`+stacks.map(st=>`<div class="tt-r"><span>${st.name}</span><span>${opt.fmt?opt.fmt(st.data[i]||0):(st.data[i]||0)}</span></div>`).join('')));
+    hit.addEventListener('mouseleave',hideTip);s.append(hit);});
+  box.append(s);
+  box.insertAdjacentHTML('beforeend',`<div class="tlegend">`+stacks.map(st=>`<span><i style="background:${st.color}"></i>${st.name}</span>`).join('')+`</div>`);
+}
+function tLine(boxId,labels,vals,opt){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  const W=440,H=210,l=46,r=14,t=18,b=26,n=labels.length;
+  const nums=vals.filter(v=>v!=null);
+  let ymin=opt.ymin!=null?opt.ymin:Math.min(0,...nums),ymax=Math.max(...nums,opt.ref!=null?opt.ref:-1e18);
+  if(!(ymax>ymin))ymax=ymin+1; const pad=(ymax-ymin)*0.14; ymax+=pad; if(ymin<0)ymin-=pad;
+  const sx=i=>l+(n<=1?0.5:i/(n-1))*(W-l-r),sy=v=>H-b-((v-ymin)/(ymax-ymin))*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  if(opt.ref!=null){const ry=sy(opt.ref);s.append(el('line',{x1:l,y1:ry,x2:W-r,y2:ry,stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));const rl=el('text',{x:W-r,y:ry-3,'text-anchor':'end',class:'axlab',style:'font-size:9.5px'});rl.textContent=opt.refLabel||'';s.append(rl);}
+  labels.forEach((lb,i)=>{const partial=opt.pf!=null&&i>=opt.pf;const tx=el('text',{x:sx(i),y:H-b+13,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent=lb+(partial?'*':'');s.append(tx);});
+  [ymin,ymax].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-6,y:y+3,'text-anchor':'end',class:'axlab',style:'font-size:9.5px'});ty.textContent=opt.fmt?opt.fmt(g):g.toFixed(1);s.append(ty);});
+  const pts=vals.map((v,i)=>({i,v})).filter(p=>p.v!=null),pf=opt.pf!=null?opt.pf:n;
+  const full=pts.filter(p=>p.i<pf),part=pts.filter(p=>p.i>=pf);
+  if(opt.area&&full.length){let d='M '+sx(full[0].i)+' '+sy(Math.max(ymin,0));full.forEach(p=>d+=' L '+sx(p.i)+' '+sy(p.v));d+=' L '+sx(full[full.length-1].i)+' '+sy(Math.max(ymin,0))+' Z';s.append(el('path',{d,fill:opt.color,'fill-opacity':.1}));}
+  if(full.length>1){const d=full.map((p,k)=>(k?'L':'M')+sx(p.i)+' '+sy(p.v)).join(' ');s.append(el('path',{d,fill:'none',stroke:opt.color,'stroke-width':2.2}));}
+  if(part.length&&full.length){const chain=[full[full.length-1],...part];const d=chain.map((p,k)=>(k?'L':'M')+sx(p.i)+' '+sy(p.v)).join(' ');s.append(el('path',{d,fill:'none',stroke:opt.color,'stroke-width':2.2,'stroke-dasharray':'4 4','stroke-opacity':.6}));}
+  pts.forEach(p=>{const partial=p.i>=pf;s.append(el('circle',{cx:sx(p.i),cy:sy(p.v),r:3.6,fill:partial?CV('--surface'):opt.color,stroke:opt.color,'stroke-width':1.8}));
+    const vl=el('text',{x:sx(p.i),y:sy(p.v)-8,'text-anchor':'middle',style:'font-size:9.5px;font-weight:600;fill:'+opt.color});vl.textContent=opt.fmt?opt.fmt(p.v):p.v;s.append(vl);});
+  box.append(s);
+}
+function tLines(boxId,labels,series,opt){
+  const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
+  const W=440,H=210,l=46,r=14,t=18,b=26,n=labels.length;
+  const all=series.flatMap(s=>s.vals).filter(v=>v!=null);
+  let ymin=Math.min(0,...all,opt.ref!=null?opt.ref:1e18),ymax=Math.max(...all,opt.ref!=null?opt.ref:-1e18);
+  if(!(ymax>ymin))ymax=ymin+1; const pad=(ymax-ymin)*0.14; ymax+=pad; ymin-=pad;
+  const sx=i=>l+(n<=1?0.5:i/(n-1))*(W-l-r),sy=v=>H-b-((v-ymin)/(ymax-ymin))*(H-t-b);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  if(opt.ref!=null){const ry=sy(opt.ref);s.append(el('line',{x1:l,y1:ry,x2:W-r,y2:ry,stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));const rl=el('text',{x:W-r,y:ry-3,'text-anchor':'end',class:'axlab',style:'font-size:9.5px'});rl.textContent=opt.refLabel||'';s.append(rl);}
+  labels.forEach((lb,i)=>{const partial=opt.pf!=null&&i>=opt.pf;const tx=el('text',{x:sx(i),y:H-b+13,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent=lb+(partial?'*':'');s.append(tx);});
+  [ymin,0,ymax].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-6,y:y+3,'text-anchor':'end',class:'axlab',style:'font-size:9.5px'});ty.textContent=opt.fmt?opt.fmt(g):g.toFixed(1);s.append(ty);});
+  const pf=opt.pf!=null?opt.pf:n;
+  series.forEach(se=>{const pts=se.vals.map((v,i)=>({i,v})).filter(p=>p.v!=null);
+    const full=pts.filter(p=>p.i<pf),part=pts.filter(p=>p.i>=pf);
+    if(full.length>1)s.append(el('path',{d:full.map((p,k)=>(k?'L':'M')+sx(p.i)+' '+sy(p.v)).join(' '),fill:'none',stroke:se.color,'stroke-width':2.2}));
+    if(part.length&&full.length)s.append(el('path',{d:[full[full.length-1],...part].map((p,k)=>(k?'L':'M')+sx(p.i)+' '+sy(p.v)).join(' '),fill:'none',stroke:se.color,'stroke-width':2.2,'stroke-dasharray':'4 4','stroke-opacity':.6}));
+    pts.forEach(p=>s.append(el('circle',{cx:sx(p.i),cy:sy(p.v),r:3,fill:p.i>=pf?CV('--surface'):se.color,stroke:se.color,'stroke-width':1.6})));});
+  box.append(s);
+  box.insertAdjacentHTML('beforeend',`<div class="tlegend">`+series.map(se=>`<span><i style="background:${se.color}"></i>${se.name}</span>`).join('')+`</div>`);
+}
+function renderTrend(){
+  if(!TREND)return;
+  const T=TREND,L=T.labels,TS=T.sym||'RM',n=L.length; document.getElementById('s_trendCard').hidden=false;
+  let pf=n; for(let i=0;i<n;i++){if(T.partial[T.months[i]]){pf=i;break;}}
+  const money=v=>{const a=Math.abs(v);return TS+(a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?Math.round(v/1e3)+'K':Math.round(v));};
+  const rd=T.read;
+  document.getElementById('s_trendRead').innerHTML=`Two opposite stories under "money-is-judge": <b style="color:var(--scale)">Retention stays profitable</b> every month (${TS}${rd.ret_late}/RM lately) while <b style="color:var(--reduce)">VIP big-ticket performance rewards lose money and are worsening</b> (${TS}${rd.vip_early}→${TS}${rd.vip_late}/RM). The blended promo RM is propped up by retention. (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the cashback bill both <b>peaked in January</b> (Chinese New Year). Acquisition cost holds steady around <b>${TS}68–81</b>/FTD. <span class="warn" style="display:block;margin-top:7px">The lever is <b>reallocation</b> (the frontier below) — VIP performance rewards are the prime candidate. <b>Aug is provisional</b> (*) AND a genuine wind-down (the World Cup engagement campaign ended) — not a data lag that will "catch up."</span>`;
+  tStack('s_trendSpend',L,[
+    {name:'VIP',color:CV('--referral'),data:T.spend_by_pillar.vip},
+    {name:'Retention',color:CV('--maintain'),data:T.spend_by_pillar.ret},
+    {name:'Acquisition',color:CV('--optimise'),data:T.spend_by_pillar.acq}
+  ],{pf,fmt:money});
+  tLines('s_trendEff',L,[
+    {name:'Retention',color:CV('--scale'),vals:T.efficiency.map(e=>e.per_rm_ret)},
+    {name:'VIP performance',color:CV('--reduce'),vals:T.efficiency.map(e=>e.per_rm_vip)}
+  ],{pf,ref:0,refLabel:'break-even',fmt:v=>TS+v.toFixed(1)});
+  tLine('s_trendCpa',L,T.acq.map(a=>a.cost_per_ftd),{pf,color:CV('--reduce'),fmt:v=>TS+Math.round(v)});
+  tLine('s_trendCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
+}
+renderTrend();
+
+// tab switching
+(function(){
+  const tabs=[...document.querySelectorAll('.tab')];
+  const show=key=>{
+    document.querySelectorAll('.panel').forEach(p=>{p.hidden = (p.id!=='panel-'+key);});
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===key));
+    try{localStorage.setItem('promoTab',key)}catch(e){}
+    scrollTo(0,0);
+  };
+  tabs.forEach(t=>t.addEventListener('click',()=>show(t.dataset.tab)));
+  document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]'); if(g)show(g.dataset.goto);});
+  let saved=null; try{saved=localStorage.getItem('promoTab')}catch(e){}
+  show(saved && document.getElementById('panel-'+saved) ? saved : 'acquisition');
+})();
+
+// collapsible cards
+document.querySelectorAll('.card, .notes').forEach(panel=>{
+  const h=panel.querySelector('h3'); if(!h) return;
+  const isCard=panel.classList.contains('card');
+  const clickTarget=isCard?panel.querySelector('.card-h'):h;
+  if(!clickTarget) return;
+  const chev=document.createElement('span'); chev.className='chev'; chev.textContent='▾'; chev.setAttribute('aria-hidden','true');
+  h.appendChild(chev);
+  clickTarget.addEventListener('click',()=>{const col=panel.classList.toggle('collapsed');chev.textContent=col?'▸':'▾';});
+});
+
+// country switching (Malaysia / Singapore)
+(function(){
+  const ctabs=[...document.querySelectorAll('.ctab')];
+  const showC=c=>{
+    document.querySelectorAll('.country').forEach(el=>{el.hidden = (el.id!=='country-'+c);});
+    ctabs.forEach(t=>t.classList.toggle('active', t.dataset.country===c));
+    try{localStorage.setItem('promoCountry',c)}catch(e){}
+  };
+  ctabs.forEach(t=>t.addEventListener('click',()=>showC(t.dataset.country)));
+  let s=null;try{s=localStorage.getItem('promoCountry')}catch(e){}
+  showC(s && document.getElementById('country-'+s) ? s : 'my');
+})();
+</script>
