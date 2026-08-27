@@ -124,14 +124,50 @@
   #tip .tt-r{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
   footer{margin-top:28px;color:var(--muted);font-size:13.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
   /* collapsible */
-  .card-h,.notes h3{cursor:pointer;user-select:none}
+  .card-h,.notes h3{user-select:none}
   .chev{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;display:inline-block}
   .card-h:hover h3,.notes h3:hover{color:var(--accent)}
   .card.collapsed > *:not(.card-h){display:none}
   .notes.collapsed > *:not(h3){display:none}
   .grid>.card.collapsed{align-self:start}
+  /* numbered table of contents + collapsible sections */
+  .toc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow);margin:18px 0 12px}
+  .toc-h{display:flex;align-items:center;gap:10px}
+  .toc-h .tt{font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .toc-all{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));border-radius:999px;padding:3px 12px;cursor:pointer}
+  .toc-all:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+  .toc ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:1px 22px}
+  .toc li a{display:flex;gap:10px;align-items:baseline;padding:6px 9px;border-radius:8px;cursor:pointer;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.35}
+  .toc li a:hover{background:var(--inset);color:var(--accent-ink)}
+  .toc li a .n{color:var(--accent-ink);font-variant-numeric:tabular-nums;font-weight:700;min-width:17px;flex:none}
+  .sec{background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;scroll-margin-top:14px}
+  .sec-h{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:none;border:0;border-radius:15px;cursor:pointer;padding:15px 19px;font:inherit;color:var(--ink)}
+  .sec-h:hover{background:var(--inset)}
+  .sec-h .secnum{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 11%,transparent);border-radius:8px;min-width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+  .sec-h .sectitle{font-size:16px;font-weight:700}
+  .sec-h .sechint{color:var(--muted);font-size:12.5px;font-weight:400}
+  .sec-h .chev{margin-left:auto;color:var(--muted);font-size:13px}
+  .sec-b{padding:2px 20px 18px}
+  .sec.collapsed .sec-b{display:none}
+  .sec:not(.collapsed) .sec-h{border-radius:15px 15px 0 0;border-bottom:1px solid var(--line)}
+  .sec-b > .grid{margin-top:14px}
+  .sec-b > .exec-note{margin-top:6px}
+  .sec-b > .kpis{margin:8px 0 4px}
+  .sec-b > .call{margin:8px 0 4px;border:0;box-shadow:none}
+  .sec-b > .meta{margin-top:6px;border:0;box-shadow:none;background:none;padding:2px 0 0}
+  .sec-b > .notes,.sec-b > .soon{background:none;border:0;box-shadow:none;padding:0;margin:6px 0 0}
+  .about .lead{font-size:15px;font-weight:700;margin:2px 0 12px;line-height:1.45}
+  .about .abrow{display:grid;grid-template-columns:158px 1fr;gap:14px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+  .about .abrow:first-of-type{border-top:0;padding-top:2px}
+  .about .abk{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent-ink)}
+  .about .abv{font-size:14px;line-height:1.5;color:var(--ink)}
+  .about .abv b{font-weight:700}
+  @media(max-width:760px){.toc ol{grid-template-columns:1fr}}
+  @media(max-width:640px){.about .abrow{grid-template-columns:1fr;gap:3px}}
   /* tabs + panels */
-  .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:22px 0 0;border-bottom:1px solid var(--line)}
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:22px 0 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;background:var(--bg);padding-top:9px;transition:box-shadow .18s ease}
+  .tabs.stuck{box-shadow:0 9px 20px -12px rgba(0,0,0,.34);border-bottom-color:var(--line-2)}
+  :root[data-theme="dark"] .tabs.stuck,:root:not([data-theme="light"]) .tabs.stuck{box-shadow:0 10px 22px -10px rgba(0,0,0,.6)}
   .tab{appearance:none;background:none;border:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:8px 8px 0 0}
   .tab:hover{color:var(--ink);background:var(--surface-2)}
   .tab.active{color:var(--accent-ink);border-bottom-color:var(--accent)}
@@ -163,6 +199,10 @@
   .exec-note{display:flex;gap:11px;align-items:flex-start;margin:15px 0 0;padding:12px 16px;border-radius:11px;background:color-mix(in srgb,var(--gold) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 32%,var(--line));font-size:14.5px;color:var(--ink)}
   .exec-note .ico{color:var(--gold);font-weight:700;flex:none}
   .exec-note b{font-weight:700}
+  .exec-note .lead{font-size:15px;font-weight:700;line-height:1.45;margin:0}
+  .exec-note ul.pts{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+  .exec-note ul.pts li{position:relative;padding-left:16px;line-height:1.45;font-size:14px}
+  .exec-note ul.pts li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:2px;background:var(--gold)}
   .call .reload-hi{font-weight:700;color:var(--accent-ink)}
   .heat{display:grid;gap:4px;font-variant-numeric:tabular-nums;overflow-x:auto}
   .heat .hc{padding:7px 4px;border-radius:6px;text-align:center;font-size:12.5px;font-weight:600}
@@ -497,13 +537,16 @@ document.getElementById('ruleMatrix').innerHTML =
   `<div class="rmatnote"><b>Checked first (before the grid):</b> codes with few new players (&lt; ${THR.reload_purity||40}% new) are deposit bonuses → judged in Retention · referral codes scored separately · fewer than ${THR.floor_claimers} users → "too few to judge" · zero new depositors → Stop. <b>Cost = new-player spend ÷ new depositors</b> (money spent on existing players' deposit bonuses is not counted here).</div>`;
 
 // charts
+// axis-title helper — x/y axis labels for every chart
+function axTitle(s,x,y,text,rot){const a={x,y,'text-anchor':'middle',style:'fill:var(--muted);font-size:11px;font-weight:600'};if(rot)a.transform='rotate(-90 '+x+' '+y+')';const t=el('text',a);t.textContent=text;s.append(t);}
 function bars(){
   const d=codes.filter(c=>ACTIONS.includes(c.decision)&&c.cost_per_ftd!=null).sort((a,b)=>b.cost_per_ftd-a.cost_per_ftd);
-  if(!d.length)return; const W=480,H=300,left=168,right=46,top=8,bot=22;
+  if(!d.length)return; const W=480,H=322,left=168,right=46,top=8,bot=44;
   const rh=(H-top-bot)/d.length, bh=Math.min(13,rh-5);
   const max=Math.max(...d.map(x=>x.cost_per_ftd)), sx=v=>left+(v/max)*(W-left-right);
   const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','Cost per new depositor by code');
-  [100,200,300,400,500,600].forEach(g=>{if(g>max)return;const x=sx(g);s.append(el('line',{x1:x,y1:top,x2:x,y2:H-bot+2,class:'gridline'}));const t=el('text',{x,y:H-6,'text-anchor':'middle',class:'axlab'});t.textContent=g;s.append(t);});
+  [100,200,300,400,500,600].forEach(g=>{if(g>max)return;const x=sx(g);s.append(el('line',{x1:x,y1:top,x2:x,y2:H-bot+2,class:'gridline'}));const t=el('text',{x,y:H-bot+16,'text-anchor':'middle',class:'axlab'});t.textContent=g;s.append(t);});
+  axTitle(s,(left+W-right)/2,H-5,'Cost per new depositor (RM) — lower is better');
   d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,c=CV(DEC[x.decision].c.slice(4,-1));
     const nm=el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12px'});const _l=x.code.replace('FT_','');nm.textContent=_l.length>26?_l.slice(0,25)+'…':_l;s.append(nm);
     s.append(el('rect',{x:left,y,width:Math.max(3,sx(x.cost_per_ftd)-left),height:bh,rx:3,fill:c}));
@@ -534,6 +577,7 @@ function scatter(){
     pt.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost per new depositor</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>Came back in 30 days</span><span>${x.stick_30}%</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div>`));
     pt.addEventListener('mouseleave',hideTip);s.append(pt);});
   const ax=el('text',{x:(l+W-r)/2,y:H-3,'text-anchor':'middle',class:'axlab'});ax.textContent='Cost per new depositor →';s.append(ax);
+  axTitle(s,11,(t+H-b)/2,'Came back in 30 days (%)',true);
   document.getElementById('chartScatter').append(s);
 }
 function mech(){
@@ -560,6 +604,7 @@ function trend(){
   const max=Math.max(...T.map(x=>x.ftd))*1.15||1, sx=i=>l+i*((W-l-r)/(T.length-1)), sy=v=>H-b-(v/max)*(H-t-b);
   const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});s.setAttribute('aria-label','New depositors by month');
   [100,200,300,400].forEach(g=>{if(g>max)return;const y=sy(g);s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,class:'gridline'}));const ty=el('text',{x:l-8,y:y+4,'text-anchor':'end',class:'axlab'});ty.textContent=g;s.append(ty);});
+  axTitle(s,11,(t+H-b)/2,'New depositors',true);
   const pIdx=T.findIndex(v=>v.month===P.trend_partial_month), partialLast=(pIdx===T.length-1);
   const solidPts=partialLast?T.slice(0,T.length-1):T;
   let dline='';solidPts.forEach((v,i)=>{dline+=(i?'L':'M')+sx(i)+' '+sy(v.ftd)+' ';});
@@ -626,7 +671,7 @@ const rcv=x=>RDEC[x]?CV(RDEC[x].c.slice(4,-1)):CV('--muted');
 function rNgrBars(){
   const box=document.getElementById('r_chartNgr'); if(!box)return; box.innerHTML='';
   const d=RET.codes.filter(c=>RACT.includes(c.decision)&&c.ngr_lift_per_rm!=null).sort((a,b)=>b.spend-a.spend).slice(0,14);
-  if(!d.length)return; const W=480,H=300,left=150,right=42,top=8,bot=8;
+  if(!d.length)return; const W=480,H=322,left=150,right=42,top=8,bot=30;
   const vals=d.map(x=>x.ngr_lift_per_rm), x0=Math.max(-2.5,Math.min(0,...vals)), x1=Math.min(5.5,Math.max(...vals,0.6));
   const sx=v=>left+((Math.max(x0,Math.min(x1,v))-x0)/(x1-x0))*(W-left-right);
   const rh=(H-top-bot)/d.length, bh=Math.min(13,rh-5), zx=sx(0);
@@ -640,6 +685,7 @@ function rNgrBars(){
     const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});
     hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Net revenue back per RM1</span><span>${RSYM}${v.toFixed(2)}</span></div><div class="tt-r"><span>Spend</span><span>${RSYM}${fmt(x.spend)}</span></div><div class="tt-r"><span>Call</span><span>${x.decision}</span></div>`));
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
+  axTitle(s,(left+W-right)/2,H-8,'Net revenue back per RM1 (RM) — RM0 = paid for itself');
   box.append(s);
 }
 function rQuad(){
@@ -665,7 +711,7 @@ function rQuad(){
 function rTierBars(){
   const box=document.getElementById('r_chartTier'); if(!box)return; box.innerHTML='';
   const d=RET.by_tier.filter(t=>t.ngr_lift_per_rm!=null); if(!d.length)return;
-  const W=480,H=300,left=86,right=46,top=10,bot=10;
+  const W=480,H=322,left=86,right=46,top=10,bot=32;
   const vals=d.map(x=>x.ngr_lift_per_rm),x0=Math.min(0,...vals),x1=Math.max(...vals,0.6);
   const sx=v=>left+((v-x0)/(x1-x0))*(W-left-right); const rh=(H-top-bot)/d.length,bh=Math.min(20,rh-8),zx=sx(0);
   const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'}); s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
@@ -673,6 +719,7 @@ function rTierBars(){
     s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:12.5px'}),{textContent:x.tier}));
     s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:pos?CV('--seq3'):CV('--reduce')}));
     s.append(Object.assign(el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:12px'}),{textContent:RSYM+v.toFixed(2)}));});
+  axTitle(s,(left+W-right)/2,H-8,'Net revenue back per RM1 (RM) — higher is better');
   box.append(s);
 }
 function rGrid(){
@@ -728,7 +775,7 @@ function renderRetention(){
     `<div class="m"><span class="k">Market</span><span class="v">${RET.market==='MY'?'Malaysia':RET.market} · ${RET.currency}</span></div>`+
     `<div class="m"><span class="k">Scope</span><span class="v">${RET.codes.length} retention promos</span></div><div class="sep"></div>`+
     `<div class="m"><span class="k">Base</span><span class="v">existing players who used the bonus</span></div>`;
-  document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div>On this tab <b>money is the judge</b> — the opposite of Acquisition. These players already deposit, so "did they come back" barely tells good from bad; what matters is whether the bonus kept a player who <b>brought in extra money</b>. The net-revenue figures here already have the bonus cost taken out, so anything above zero is profit after the giveaway.</div>`;
+  document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div><p class="lead">Here, money is the judge — the opposite of Acquisition.</p><ul class="pts"><li>These players already deposit, so "did they come back" barely separates good from bad.</li><li>What counts: did the bonus keep a player who brought in <b>extra money</b>.</li><li>Net-revenue figures already subtract the bonus cost — anything <b>above zero is profit</b> after the giveaway.</li></ul></div>`;
   document.getElementById('r_callLead').innerHTML=
     `<p>Retention <b>makes money</b>: ${RSYM}${fmt(RK.spend)} spent kept <span style="font-weight:700;color:var(--scale)">+${RSYM}${fmt(RK.ngr_lift)}</span> of extra net revenue — <b>${RSYM}${RK.ngr_lift_per_rm}</b> back for every RM1. So the job here isn't to cut — it's to <b>move budget from what loses to what pays</b>.</p>`+
     `<p><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — move the money into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).`+(mtm.watch_money?` ${RSYM}${fmt(mtm.watch_money)} is a read, not proof — whether they deposited again is still being measured.`:``)+`</p>`+
@@ -796,7 +843,7 @@ function vBars(boxId,data,opt){
   const vals=data.map(opt.value),x0=Math.min(0,...vals),x1=Math.max(...vals,opt.ref||0.6);
   const sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right);
   const rh=(H-top-bot)/data.length,bh=Math.min(opt.bh||20,rh-7),zx=sx(0);
-  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  const s=el('svg',{viewBox:`0 0 ${W} ${H+(opt.xlab?22:0)}`,role:'img'});
   if(opt.ref!=null){const rx=sx(opt.ref);s.append(el('line',{x1:rx,y1:top,x2:rx,y2:H-bot,stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
     const rl=el('text',{x:rx,y:top+9,'text-anchor':'middle',class:'axlab',style:'font-size:10px;fill:'+CV('--muted')});rl.textContent=opt.refLabel||'';s.append(rl);}
   s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
@@ -805,6 +852,7 @@ function vBars(boxId,data,opt){
     s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
     s.append(Object.assign(el('text',{x:pos?bx+5:zx+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:12px'}),{textContent:opt.vlab(x,v)}));
     if(opt.tip){const hit=el('rect',{x:0,y:y-(rh-bh)/2,width:W,height:rh,fill:'transparent',style:'cursor:pointer'});hit.addEventListener('mousemove',e=>showTip(e,opt.tip(x)));hit.addEventListener('mouseleave',hideTip);s.append(hit);}});
+  if(opt.xlab)axTitle(s,(left+W-right)/2,H+15,opt.xlab);
   box.append(s);
 }
 function vGroupTable(boxId,codes,order,cols){
@@ -834,7 +882,7 @@ function renderVIP(){
     `<div class="m"><span class="k">Market</span><span class="v">${VIP.market==='MY'?'Malaysia':VIP.market} · ${VIP.currency}</span></div>`+
     `<div class="m"><span class="k">Scope</span><span class="v">${VIP.codes.length} VIP promos · ${P.members.toLocaleString()} members</span></div><div class="sep"></div>`+
     `<div class="m"><span class="k">Lanes</span><span class="v">Performance · Money-back · Engagement · Entitlement</span></div>`;
-  document.getElementById('v_exec').innerHTML=`<span class="ico">◆</span><div>VIP is the biggest spend (<b>${vM(P.total_bonus)}</b>) and does <b>four different jobs</b>, so no single number grades it. What matters to the house: the program brings in <b>${vM(P.total_ytd_ngr)}</b> of net revenue (${R.total_value_ratio}× the bonus) — but most of that is money the big players would spend anyway. Counting only the <b>extra</b> the bonus actually drives, the program <b>roughly breaks even once you set the money-back promo aside (${vM(R.incremental_ngr_lift)}, ${R.incremental_per_rm>=0?'+':''}${VSYM}${R.incremental_per_rm} back for every RM1)</b>. The real decisions are about the whole picture: which players we lose money on, whether the budget goes where the value is, and how few players carry it.</div>`;
+  document.getElementById('v_exec').innerHTML=`<span class="ico">◆</span><div><p class="lead">VIP is the biggest spend (${vM(P.total_bonus)}) and does four different jobs — so no single number grades it.</p><ul class="pts"><li>Looks great on paper: <b>${vM(P.total_ytd_ngr)}</b> net revenue, ${R.total_value_ratio}× the bonus — but most is money big players would spend anyway.</li><li>Count only the <b>extra</b> the bonus drives and it <b>roughly breaks even</b> (set money-back aside: ${R.incremental_ngr_lift>=0?'+':''}${vM(R.incremental_ngr_lift)}, ${R.incremental_per_rm>=0?'+':''}${VSYM}${R.incremental_per_rm} per RM1).</li><li>So the real questions: <b>who we lose money on</b>, is the <b>budget where the value is</b>, and <b>how few players carry it</b>.</li></ul></div>`;
   // KPIs
   [['VIP bonus',vM(P.total_bonus),VIP.codes.length+' promos · 4 groups',0],
    ['Net revenue this year',vM(P.total_ytd_ngr),R.total_value_ratio+'× bonus — mostly not extra',0],
@@ -844,7 +892,7 @@ function renderVIP(){
   ].forEach(k=>{const d=document.createElement('div');d.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');d.innerHTML=`${k[4]?'<span class="keytag">Key metric</span>':''}<span class="eyebrow">${k[0]}</span><div class="v">${k[1]}</div><div class="foot">${k[2]}</div>`;document.getElementById('v_kpis').append(d);});
   // Funding balance bars
   const tiers=P.by_tier.filter(t=>['Bronze','Silver','Gold','Platinum','Diamond'].includes(t.tier));
-  vBars('v_fund',tiers,{value:t=>t.funding_index,label:t=>t.tier,ref:1.0,refLabel:'balanced',left:80,H:230,bh:22,
+  vBars('v_fund',tiers,{value:t=>t.funding_index,label:t=>t.tier,ref:1.0,refLabel:'balanced',left:80,H:230,bh:22,xlab:'Funding index — 1.0 = balanced',
     colorFn:(t,v)=>v>1.15?CV('--reduce'):v<0.85?CV('--seq3'):CV('--maintain'),
     vlab:(t,v)=>v.toFixed(2),
     tip:t=>`<div class="tt-h">${t.tier}</div><div class="tt-r"><span>Spend share</span><span>${t.spend_share_pct}%</span></div><div class="tt-r"><span>Net revenue share</span><span>${t.ngr_share_pct}%</span></div><div class="tt-r"><span>Budget vs value</span><span>${t.funding_index} ${t.funding_index>1.15?'(over)':t.funding_index<0.85?'(starved)':'(ok)'}</span></div><div class="tt-r"><span>Reach</span><span>${t.reach_pct}%</span></div>`});
@@ -907,10 +955,10 @@ function renderVIP(){
     `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not a return play. Reported for transparency; the only action is tightening eligibility if a gift reaches an inactive account.</div></div>`+
     `<div class="card col12"><div class="card-h"><h3>Entitlement register</h3></div><div id="v_tblC"></div></div>`;
   // Lane A charts + table
-  vBars('v_sizeBars',VIP.by_size,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:78,H:210,bh:24,
+  vBars('v_sizeBars',VIP.by_size,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:78,H:210,bh:24,xlab:'Net revenue per RM1 (RM)',
     colorFn:(b,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(b,v)=>VSYM+v.toFixed(2),
     tip:b=>`<div class="tt-h">${b.band}</div><div class="tt-r"><span>Promos</span><span>${b.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(b.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${b.ngr_lift_per_rm.toFixed(2)}</span></div>`});
-  vBars('v_wagBars',VIP.by_wagering.filter(w=>w.spend>10000).sort((a,b)=>b.spend-a.spend),{value:w=>w.ngr_lift_per_rm,label:w=>w.wagering,ref:0,left:70,H:210,bh:22,
+  vBars('v_wagBars',VIP.by_wagering.filter(w=>w.spend>10000).sort((a,b)=>b.spend-a.spend),{value:w=>w.ngr_lift_per_rm,label:w=>w.wagering,ref:0,left:70,H:210,bh:22,xlab:'Net revenue per RM1 (RM)',
     colorFn:(w,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(w,v)=>VSYM+v.toFixed(2),
     tip:w=>`<div class="tt-h">${w.wagering} wagering</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
   const naSpan='<span style="color:var(--muted)">—</span>';
@@ -985,7 +1033,7 @@ renderVIP();
 function ssBars(boxId, data){
   const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
   if(!data.length)return;
-  const W=440,H=210,l=64,r=46,t=10,b=14;
+  const W=440,H=228,l=64,r=46,t=10,b=32;
   const vals=data.flatMap(d=>[d.sweet_per_rm||0,d.dead_per_rm||0]);
   const x0=Math.min(-1.5,...vals), x1=Math.max(...vals,1);
   const sx=v=>l+((Math.max(x0,Math.min(x1,v))-x0)/((x1-x0)||1))*(W-l-r);
@@ -1000,6 +1048,7 @@ function ssBars(boxId, data){
     const dv=d.dead_per_rm||0, dbx=sx(dv), dy0=yc+1;
     s.append(el('rect',{x:Math.min(zx,dbx),y:dy0,width:Math.max(2,Math.abs(dbx-zx)),height:bh,rx:2,fill:CV('--stop')}));
     s.append(Object.assign(el('text',{x:dbx-4,y:dy0+bh-1,'text-anchor':'end',style:'font-size:10.5px;font-weight:700;fill:'+CV('--stop')}),{textContent:dv.toFixed(2)}));});
+  axTitle(s,(l+W-r)/2,H-8,'Net revenue back per RM1 (RM)');
   box.append(s);
   box.insertAdjacentHTML('beforeend',`<div class="tlegend"><span><i style="background:${CV('--scale')}"></i>Cheap-form (mini-game / check-in)</span><span><i style="background:${CV('--stop')}"></i>Big free-credit (≥RM150/claim)</span></div>`);
 }
@@ -1059,7 +1108,7 @@ function renderSummary(){
   const totSpend=K.spend+(RET?RET.kpis.spend:0)+(VIP?VIP.program.total_bonus:0);
   const totMove=acqMove+retMove+vipMove, nP=1+(RET?1:0)+(VIP?1:0);
   // ---- exec banner ----
-  document.getElementById('s_banner').innerHTML=`<span class="ico">◆</span><div>Across the <b>${nP} areas we've looked at</b> we spend <b>${sM(totSpend)}</b> on promos this year. Each area is judged on its own job — new depositors for Acquisition, money kept for Retention, overall health for VIP — so there's no single score. The number to act on: <b>${sM(totMove)}</b> is tied up in promos we've flagged to cut back, stop, or shrink — money that can move to what actually pays. Big-player detection &amp; Branding aren't done yet.</div>`;
+  document.getElementById('s_banner').innerHTML=`<span class="ico">◆</span><div><p class="lead">We spent ${sM(totSpend)} on promos this year across ${nP} areas — each judged on its own job, so there's no single score.</p><ul class="pts"><li>Acquisition → new depositors · Retention → money kept · VIP → overall health.</li><li>The number to act on: <b>${sM(totMove)}</b> sits in promos flagged to cut back, stop, or shrink — money that can move to what actually pays.</li><li>Big-player detection &amp; Branding aren't built yet.</li></ul></div>`;
   // ---- portfolio table ----
   const rows=[
     {name:'Acquisition',tab:'acquisition',spend:K.spend,buy:`${fmt(K.ftd)} new depositors<div class="sub-muted">${SYM}${K.cost_per_ftd} to win each new depositor · ${K.stick_30}% came back in 30 days</div>`,move:acqMove,calls:chip(cnt.Scale,'scale','var(--scale)')+chip(cnt.Optimise,'tune','var(--optimise)')+chip(cnt.Reload,'reload','var(--accent-ink)')},
@@ -1100,6 +1149,7 @@ function renderSummary(){
     [minY,0,maxY].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-7,y:y+4,'text-anchor':'end',class:'axlab',style:'font-size:10.5px'});ty.textContent=sM(g);s.append(ty);});
     // x axis label
     const ax=el('text',{x:(l+W-r)/2,y:H-4,'text-anchor':'middle',class:'axlab'});ax.textContent='total spent so far →';s.append(ax);
+    axTitle(s,13,(t+H-b)/2,'Cumulative net revenue',true);
     box.append(s);
     const tailSpend=TS-peakX, giveBack=peakY-TN;
     box.insertAdjacentHTML('beforeend',`<p class="fine" style="margin-top:8px">The best promos build to <b style="color:var(--scale)">+${sM(peakY)}</b> of net revenue by <b>${sM(peakX)}</b> spent. The remaining <b>${sM(tailSpend)}</b> of spend gives <b style="color:var(--reduce)">${sM(giveBack)}</b> of that back — the part that can be moved elsewhere.</p>`);
@@ -1252,16 +1302,160 @@ renderTrend();
   show(saved && document.getElementById('panel-'+saved) ? saved : 'acquisition');
 })();
 
-// collapsible cards
-document.querySelectorAll('.card, .notes').forEach(panel=>{
-  const h=panel.querySelector('h3'); if(!h) return;
-  const isCard=panel.classList.contains('card');
-  const clickTarget=isCard?panel.querySelector('.card-h'):h;
-  if(!clickTarget) return;
-  const chev=document.createElement('span'); chev.className='chev'; chev.textContent='▾'; chev.setAttribute('aria-hidden','true');
-  h.appendChild(chev);
-  clickTarget.addEventListener('click',()=>{const col=panel.classList.toggle('collapsed');chev.textContent=col?'▸':'▾';});
-});
+// sticky pillar tabs — add shadow once pinned to the top
+(function(){
+  const tabs=document.getElementById('tabs'); if(!tabs) return;
+  const onScroll=()=>tabs.classList.toggle('stuck', tabs.getBoundingClientRect().top<=0.5);
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  onScroll();
+})();
+
+// numbered table of contents + collapsible sections (all collapsed by default)
+(function(){
+  const byId=id=>document.getElementById(id);
+  const cardById=id=>{const e=byId(id);return e?e.closest('.card'):null;};
+  const qP=(pid,sel)=>{const p=byId(pid);return p?p.querySelector(sel):null;};
+  // A section = {title, hint, nodes[]}. Helpers return null when the source is missing/empty/hidden.
+  function cardSec(card,titleOverride){
+    if(!card||card.hidden) return null;
+    const ch=card.querySelector(':scope > .card-h')||card.querySelector('.card-h');
+    const h3=ch?ch.querySelector('h3'):null, hintEl=ch?ch.querySelector('.hint'):null;
+    const nodes=[...card.childNodes].filter(n=>n!==ch);
+    return {title:titleOverride||(h3?h3.textContent.trim():''),hint:hintEl?hintEl.textContent.trim():'',nodes};
+  }
+  function leadSec(title,els){
+    const nodes=els.filter(e=>e&&!e.hidden);
+    return nodes.length?{title,hint:'',nodes}:null;
+  }
+  function plainSec(el,title){
+    if(!el||!el.textContent.trim()) return null;
+    const h3=el.querySelector(':scope > h3');
+    const t=title||(h3?h3.textContent.trim():'Coming soon');
+    if(h3) h3.remove();
+    return {title:t,hint:'',nodes:[el]};
+  }
+  function laneSecs(){
+    const box=byId('v_lanes'); if(!box) return [];
+    const out=[]; let cur=null;
+    [...box.children].forEach(ch=>{
+      if(ch.classList.contains('lanehdr')){
+        const tag=(ch.querySelector('.lanetag')||{}).textContent||'';
+        const h2=(ch.querySelector('h2')||{}).textContent||'';
+        const sub=(ch.querySelector('.lanesub')||{}).textContent||'';
+        cur={title:(tag?tag.trim()+' · ':'')+h2.trim(),hint:sub.trim(),nodes:[ch]};
+        out.push(cur);
+      } else if(cur){ cur.nodes.push(ch); }
+    });
+    return out;
+  }
+  function buildPanel(panelId,secs){
+    const panel=byId(panelId); if(!panel) return;
+    secs=secs.filter(Boolean);
+    if(!secs.length) return;
+    const frag=document.createDocumentFragment();
+    const toc=document.createElement('nav'); toc.className='toc';
+    const head=document.createElement('div'); head.className='toc-h';
+    const tt=document.createElement('span'); tt.className='tt'; tt.textContent='Contents';
+    const allBtn=document.createElement('button'); allBtn.type='button'; allBtn.className='toc-all'; allBtn.textContent='Expand all';
+    head.append(tt,allBtn);
+    toc.append(head); frag.appendChild(toc);
+    const sections=[];
+    const setChev=(s,col)=>{const c=s.querySelector('.chev'); if(c) c.textContent=col?'▸':'▾';};
+    const sync=()=>{allBtn.textContent=sections.some(s=>s.classList.contains('collapsed'))?'Expand all':'Collapse all';};
+    secs.forEach((it,i)=>{
+      const num=i+1, id=panelId+'-s'+num;
+      const sec=document.createElement('section'); sec.className='sec collapsed'; sec.id=id;
+      const h=document.createElement('button'); h.type='button'; h.className='sec-h';
+      const nb=document.createElement('span'); nb.className='secnum'; nb.textContent=num;
+      const tl=document.createElement('span'); tl.className='sectitle'; tl.textContent=it.title;
+      h.append(nb,tl);
+      if(it.hint){const hn=document.createElement('span'); hn.className='sechint'; hn.textContent=it.hint; h.append(hn);}
+      const cv=document.createElement('span'); cv.className='chev'; cv.textContent='▸'; cv.setAttribute('aria-hidden','true'); h.append(cv);
+      const b=document.createElement('div'); b.className='sec-b';
+      it.nodes.forEach(n=>{if(n) b.appendChild(n);});
+      sec.append(h,b);
+      h.addEventListener('click',()=>{const col=sec.classList.toggle('collapsed'); setChev(sec,col); sync();});
+      frag.appendChild(sec); sections.push(sec);
+    });
+    allBtn.addEventListener('click',()=>{
+      const expand=sections.some(s=>s.classList.contains('collapsed'));
+      sections.forEach(s=>{s.classList.toggle('collapsed',!expand); setChev(s,!expand);});
+      sync();
+    });
+    panel.replaceChildren(frag); sync();
+  }
+  const abrow=(k,v)=>`<div class="abrow"><span class="abk">${k}</span><span class="abv">${v}</span></div>`;
+  function htmlSec(title,html){const d=document.createElement('div');d.className='about';d.innerHTML=html;return {title,hint:'',nodes:[d]};}
+  const ABOUT={
+    summary:`<p class="lead">This report grades every promo by the job it's meant to do, then rolls the pillars up into one decision view.</p>`
+      +abrow('What it is','A single place to see promo spend by objective, what each objective honestly buys, and where money is sitting in the wrong place.')
+      +abrow('How we judge it','Each pillar on its <b>own yardstick</b> — new depositors for Acquisition, money kept for Retention, overall health for VIP — so there is <b>no single overall score</b>.')
+      +abrow('Why this way','Different promos have different jobs. Forcing them onto one metric hides which are working; judging each on its own job, then rolling up, is the honest read.')
+      +abrow('Good to know','Reads are <b>directional</b> (each promo vs its own before-and-after), not a controlled experiment — solid for ranking and sizing, with a proper holdout as the next proof step. Net-revenue figures are already after the bonus cost.'),
+    acquisition:`<p class="lead">Acquisition is about winning <b>brand-new depositors</b> — people making their first-ever deposit — with welcome and new-player bonuses.</p>`
+      +abrow('How we judge it','By <b>cost per new depositor</b> (new-player spend ÷ new depositors) and <b>how many come back within 30 days</b>. Profit is context only here.')
+      +abrow('Why this way','Welcome offers are <b>meant to run at a loss at first</b> — you pay to get someone in the door — so grading them on early profit would kill the offers that actually work. Cost-to-win and whether they stick is the fair test.')
+      +abrow('Good to know','This ranks bonuses against <b>each other</b>, not against running nothing. A code where fewer than ~40% of takers are genuinely new is really a deposit bonus, so it is judged on the Retention tab instead.'),
+    retention:`<p class="lead">Retention is about keeping players who <b>already deposit</b> coming back, with reload and deposit bonuses.</p>`
+      +abrow('How we judge it','By <b>money</b> — net revenue back for every RM1 of bonus, <b>after</b> the bonus cost. RM0 back means it just paid for itself.')
+      +abrow('Why this way','These players already deposit, so "did they come back" barely separates good from bad. The real test is whether the bonus brought in <b>extra money</b> beyond what they would have done anyway.')
+      +abrow('Good to know','"Deposited more than usual" is a read, not proof. The job here is not to cut — it is to <b>move budget from what loses to what pays</b>.'),
+    vip:`<p class="lead">VIP covers the bonuses aimed at the <b>top-tier players</b> — the single biggest spend, doing four different jobs.</p>`
+      +abrow('How we judge it','Not on one number. Each group gets its <b>own yardstick</b>: Performance &amp; Engagement on money, Weekly-Rescue money-back on a pays-for-itself test, Entitlement gifts <b>not</b> on return at all.')
+      +abrow('Why this way','A single score would flatter or punish the wrong thing — a birthday gift is not meant to make money, and a money-back promo is not a growth play. Judging each job on its own is the only honest read.')
+      +abrow('Good to know','The headline number is the <b>honest "extra"</b> the bonus actually drives (setting money-back aside) — about break-even. Net revenue is after the bonus cost.'),
+  };
+  buildPanel('panel-summary',[
+    htmlSec("What this report is — and how it's judged", ABOUT.summary),
+    leadSec('Main findings',[byId('s_banner')]),
+    cardSec(cardById('s_portfolio')),
+    cardSec(byId('s_trendCard')),
+    cardSec(cardById('s_frontier')),
+    cardSec(cardById('s_confidence')),
+    cardSec(cardById('s_ledger')),
+    cardSec(cardById('summaryGrid')),
+  ]);
+  buildPanel('panel-acquisition',[
+    htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
+    leadSec('Main findings',[byId('meta'),qP('panel-acquisition','.call')]),
+    leadSec('Key numbers',[byId('kpis')]),
+    cardSec(cardById('ruleLines')),
+    cardSec(cardById('chartBars')),
+    cardSec(cardById('chartScatter')),
+    cardSec(cardById('chartMech')),
+    cardSec(cardById('chartTrend')),
+    cardSec(cardById('tbl')),
+    plainSec(qP('panel-acquisition','.notes'),'Notes'),
+  ]);
+  buildPanel('panel-retention',[
+    htmlSec("What Retention is — and how it's judged", ABOUT.retention),
+    leadSec('Main findings',[byId('r_meta'),qP('panel-retention','.call')]),
+    leadSec('Key numbers',[byId('r_kpis')]),
+    cardSec(cardById('r_ruleLines')),
+    cardSec(cardById('r_chartNgr')),
+    cardSec(cardById('r_chartQuad')),
+    cardSec(cardById('r_chartTier')),
+    cardSec(cardById('r_chartGrid')),
+    cardSec(cardById('r_tbl')),
+    plainSec(byId('r_notes'),'Notes'),
+    plainSec(byId('r_soon'),null),
+  ]);
+  buildPanel('panel-vip',[
+    htmlSec("What VIP is — and how it's judged", ABOUT.vip),
+    leadSec('Main findings',[byId('v_meta'),byId('v_exec')]),
+    leadSec('Key numbers',[byId('v_kpis')]),
+    cardSec(cardById('v_fund')),
+    cardSec(cardById('v_whale')),
+    cardSec(cardById('v_moves')),
+    cardSec(byId('v_sweetCard')),
+    leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
+    cardSec(cardById('v_rules')),
+    ...laneSecs(),
+    plainSec(byId('v_notes'),'Notes'),
+    plainSec(byId('v_soon'),null),
+  ]);
+})();
 
 // country switching (Malaysia / Singapore)
 (function(){
