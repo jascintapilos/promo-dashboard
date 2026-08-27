@@ -22,20 +22,23 @@ def prm(rs):
     return (round(sum(r["ngr_lift"] for r in rs) / s, 2) if s else None), round(s)
 
 TIERS = ["Silver", "Gold", "Platinum", "Diamond"]
-is_bigfc = lambda code: (meta[code][1] == "free-credit" and meta[code][2] in ("RM150-400", "RM400+"))
+# Band by the ACTUAL per-claim bonus amount (bonus_cost), not the code average — variable "up-to"
+# bonuses span a huge range (avg RM497 but up to RM15,500), so per-claim banding represents the
+# full range, with the biggest amounts landing in the highest band.
+bigfc = lambda r: (meta[r["code"]][1] == "free-credit" and r["bonus_cost"] >= 150)
 is_sweet = lambda code: (meta[code][0] == "D-engagement")   # cheap-form small engagement (mini-games + check-ins)
 
 by_tier = []
 for t in TIERS:
     sw = [r for r in rows if norm(r["tier"]) == t and is_sweet(r["code"])]
-    dz = [r for r in rows if norm(r["tier"]) == t and is_bigfc(r["code"])]
+    dz = [r for r in rows if norm(r["tier"]) == t and bigfc(r)]
     sp, ss = prm(sw); dp, ds = prm(dz)
     by_tier.append({"tier": t, "sweet_per_rm": sp, "sweet_spend": ss, "dead_per_rm": dp, "dead_spend": ds})
 
 def zone(rs):
     p, s = prm(rs); return {"spend": s, "ngr": round(sum(r["ngr_lift"] for r in rs)), "per_rm": p}
-sweet_z = zone([r for r in rows if meta[r["code"]][2] == "<RM50"])              # small (all money-judged forms)
-dead_z = zone([r for r in rows if is_bigfc(r["code"])])                          # big-ticket free-credit >=RM150
+sweet_z = zone([r for r in rows if r["bonus_cost"] < 50])                        # small bonuses given (any form)
+dead_z = zone([r for r in rows if bigfc(r)])                                     # big free-credit given (>=RM150/claim)
 prog_z = zone(rows)
 
 # mini-game frequency decay (per-member cumulative ordinal)
@@ -62,7 +65,7 @@ def bandof(a):
     return "RM500+"
 gcell = defaultdict(list)
 for r in rows:
-    gcell[(formof(r["code"]), bandof(meta[r["code"]][4]))].append(r)
+    gcell[(formof(r["code"]), bandof(r["bonus_cost"]))].append(r)   # per-claim actual amount
 grid_cells = []
 for f in FORMS:
     for b in BANDS:
@@ -80,7 +83,7 @@ m["sweet_spot"] = {
     "zones": {"sweet": sweet_z, "dead": dead_z, "program": prog_z},
     "frequency_decay": freq,
     "grid": {"forms": FORMS, "bands": BANDS, "cells": grid_cells},
-    "caveat": "The size×form gradient (small cheap-form pays, big free-credit bleeds) is robust — it survives controlling for tier, form and wagering. Mini-game per-RM is inflated by a near-zero denominator (the win is real, the multiple isn't literal). Cut the dead zone only after a matched holdout on big-ticket free-credit.",
+    "caveat": "Bands are the ACTUAL bonus amount given per claim (variable 'up-to' bonuses average RM497 but pay up to RM15,500, so per-code averaging hid the range). The read: cheap-form (mini-game/check-in) pays across sizes; free-credit bleeds and its worst is the big claims (RM500+ = −0.86/RM on RM2.16M). Mini-game per-RM is inflated by a near-zero denominator (the win is real, the multiple isn't literal) and rides the deposit that triggered it. Cut the big free-credit only after a matched holdout.",
 }
 json.dump(m, open(VIP / "vip-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 json.load(open(VIP / "vip-metrics-MY.json", encoding="utf-8"))  # round-trip verify
