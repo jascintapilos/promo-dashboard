@@ -459,6 +459,12 @@
       <p class="sub2">A no-deposit bonus is pure cost up front — it only pays if it drives enough played-through play to beat the give-away. Split by whether a deposit is required.</p>
       <div id="retDepoSplit"></div>
     </div>
+    <div class="card col12" id="retSurvivalCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Does the value last? — still depositing at 60 &amp; 90 days</h3><span class="hint">durability by bonus type</span></div>
+      <p class="sub2">Of players a bonus retained, how many are <b>still depositing</b> two and three months later — separating durable wins from one-off returns.</p>
+      <div id="retSurvival"></div>
+      <div id="retSurvivalNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div class="card col12" style="margin-bottom:15px">
       <div class="card-h"><h3>Decision rules</h3></div>
       <p class="sub2">Money is the judge here: Net revenue back for every RM1 is the extra net revenue a bonus keeps (after its own cost) for every RM1 spent. "Retains" = deposits again above what that player type normally would. The matrix turns money × retention into a call; the actions beside it say what to do.</p>
@@ -498,6 +504,30 @@
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>The three big moves</h3><span class="hint">money to move</span></div><div id="v_moves"></div></div>
     <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The simple rule: VIP bonus money <b>makes money as a cheap game reward</b> (mini-game or check-in) and <b>loses money as big free-credit</b>. In the table below, each bonus is filed by the <b>actual amount paid out</b> — so a promo that can pay "up to RM15,500" shows its big payouts, not just its average. Cheap rewards make money at every size; big free-credit is where the money leaks — and the higher the player's tier, the more the cheap rewards pay.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × amount paid out <span style="font-weight:400;color:var(--muted);font-size:12px">profit for every RM1 given · each payout in its real size · green makes money, red loses</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
+    <div class="card col12" id="vipSizingCard" style="margin-top:15px">
+      <div class="card-h"><h3>How big should the bonus be?</h3><span class="hint">the minimum effective bonus</span></div>
+      <p class="sub2">Every VIP bonus grouped by the amount paid, then: how much extra deposit each RM of bonus drove, and whether it made money. Bigger is not better.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Extra deposit per RM of bonus <span>higher = more efficient</span></h4><div id="vipSizeDep"></div></div>
+        <div class="tchart"><h4>Net revenue per RM <span>after the bonus · zero = paid for itself</span></h4><div id="vipSizeNgr"></div></div>
+      </div>
+      <div id="vipSizingNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="vipTierCard" style="margin-top:15px">
+      <div class="card-h"><h3>Are we growing players up the tiers?</h3><span class="hint">tier at start vs end of year</span></div>
+      <p class="sub2">Whether VIPs are climbing tiers or sliding down over the year — and whether the ones who climb are the ones we spend more on.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Climbed vs held vs slid <span>where players ended up</span></h4><div id="vipTierFlow"></div></div>
+        <div class="tchart"><h4>Climbed into each tier <span>players promoted · median bonus</span></h4><div id="vipTierInto"></div></div>
+      </div>
+      <div id="vipTierNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="vipGgrCard" style="margin-top:15px">
+      <div class="card-h"><h3>Where the bonus eats the margin</h3><span class="hint">bonus vs house winnings</span></div>
+      <p class="sub2">VIPs whose bonus is large next to the house winnings (GGR) they generate — the bonus is eating most of the margin. Trim candidates, once you've checked they're not just new/growing.</p>
+      <div id="vipGgr"></div>
+      <div id="vipGgrNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <section class="call"><div class="call-lead" id="v_callLead"></div></section>
     <div class="tally" id="v_tally" style="margin-bottom:18px"></div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>How each group is judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each group is graded on its own — never one metric across all. Net revenue is after the bonus cost (zero means it just paid for itself).</p><div id="v_rules"></div></div>
@@ -1068,7 +1098,7 @@ function renderRetention(){
     `<div class="mrl">Makes money (${RSYM}${T.give_floor}–${T.scale_hi})</div>`+rmc('Maintain','var(--maintain)')+rmc('Optimise','var(--optimise)')+
     `<div class="mrl">Loses money (&lt; ${RSYM}0)</div>`+rmc('Reduce','var(--reduce)')+rmc('Stop','var(--stop)')+
     `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} players with enough time to judge → Monitor · money seen but not enough time yet to tell if they deposited again → Watch-money · a Scale carried mostly by one player is demoted. Barely profitable (${RSYM}0–${T.give_floor} back per RM1) → Optimise (right-size).</div>`;
-  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable(); retLifecycle(); retIncr(); depoSplitRender('retDepoSplit',RET.deposit_split,'money',RSYM);
+  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable(); retLifecycle(); retIncr(); depoSplitRender('retDepoSplit',RET.deposit_split,'money',RSYM); retSurvival();
   document.getElementById('r_notes').innerHTML=`<h3>Good to know</h3><ul>`+
     `<li><b>Profit for every RM1 given</b> = the extra net revenue kept (bonus cost already taken out) for each RM1 spent — the 7 days after a claim vs the player's own recent 14 days. Zero means it just paid for itself.</li>`+
     `<li><b>Deposited more than usual</b> = how much more this promo's players deposited compared to what that <b>type</b> of player normally does. Deposit bonuses need a deposit to claim, so they're only compared to other deposit bonuses, never to free-credit.</li>`+
@@ -1143,6 +1173,47 @@ function vipCoverage(){
   const note=document.getElementById('vipCoverageNote');
   if(note){const D=LS['D-engagement'].ngr_lift,AC=LS['A-performance'].ngr_lift+LS['C-entitlement'].ngr_lift,net=D+AC;
     note.innerHTML=`<b>Engagement (${cm(D)}) covers Performance + Entitlement (${cm(AC)})</b>, leaving <b>${cm(net)}</b> — about break-even once money-back is set aside. Money-back's ${cm(LS['B-cashback'].ngr_lift)} in-window figure is a <b>loss give-back</b>, judged separately (see the trust check). So the <b>mini-games quietly carry the whole VIP program</b>, and the losing lanes' "it keeps the big players" case does not hold — the players would mostly stay anyway, and the whales actually at risk are not being saved by the spend. The honest move: <b>right-size Performance free-credit, prove money-back with a holdout, and protect the cooling whales directly.</b>`;}
+}
+function vipSizing(){
+  const BS=VIP&&VIP.bonus_sizing; if(!BS) return;
+  const bands=BS.by_band.filter(b=>b.claims>0);
+  vBars('vipSizeDep',bands,{value:b=>b.dep_lift_per_rm,label:b=>b.band,ref:1,refLabel:'RM1/RM',left:88,H:210,bh:24,
+    colorFn:(b,v)=>v>=1.5?CV('--scale'):v>=1?CV('--gold'):CV('--reduce'),
+    vlab:(b,v)=>(v>=0?'+':'−')+VSYM+Math.abs(v).toFixed(2),xlab:'Extra deposit per RM of bonus'});
+  vBars('vipSizeNgr',bands,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:88,H:210,bh:24,
+    colorFn:(b,v)=>v>=0?CV('--scale'):CV('--reduce'),
+    vlab:(b,v)=>(v>=0?'+':'−')+VSYM+Math.abs(v).toFixed(2),xlab:'Net revenue per RM1'});
+  const note=document.getElementById('vipSizingNote');
+  if(note){note.innerHTML=`The <b>smallest bonuses (${BS.best_band}) drive +${BS.best_per_rm} extra deposit per RM</b> and make money. Above <b>RM150</b> both deposit response and money collapse — and <b>RM1000+ bonuses drive <i>less</i></b> than the player would deposit anyway. <b>${vM(BS.oversized_spend)}</b> sits in oversized bonuses (${BS.oversized_bands.join(', ')}), so the <b>minimum effective bonus is small</b>: cap the big VIP free-credit and push the budget down into small, frequent rewards. (Directional read, not a controlled test.)`;}
+}
+function vipTierMigration(){
+  const T=VIP&&VIP.tier_migration; if(!T) return; const tot=T.known||1;
+  const flow=document.getElementById('vipTierFlow');
+  if(flow){flow.innerHTML=`<div class="dsgrid">`+
+    `<div class="dsrow"><div class="dsl">Climbed a tier<span class="dshint">moved up</span></div><div class="dsm" style="color:var(--scale);font-weight:700">${fmt(T.climbed)}</div><div class="dss">${Math.round(T.climbed/tot*100)}%</div></div>`+
+    `<div class="dsrow"><div class="dsl">Held<span class="dshint">same tier</span></div><div class="dsm">${fmt(T.held)}</div><div class="dss">${Math.round(T.held/tot*100)}%</div></div>`+
+    `<div class="dsrow"><div class="dsl">Slid down<span class="dshint">lost a tier</span></div><div class="dsm" style="color:var(--reduce);font-weight:700">${fmt(T.slid)}</div><div class="dss">${Math.round(T.slid/tot*100)}%</div></div></div>`;}
+  vBars('vipTierInto',T.by_end_tier||[],{value:b=>b.climbed_in,label:b=>b.tier,left:80,H:190,bh:22,
+    colorFn:()=>CV('--accent'),vlab:b=>fmt(b.climbed_in)+' · RM'+fmt(b.med_bonus),xlab:'Players promoted into tier'});
+  const note=document.getElementById('vipTierNote');
+  if(note){note.innerHTML=`<b>${fmt(T.climbed)} climbed, only ${fmt(T.slid)} slid</b> — the program is <b>growing players up</b>. Climbers get about <b>2× the bonus</b> (median ${vM(T.climbers.med_bonus)} vs ${vM(T.held_grp.med_bonus)}) and <b>~8× the net revenue</b> (${vM(T.climbers.med_ngr)} vs ${vM(T.held_grp.med_ngr)}). But bigger players both climb and get more bonus, so this is an <b>association, not proof</b> the bonus drove the climb.`;}
+}
+function vipGgrNgr(){
+  const G=VIP&&VIP.ggr_ngr; if(!G) return;
+  const box=document.getElementById('vipGgr');
+  if(box){box.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Tier</th><th>Over-bonused</th><th>Share</th><th>Bonus on them</th></tr></thead><tbody>`+
+    G.by_tier.map(b=>`<tr><td class="l">${b.tier}</td><td>${fmt(b.over_bonused)} / ${fmt(b.members)}</td><td>${b.over_pct}%</td><td style="color:var(--reduce);font-weight:600">${vM(b.over_spend)}</td></tr>`).join('')+`</tbody></table></div>`;}
+  const note=document.getElementById('vipGgrNote');
+  if(note){note.innerHTML=`<b>${fmt(G.over_bonused)} of ${fmt(G.ggr_positive)}</b> VIPs who make house winnings are <b>over-bonused</b> (bonus worth more than half those winnings) — <b>${vM(G.over_spend)}</b> of bonus, concentrated in <b>Silver &amp; Gold</b>. Across the whole program the house winnings still cover the bonus <b>${G.ggr_coverage}×</b>, so this is about <b>trimming the worst cases</b> — and check the player isn't simply new/growing before cutting.`;}
+}
+function retSurvival(){
+  const SV=RET&&RET.survival; if(!SV) return;
+  const box=document.getElementById('retSurvival');
+  if(box){const col=v=>v>=95?'var(--scale)':v>=85?'var(--gold)':'var(--reduce)';
+    box.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Bonus type</th><th>Claims</th><th>Still depositing · day 60</th><th>· day 90</th></tr></thead><tbody>`+
+    SV.by_mechanic.map(b=>`<tr><td class="l">${b.mechanic}</td><td>${fmt(b.matured_90)}</td><td style="color:${col(b.still_60)};font-weight:600">${b.still_60}%</td><td style="color:${col(b.still_90)};font-weight:600">${b.still_90}%</td></tr>`).join('')+`</tbody></table></div>`;}
+  const note=document.getElementById('retSurvivalNote');
+  if(note){note.innerHTML=`Overall <b>${SV.overall_90}%</b> are still depositing at 90 days — but it splits by type: <b>deposit-bonus players almost never fade (100%)</b> because they had skin in the game, while <b>free-credit fades most</b> (into the low 80s). The free give-aways win the <b>least durable</b> players — another reason to favour deposit-linked bonuses.`;}
 }
 function vipFarming(){
   const F=VIP&&VIP.farming; if(!F) return; const S=F.summary;
@@ -1352,6 +1423,9 @@ vipWhaleLedger();
 cbTrust();
 vipFarming();
 vipCoverage();
+vipSizing();
+vipTierMigration();
+vipGgrNgr();
 depoSplitRender('vipDepoSplit',VIP.deposit_split,'money',VSYM);
 
 // ===== VIP sweet spot by tier =====
@@ -1809,6 +1883,7 @@ renderTrend();
     cardSec(byId('retLifecycleCard')),
     cardSec(byId('retIncrCard')),
     cardSec(byId('retDepoCard')),
+    cardSec(byId('retSurvivalCard')),
     cardSec(cardById('r_ruleLines')),
     cardSec(cardById('r_chartNgr')),
     cardSec(cardById('r_chartQuad')),
@@ -1827,6 +1902,9 @@ renderTrend();
     cardSec(byId('vipWhaleCard')),
     cardSec(cardById('v_moves')),
     cardSec(byId('v_sweetCard')),
+    cardSec(byId('vipSizingCard')),
+    cardSec(byId('vipTierCard')),
+    cardSec(byId('vipGgrCard')),
     leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
     cardSec(cardById('v_rules')),
     cardSec(byId('vipCoverageCard')),
