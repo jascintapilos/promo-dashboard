@@ -2,7 +2,7 @@
 
 > **REQUIRED:** Execute task-by-task; pause at each → CHECKPOINT for approval.
 
-**Status:** IN_PROGRESS
+**Status:** COMPLETED
 **Created:** 2026-08-27
 **Goal:** Add the approved first-wave analyses to the Acquisition / Retention / VIP tabs — pillar flagships + incrementality + anti-abuse leakage, then a cross-cutting trust/fragility layer.
 **Architecture:** For each item: compute in the pillar's Python pipeline (`bin/{acq,ret,vip}_report/`) reading scratchpad metrics + member rows → emit aggregated block into `*-metrics-MY.json` → render a view in `templates/acq-dashboard.html` (section via the numbered-TOC builder, chart via SVG helpers + `axTitle`, or expandable sub-row on a decision table). Member data stays in scratchpad.
@@ -139,13 +139,15 @@
 ## Phase 4 — Trust & fragility layer (all 3 tables)
 
 ### Task 14: Compute per-code coverage + one-member fragility
-- [ ] **Task 14**
+- [x] **Task 14**
+  - Result: bin/robustness.py -> per-code robustness on all 3 pillars (n, matured %, one-member NGR share, ex-top1 per-RM, survives, provisional). 240/325 RET + 240/383 VIP provisional; unstable shares guarded.
 **Files:** Modify each pillar's pipeline (acq: `claim-outcomes`; ret/vip: `claim-rows`)
 **Step 1:** Per graded code, compute n (depositors/claimers), matured-window share, top-member share of the code's NGR-lift (or FTD), and a boolean "verdict holds without the single biggest member". Emit into each code object (e.g. `code.robustness = {...}`).
 **Verify:** n matches existing counts; top-member share ∈ [0,1]; spot-check the flip flag on a known one-whale code.
 
 ### Task 15: Render expandable confidence sub-rows
-- [ ] **Task 15** · Depends: Task 14
+- [x] **Task 15**
+  - Result: expandable confidence sub-row on the Acq/Ret/VIP decision tables (shared confDetail + one delegated toggle); provisional tag inline; 'click any row' note. Verified via simulation + build. · Depends: Task 14
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** On the Acquisition / Retention / VIP (Lane A/D) decision tables, add a per-row expander revealing n, matured %, top-member share, and the "survives without top member?" result; mute/tag verdicts that fail (low-n or one-whale-carried) as "provisional".
 **Step 2:** Add a one-line "how to read confidence" note.

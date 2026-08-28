@@ -173,6 +173,14 @@
   .dsrow .dsm{font-variant-numeric:tabular-nums;font-size:15px}
   .dsrow .dss{color:var(--muted);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
   @media(max-width:640px){.dsrow{grid-template-columns:1fr;gap:4px}.dsrow .dss{text-align:left}}
+  /* trust/fragility — expandable confidence sub-row on decision tables */
+  tr.drow{cursor:pointer}
+  tr.drow:hover>td{background:var(--inset)}
+  tr.drow>td:first-child::before{content:"▸";color:var(--muted);font-size:10px;margin-right:5px}
+  tr.drow.open>td:first-child::before{content:"▾"}
+  .cflag{display:inline-block;font-size:9.5px;font-weight:700;color:var(--reduce);background:color-mix(in srgb,var(--reduce) 13%,transparent);border-radius:5px;padding:1px 6px;margin-left:6px;letter-spacing:.02em;vertical-align:middle}
+  tr.dconf>td{background:var(--surface-2);color:var(--muted);font-size:12.5px;padding:8px 16px;line-height:1.55}
+  tr.dconf[hidden]{display:none}
   @media(max-width:760px){.toc ol{grid-template-columns:1fr}}
   @media(max-width:640px){.about .abrow{grid-template-columns:1fr;gap:3px}}
   /* tabs + panels */
@@ -411,7 +419,7 @@
 
   <div class="card col12" style="margin-top:15px">
     <div class="card-h"><h3>Decision table</h3><span class="hint">every code · sorted by spend</span></div>
-    <p class="sub2">One row per bonus. The call follows from cost per new depositor and how many came back within 30 days. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a deposit bonus, judged in Retention.</p>
+    <p class="sub2">One row per bonus. The call follows from cost per new depositor and how many came back within 30 days. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a deposit bonus, judged in Retention. <b>Click any row</b> for how much to trust the call; a <span class="cflag">provisional</span> tag means too few players to be sure.</p>
     <div class="tbl-wrap"><table id="tbl"></table></div>
   </div>
 
@@ -482,7 +490,7 @@
     </div>
     <div class="card col12" style="margin-top:15px">
       <div class="card-h"><h3>Decision table</h3><span class="hint">grouped by call · top spend first</span></div>
-      <p class="sub2">One row per promo. Uplift = deposited more than that type of player usually does (a read, not proof). Win-back promos are held for the VIP tab.</p>
+      <p class="sub2">One row per promo. Uplift = deposited more than that type of player usually does (a read, not proof). Win-back promos are held for the VIP tab. <b>Click any row</b> for how much to trust the call; a <span class="cflag">provisional</span> tag means too few players or one whale carrying it.</p>
       <div id="r_tbl"></div>
     </div>
     <div class="notes" id="r_notes"></div>
@@ -677,6 +685,18 @@ document.getElementById('ruleMatrix').innerHTML =
 function axTitle(s,x,y,text,rot){const a={x,y,'text-anchor':'middle',style:'fill:var(--muted);font-size:11px;font-weight:600'};if(rot)a.transform='rotate(-90 '+x+' '+y+')';const t=el('text',a);t.textContent=text;s.append(t);}
 // decision colour key — so chart colours carry meaning
 function decLegendHTML(acts,dec){acts=acts||ACTIONS;dec=dec||DEC;return `<div class="tlegend" style="margin-top:9px">`+acts.map(k=>`<span><i style="background:${dec[k].c}"></i>${k}${dec[k]&&dec[k].d?' — '+dec[k].d:''}</span>`).join('')+`</div>`;}
+// trust/fragility — one confidence detail line + a "provisional" tag, per decision-table row
+function confTag(rob){return (rob&&rob.provisional)?` <span class="cflag">provisional</span>`:'';}
+function confDetail(rob,unit,sym){
+  if(!rob) return '<span style="color:var(--muted)">no confidence data</span>';
+  let s=`<b>How much to trust this call:</b> rests on <b>${fmt(rob.n)}</b> ${unit} · <b>${rob.matured_pct!=null?rob.matured_pct+'%':'—'}</b> had the full window to judge`;
+  if(rob.top1_share!=null) s+=` · the <b>biggest single player = ${rob.top1_share>=100?'nearly all':rob.top1_share+'%'}</b> of the value`;
+  if(rob.ex_top1_per_rm!=null) s+=`${rob.top1_share!=null?';':' · '}take the biggest player out and it's <b>${(rob.ex_top1_per_rm>=0?'+':'−')+sym+Math.abs(rob.ex_top1_per_rm).toFixed(2)}</b> per RM1 (${rob.survives?'the call still holds':'<b style="color:var(--reduce)">the call flips</b>'})`;
+  if(rob.provisional) s+=`. <b style="color:var(--reduce)">Provisional</b> — too few players or leaning on one, so read it with the portfolio, not on its own.`;
+  return s;
+}
+// one delegated toggle for every decision table
+document.addEventListener('click',e=>{const r=e.target.closest('tr.drow');if(!r)return;const d=r.nextElementSibling;if(d&&d.classList.contains('dconf')){d.hidden=!d.hidden;r.classList.toggle('open',!d.hidden);}});
 // deposit-required vs no-deposit split (config-based) — kind 'acq' (cost/depositor) or 'money' (net rev per RM1)
 function depoSplitRender(cid, ds, kind, sym){
   const box=document.getElementById(cid); if(!box||!ds) return; const g=ds.groups||{};
@@ -864,9 +884,9 @@ function table(){
     const hint=(x.ftd_mature!=null&&x.ftd!=null&&x.ftd_mature<x.ftd)?` <span style="color:var(--muted);font-size:11.5px">(${x.ftd_mature}/${x.ftd})</span>`:'';
     return `<span${imm?' style="opacity:.55" title="based on only some new depositors — result still forming"':''}>${x.stick_30}%</span>${hint}`; };
   const head=`<thead><tr><th class="l" style="width:34px">#</th><th class="l">Bonus code</th><th class="l" style="padding-left:14px">Decision</th><th>Type</th><th>Users</th><th>New deps</th><th>Cost / new dep.</th><th>New %</th><th>Wk-1 net revenue</th><th>Came back (30d)</th></tr></thead>`;
-  const body=d.map((x,i)=>{const dc=DEC[x.decision]||DEC['Low volume'];return `<tr>
+  const body=d.map((x,i)=>{const dc=DEC[x.decision]||DEC['Low volume'];return `<tr class="drow">
     <td class="l" style="color:var(--muted);font-weight:600">${i+1}</td>
-    <td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div></td>
+    <td class="l"><div class="code">${x.code}${confTag(x.robustness)}</div><div class="cname">${x.name||''}</div></td>
     <td class="l" style="padding-left:14px"><span class="act" style="color:${dc.c};background:${dc.bg}"><span class="dot" style="background:${dc.c}"></span>${x.decision}</span></td>
     <td><span class="mech">${x.mech_label||x.mechanic||''}</span></td>
     <td>${fmt(x.claimers)}</td><td>${fmt(x.ftd)}</td>
@@ -874,7 +894,7 @@ function table(){
     <td>${x.purity}%</td>
     <td>${ngrCell(x)}</td>
     <td>${stickCell(x)}</td>
-  </tr>`;}).join('');
+  </tr><tr class="dconf" hidden><td colspan="10">${confDetail(x.robustness,'new depositors',SYM)}</td></tr>`;}).join('');
   document.getElementById('tbl').innerHTML=head+`<tbody>${body}</tbody>`;
 }
 function paint(){['chartBars','chartScatter','chartMech','chartTrend','acqLorenz','acqLoo','acqFunnel'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();if(RET){rNgrBars();rQuad();rTierBars();rGrid();retLifecycle();retIncr();}}
@@ -986,10 +1006,10 @@ function rTable(){
       const up=x.redeposit_uplift, upTxt=up==null?na(null):`<span style="color:${up>0?'var(--scale)':up<0?'var(--reduce)':'var(--muted)'}">${up>0?'+':''}${up}pp</span>`;
       const mv=x.ngr_lift_per_rm, mTxt=mv==null?na(null):`<span style="font-weight:700;color:${mv>0?'var(--ink)':'var(--reduce)'}">${RSYM}${mv.toFixed(2)}</span>`;
       const flag=(x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'';
-      return `<tr><td class="l"><div class="code">${x.code}</div><div class="cname">${x.name||''}</div>${flag}</td>
+      return `<tr class="drow"><td class="l"><div class="code">${x.code}${confTag(x.robustness)}</div><div class="cname">${x.name||''}</div>${flag}</td>
         <td><span class="mech">${mechLabel(x.mechanic)}</span></td><td>${RSYM}${fmt(x.spend)}</td><td>${mTxt}</td><td>${upTxt}</td>
         <td>${x.redeposit_rate!=null?x.redeposit_rate+'%':na(null)}</td>
-        <td class="l" style="max-width:32ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.reason||''}</td></tr>`;}).join('');
+        <td class="l" style="max-width:32ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.reason||''}</td></tr><tr class="dconf" hidden><td colspan="7">${confDetail(x.robustness,'depositors',RSYM)}</td></tr>`;}).join('');
     bwrap.innerHTML=`<table><thead><tr><th class="l">Promo</th><th>Type</th><th>Spend</th><th>Back per RM1</th><th>Extra deposits</th><th>Deposited again</th><th class="l">Why</th></tr></thead><tbody>${body}</tbody></table>`;
     h.addEventListener('click',()=>{const col=grp.classList.toggle('collapsed');h.querySelector('.gchev').textContent=col?'▸':'▾';});
     grp.append(h,bwrap); box.append(grp);
@@ -1256,7 +1276,7 @@ function vGroupTable(boxId,codes,order,cols){
     const h=document.createElement('div'); h.className='grp-h';
     h.innerHTML=`<span class="gchev">${open?'▾':'▸'}</span><span class="gdot" style="background:${dc.c}"></span><span class="gname" style="color:${dc.c}">${dec}</span><span class="gmeta">${rows.length} promo${rows.length>1?'s':''} · ${VSYM}${fmt(spend)}</span>`;
     const bwrap=document.createElement('div'); bwrap.className='grp-b';
-    const body=rows.map(x=>`<tr>${cols.map(c=>`<td class="${c.cls||''}">${c.get(x,na)}</td>`).join('')}</tr>`).join('');
+    const body=rows.map(x=>`<tr class="drow">${cols.map((c,ci)=>`<td class="${c.cls||''}">${c.get(x,na)}${ci===0?confTag(x.robustness):''}</td>`).join('')}</tr><tr class="dconf" hidden><td colspan="${cols.length}">${confDetail(x.robustness,'claimers',VSYM)}</td></tr>`).join('');
     bwrap.innerHTML=`<table><thead><tr>${cols.map(c=>`<th class="${c.cls||''}">${c.h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
     h.addEventListener('click',()=>{const col=grp.classList.toggle('collapsed');h.querySelector('.gchev').textContent=col?'▸':'▾';});
     grp.append(h,bwrap); box.append(grp);
