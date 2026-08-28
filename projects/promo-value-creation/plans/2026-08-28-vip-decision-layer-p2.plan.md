@@ -101,7 +101,8 @@
 
 ### Task 4: `trend_decompose.py` — monthly VIP decomposition + counterfactual
 
-- [ ] **Task 4**
+- [x] **Task 4**
+  - Result: ✅ trend_decompose.py: monthly Lane A ngr/RM (-0.57 Jan → -1.19 Jul), shift-share H1 -0.61 → H2 -0.92 = mix -0.074 (24%) + rate -0.231 (76%); no-dep share 63→74%; do-nothing projection slope -0.094/mo.
 
 **Files:**
 - Create: `bin/vip_report/trend_decompose.py`
@@ -118,7 +119,8 @@
 
 ### Task 5: Trend-decomposition card (render + CALC/READ + wire)
 
-- [ ] **Task 5**
+- [x] **Task 5**
+  - Result: ✅ 'Why VIP performance is sliding' card: SVG line (actual + dashed projection), decomposition varbox (76% rate / 24% mix), projection note. Wired before GGR card. Build clean, DOM asserts pass.
 - Depends: Task 4
 
 **Files:**
@@ -136,7 +138,8 @@
 
 ### Task 6: `operating_baseline.py` — locked baseline + whale-slip watchlist + indicators
 
-- [ ] **Task 6**
+- [x] **Task 6**
+  - Result: ✅ operating_baseline.py: baseline locked as-of 2026-08-26, 5 leading indicators, whale-slip watchlist (15 opaque refs; 44/74 top-1% cooling, 262 at-risk RM15.3M), 5 move-tracker rows.
 
 **Files:**
 - Create: `bin/vip_report/operating_baseline.py`
@@ -153,7 +156,8 @@
 
 ### Task 7: Monthly operating card (render + CALC/READ + wire)
 
-- [ ] **Task 7**
+- [x] **Task 7**
+  - Result: ✅ 'Running it monthly' card: 3 tables (watchlist/indicators/tracker), opaque refs verified (FBAA77), wired before farming card. CALC/READ added. Zero console errors.
 - Depends: Task 6
 
 **Files:**
