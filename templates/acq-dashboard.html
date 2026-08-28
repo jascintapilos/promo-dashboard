@@ -110,6 +110,11 @@
   .ddef{display:flex;gap:10px;align-items:baseline;padding:6px 0;font-size:14.5px}
   .ddef .lbl{font-weight:700;min-width:96px;display:inline-flex;align-items:center;gap:7px}
   .ddef .txt{color:var(--ink)}
+  .ddef.bul{align-items:flex-start;padding:9px 0}
+  .ddef.bul .lbl{min-width:112px;padding-top:1px}
+  .ddul{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+  .ddul li{position:relative;padding-left:15px;line-height:1.45}
+  .ddul li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:2px;background:var(--line-2)}
   .matrix{display:grid;grid-template-columns:170px 1fr 1fr;gap:6px;max-width:660px}
   .matrix .mh{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;padding:2px 0 6px;align-self:end}
   .matrix .corner{border-bottom:1px solid var(--line)}
@@ -1335,11 +1340,21 @@ function renderVIP(){
     laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not scored on return.');
   // Rules
   document.getElementById('v_rules').innerHTML=[
-    ['A · Performance','<b>What it is:</b> rewards to keep active top players playing — mostly <b>big free-credit and reload bonuses</b> (the biggest VIP spend, largely pushed by VIP managers). <b>Judged on money:</b> net revenue back per RM1, weighed against how much more that tier/type of player usually deposits. Loss-making big free-credit is <b>shrunk, not killed</b> (loyalty risk).','var(--scale)'],
-    ['B · Money-back','<b>What it is:</b> a <b>partial refund on a losing week</b> (Weekly Rescue) — loss cover to stop a VIP walking away after a bad run. <b>Judged on a pays-for-itself test:</b> per tier, does the money-back keep players <i>on top of what they\'d do anyway</i>? CLEARS→Keep, FAILS→Trim, sign-flips→Review and prove with a controlled test.','var(--gold)'],
-    ['D · Engagement','<b>What it is:</b> small, frequent rewards that build a habit — <b>daily check-ins and the mini-games</b> (Lucky Wheel, Scratch Card, Mystery Ang Pow); deposit-triggered and cheap. <b>Judged on money + habit:</b> pays for itself (house winnings &gt; bonus) and builds a habit rather than feeding free-money collectors.','var(--maintain)'],
-    ['C · Entitlement','<b>What it is:</b> <b>relationship gifts given by status, not performance</b> — birthday and welcome/membership gifts. <b>Not scored on return</b> — they protect loyalty; only flagged if a gift reaches an inactive account.','var(--referral)']
-  ].map(r=>`<div class="ddef"><span class="lbl"><span class="dot" style="background:${r[2]}"></span>${r[0]}</span><span class="txt">${r[1]}</span></div>`).join('');
+    ['A · Performance','var(--scale)',[
+      '<b>What it is:</b> rewards to keep active top players playing — mostly <b>big free-credit and reload bonuses</b> (the biggest VIP spend, largely pushed by VIP managers).',
+      '<b>How it\'s judged:</b> on <b>money</b> — net revenue back per RM1, weighed against how much more that tier/type of player usually deposits.',
+      '<b>The rule:</b> loss-making big free-credit is <b>shrunk, not killed</b> (loyalty risk).']],
+    ['B · Money-back','var(--gold)',[
+      '<b>What it is:</b> a <b>partial refund on a losing week</b> (Weekly Rescue) — loss cover to stop a VIP walking away after a bad run.',
+      '<b>How it\'s judged:</b> a <b>pays-for-itself test</b> — per tier, does it keep players <i>on top of what they\'d do anyway</i>?',
+      '<b>The rule:</b> CLEARS → Keep · FAILS → Trim · sign-flips → Review (and prove with a controlled test).']],
+    ['D · Engagement','var(--maintain)',[
+      '<b>What it is:</b> small, frequent rewards that build a habit — <b>daily check-ins and the mini-games</b> (Lucky Wheel, Scratch Card, Mystery Ang Pow); deposit-triggered and cheap.',
+      '<b>How it\'s judged:</b> <b>money + habit</b> — pays for itself (house winnings &gt; bonus) and builds a habit rather than feeding free-money collectors.']],
+    ['C · Entitlement','var(--referral)',[
+      '<b>What it is:</b> <b>relationship gifts given by status, not performance</b> — birthday and welcome/membership gifts.',
+      '<b>How it\'s judged:</b> <b>not scored on return</b> — they protect loyalty; only flagged if a gift reaches an inactive account.']]
+  ].map(r=>`<div class="ddef bul"><span class="lbl"><span class="dot" style="background:${r[1]}"></span>${r[0]}</span><div class="txt"><ul class="ddul">${r[2].map(b=>`<li>${b}</li>`).join('')}</ul></div></div>`).join('');
   // ---- Lanes ----
   const lanes=document.getElementById('v_lanes');
   const beV=CVAL.break_even||{}, beColor=v=>v&&v.startsWith('CLEARS')?'var(--scale)':v&&v.startsWith('FAILS')?'var(--stop)':'var(--gold)';
@@ -1350,7 +1365,7 @@ function renderVIP(){
     `<p class="ldef"><b>What it is:</b> rewards to keep active top players playing — mostly <b>big free-credit and reload bonuses</b>. This is the biggest slice of VIP spend, and the biggest loss.</p>`+
     `<div class="varbox" style="margin-bottom:14px"><span class="ico">◆</span><div><b>Why it loses money — and is getting worse.</b> It's an <b>offer and targeting problem, not a reward-mix or falling-demand problem</b> (shifting between free-credit and deposit bonus explains ≤13%). Confirmed from the assignment log: big-player free-credit is <b>81% assigned by VIP managers, 0% claimed by the player</b> (vs check-ins at 46% claimed by players themselves) — players don't ask for it, VIP managers push it, so the cap below is literally a VIP-manager assignment rule. It's <b>concentrated</b> — ~2 flagship <b>RM400+ free-credit</b> codes drive about half the recent loss, top 10 drive ~86% — in the <b>Diamond / Gold / Platinum</b> big-ticket offers. The engine is <b>money paid to big players who were already active</b>: claims by players who just deposited now lose <b>−2.04 for every RM1</b> (vs −0.75 for winning back inactive players), and a <b>2nd/3rd claim loses ~2× a first</b> (−1.58 vs −0.86) — the offer increasingly re-pays big players for play they'd do anyway (house winnings held flat while net revenue fell — a clear sign of overpaying). <b>Fix:</b> cap how often each member can get big-player free-credit (a 1-per-quarter cap frees <b>~RM228k of bonus for certain</b>, up to ~RM375k if capped big players don't pull back), withhold or add conditions to big free-credit for recently-active big players, and raise wagering / shrink the RM400+ offer. Prove the cap with a proper controlled test before scaling — the upside is a best-case read, not proof.</div></div>`+
     `<div class="grid"><div class="card col6"><div class="card-h"><h3>Return by offer size</h3><span class="hint">${VSYM} per RM1 · zero means it just paid for itself</span></div><p class="sub2">The clearest lever: small-ticket rewards pay back, big-ticket free-credit loses. The bulk of Performance spend sits in the losing bands.</p><div id="v_sizeBars"></div></div>`+
-    `<div class="card col6"><div class="card-h"><h3>Return by wagering requirement</h3><span class="hint">net rev per RM1</span></div><p class="sub2">Low/no-wagering micro-rewards pay back; the high-value 5–8× VIP free-credit does not. Raising wagering is the right-size lever.</p><div id="v_wagBars"></div></div></div>`+
+    `<div class="card col6"><div class="card-h"><h3>Return by wagering (TO) requirement</h3><span class="hint">net rev per RM1</span></div><p class="sub2">Low/no-wagering micro-rewards pay back; the high-value 5–8× VIP free-credit does not. Raising wagering (TO) is the right-size lever.</p><div id="v_wagBars"></div></div></div>`+
     `<div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Performance decisions</h3><span class="hint">grouped by call · top spend</span></div><p class="sub2">One row per promo. Uplift = how much more they deposited vs the norm for that tier and type (a read, not proof). Big free-credit rewards for big players are trimmed, not killed.</p><div id="v_tblA"></div></div>`+
     // LANE B
     `<div class="lanehdr" style="border-color:var(--gold)"><span class="lanetag" style="background:var(--gold)">B</span><h2>Weekly Rescue money-back</h2><span class="lanesub">${vM(LS['B-cashback'].spend)} · loss cover for VIPs · confirmed money-back</span></div>`+
@@ -1377,7 +1392,10 @@ function renderVIP(){
     tip:b=>`<div class="tt-h">${b.band}</div><div class="tt-r"><span>Promos</span><span>${b.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(b.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${b.ngr_lift_per_rm.toFixed(2)}</span></div>`});
   vBars('v_wagBars',VIP.by_wagering.filter(w=>w.spend>10000).sort((a,b)=>b.spend-a.spend),{value:w=>w.ngr_lift_per_rm,label:w=>w.wagering,ref:0,left:70,H:210,bh:22,xlab:'Net revenue per RM1 (RM)',
     colorFn:(w,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(w,v)=>VSYM+v.toFixed(2),
-    tip:w=>`<div class="tt-h">${w.wagering} wagering</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+    tip:w=>`<div class="tt-h">${w.wagering} wagering (TO)</div><div class="tt-r"><span>Promos</span><span>${w.codes}</span></div><div class="tt-r"><span>Spend</span><span>${VSYM}${fmt(w.spend)}</span></div><div class="tt-r"><span>Net rev per RM1</span><span>${VSYM}${w.ngr_lift_per_rm.toFixed(2)}</span></div>`});
+  const moneyKey=`<div class="tlegend" style="margin-top:7px"><span><i style="background:${CV('--scale')}"></i>green = at or above RM0 · the bonus made money</span><span><i style="background:${CV('--stop')}"></i>red = below RM0 · the bonus lost money</span></div>`;
+  document.getElementById('v_sizeBars').insertAdjacentHTML('beforeend',moneyKey);
+  document.getElementById('v_wagBars').insertAdjacentHTML('beforeend',moneyKey);
   const naSpan='<span style="color:var(--muted)">—</span>';
   const cName=x=>`<div class="code">${x.code}</div><div class="cname">${x.name||''}</div>`+((x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'');
   const mnum=(v,pos)=>v==null?naSpan:`<span style="font-weight:700;color:${v>0?'var(--ink)':'var(--reduce)'}">${VSYM}${v.toFixed(2)}</span>`;
