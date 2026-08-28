@@ -1914,23 +1914,30 @@ renderTrend();
     plainSec(byId('r_soon'),null),
   ]);
   buildPanel('panel-vip',[
+    // Frame
     htmlSec("What VIP is — and how it's judged", ABOUT.vip),
     leadSec('Main findings',[byId('v_meta'),byId('v_exec')]),
     leadSec('Key numbers',[byId('v_kpis')]),
-    cardSec(cardById('v_fund')),
-    cardSec(cardById('v_whale')),
-    cardSec(byId('vipWhaleCard')),
-    cardSec(cardById('v_moves')),
-    cardSec(byId('v_sweetCard')),
-    cardSec(byId('vipSizingCard')),
-    cardSec(byId('vipTierCard')),
-    cardSec(byId('vipGgrCard')),
-    leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
-    cardSec(cardById('v_rules')),
+    // Does it pay? — the bottom line
     cardSec(byId('vipCoverageCard')),
-    cardSec(byId('vipDepoCard')),
+    // The four jobs — frame + detail
+    cardSec(cardById('v_rules')),
     ...laneSecs(),
+    // The levers — what drives the loss/gain (all say: small, deposit-linked, well-wagered wins)
+    cardSec(byId('vipSizingCard')),
+    cardSec(byId('vipDepoCard')),
+    cardSec(byId('v_sweetCard')),
+    cardSec(byId('vipGgrCard')),
+    // The value & the risk
+    cardSec(cardById('v_whale')),
+    cardSec(cardById('v_fund')),
+    cardSec(byId('vipWhaleCard')),
+    cardSec(byId('vipTierCard')),
+    // Integrity
     cardSec(byId('vipFarmCard')),
+    // Act
+    cardSec(cardById('v_moves')),
+    leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
     plainSec(byId('v_notes'),'Notes'),
     plainSec(byId('v_soon'),null),
   ]);
