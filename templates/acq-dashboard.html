@@ -166,6 +166,13 @@
   .about .abk{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent-ink)}
   .about .abv{font-size:14px;line-height:1.5;color:var(--ink)}
   .about .abv b{font-weight:700}
+  .dsgrid{display:grid;gap:10px;margin-top:8px}
+  .dsrow{display:grid;grid-template-columns:1.15fr 1fr auto;gap:14px;align-items:center;padding:11px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+  .dsrow .dsl{font-weight:700}
+  .dsrow .dshint{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+  .dsrow .dsm{font-variant-numeric:tabular-nums;font-size:15px}
+  .dsrow .dss{color:var(--muted);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+  @media(max-width:640px){.dsrow{grid-template-columns:1fr;gap:4px}.dsrow .dss{text-align:left}}
   @media(max-width:760px){.toc ol{grid-template-columns:1fr}}
   @media(max-width:640px){.about .abrow{grid-template-columns:1fr;gap:3px}}
   /* tabs + panels */
@@ -358,6 +365,12 @@
     <div id="acqParetoNote" class="fine" style="margin-top:10px"></div>
   </div>
 
+  <div class="card col12" id="acqDepoCard" style="margin-bottom:15px">
+    <div class="card-h"><h3>Deposit-required vs no-deposit — how the free bonuses judge out</h3><span class="hint">from BO config</span></div>
+    <p class="sub2">A no-deposit welcome bonus is a free hook — you can only judge it on whether it converts a claimer into a first deposit. Deposit-required offers put skin in the game.</p>
+    <div id="acqDepoSplit"></div>
+  </div>
+
   <div class="card col12" id="acqFunnelCard" style="margin-bottom:15px">
     <div class="card-h"><h3>Claim → deposit — and the money that walks</h3><span class="hint">bonus claimed, no deposit</span></div>
     <p class="sub2">Of everyone who claimed a welcome bonus, how many actually made a first deposit — and how much bonus went to the ones who never did?</p>
@@ -430,6 +443,11 @@
       </div>
       <div id="retIncrNote" class="fine" style="margin-top:10px"></div>
     </div>
+    <div class="card col12" id="retDepoCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Deposit-required vs no-deposit — where the money is</h3><span class="hint">from BO config</span></div>
+      <p class="sub2">A no-deposit bonus is pure cost up front — it only pays if it drives enough played-through play to beat the give-away. Split by whether a deposit is required.</p>
+      <div id="retDepoSplit"></div>
+    </div>
     <div class="card col12" style="margin-bottom:15px">
       <div class="card-h"><h3>Decision rules</h3></div>
       <p class="sub2">Money is the judge here: Net revenue back for every RM1 is the extra net revenue a bonus keeps (after its own cost) for every RM1 spent. "Retains" = deposits again above what that player type normally would. The matrix turns money × retention into a call; the actions beside it say what to do.</p>
@@ -461,11 +479,40 @@
       <div class="card col6"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">spend-share ÷ net-revenue-share · 1.0 = balanced</span></div><p class="sub2">Above 1.0 = over-funded for the value it returns; below = starved. Bronze is over-funded; Platinum &amp; Diamond carry more net revenue than the budget they get.</p><div id="v_fund"></div></div>
       <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of positive net revenue</span></div><p class="sub2">A thin slice of players carries most of the net revenue — and the declining ones (money we could lose if they leave) are the program's biggest single risk.</p><div id="v_whale"></div></div>
     </div>
+    <div class="card col12" id="vipWhaleCard" style="margin-top:15px">
+      <div class="card-h"><h3>At-risk whale ledger — who's cooling, and the money at stake</h3><span class="hint">top 1% by net revenue · cooling</span></div>
+      <p class="sub2">The named version of the concentration risk above: the biggest players whose deposits are falling, ranked by the net revenue that walks out if they drift away. Opaque reference only — no player identity.</p>
+      <div id="vipWhaleTbl"></div>
+      <div id="vipWhaleNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>The three big moves</h3><span class="hint">money to move</span></div><div id="v_moves"></div></div>
     <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The simple rule: VIP bonus money <b>makes money as a cheap game reward</b> (mini-game or check-in) and <b>loses money as big free-credit</b>. In the table below, each bonus is filed by the <b>actual amount paid out</b> — so a promo that can pay "up to RM15,500" shows its big payouts, not just its average. Cheap rewards make money at every size; big free-credit is where the money leaks — and the higher the player's tier, the more the cheap rewards pay.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × amount paid out <span style="font-weight:400;color:var(--muted);font-size:12px">profit for every RM1 given · each payout in its real size · green makes money, red loses</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
     <section class="call"><div class="call-lead" id="v_callLead"></div></section>
     <div class="tally" id="v_tally" style="margin-bottom:18px"></div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>How each group is judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each group is graded on its own — never one metric across all. Net revenue is after the bonus cost (zero means it just paid for itself).</p><div id="v_rules"></div></div>
+    <div class="card col12" id="vipCoverageCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Who carries whom — and does the loss buy retention?</h3><span class="hint">lane P&amp;L · cross-subsidy</span></div>
+      <p class="sub2">Which lanes make money, which lose it, whether the winners cover the losers — and whether the losing lanes' "it retains big players" defence actually holds up.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Lane profit &amp; loss <span>net revenue · money-back set aside</span></h4><div id="vipCoverage"></div></div>
+        <div class="tchart"><h4>Does the loss retain big players? <span>the justification, tested</span></h4><div id="vipRetainTest"></div></div>
+      </div>
+      <div id="vipCoverageNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="vipFarmCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Bonus-farming watch — codes and members to check</h3><span class="hint">a watchlist, not proof</span></div>
+      <p class="sub2">Two abuse fingerprints: members claiming code after code, and codes where one player takes most of the spend. Some of these are simply the most active whales — cross-check before acting. Opaque reference only.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Hitting the most codes <span>members by distinct codes claimed</span></h4><div id="vipFarmMembers"></div></div>
+        <div class="tchart"><h4>Eaten by one player <span>codes where one member takes ≥50%</span></h4><div id="vipFarmCodes"></div></div>
+      </div>
+      <div id="vipFarmNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="vipDepoCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Deposit-required vs no-deposit — the biggest money split</h3><span class="hint">from BO config</span></div>
+      <p class="sub2">A no-deposit bonus is pure cost up front — it only pays if the play it drives beats the give-away. This is where most VIP spend sits, and where most of the loss is.</p>
+      <div id="vipDepoSplit"></div>
+    </div>
     <div id="v_lanes"></div>
     <div class="notes" id="v_notes"></div>
     <div class="soon" id="v_soon"></div>
@@ -589,6 +636,23 @@ document.getElementById('ruleMatrix').innerHTML =
 function axTitle(s,x,y,text,rot){const a={x,y,'text-anchor':'middle',style:'fill:var(--muted);font-size:11px;font-weight:600'};if(rot)a.transform='rotate(-90 '+x+' '+y+')';const t=el('text',a);t.textContent=text;s.append(t);}
 // decision colour key — so chart colours carry meaning
 function decLegendHTML(acts,dec){acts=acts||ACTIONS;dec=dec||DEC;return `<div class="tlegend" style="margin-top:9px">`+acts.map(k=>`<span><i style="background:${dec[k].c}"></i>${k}${dec[k]&&dec[k].d?' — '+dec[k].d:''}</span>`).join('')+`</div>`;}
+// deposit-required vs no-deposit split (config-based) — kind 'acq' (cost/depositor) or 'money' (net rev per RM1)
+function depoSplitRender(cid, ds, kind, sym){
+  const box=document.getElementById(cid); if(!box||!ds) return; const g=ds.groups||{};
+  const money=v=>v==null?'—':(v>=0?'+'+sym+v:'−'+sym+Math.abs(v));
+  const mtxt=d=>{ if(d==null) return '—';
+    if(kind==='acq') return `<b>${d.cost_per_ftd!=null?sym+d.cost_per_ftd:'—'}</b> / depositor · ${d.conversion!=null?d.conversion+'%':'—'} convert`;
+    const v=d.ngr_lift_per_rm; return `<b style="color:${(v||0)>=0?'var(--scale)':'var(--reduce)'}">${money(v)}</b> / RM1`; };
+  const row=(lbl,d,hint)=> d?`<div class="dsrow"><div class="dsl">${lbl}<span class="dshint">${hint}</span></div><div class="dsm">${mtxt(d)}</div><div class="dss">${d.codes} codes · ${sym}${fmt(d.spend)}</div></div>`:'';
+  let html=`<div class="dsgrid">`+row('Deposit required',g.deposit,'player has skin in the game')+
+    row('No deposit — free',g.no_deposit,'pure cost up front')+
+    (g.unknown&&g.unknown.spend>50000?row('Config not found',g.unknown,'unmatched in BO'):'')+`</div>`;
+  const wb=(ds.no_deposit_by_wagering||[]).filter(b=>b.spend>3000);
+  if(wb.length){html+=`<div class="fine" style="margin-top:11px"><b>Does the wagering requirement rescue the free bonuses?</b> `+
+    wb.map(b=>{const v=kind==='acq'?(b.cost_per_ftd!=null?sym+b.cost_per_ftd+'/dep':'—'):(b.ngr_lift_per_rm!=null?money(b.ngr_lift_per_rm)+'/RM1':'—');return `${b.band} → <b>${v}</b>`;}).join(' · ')+
+    `. ${kind==='acq'?'Even at high wagering the free welcome offers convert far worse.':'Higher wagering does not lift the paid free-credit back to profit (the profitable 0× band is the near-free mini-games, where the cost is negligible).'}</div>`;}
+  box.innerHTML=html;
+}
 function paretoLOO(){
   const PA=P.pareto; if(!PA) return; const hd=PA.headline_cost_per_ftd;
   // Lorenz: cumulative share of spend (x) vs new depositors (y), codes biggest-spend first
@@ -779,7 +843,7 @@ btn.addEventListener('click',()=>{const cur=document.documentElement.getAttribut
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!document.documentElement.getAttribute('data-theme'))paint();});
 window.addEventListener('scroll',()=>hideTip(),{passive:true});
 (function(){let t=null;try{t=localStorage.getItem('acqtheme')}catch(e){}if(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';}})();
-table();bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();
+table();bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();depoSplitRender('acqDepoSplit',P.deposit_split,'acq',SYM);
 
 // ============================ RETENTION TAB ============================
 const RDEC = {
@@ -993,7 +1057,7 @@ function renderRetention(){
     `<div class="mrl">Makes money (${RSYM}${T.give_floor}–${T.scale_hi})</div>`+rmc('Maintain','var(--maintain)')+rmc('Optimise','var(--optimise)')+
     `<div class="mrl">Loses money (&lt; ${RSYM}0)</div>`+rmc('Reduce','var(--reduce)')+rmc('Stop','var(--stop)')+
     `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} players with enough time to judge → Monitor · money seen but not enough time yet to tell if they deposited again → Watch-money · a Scale carried mostly by one player is demoted. Barely profitable (${RSYM}0–${T.give_floor} back per RM1) → Optimise (right-size).</div>`;
-  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable(); retLifecycle(); retIncr();
+  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable(); retLifecycle(); retIncr(); depoSplitRender('retDepoSplit',RET.deposit_split,'money',RSYM);
   document.getElementById('r_notes').innerHTML=`<h3>Good to know</h3><ul>`+
     `<li><b>Profit for every RM1 given</b> = the extra net revenue kept (bonus cost already taken out) for each RM1 spent — the 7 days after a claim vs the player's own recent 14 days. Zero means it just paid for itself.</li>`+
     `<li><b>Deposited more than usual</b> = how much more this promo's players deposited compared to what that <b>type</b> of player normally does. Deposit bonuses need a deposit to claim, so they're only compared to other deposit bonuses, never to free-credit.</li>`+
@@ -1021,6 +1085,64 @@ const VDEC = {
 const VSYM=(VIP&&VIP.sym)||'RM';
 const vcv=x=>VDEC[x]?CV(VDEC[x].c.slice(4,-1)):CV('--muted');
 const vM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+VSYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
+function vipWhaleLedger(){
+  const WL=VIP&&VIP.whale_ledger; if(!WL) return; const S=WL.summary;
+  const tb=document.getElementById('vipWhaleTbl');
+  if(tb){tb.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">#</th><th class="l">Player (ref)</th><th class="l">Tier</th><th>YTD net revenue</th><th class="l">Signal</th></tr></thead><tbody>`+
+    WL.members.map(x=>`<tr><td class="l" style="color:var(--muted)">${x.rank}</td><td class="l"><span class="code">${x.ref}</span></td><td class="l">${x.tier}</td><td style="font-weight:700">${vM(x.ytd_ngr)}</td><td class="l" style="color:var(--reduce)">${x.signal}</td></tr>`).join('')+`</tbody></table></div>`;}
+  const note=document.getElementById('vipWhaleNote');
+  if(note){note.innerHTML=`<b>${S.cooling} of ${S.whales}</b> top-1% whales are cooling (depositing less than earlier in the year), with <b>${vM(S.ngr_at_risk)}</b> of net revenue at stake if they drift away. These are the accounts a VIP manager should reach first — a retention call here is worth more than any promo tweak.`;}
+}
+function cbTrust(){
+  const CT=VIP&&VIP.cashback_trust; if(!CT) return;
+  const box=document.getElementById('v_cbTrust'); if(!box) return;
+  const col=v=>v==null?'var(--muted)':(v>0?'var(--scale)':v<0?'var(--reduce)':'var(--muted)');
+  const vc=x=>/pays/.test(x)?'var(--scale)':/costs/.test(x)?'var(--reduce)':'var(--muted)';
+  const rows=CT.tiers.map(t=>`<tr><td class="l">${t.tier}</td><td style="color:${col(t.inc_ngr30)};font-weight:700">${t.inc_ngr30==null?'—':vM(t.inc_ngr30)}</td><td style="color:${col(t.inc_ngr60)}">${t.inc_ngr60==null?'—':vM(t.inc_ngr60)}</td><td style="color:var(--muted)">${t.placebo30==null?'—':vM(t.placebo30)}</td><td>${t.on_support==null?'—':t.on_support+'%'}</td><td class="l" style="color:${vc(t.verdict)};font-weight:600">${t.verdict}</td></tr>`).join('');
+  const F=CT.forward_treated;
+  box.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Tier</th><th>Real effect (30d)</th><th>Holds? (60d)</th><th>Sanity check</th><th>Match quality</th><th class="l">Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`+
+    `<div class="fine" style="margin-top:10px">Against a matched no-money-back group, money-back <b>reduces</b> net revenue at most tiers (Diamond most of all) — and the small positives are no bigger than the sanity check throws up as noise. Rescue claimers' own net revenue does keep growing (${vM(F.ngr30)}→${vM(F.ngr60)}→${vM(F.ngr90)} at 30/60/90 days), but that's because these are whales who deposit anyway — not proof the money-back caused it. <b>Verdict:</b> the numbers can't settle the biggest bet — Diamond money-back — either way, and cutting it risks a few top players worth more than the saving. Hold it at the current rate and prove it with a proper controlled test before changing.</div>`;
+}
+function vipCoverage(){
+  const LS=VIP&&VIP.lane_summary; if(!LS||!LS['D-engagement']) return;
+  const BR=(VIP.cashback_validation||{}).base_rate||{}, WS=(VIP.whale_ledger||{}).summary||{};
+  const LAB={'A-performance':'Performance','B-cashback':'Money-back','C-entitlement':'Entitlement','D-engagement':'Engagement'};
+  const cm=v=>(v>=0?'+':'−')+VSYM+(Math.abs(v)>=1e6?(Math.abs(v)/1e6).toFixed(2)+'M':Math.round(Math.abs(v)/1e3)+'K');
+  const totSp=Object.values(LS).reduce((a,l)=>a+(l.spend||0),0);
+  (function(){
+    const box=document.getElementById('vipCoverage'); if(!box) return; box.innerHTML='';
+    const rows=[['D-engagement',LS['D-engagement'].ngr_lift],['A-performance',LS['A-performance'].ngr_lift],['C-entitlement',LS['C-entitlement'].ngr_lift]];
+    const net=rows.reduce((a,r)=>a+r[1],0); rows.push(['NET (ex money-back)',net,true]);
+    const W=460,H=210,left=138,right=66,top=8,bot=26,rh=(H-top-bot)/rows.length,bh=Math.min(24,rh-8);
+    const vals=rows.map(r=>r[1]),x0=Math.min(0,...vals),x1=Math.max(0,...vals),sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right),zx=sx(0);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'}); s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+    rows.forEach((r,i)=>{const y=top+i*rh+(rh-bh)/2,v=r[1],bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce');
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'+(r[2]?';font-weight:800':'')}),{textContent:LAB[r[0]]||r[0]}));
+      s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c,'fill-opacity':r[2]?1:.82,stroke:r[2]?CV('--ink'):'none','stroke-width':r[2]?1.4:0}));
+      s.append(Object.assign(el('text',{x:pos?bx+5:bx-5,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:11px;font-weight:700;fill:'+c}),{textContent:cm(v)}));});
+    axTitle(s,(left+W-right)/2,H-6,'Net revenue (7-day window)');
+    box.append(s);
+  })();
+  const rt=document.getElementById('vipRetainTest');
+  if(rt){const tiers=['Diamond','Platinum','Gold','Silver','Bronze'].filter(t=>BR[t]);
+    rt.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Tier</th><th>Comes back anyway</th><th>Lift from money-back</th></tr></thead><tbody>`+
+      tiers.map(t=>{const x=BR[t],good=x.lift_pp>0;return `<tr><td class="l">${t}</td><td>${x.untreated_redep}%</td><td style="color:${good?'var(--scale)':'var(--reduce)'};font-weight:600">${x.lift_pp>=0?'+':''}${x.lift_pp}pp</td></tr>`;}).join('')+`</tbody></table></div>`+
+      `<div class="fine" style="margin-top:8px">Losing VIPs come back <b>~96% with no money-back at all</b>; the lift is marginal at the top and <b>negative for Silver/Bronze</b>. And despite <b>${vM(totSp)}</b> of VIP spend, <b>${WS.cooling} of ${WS.whales}</b> top whales are cooling (<b>${vM(WS.ngr_at_risk)}</b> at risk).</div>`;}
+  const note=document.getElementById('vipCoverageNote');
+  if(note){const D=LS['D-engagement'].ngr_lift,AC=LS['A-performance'].ngr_lift+LS['C-entitlement'].ngr_lift,net=D+AC;
+    note.innerHTML=`<b>Engagement (${cm(D)}) covers Performance + Entitlement (${cm(AC)})</b>, leaving <b>${cm(net)}</b> — about break-even once money-back is set aside. Money-back's ${cm(LS['B-cashback'].ngr_lift)} in-window figure is a <b>loss give-back</b>, judged separately (see the trust check). So the <b>mini-games quietly carry the whole VIP program</b>, and the losing lanes' "it retains big players" case does not hold — the returns would mostly happen anyway, and the whales actually at risk are not being saved by the spend. The honest move: <b>right-size Performance free-credit, prove money-back with a holdout, and protect the cooling whales directly.</b>`;}
+}
+function vipFarming(){
+  const F=VIP&&VIP.farming; if(!F) return; const S=F.summary;
+  const mt=document.getElementById('vipFarmMembers');
+  if(mt){mt.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Player</th><th class="l">Tier</th><th>Codes</th><th>Claims</th><th>Bonus</th></tr></thead><tbody>`+
+    F.by_member.slice(0,8).map(x=>`<tr><td class="l"><span class="code">${x.ref}</span></td><td class="l">${x.tier}</td><td style="font-weight:700">${x.distinct_codes}</td><td>${fmt(x.claims)}</td><td>${vM(x.bonus)}</td></tr>`).join('')+`</tbody></table></div>`;}
+  const ct=document.getElementById('vipFarmCodes');
+  if(ct){ct.innerHTML=F.by_code.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Code</th><th>Claimers</th><th>Spend</th><th>Top player</th></tr></thead><tbody>`+
+    F.by_code.slice(0,8).map(x=>`<tr><td class="l">${x.code}</td><td>${x.claimers}</td><td>${vM(x.bonus)}</td><td style="color:var(--reduce);font-weight:600">${x.top_share}%</td></tr>`).join('')+`</tbody></table></div>`:`<p class="fine">No code is dominated by a single player.</p>`;}
+  const note=document.getElementById('vipFarmNote');
+  if(note){note.innerHTML=`Across ${fmt(S.members)} VIPs the typical member claims <b>${S.median_codes}</b> codes — but <b>${fmt(S.heavy_members)}</b> hit 20+ and one hit <b>${S.max_codes}</b>. ${S.concentrated_codes} codes are ≥50% taken by one player (mostly mini-games). Treat as a <b>watchlist to check</b>, not proof — several of these refs are the same high-value whales on the ledger above.`;}
+}
 const vPct=n=>n==null?'—':(n>0?'+':'')+n+'%';
 function vBars(boxId,data,opt){
   const box=document.getElementById(boxId); if(!box)return; box.innerHTML='';
@@ -1129,6 +1251,7 @@ function renderVIP(){
     `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div><b>${LS['B-cashback'].kept_playing.toLocaleString()} of ${LS['B-cashback'].claimers.toLocaleString()}</b> claimers kept playing after a losing week — but that's the trap: <b>losing VIPs deposit again ~96% of the time with no money-back at all</b>. So the question isn't "did they come back" — it's whether the give-back moves money <i>on top of what they'd do anyway</i>, tier by tier.</div></div>`+
     `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Money-back by tier — does it pay for itself?</h3><span class="hint">pays for itself = extra net revenue afterwards is above zero</span></div><div id="v_cbTiers"></div></div>`+
     `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>The Diamond question</h3><span class="hint">${vM(beV.Diamond?beV.Diamond.cashback_cost:0)} — the biggest single bet</span></div><div id="v_diamond"></div></div>`+
+    `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Can we trust the money-back read?</h3><span class="hint">sanity check + staying power</span></div><p class="sub2">Two checks on the "pays for itself" verdict: the real effect against a matched no-money-back group, and the same test run on a made-up date (a sanity check — it should show almost nothing, so a real effect has to clearly beat it).</p><div id="v_cbTrust"></div></div>`+
     `<div class="card col12" style="margin-top:0"><div class="card-h"><h3>Money-back decisions</h3><span class="hint">matched to the pay-for-itself test</span></div><div id="v_tblB"></div></div>`+
     // LANE D
     `<div class="lanehdr" style="border-color:var(--maintain)"><span class="lanetag" style="background:var(--maintain)">D</span><h2>Engagement &amp; mini-games</h2><span class="lanesub">3 mini-game programs + ${LD.filter(c=>!['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} check-ins · ${vM(LS['D-engagement'].spend)} · ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm} per RM1</span></div>`+
@@ -1213,6 +1336,11 @@ function renderVIP(){
 }
 const mnum2=v=>v==null?'<span style="color:var(--muted)">—</span>':`<span style="color:${v>0?'var(--scale)':'var(--reduce)'}">${vM(v)}</span>`;
 renderVIP();
+vipWhaleLedger();
+cbTrust();
+vipFarming();
+vipCoverage();
+depoSplitRender('vipDepoSplit',VIP.deposit_split,'money',VSYM);
 
 // ===== VIP sweet spot by tier =====
 function ssBars(boxId, data){
@@ -1588,8 +1716,9 @@ renderTrend();
       +abrow('Good to know','"Deposited more than usual" is a read, not proof. The job here is not to cut — it is to <b>move budget from what loses to what pays</b>.'),
     vip:`<p class="lead">VIP covers the bonuses aimed at the <b>top-tier players</b> — the single biggest spend, doing four different jobs.</p>`
       +abrow('How we judge it','Not on one number. Each group gets its <b>own yardstick</b>: Performance &amp; Engagement on money, Weekly-Rescue money-back on a pays-for-itself test, Entitlement gifts <b>not</b> on return at all.')
+      +abrow('Key metric','If you need one number: the <b>extra net revenue the bonus actually drives</b> beyond what these players would spend anyway. Counting only that — and setting the money-back promo aside — the program runs at <b>about break-even (~RM0 back per RM1)</b>. Everything else is read lane by lane.')
       +abrow('Why this way','A single score would flatter or punish the wrong thing — a birthday gift is not meant to make money, and a money-back promo is not a growth play. Judging each job on its own is the only honest read.')
-      +abrow('Good to know','The headline number is the <b>honest "extra"</b> the bonus actually drives (setting money-back aside) — about break-even. Net revenue is after the bonus cost.'),
+      +abrow('Good to know','Net revenue is after the bonus cost (zero means it just paid for itself). Reads are directional own-baseline, not a controlled test.'),
   };
   buildPanel('panel-summary',[
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
@@ -1610,6 +1739,7 @@ renderTrend();
     cardSec(cardById('chartBars')),
     cardSec(cardById('chartScatter')),
     cardSec(cardById('chartMech')),
+    cardSec(byId('acqDepoCard')),
     cardSec(cardById('chartTrend')),
     cardSec(cardById('tbl')),
     cardSec(byId('acqFunnelCard')),
@@ -1621,6 +1751,7 @@ renderTrend();
     leadSec('Key numbers',[byId('r_kpis')]),
     cardSec(byId('retLifecycleCard')),
     cardSec(byId('retIncrCard')),
+    cardSec(byId('retDepoCard')),
     cardSec(cardById('r_ruleLines')),
     cardSec(cardById('r_chartNgr')),
     cardSec(cardById('r_chartQuad')),
@@ -1636,11 +1767,15 @@ renderTrend();
     leadSec('Key numbers',[byId('v_kpis')]),
     cardSec(cardById('v_fund')),
     cardSec(cardById('v_whale')),
+    cardSec(byId('vipWhaleCard')),
     cardSec(cardById('v_moves')),
     cardSec(byId('v_sweetCard')),
     leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
     cardSec(cardById('v_rules')),
+    cardSec(byId('vipCoverageCard')),
+    cardSec(byId('vipDepoCard')),
     ...laneSecs(),
+    cardSec(byId('vipFarmCard')),
     plainSec(byId('v_notes'),'Notes'),
     plainSec(byId('v_soon'),null),
   ]);

@@ -89,39 +89,45 @@
 ## Phase 3 — VIP
 
 ### Task 8: Compute at-risk whale ledger (opaque ref)
-- [ ] **Task 8**
+- [x] **Task 8**
+  - Result: ✅ bin/vip_report/whale_ledger.py → vip.whale_ledger (opaque 6-hex refs only). 74 whales(top 1%), 44 cooling, RM10.7M NGR-at-risk; top = Diamond FBAA77 RM1.14M, deposits -48%. Verified no member ids.
 **Files:** Create `bin/vip_report/whale_ledger.py`
 **Step 1:** From `member-ledger-MY.json` + `program.whale`: identify cooling top players (declining recent NGR/deposit vs their own baseline); rank by NGR-at-risk. Output rank + tier + **opaque short ref** (stable hash prefix) + NGR-at-risk + a one-line signal. NO name/real id.
 **Step 2:** Emit `vip.whale_ledger = [{rank, ref, tier, ngr_at_risk, signal}]` (top N); verify the committed JSON carries only opaque refs.
 **Verify:** refs are non-reversible short hashes; ledger NGR-at-risk ≤ program NGR; spot-check ranking.
 
 ### Task 9: Render the whale ledger
-- [ ] **Task 9** · Depends: Task 8
+- [x] **Task 9** · Depends: Task 8
+  - Result: ✅ vipWhaleCard (section #6): ranked table (rank/ref/tier/YTD NGR/signal) + note (44/74 cooling, RM10.7M at risk). Refs confirmed opaque in DOM.
 **Files:** Modify `templates/acq-dashboard.html` (VIP tab)
 **Step 1:** Add a section: ranked table "Whale #1 · Diamond · ref · RM… at risk · signal"; plain caption (turn the top-1% concentration risk into a watch list).
 **Verify:** `--verify`; renders in VIP; no identifiers beyond ref/tier; console clean.
 
 ### Task 10: Surface cashback trust (placebo + durability)
-- [ ] **Task 10**
+- [x] **Task 10**
+  - Result: ✅ bin/vip_report/cashback_trust.py → vip.cashback_trust. Matched effect COSTS money most tiers (Diamond -RM22.4K@30d), small positives within placebo noise; forward NGR grows only because claimers are whales. Cross-checks cashback_validation.
 **Files:** Modify `bin/vip_report/*` (reuse `cashback-incrementality-MY.json` / `rescue-forward-MY.json`)
 **Step 1:** Assemble the placebo (date-shifted) result, common-support check, and forward-60/90-day durability into a `vip.cashback_trust` block with a plain verdict ("clean / can't settle").
 **Verify:** figures match the source files; verdict logic matches the base-rate finding.
 
 ### Task 11: Render cashback trust on Lane B
-- [ ] **Task 11** · Depends: Task 10
+- [x] **Task 11** · Depends: Task 10
+  - Result: ✅ v_cbTrust card in Lane B: per-tier table (real 30/60d, sanity check, match quality, verdict) + plain durability note + plain 'hold + run holdout' verdict. Plain-language (placebo/durability reworded); 0-jargon.
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** Add a "can we trust this?" panel to Lane B (money-back) showing placebo + durability + the plain verdict.
 **Verify:** `--verify`; cross-foot; console clean; 0-jargon.
 
 ### Task 12: Compute bonus-farming watchlist
-- [ ] **Task 12**
+- [x] **Task 12**
+  - Result: ✅ bin/vip_report/farming_watchlist.py → vip.farming (opaque refs). Median 6 codes/member, max 194, 671 hit ≥20; 9 one-player-concentrated codes (mini-games). No member ids in output.
 **Files:** Create `bin/vip_report/farming_watchlist.py`
 **Step 1:** From `claim-rows` + `member-ledger`: flag codes eaten by one player (top-member share of a code's claims/cost) and members hitting many codes (breadth); output aggregated counts + opaque refs.
 **Step 2:** Emit `vip.farming = {by_code:[...], by_member:[{ref, codes_hit, ...}]}`; verify no real ids.
 **Verify:** flagged shares/counts reproduce from raw; refs opaque.
 
 ### Task 13: Render farming watchlist
-- [ ] **Task 13** · Depends: Task 12
+- [x] **Task 13** · Depends: Task 12
+  - Result: ✅ vipFarmCard (after lanes): breadth table + one-player-concentration table + watchlist note (cross-links to whale ledger). Also added a 'Key metric' row to the VIP method card (about break-even ex-money-back). Console clean.
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** Add a compact watchlist (top code-concentration + top multi-code members) with plain caption + the guardrail it implies.
 **Verify:** `--verify`; renders; console clean.
