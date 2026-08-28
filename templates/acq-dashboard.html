@@ -591,7 +591,7 @@
     </div>
     <div class="card col12" id="vipSweetTierCard" style="margin-top:15px">
       <div class="card-h"><h3>The bonus sweet spot by tier</h3><span class="hint">money-judged lanes · by tier</span></div>
-      <p class="sub2">The per-tier refinement of "how big should the bonus be?" (Performance + Engagement bonuses). <b>No-deposit bonuses of any kind are giveaways meant to pull deposits in</b> — so they're judged on <b>deposits attracted</b>, not net revenue; deposit-required bonuses are judged on <b>net revenue</b>. Each tier's best size is ringed.</p>
+      <p class="sub2">How big each VIP bonus should be — and of what type — for every tier (money-judged Performance + Engagement bonuses). <b>No-deposit bonuses of any kind are giveaways meant to pull deposits in</b> — so they're judged on <b>deposits attracted</b>, not net revenue; deposit-required bonuses are judged on <b>net revenue</b>. Each tier's best size is ringed.</p>
       <div class="tgrid">
         <div class="tchart"><h4>By bonus size <span>net rev per RM1, per tier</span></h4><div id="vst_vip_size"></div></div>
         <div class="tchart"><h4>Deposit-required vs no-deposit <span>the realistic split, per tier</span></h4><div id="vst_vip_depreq"></div></div>
@@ -2211,9 +2211,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Key numbers',[byId('v_kpis')]),
     cardSec(cardById('v_rules')),          // the four groups + scorecard
     ...laneSecs(),                          // the four lanes A/B/D/C
-    cardSec(byId('vipSizingCard')),        // how big should the bonus be
-    cardSec(byId('v_sweetCard')),          // the sweet spot (form × band)
     cardSec(byId('vipGgrCard')),           // where the bonus eats the margin
+    // (retired: vipSizingCard + v_sweetCard — consolidated into "The bonus sweet spot by tier")
     cardSec(cardById('v_fund')),           // funding balance by tier
     cardSec(byId('vipTierCard')),          // tier migration
     cardSec(byId('vipFarmCard')),          // bonus-farming watch
