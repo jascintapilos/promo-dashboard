@@ -110,7 +110,7 @@ by_mech.sort(key=lambda x: (x["cost_per_ftd"] is None, x["cost_per_ftd"] or 0))
 # monthly FTD trend (by claim month)
 tr = defaultdict(int)
 for r in rows:
-    if r["ftd_in_7d"]: tr[r["claim_date"][:7]] += 1
+    if r["ftd_in_7d"] and not is_ref(r["code"]): tr[r["claim_date"][:7]] += 1   # graded basis (exclude referral), matches the headline KPI
 trend = [{"month": m[5:], "ftd": tr.get(m, 0)} for m in MONTHS]
 
 facts = {

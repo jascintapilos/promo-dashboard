@@ -438,7 +438,7 @@
     <div class="card col6"><div class="card-h"><h3>Cost per first-time depositor</h3><span class="hint">lower is better</span></div><p class="sub2">One bar per code (graded codes only). Bar length = what one new depositor cost — <b>shorter is cheaper, so shorter is better</b>; most expensive on top. Colour = the recommended call (see key below).</p><div id="chartBars"></div></div>
     <div class="card col6"><div class="card-h"><h3>Cost vs coming back</h3><span class="hint">the sweet spot</span></div><p class="sub2">Cost per depositor vs how many come back in 30 days. Bottom-left is best: cheap and they stay.</p><div id="chartScatter"></div></div>
     <div class="card col6"><div class="card-h"><h3>By bonus type</h3><span class="hint">which type wins the most new depositors</span></div><p class="sub2">Cost per depositor and how many came back within 30 days, for each bonus type.</p><div id="chartMech"></div></div>
-    <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month across all new-player bonuses.</p><div id="chartTrend"></div></div>
+    <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month, on the same graded basis as the headline count (referral codes excluded — they win ~0).</p><div id="chartTrend"></div></div>
   </div>
 
   <div class="card col12" style="margin-top:15px">
@@ -562,7 +562,7 @@
     </div>
     <section class="call"><div class="call-lead" id="v_callLead"></div></section>
     <div class="tally" id="v_tally" style="margin-bottom:18px"></div>
-    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>The four groups — what each is &amp; how it's judged</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each group is graded on its own — never one metric across all. Net revenue is after the bonus cost (zero means it just paid for itself).</p><div id="v_rules"></div></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>The four groups — what each is, how it's judged &amp; how each scored</h3><span class="hint">four jobs, four yardsticks</span></div><p class="sub2">VIP spend does four different jobs. Each group is graded on its own — never one metric across all. Net revenue is after the bonus cost (zero means it just paid for itself).</p><div id="v_rules"></div></div>
     <div class="card col12" id="vipCoverageCard" style="margin-bottom:15px">
       <div class="card-h"><h3>Who carries whom — and does the loss keep the big players?</h3><span class="hint">lane P&amp;L · cross-subsidy</span></div>
       <p class="sub2">Which lanes make money, which lose it, whether the winners cover the losers — and whether the losing lanes' "it keeps the big players from leaving" defence actually holds up. ("Keeping" here means stopping a VIP going quiet — a different thing from the Retention tab, which is about existing depositors.)</p>
@@ -1564,7 +1564,7 @@ function renderSweetSpot(){
   const SS=VIP&&VIP.sweet_spot; if(!SS)return;
   document.getElementById('v_sweetCard').hidden=false;
   const rl=SS.rule;
-  document.getElementById('v_sweetRule').innerHTML=`<div class="ssrule">`+
+  document.getElementById('v_sweetRule').innerHTML=`<div class="fine" style="margin:0 0 8px">Recommended profile — a rule of thumb distilled from the pattern below, not a computed figure:</div><div class="ssrule">`+
     [['Form',rl.form],['Size',rl.size],['Wagering',rl.wagering],['Frequency',rl.frequency],['Tier',rl.tier],['Target',rl.target]]
     .map(x=>`<span class="ssr"><b>${x[0]}</b>${x[1]}</span>`).join('')+`</div>`;
   ssBars('v_sweetBars',SS.by_tier);
@@ -1940,6 +1940,12 @@ renderTrend();
       +abrow('Why this way','A single score would flatter or punish the wrong thing — a birthday gift is not meant to make money, and a money-back promo is not a growth play. Judging each job on its own is the only honest read.')
       +abrow('Good to know','Because the baseline is the player\'s <b>own recent history</b>, anything else that changed in those two weeks is mixed in, and it is only a 7-day window — so it is a <b>directional read, not proof</b>. A controlled test (a holdout) is the proof step before cutting anything big.'),
   };
+  // merge the four-group scorecard (summary + verdict tally) into the "four groups" definitions card — VIP section 5
+  (function(){
+    var rc=byId('v_rules')?byId('v_rules').closest('.card'):null;
+    var call=qP('panel-vip','.call'), tally=byId('v_tally');
+    if(rc){ if(call) rc.appendChild(call); if(tally) rc.appendChild(tally); }
+  })();
   annotateCalc();
   buildPanel('panel-summary',[
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
@@ -2008,7 +2014,7 @@ renderTrend();
     cardSec(byId('vipFarmCard')),
     // Act
     cardSec(cardById('v_moves')),
-    leadSec('What to do',[qP('panel-vip','.call'),byId('v_tally')]),
+    // 'What to do' scorecard (summary + verdict tally) merged into section 5 (v_rules card)
     plainSec(byId('v_notes'),'Notes'),
     plainSec(byId('v_soon'),null),
   ]);
