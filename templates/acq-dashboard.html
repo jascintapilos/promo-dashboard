@@ -342,6 +342,13 @@
       <div class="card col6"><div class="card-h"><h3>How much can we trust this?</h3><span class="hint">coverage &amp; confidence</span></div><div id="s_confidence"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
+    <div class="card col12" id="s_campaignCard" style="margin-top:15px">
+      <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
+      <p class="sub2">Every code tagged to a named campaign so spend rolls up by campaign. Tags are <b>inferred from code names</b> — there is no confirmed campaign map in the system yet — so treat this as a draft to confirm with CRM / Sales / Marketing.</p>
+      <div id="s_campaignBars"></div>
+      <div id="s_campaignCov" class="fine" style="margin-top:10px"></div>
+      <div style="margin-top:14px"><h4 style="margin:0 0 6px">Gap register — for the source teams <span style="font-weight:400;color:var(--muted);font-size:12px">codes / owners not yet confirmed</span></h4><div id="s_campaignGap"></div></div>
+    </div>
     <div class="card col12" style="margin:18px 0 8px"><div class="card-h"><h3>Open a pillar</h3></div><div id="summaryGrid" class="pgrid"></div></div>
   </div>
 
@@ -1410,6 +1417,36 @@ function renderSweetSpot(){
 renderSweetSpot();
 
 // ===== Executive Summary (cross-pillar synthesis) =====
+function campaignView(){
+  const CR=P&&P.campaign_rollup; if(!CR) return;
+  const cs=CR.campaigns.filter(c=>c.campaign!=='Unattributed');
+  const cmr=v=>(v>=0?'+':'−')+SYM+Math.abs(v);
+  const sMc=n=>SYM+(n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?Math.round(n/1e3)+'K':Math.round(n));
+  (function(){
+    const box=document.getElementById('s_campaignBars'); if(!box) return; box.innerHTML='';
+    const W=580,rh=30,top=8,bot=28,H=top+cs.length*rh+bot,left=150,right=182;
+    const maxSp=Math.max(...cs.map(c=>c.spend))||1,sx=v=>left+(v/maxSp)*(W-left-right);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    cs.forEach((c,i)=>{const y=top+i*rh+rh/2;
+      const good=c.kind==='acq'?null:(c.ngr_lift_per_rm==null?null:c.ngr_lift_per_rm>=0);
+      const col=good===null?CV('--accent'):(good?CV('--scale'):CV('--reduce'));
+      s.append(Object.assign(el('text',{x:left-8,y:y+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:c.campaign.length>20?c.campaign.slice(0,19)+'…':c.campaign}));
+      s.append(el('rect',{x:left,y:y-9,width:Math.max(2,sx(c.spend)-left),height:18,rx:3,fill:col,'fill-opacity':.82}));
+      s.append(Object.assign(el('text',{x:sx(c.spend)+6,y:y+4,'text-anchor':'start',style:'font-size:10.5px;fill:var(--muted)'}),{textContent:sMc(c.spend)+' ('+c.spend_share+'%)'}));
+      const out=c.kind==='acq'?(c.cost_per_ftd!=null?SYM+c.cost_per_ftd+'/dep':'—'):(c.ngr_lift_per_rm!=null?cmr(c.ngr_lift_per_rm)+'/RM1':'—');
+      s.append(Object.assign(el('text',{x:W-6,y:y+4,'text-anchor':'end',style:'font-size:11px;font-weight:700;fill:'+col}),{textContent:out}));});
+    axTitle(s,(left+W-right)/2,H-6,'Bonus spend (exact)');
+    box.append(s);
+  })();
+  const cov=CR.coverage;
+  const covBox=document.getElementById('s_campaignCov');
+  if(covBox) covBox.innerHTML=`<b>${cov.attributed_pct}%</b> of ${sMc(cov.total_spend)} is tagged to a named campaign (${cov.unattributed_codes} codes / ${sMc(cov.unattributed_spend)} unmapped). <b>Spend is exact; the return figures are a directional own-baseline association — not proof the campaign caused them</b> (a validated holdout is the proof step). Each return is measured on that campaign's <b>money-judged codes</b>, so a cross-pillar campaign's figure covers only its retention/VIP part.`;
+  const gaps=CR.gaps||[], unk=cs.filter(c=>c.owner==='Unknown'), unkSp=unk.reduce((a,c)=>a+c.spend,0);
+  const gapBox=document.getElementById('s_campaignGap');
+  if(gapBox) gapBox.innerHTML=
+    (gaps.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Unmapped code</th><th class="l">Pillar</th><th>Spend</th></tr></thead><tbody>`+gaps.slice(0,6).map(g=>`<tr><td class="l">${g.code}</td><td class="l">${g.pillar}</td><td>${sMc(g.spend)}</td></tr>`).join('')+`</tbody></table></div>`:'')+
+    `<div class="fine" style="margin-top:8px"><b>${sMc(unkSp)}</b> of spend has <b>no confirmed owner</b> (campaigns: ${unk.map(c=>c.campaign).slice(0,6).join(', ')}${unk.length>6?'…':''}). Ask CRM / Sales / Marketing to confirm each campaign's <b>objective, segment and owner</b> — that is what turns this draft into validated attribution.</div>`;
+}
 function renderSummary(){
   const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
   const chip=(n,l,c)=>n>0?`<span class="lchip" style="color:${c}">${n} ${l}</span>`:'';
@@ -1520,6 +1557,7 @@ function renderSummary(){
     pend('Branding','Production, ambassador & sponsorship spend — separate data source.');
 }
 renderSummary();
+campaignView();
 
 // ===== Month-over-month trend =====
 function tStack(boxId,labels,stacks,opt){
@@ -1728,6 +1766,7 @@ renderTrend();
     cardSec(cardById('s_frontier')),
     cardSec(cardById('s_confidence')),
     cardSec(cardById('s_ledger')),
+    cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
   ]);
   buildPanel('panel-acquisition',[
