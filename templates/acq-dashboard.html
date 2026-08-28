@@ -412,14 +412,32 @@
       <div class="tally" id="r_tally"></div>
     </section>
     <section class="kpis" id="r_kpis"></section>
+    <div class="card col12" id="retLifecycleCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>Who the money reaches — by lifecycle stage</h3><span class="hint">is the budget going where it's needed?</span></div>
+      <p class="sub2">Every bonus sorted by how recently the player last deposited. Is retention spend reaching players at risk of lapsing, or subsidising people who were going to deposit anyway?</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Where the budget goes <span>spend by lifecycle stage</span></h4><div id="retLcSpend"></div></div>
+        <div class="tchart"><h4>Does it pay back <span>net revenue back per RM1 · zero = paid for itself</span></h4><div id="retLcPay"></div></div>
+      </div>
+      <div id="retLcNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="retIncrCard" style="margin-bottom:15px">
+      <div class="card-h"><h3>What the bonus actually caused — extra returns vs. baseline</h3><span class="hint">a read, not a controlled test</span></div>
+      <p class="sub2">Each player type has a normal rate of depositing again. This compares how many actually came back against that baseline — the "extra" returns the bonus appears to add, and what each extra one costs.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Do they return more than usual? <span>come-back rate vs baseline · top codes by spend</span></h4><div id="retIncrBars"></div></div>
+        <div class="tchart"><h4>Cheapest extra returners <span>codes that genuinely add returns</span></h4><div id="retIncrTbl"></div></div>
+      </div>
+      <div id="retIncrNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div class="card col12" style="margin-bottom:15px">
       <div class="card-h"><h3>Decision rules</h3></div>
-      <p class="sub2">Money is the judge here: Net revenue back for every RM1 is the extra net revenue a bonus keeps (after its own cost) for every RM1 spent. "Retains" = deposits again above what that player type normally would.</p>
-      <div class="rulewrap">
-        <div class="rule"><h4>Thresholds</h4><div id="r_ruleLines"></div></div>
+      <p class="sub2">Money is the judge here: Net revenue back for every RM1 is the extra net revenue a bonus keeps (after its own cost) for every RM1 spent. "Retains" = deposits again above what that player type normally would. The matrix turns money × retention into a call; the actions beside it say what to do.</p>
+      <div class="rule"><h4>Thresholds</h4><div id="r_ruleLines" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px"></div></div>
+      <div class="rulewrap" style="grid-template-columns:1.15fr 1fr;margin-top:22px;align-items:start">
+        <div class="rule"><h4>Decision matrix</h4><div id="r_ruleMatrix" style="overflow-x:auto"></div></div>
         <div class="rule"><h4>Verdicts &amp; actions</h4><div id="r_ruleDefs"></div></div>
       </div>
-      <div class="rule" style="margin-top:20px"><h4>Decision matrix</h4><div id="r_ruleMatrix"></div></div>
     </div>
     <div class="grid">
       <div class="card col6"><div class="card-h"><h3>Net revenue back for every RM1, by promo</h3><span class="hint">higher is better · zero means it just paid for itself</span></div><p class="sub2">Extra net revenue kept for every RM1 of bonus, top promos by spend. Colour = the recommended call.</p><div id="r_chartNgr"></div></div>
@@ -570,7 +588,7 @@ document.getElementById('ruleMatrix').innerHTML =
 // axis-title helper — x/y axis labels for every chart
 function axTitle(s,x,y,text,rot){const a={x,y,'text-anchor':'middle',style:'fill:var(--muted);font-size:11px;font-weight:600'};if(rot)a.transform='rotate(-90 '+x+' '+y+')';const t=el('text',a);t.textContent=text;s.append(t);}
 // decision colour key — so chart colours carry meaning
-function decLegendHTML(){return `<div class="tlegend" style="margin-top:9px">`+ACTIONS.map(k=>`<span><i style="background:${DEC[k].c}"></i>${k} — ${DEC[k].d}</span>`).join('')+`</div>`;}
+function decLegendHTML(acts,dec){acts=acts||ACTIONS;dec=dec||DEC;return `<div class="tlegend" style="margin-top:9px">`+acts.map(k=>`<span><i style="background:${dec[k].c}"></i>${k}${dec[k]&&dec[k].d?' — '+dec[k].d:''}</span>`).join('')+`</div>`;}
 function paretoLOO(){
   const PA=P.pareto; if(!PA) return; const hd=PA.headline_cost_per_ftd;
   // Lorenz: cumulative share of spend (x) vs new depositors (y), codes biggest-spend first
@@ -754,7 +772,7 @@ function table(){
   </tr>`;}).join('');
   document.getElementById('tbl').innerHTML=head+`<tbody>${body}</tbody>`;
 }
-function paint(){['chartBars','chartScatter','chartMech','chartTrend','acqLorenz','acqLoo','acqFunnel'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();if(RET){rNgrBars();rQuad();rTierBars();rGrid();}}
+function paint(){['chartBars','chartScatter','chartMech','chartTrend','acqLorenz','acqLoo','acqFunnel'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();if(RET){rNgrBars();rQuad();rTierBars();rGrid();retLifecycle();retIncr();}}
 const btn=document.getElementById('themeBtn');
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';try{localStorage.setItem('acqtheme',t)}catch(e){}paint();}
 btn.addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');setTheme(cur==='dark'?'light':'dark');});
@@ -792,6 +810,7 @@ function rNgrBars(){
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
   axTitle(s,(left+W-right)/2,H-8,'Net revenue back per RM1 (RM) — RM0 = paid for itself');
   box.append(s);
+  box.insertAdjacentHTML('beforeend',decLegendHTML(RACT,RDEC));
 }
 function rQuad(){
   const box=document.getElementById('r_chartQuad'); if(!box)return; box.innerHTML='';
@@ -871,6 +890,62 @@ function rTable(){
     grp.append(h,bwrap); box.append(grp);
   });
 }
+function retIncr(){
+  const I=RET&&RET.incrementality; if(!I) return; const S=I.summary;
+  (function(){
+    const box=document.getElementById('retIncrBars'); if(!box) return; box.innerHTML='';
+    const d=I.by_code.slice(0,10); if(!d.length) return;
+    const W=440,H=252,left=148,right=44,top=8,bot=30,rh=(H-top-bot)/d.length,bh=Math.min(17,rh-6);
+    const vals=d.map(x=>x.uplift_pp||0), x0=Math.min(-8,...vals), x1=Math.max(...vals,4), sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right), zx=sx(0);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+    d.forEach((x,i)=>{const y=top+i*rh+(rh-bh)/2,v=x.uplift_pp||0,bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce'),nm=x.code.replace('FT_','');
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:10.5px'}),{textContent:nm.length>20?nm.slice(0,19)+'…':nm}));
+      s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:2,fill:c}));
+      s.append(Object.assign(el('text',{x:pos?bx+4:bx-4,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:10px;font-weight:700;fill:'+c}),{textContent:(v>=0?'+':'')+v+'pp'}));});
+    axTitle(s,(left+W-right)/2,H-6,'Come-back rate vs the player-type baseline (pp)');
+    box.append(s);
+  })();
+  const tb=document.getElementById('retIncrTbl');
+  if(tb){const good=I.by_code.filter(x=>x.cost_per_incremental!=null).sort((a,b)=>a.cost_per_incremental-b.cost_per_incremental).slice(0,6);
+    tb.innerHTML=good.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Code</th><th>Uplift</th><th>Extra kept</th><th>Cost / extra</th></tr></thead><tbody>`+
+      good.map(x=>`<tr><td class="l">${x.code.replace('FT_','')}</td><td style="color:var(--scale)">+${x.uplift_pp}pp</td><td>${fmt(x.incremental)}</td><td>${RSYM}${fmt(x.cost_per_incremental)}</td></tr>`).join('')+`</tbody></table></div>`:`<p class="fine">No code adds returns above baseline cheaply enough to rank.</p>`;}
+  const note=document.getElementById('retIncrNote');
+  if(note){note.innerHTML=`By headcount, retention adds almost <b>no extra returning players</b> over what these player types do anyway (${fmt(S.total_retained)} came back vs ${fmt(S.expected_retained)} expected → <b>${S.incremental_retained>=0?'+':''}${fmt(S.incremental_retained)}</b>). That's not a failure — <b>the money it makes comes from players depositing bigger, not more players returning</b>, which is why this tab is judged on money. Only <b>${S.n_positive} of ${S.codes}</b> codes genuinely lift returns above baseline (${S.spend_share_positive}% of spend) — target budget there; judge the rest on the money.`;}
+}
+function retLifecycle(){
+  const B=(RET&&RET.by_recency)||[]; if(!B.length) return;
+  const LAB={'active 0-14d':'Active (0–14d)','cooling 15-30d':'Cooling (15–30d)','dormant 31-60d':'Dormant (31–60d)','lapsed 60-120d':'Lapsed (60–120d)','no recent deposit (120d+)':'Inactive (120d+)'};
+  const lab=b=>LAB[b.bucket]||b.bucket, totSp=B.reduce((a,b)=>a+b.spend,0)||1;
+  (function(){
+    const box=document.getElementById('retLcSpend'); if(!box) return; box.innerHTML='';
+    const W=440,H=210,left=118,right=64,top=8,bot=30,rh=(H-top-bot)/B.length,bh=Math.min(22,rh-8);
+    const maxSp=Math.max(...B.map(b=>b.spend))||1, sx=v=>left+(v/maxSp)*(W-left-right);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    B.forEach((b,i)=>{const y=top+i*rh+(rh-bh)/2;
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:lab(b)}));
+      s.append(el('rect',{x:left,y,width:Math.max(2,sx(b.spend)-left),height:bh,rx:3,fill:CV('--accent')}));
+      s.append(Object.assign(el('text',{x:sx(b.spend)+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:11px'}),{textContent:Math.round(b.spend/totSp*100)+'%'}));});
+    axTitle(s,(left+W-right)/2,H-6,'Bonus spend — share of budget');
+    box.append(s);
+  })();
+  (function(){
+    const box=document.getElementById('retLcPay'); if(!box) return; box.innerHTML='';
+    const W=440,H=210,left=118,right=52,top=8,bot=30,rh=(H-top-bot)/B.length,bh=Math.min(22,rh-8);
+    const vals=B.map(b=>b.ngr_lift_per_rm), x0=Math.min(-0.5,...vals), x1=Math.max(...vals,1.6), sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right), zx=sx(0);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+    B.forEach((b,i)=>{const y=top+i*rh+(rh-bh)/2,v=b.ngr_lift_per_rm,bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce');
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:lab(b)}));
+      s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
+      s.append(Object.assign(el('text',{x:pos?bx+5:bx-5,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:11px;font-weight:700;fill:'+c}),{textContent:RSYM+v.toFixed(2)}));});
+    axTitle(s,(left+W-right)/2,H-6,'Net revenue back per RM1 — RM0 = paid for itself');
+    box.append(s);
+  })();
+  const note=document.getElementById('retLcNote');
+  if(note){const a=B[0],lap=B.find(b=>/lapsed/.test(b.bucket))||{};
+    note.innerHTML=`<b>${Math.round(a.spend/totSp*100)}%</b> of retention budget goes to <b>${lab(a)}</b> players — who deposit again <b>${a.redeposit_rate}%</b> of the time anyway, so much of that ${RSYM}${a.ngr_lift_per_rm.toFixed(2)}/RM1 is money they'd bring in regardless. Meanwhile <b>${lab(lap)}</b> win-back <b>loses money</b> (${RSYM}${(lap.ngr_lift_per_rm||0).toFixed(2)}/RM1). The move: shift budget toward the at-risk stages that can still be saved, and right-size or stop the deep, money-losing win-back.`;}
+}
 function renderRetention(){
   if(!RET) return;
   const RK=RET.kpis, T=RET.thresholds, mtm=RET.money_to_move;
@@ -881,9 +956,14 @@ function renderRetention(){
     `<div class="m"><span class="k">Scope</span><span class="v">${RET.codes.length} retention promos</span></div><div class="sep"></div>`+
     `<div class="m"><span class="k">Base</span><span class="v">existing players who used the bonus</span></div>`;
   document.getElementById('r_exec').innerHTML=`<span class="ico">◆</span><div><p class="lead">Here, money is the judge — the opposite of Acquisition.</p><ul class="pts"><li>These players already deposit, so "did they come back" barely separates good from bad.</li><li>What counts: did the bonus keep a player who brought in <b>extra money</b>.</li><li>Net-revenue figures already subtract the bonus cost — anything <b>above zero is profit</b> after the giveaway.</li></ul></div>`;
+  const _br=(RET.by_recency||[]), _act=_br[0]||{}, _totLc=_br.reduce((a,b)=>a+b.spend,0)||1, _inc=(RET.incrementality||{}).summary||{};
   document.getElementById('r_callLead').innerHTML=
-    `<p>Retention <b>makes money</b>: ${RSYM}${fmt(RK.spend)} spent kept <span style="font-weight:700;color:var(--scale)">+${RSYM}${fmt(RK.ngr_lift)}</span> of extra net revenue — <b>${RSYM}${RK.ngr_lift_per_rm}</b> back for every RM1. So the job here isn't to cut — it's to <b>move budget from what loses to what pays</b>.</p>`+
-    `<p><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — move the money into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).`+(mtm.watch_money?` ${RSYM}${fmt(mtm.watch_money)} is a read, not proof — whether they deposited again is still being measured.`:``)+`</p>`+
+    `<p class="lead">Retention makes money — ${RSYM}${fmt(RK.spend)} spent kept <b>+${RSYM}${fmt(RK.ngr_lift)}</b> of extra net revenue (<b>${RSYM}${RK.ngr_lift_per_rm}</b> back for every RM1). The job here isn't to cut — it's to move budget from what loses to what pays.</p>`+
+    `<ul class="pts">`+
+    `<li><span class="money">${RSYM}${fmt(mtm.stop_reduce)}</span> sits in <b>Stop / Reduce</b> promos — move it into the <b>${rc.Scale}</b> Scale winners (${RSYM}${fmt(mtm.scale)} today).</li>`+
+    (_act.spend?`<li><b>${Math.round(_act.spend/_totLc*100)}%</b> of the budget goes to players active in the last 14 days — who deposit again <b>${_act.redeposit_rate}%</b> anyway; the at-risk win-back is starved and loses money.</li>`:``)+
+    (_inc.incremental_retained!=null?`<li>By head-count the bonus adds <b>almost no extra returning players</b> over baseline — the money comes from bigger deposits, not more returners, which is why money leads here.</li>`:``)+
+    `</ul>`+
     `<p class="fine">${rc.Hold} win-back promo(s) held for the VIP tab (their gain looks huge only because these players barely deposited before); ${rc.Monitor} too new / too few players to grade.</p>`;
   document.getElementById('r_tally').innerHTML=RACT.map(k=>`<div class="t" style="--tc:${RDEC[k].c}"><div class="n">${rc[k]}</div><div class="a" style="color:${RDEC[k].c}">${k}</div><div class="d">${RDEC[k].d}</div></div>`).join('');
   [['Retention spend',RSYM+fmt(RK.spend),`+ ${RSYM}${fmt(RK.winback_spend_held)} win-back held`,0],
@@ -913,7 +993,7 @@ function renderRetention(){
     `<div class="mrl">Makes money (${RSYM}${T.give_floor}–${T.scale_hi})</div>`+rmc('Maintain','var(--maintain)')+rmc('Optimise','var(--optimise)')+
     `<div class="mrl">Loses money (&lt; ${RSYM}0)</div>`+rmc('Reduce','var(--reduce)')+rmc('Stop','var(--stop)')+
     `</div><div class="rmatnote"><b>Checked first:</b> win-back → Held (VIP) · fewer than ${T.vol_floor} players with enough time to judge → Monitor · money seen but not enough time yet to tell if they deposited again → Watch-money · a Scale carried mostly by one player is demoted. Barely profitable (${RSYM}0–${T.give_floor} back per RM1) → Optimise (right-size).</div>`;
-  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable();
+  rNgrBars(); rQuad(); rTierBars(); rGrid(); rTable(); retLifecycle(); retIncr();
   document.getElementById('r_notes').innerHTML=`<h3>Good to know</h3><ul>`+
     `<li><b>Profit for every RM1 given</b> = the extra net revenue kept (bonus cost already taken out) for each RM1 spent — the 7 days after a claim vs the player's own recent 14 days. Zero means it just paid for itself.</li>`+
     `<li><b>Deposited more than usual</b> = how much more this promo's players deposited compared to what that <b>type</b> of player normally does. Deposit bonuses need a deposit to claim, so they're only compared to other deposit bonuses, never to free-credit.</li>`+
@@ -1539,6 +1619,8 @@ renderTrend();
     htmlSec("What Retention is — and how it's judged", ABOUT.retention),
     leadSec('Main findings',[byId('r_meta'),qP('panel-retention','.call')]),
     leadSec('Key numbers',[byId('r_kpis')]),
+    cardSec(byId('retLifecycleCard')),
+    cardSec(byId('retIncrCard')),
     cardSec(cardById('r_ruleLines')),
     cardSec(cardById('r_chartNgr')),
     cardSec(cardById('r_chartQuad')),

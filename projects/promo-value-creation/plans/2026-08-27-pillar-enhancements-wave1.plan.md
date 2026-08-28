@@ -60,21 +60,24 @@
 ## Phase 2 — Retention
 
 ### Task 5: Render lifecycle allocation (uses existing `by_recency`)
-- [ ] **Task 5**
+- [x] **Task 5**
+  - Result: ✅ `retLifecycleCard` (section #4): spend-by-stage + pay-back-by-stage bars (axis-titled) + note. Finding: 80% of budget → Active(0–14d) players who return 93.9% anyway; Lapsed(60–120d) win-back loses money (−RM0.40/RM1). Render-only (by_recency already computed). Wired into renderRetention + paint.
 **Files:** Modify `templates/acq-dashboard.html` (compute already exists in `ret-metrics-MY.json.by_recency`)
 **Step 1:** Add a section: horizontal bands per bucket (active/cooling/dormant/lapsed/120d+) showing spend-share, NGR-per-RM1, redeposit rate. Axis titles + plain caption answering "is budget reaching at-risk players?".
 **Step 2:** If any field the view needs is missing from `by_recency`, extend the ret pipeline to add it; else render-only.
 **Verify:** bucket spend-shares sum ≈ 1; matches raw `by_recency`; `--verify` clean.
 
 ### Task 6: Compute incrementality proxy + cost-per-incremental
-- [ ] **Task 6**
+- [x] **Task 6**
+  - Result: ✅ `bin/ret_report/incrementality.py` → `ret.incrementality` (uses existing redeposit_expected/retained/matured_30 — no member rows). Finding: 28,818 retained vs 28,819 baseline-expected → ~0 incremental returners; only 98/237 codes (37.5% of spend) lift returns above baseline. Reconciles with "makes money" = bigger deposits, not more returners. Cross-foots.
 **Files:** Create `bin/ret_report/incrementality.py`
 **Step 1:** Using `tier_normal_mech`/`tier_normal_cell` baselines, compute per code: redeposit uplift over the tier×mechanic normal, incremental retained players (actual − baseline expectation), and cost per incremental retained (spend ÷ incremental). Label directional.
 **Step 2:** Emit `ret.incrementality = {by_code:[{code, uplift_pp, incremental_players, cost_per_incremental}], ...}`; verify.
 **Verify:** incremental ≤ total retained; cost_per_incremental sane; spot-check one code.
 
 ### Task 7: Render incrementality view
-- [ ] **Task 7** · Depends: Task 6
+- [x] **Task 7** · Depends: Task 6
+  - Result: ✅ `retIncrCard` (section #5): come-back-vs-baseline bars (green/red) + "cheapest extra returners" table + honest note (headcount ~0 extra; money = bigger deposits; target the 98 codes that add returns). Wired into renderRetention + paint. 0-jargon on the tab; console clean.
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** Add a chart/table ranking promos by cost-per-incremental-retained + uplift-over-baseline; plain caption ("what the bonus caused, not just what happened").
 **Verify:** `--verify`; cross-foot; console clean; 0-jargon scan on new prose.
