@@ -2,7 +2,7 @@
 
 > **REQUIRED:** Use superpower-execution to implement this plan task-by-task.
 
-**Status:** IN_PROGRESS
+**Status:** COMPLETED
 **Created:** 2026-08-28
 **Goal:** Ship the floor/band relabel (P0) and the arithmetic-only decision surfaces (P1 — Decision Box, Decision register, Cost-of-being-wrong) into the VIP panel, so a CEO can approve the decide-now floor immediately and see the priced downside of every cut — with no new data pulls.
 **Architecture:** One new Python builder (`bin/vip_report/decision_layer.py`) reads the existing `scratchpad/vip/vip-metrics-MY.json` (+ member-level scratchpad source) and merges a `decision` block (floor/band figures + per-tier per-member NGR + whale break-even counts) back into that JSON. The template `templates/acq-dashboard.html` gains a Decision Box `leadSec`, upgrades `v_moves` into a decision register, and adds a cost-of-being-wrong card — all reading `VIP.decision`. Every new card gets a `CALC_DATA` "how this is calculated" note and a `READ_DATA` "how to read this" note (house rule). No ClickHouse pulls; all numbers come from existing scratchpad data.
@@ -97,7 +97,8 @@
 
 ### Task 4: `decision_layer.py` — emit the `decision` payload block
 
-- [ ] **Task 4**
+- [x] **Task 4**
+  - Result: ✅ bin/vip_report/decision_layer.py emits the `decision` block into vip-metrics-MY.json. Verified: hero RM1,957,745 (27%/1,964 members), band RM3,293,448, bronze_trim RM134,615, Diamond break-even 2.7 (floor)/39.4 (band). Frequency-cap savings now sourced fields, not literals.
 - Depends: (none — data task)
 
 **Files:**
@@ -126,7 +127,8 @@
 
 ### Task 5: Decision Box `leadSec` at top of the VIP panel
 
-- [ ] **Task 5**
+- [x] **Task 5**
+  - Result: ✅ Decision Box = VIP section 1, opens by default. DOM: hero RM1.96M with 663-char why-context in plain sight, Cut/Hold/Test rows, calc note. The `why` folds in the sharpened framing (upper bound on problem spend, not wasted lift, not the whole program losing money).
 - Depends: Task 4
 
 **Files:**
@@ -147,7 +149,8 @@
 
 ### Task 6: Upgrade `v_moves` into the Decision register table
 
-- [ ] **Task 6**
+- [x] **Task 6**
+  - Result: ✅ v_moves upgraded to Decision register (6 rows, 6 floor/band badges, 13 TBC markers). Columns Action(+risk)/Owner/Enforcement/RM/Gate·when/Type. Header → 'Decision register'. CALC/READ added.
 - Depends: Task 4, Task 5
 
 **Files:**
@@ -165,7 +168,8 @@
 
 ### Task 7: Cost-of-being-wrong card (break-even + sensitivity + stop-loss)
 
-- [ ] **Task 7**
+- [x] **Task 7**
+  - Result: ✅ Cost-of-being-wrong card: 5-tier break-even table (Diamond floor 2.7 red-flagged), headline (~2.7 Diamonds wipe floor / ~39 = ~14% wipe band, 262 slipping), stop-loss note, competitor-benchmark placeholder. CALC note carries the YTD-realized-NGR-proxy caveat.
 - Depends: Task 4
 
 **Files:**
@@ -183,7 +187,8 @@
 
 ### Task 8: Wire cards into the VIP spec, full build & browser verify
 
-- [ ] **Task 8**
+- [x] **Task 8**
+  - Result: ✅ Spec order verified: Decision Box first (before method); Cost-of-wrong after whale ledger; Decision register closes the answers block. Build clean, node --check OK, consolidated DOM assert all-true, zero console errors.
 - Depends: Task 5, Task 6, Task 7
 
 **Files:**
