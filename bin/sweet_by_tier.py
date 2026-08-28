@@ -21,7 +21,7 @@ m = json.load(open(SCR / f"{PILLAR}-metrics-MY.json", encoding="utf-8"))
 
 TIERS = ["Diamond", "Platinum", "Gold", "Silver", "Bronze"]
 BANDS = ["<RM50", "RM50\u2013150", "RM150\u2013400", "RM400\u20131000", "RM1000+"]
-MECH_LABEL = {"reload": "Deposit reload", "free-credit": "Free credit", "free-spins": "Free spins", "mini-game": "Mini-game"}
+MECH_LABEL = {"reload": "Deposit bonus", "free-credit": "Free credit", "free-spins": "Free spins", "mini-game": "Mini-game"}
 MECH_ORDER = ["reload", "free-credit", "free-spins", "mini-game", "other"]
 N_FLOOR = 30
 FS_INFLATED_MAX = 0.03   # free-spins/mini-game < 3% of a tier's spend = near-zero-cost, paper ROI inflated
