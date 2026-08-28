@@ -320,6 +320,8 @@
   .dreg thead th{border-top:0;color:var(--muted);font-weight:600}
   .dregrisk{font-size:11px;color:var(--muted);margin-top:3px}
   .rsub{font-size:13px;font-weight:700;margin:15px 0 7px;color:var(--ink)}
+  .scopenote{font-size:13px;color:var(--ink);line-height:1.5;margin-bottom:12px;padding-left:12px;border-left:3px solid var(--line)}
+  .scopenote:last-child{margin-bottom:0}
   .lt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:9px}
   .lt .lth{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   .lt .ltn{font-size:15px;font-weight:700;color:var(--ink)}
@@ -589,6 +591,11 @@
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
     <div class="card col12" id="vipTrendDecompCard"><div class="card-h"><h3>Why VIP performance is sliding</h3><span class="hint">what's dragging it · cost of inaction</span></div><div id="v_trendDecomp"></div></div>
     <div class="card col12" id="vipOperatingCard"><div class="card-h"><h3>Running it monthly</h3><span class="hint">baseline · watchlist · tracker</span></div><div id="v_operating"></div></div>
+    <div class="card col12" id="vipScopeCard"><div class="card-h"><h3>Scope &amp; things to watch</h3><span class="hint">flags, not scored analysis</span></div>
+      <div class="scopenote"><b>Scope — Malaysia only.</b> This report covers the MY VIP book. Singapore VIP is <b>not</b> included here and is a separate effort; setting program-wide VIP policy off one market carries risk (SG whales may respond differently to a cap). Treat the moves as MY-scoped until SG is measured.</div>
+      <div class="scopenote"><b>Responsible gaming.</b> The Weekly Rescue rebates losses (98% of its claimers were losing) and Lane A's worst cell is bonuses fired right after a deposit — exactly the loss-chasing mechanisms regulators scrutinise. Keep responsible-gaming guardrails in view when changing either; this is a compliance flag, not a scored metric.</div>
+      <div class="scopenote"><b>Incentive root cause.</b> Big-player free-credit is 81% assigned by VIP managers and 0% self-claimed, at −0.71 net revenue per RM1. That raises whether VM compensation rewards <b>bonus volume</b> over <b>net player value</b> — a question for the business to check, not a settled finding. Capping the tool without fixing the incentive just moves the leak elsewhere.</div>
+    </div>
     <div class="meta" id="v_meta"></div>
     <div id="vipSweetSummary"></div>
     <div class="exec-note" id="v_exec"></div>
@@ -2413,6 +2420,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('vipTierCard')),          // tier migration
     cardSec(byId('vipOperatingCard')),     // running it monthly — baseline, watchlist, tracker
     cardSec(byId('vipFarmCard')),          // bonus-farming watch
+    cardSec(byId('vipScopeCard')),         // scope & compliance flags (MY-only, RG, VM incentive)
     plainSec(byId('v_notes'),'Notes'),
     plainSec(byId('v_soon'),null),
   ]);

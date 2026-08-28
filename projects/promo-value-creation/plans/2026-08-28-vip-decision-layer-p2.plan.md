@@ -2,7 +2,7 @@
 
 > **REQUIRED:** Use superpower-execution to implement this plan task-by-task.
 
-**Status:** IN_PROGRESS
+**Status:** COMPLETED
 **Created:** 2026-08-28
 **Goal:** Ship the four P2 decision surfaces — Reallocation-return, Trend decomposition + do-nothing counterfactual, Monthly operating system, and Scope/compliance notes — computed entirely from existing scratchpad data (no new ClickHouse pulls), so the report answers "what is the reinvestment worth", "why is VIP degrading", "how do we track that the moves worked", and "what's out of scope / the compliance & incentive risks".
 **Architecture:** Three new Python builders in `bin/vip_report/` (`reallocation_return.py`, `trend_decompose.py`, `operating_baseline.py`) each read existing scratchpad files and **merge a block into `vip-metrics-MY.json`** (same pattern as P1's `decision_layer.py` — the build passes the whole JSON through, so no build-script change). The template gains three cards + one notes block in the VIP "answers"/"need-to-know" area, each reading `VIP.<block>` and each with CALC + READ notes. Causal figures (cost-per-retained-whale, recoverable fraction) ship as **directional, holdout-gated estimates with explicit labels** — never as authorised numbers.
@@ -179,7 +179,8 @@
 
 ### Task 8: Scope & compliance notes
 
-- [ ] **Task 8**
+- [x] **Task 8**
+  - Result: ✅ 'Scope & things to watch' card: MY-only scope + SG flagged separate, responsible-gaming read, VM-compensation root-cause flag. 3 notes render; static content, no scored analysis.
 
 **Files:**
 - Modify: `templates/acq-dashboard.html`
@@ -196,7 +197,8 @@
 
 ### Task 9: Full P2 build & consolidated browser verify
 
-- [ ] **Task 9**
+- [x] **Task 9**
+  - Result: ✅ All P2 builders re-run + build clean. Consolidated verify: 4 surfaces present/ordered (realloc 9, trend 18, operating 22, scope 24); DIRECTIONAL+not-bankable labels; 15 watchlist refs confirmed SHA1[:6] opaque (whale_ledger.py:17); scope notes present; zero console errors.
 - Depends: Tasks 3,5,7,8
 
 **Files:**
