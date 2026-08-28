@@ -207,6 +207,15 @@
   .colkey .ckh{font-weight:700;color:var(--accent-ink);text-transform:uppercase;font-size:10px;letter-spacing:.04em;margin-right:3px}
   .calc-b .cread .readtext{font-size:13px;line-height:1.6;color:var(--ink);margin-top:3px}
   .calc-b .calc-sub{margin-top:13px;padding-top:11px;border-top:1px solid var(--line);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.03em}
+  .sweetsum{border:1px solid var(--line-2);border-radius:12px;padding:15px 17px;margin:2px 0 6px;background:var(--surface-2)}
+  .sweetsum .sshdr{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+  .sweetsum .ssico{color:var(--accent-ink)}
+  .sweetsum .ssgrid{display:grid;gap:10px}
+  .sweetsum .ssrow{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:start}
+  .sweetsum .sstag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 13%,transparent);padding:3px 0;border-radius:6px;text-align:center}
+  .sweetsum .sstext{font-size:13.5px;line-height:1.5;color:var(--ink)}
+  .sweetsum .ssverdict{font-size:13.5px;line-height:1.5;margin-top:13px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink)}
+  @media(max-width:640px){.sweetsum .ssrow{grid-template-columns:1fr;gap:3px}}
   @media(max-width:760px){.toc ol{grid-template-columns:1fr}}
   @media(max-width:640px){.about .abrow{grid-template-columns:1fr;gap:3px}}
   /* tabs + panels */
@@ -402,6 +411,7 @@
 
   <div class="panel" id="panel-acquisition">
   <div class="meta" id="meta"></div>
+  <div id="acqSweetSummary"></div>
 
   <section class="call">
     <div class="call-lead" id="callLead"></div>
@@ -484,6 +494,7 @@
 
   <div class="panel" id="panel-retention" hidden>
     <div class="meta" id="r_meta"></div>
+    <div id="retSweetSummary"></div>
     <div class="exec-note" id="r_exec"></div>
     <section class="call">
       <div class="call-lead" id="r_callLead"></div>
@@ -554,6 +565,7 @@
   </div>
   <div class="panel" id="panel-vip" hidden>
     <div class="meta" id="v_meta"></div>
+    <div id="vipSweetSummary"></div>
     <div class="exec-note" id="v_exec"></div>
     <section class="kpis" id="v_kpis"></section>
     <div class="grid">
@@ -1989,6 +2001,49 @@ function renderAcqSweet(){
 renderSweetByTier((typeof VIP!=='undefined'&&VIP)?VIP.sweet_by_tier:null, {size:'vst_vip_size',depreq:'vst_vip_depreq',mech:'vst_vip_mech',reco:'vst_vip_reco'}, VSYM);
 renderSweetByTier((typeof RET!=='undefined'&&RET)?RET.sweet_by_tier:null, {size:'vst_ret_size',depreq:'vst_ret_depreq',mech:'vst_ret_mech',reco:'vst_ret_reco'}, RSYM);
 renderAcqSweet();
+// ---- "Bonus sweet spot" summary that headlines each pillar's Main findings ----
+function ssTemplate(pillar,type,size,tier,verdict){
+  return '<div class="sweetsum"><div class="sshdr"><span class="ssico">◆</span> Bonus sweet spot — '+pillar+'</div>'+
+    '<div class="ssgrid">'+
+    '<div class="ssrow"><span class="sstag">Type</span><div class="sstext">'+type+'</div></div>'+
+    '<div class="ssrow"><span class="sstag">Size</span><div class="sstext">'+size+'</div></div>'+
+    '<div class="ssrow"><span class="sstag">Tier</span><div class="sstext">'+tier+'</div></div>'+
+    '</div><div class="ssverdict"><b>Sweet spot:</b> '+verdict+'</div></div>';
+}
+function ssEsc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+function sweetSummaryMoney(boxId, block, sym, pillar){
+  var box=document.getElementById(boxId); if(!box||!block) return;
+  var m2=function(v){return (v<0?"-":"+")+sym+Math.abs(v).toFixed(2);};
+  var byBand={}; block.per_tier.forEach(function(p){ if(p.sweet_band){(byBand[p.sweet_band]=byBand[p.sweet_band]||[]).push(p.tier);} });
+  var dep=block.depreq_grid.filter(function(c){return c.key==="deposit"&&!c.thin;});
+  var nd=block.depreq_grid.filter(function(c){return c.key==="no_deposit"&&!c.thin;});
+  var depByTier={}; dep.forEach(function(c){depByTier[c.tier]=c.ngr_per_rm;});
+  var depVals=dep.map(function(c){return c.ngr_per_rm;}); var depMin=Math.min.apply(null,depVals),depMax=Math.max.apply(null,depVals);
+  var ndBest=nd.slice().sort(function(a,b){return b.dep_per_rm-a.dep_per_rm;})[0];
+  var top1k=block.size_grid.filter(function(c){return c.key==="RM1000+"&&!c.thin&&c.ngr_per_rm!=null;});
+  var suffix=(top1k.length&&top1k.every(function(c){return c.ngr_per_rm<0;}))?" The very biggest bonuses (RM1000+) lose at every tier.":"";
+  var sizeTxt=Object.keys(byBand).map(function(b){return "<b>"+byBand[b].join(" / ")+"</b> → "+ssEsc(b);}).join(" · ")+"."+suffix;
+  var typeTxt="<b>Deposit-required</b> bonuses are the ones that earn (net "+m2(depMin)+" to "+m2(depMax)+" per RM1 across tiers). <b>No-deposit</b> bonuses are giveaways — read on the deposits they pull in"+(ndBest?" (best at "+ndBest.tier+", "+m2(ndBest.dep_per_rm)+" per RM1)":"")+".";
+  var posDown=block.tiers.filter(function(t){return depByTier[t]!=null&&depByTier[t]>0;});
+  var tierTxt="The sweet <b>size differs by tier</b> — follow the ringed cells in the size grid; <b>deposit-required</b> net stays positive down to <b>"+(posDown.length?posDown[posDown.length-1]:"—")+"</b>.";
+  var verdict="Match the size to the tier, keep it <b>deposit-linked</b> where you want net revenue, and aim <b>no-deposit giveaways at the top tiers</b> where they actually pull deposits in.";
+  box.innerHTML=ssTemplate(pillar,typeTxt,sizeTxt,tierTxt,verdict);
+}
+function sweetSummaryAcq(boxId, B, sym){
+  var box=document.getElementById(boxId); if(!box||!B) return;
+  var mech={}; B.mech_grid.forEach(function(c){mech[c.key]=c;});
+  var fs=mech["Free spins"], rl=mech["Deposit (reload)"], fc=mech["Free credit"];
+  var costed=B.size_grid.filter(function(c){return c.cost_per_ftd!=null;});
+  var big=costed.length?costed.reduce(function(a,c){return c.cost_per_ftd>a.cost_per_ftd?c:a;}):null;
+  var typeTxt="<b>Free spins</b> ("+sym+(fs?fs.cost_per_ftd:"?")+"/FTD, "+(fs?fs.conversion:"?")+"% convert) and <b>deposit reload</b> ("+sym+(rl?rl.cost_per_ftd:"?")+"/FTD, best "+(rl?rl.stick_30:"?")+"% stick) win depositors cheapest. <b>No-deposit free credit</b> is the dear broad-reach giveaway ("+sym+(fc?fc.cost_per_ftd:"?")+"/FTD, "+(fc?fc.conversion:"?")+"% convert — but stickiest at "+(fc?fc.stick_30:"?")+"%).";
+  var sizeTxt="<b>Small wins cheap</b> — "+ssEsc(B.best_size)+" costs "+sym+B.best_size_cost+" per new depositor"+(big?"; above RM50 it jumps to "+sym+big.cost_per_ftd+"+":"")+".";
+  var tierTxt="Not applicable — a first-time depositor has <b>no prior tier</b>, so acquisition is judged on type and size only.";
+  var verdict="Win new depositors with <b>small (&lt;RM50), deposit-linked or free-spin</b> offers; use no-deposit free-credit for <b>reach</b>, not as the cheap workhorse.";
+  box.innerHTML=ssTemplate("Acquisition",typeTxt,sizeTxt,tierTxt,verdict);
+}
+sweetSummaryMoney('vipSweetSummary', (typeof VIP!=='undefined'&&VIP)?VIP.sweet_by_tier:null, VSYM, 'VIP');
+sweetSummaryMoney('retSweetSummary', (typeof RET!=='undefined'&&RET)?RET.sweet_by_tier:null, RSYM, 'Retention');
+sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLOAD.sweet_sizetype:null, (typeof PAYLOAD!=='undefined'&&PAYLOAD&&PAYLOAD.sym)||'RM');
 
 // numbered table of contents + collapsible sections (all collapsed by default)
 (function(){
@@ -2109,7 +2164,7 @@ renderAcqSweet();
   ]);
   buildPanel('panel-acquisition',[
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
-    leadSec('Main findings',[byId('meta'),qP('panel-acquisition','.call')]),
+    leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
     leadSec('Key numbers',[byId('kpis')]),
     cardSec(byId('acqParetoCard')),
     cardSec(cardById('ruleLines')),
@@ -2125,7 +2180,7 @@ renderAcqSweet();
   ]);
   buildPanel('panel-retention',[
     htmlSec("What Retention is — and how it's judged", ABOUT.retention),
-    leadSec('Main findings',[byId('r_meta'),qP('panel-retention','.call')]),
+    leadSec('Main findings',[byId('r_meta'),byId('retSweetSummary'),qP('panel-retention','.call')]),
     leadSec('Key numbers',[byId('r_kpis')]),
     cardSec(byId('retLifecycleCard')),
     cardSec(byId('retIncrCard')),
@@ -2144,7 +2199,7 @@ renderAcqSweet();
   buildPanel('panel-vip',[
     // Frame
     htmlSec("What VIP is — and how it's judged", ABOUT.vip),
-    leadSec('Main findings',[byId('v_meta'),byId('v_exec')]),
+    leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
     leadSec('Key numbers',[byId('v_kpis')]),
     // Does it pay? — the bottom line
     cardSec(byId('vipCoverageCard')),
