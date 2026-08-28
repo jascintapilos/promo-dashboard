@@ -23,28 +23,32 @@
 ## Phase 1 — Acquisition
 
 ### Task 1: Compute spend-vs-FTD Pareto + leave-one-out headline
-- [ ] **Task 1**
+- [x] **Task 1**
+  - Result: ✅ `bin/acq_report/pareto_loo.py` → `acq.pareto`. Gini(spend) 0.77; top code = 35.4% of spend but 5.3% of FTDs; LOO: dropping `welcomegift_fc50` moves the headline RM72→RM49 (−32%, material). Cross-foots to the RM72 headline.
 **Files:** Create `bin/acq_report/pareto_loo.py` (or extend the acq metrics builder)
 **Step 1:** From `acq-metrics-MY.json` codes[], compute per-code spend_share, ftd_share; cumulative Lorenz curve + Gini; and a leave-one-out array recomputing blended cost-per-FTD dropping each of the top-5 spenders (flag if the headline crosses a threshold when one is removed).
 **Step 2:** Emit `acq.pareto = {gini, curve:[{x,y}], loo:[{code, blended_without, delta, flips}]}` into the metrics JSON; round-trip verify.
 **Verify:** blended-with-all matches the tab's headline RM72; sum of spend_share ≈ 1; print top-5 LOO deltas.
 
 ### Task 2: Render the Pareto + LOO flagship
-- [ ] **Task 2** · Depends: Task 1
+- [x] **Task 2** · Depends: Task 1
+  - Result: ✅ `acqParetoCard` (section #4, after Key numbers): Lorenz curve (spend-share vs FTD-share, axis-titled) + LOO strip (green=protect / red=cap-cut) + plain note. `paretoLOO()` wired into init line + `paint()`. Verified drawn on load; console clean.
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** Add a card (SVG Lorenz curve + a small LOO strip) with plain caption; wire it into the acquisition `buildPanel` spec near the top of the analysis sections.
 **Step 2:** Add axis titles via `axTitle`; add a one-line "what this tells you".
 **Verify:** `--verify` build; DOM shows the card with curve + LOO rows; console clean; light+dark.
 
 ### Task 3: Compute claim→deposit funnel + freebie-hunter RM leakage
-- [ ] **Task 3**
+- [x] **Task 3**
+  - Result: ✅ `bin/acq_report/funnel_leakage.py` → `acq.funnel`. 5,124 claimers → 1,999 depositors (39%) → 3,125 stuck; RM152,740 leaked (62.5% of spend). Worst: `welcomegift_fc50` (91% leaked, 8.9% conv) — same code the Pareto flags. Cross-foots (claimers = depositors + stuck).
 **Files:** Create `bin/acq_report/funnel_leakage.py`
 **Step 1:** From `claim-outcomes-MY.json`: per code + blended, count claimers → depositors → stuck; sum bonus_cost of claimers with zero FTD (leakage RM). Rank codes by leakage.
 **Step 2:** Emit `acq.funnel = {blended:{claimers, depositors, stuck, leakage_rm, conv_pct}, by_code:[...]}`; verify no member rows leak into the JSON.
 **Verify:** claimers = depositors + stuck; leakage_rm ≤ total spend; spot-check one code against raw.
 
 ### Task 4: Render the funnel-leakage view
-- [ ] **Task 4** · Depends: Task 3
+- [x] **Task 4** · Depends: Task 3
+  - Result: ✅ `acqFunnelCard` (section #11): 2-stage funnel (claimed→deposited, conv %) + top-6 leakage table + guardrail note. `acqFunnelDraw()` wired into init + `paint()`. Plain-language nits fixed (dropped "leave-one-out"/"freebie-hunter" from visible copy). Console clean.
 **Files:** Modify `templates/acq-dashboard.html`
 **Step 1:** Add a compact funnel (3 stages with RM on the drop-off) + a "top leakage codes" mini-table; plain caption naming the guardrail (auto-cut below conversion floor).
 **Verify:** `--verify`; numbers cross-foot to the emitted block; console clean.

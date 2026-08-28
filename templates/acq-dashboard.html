@@ -52,6 +52,10 @@
   .call{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:center;margin:15px 0 18px;padding:20px 24px;border-radius:15px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));box-shadow:var(--shadow)}
   .call-lead .eyebrow{color:var(--accent-ink)}
   .call-lead p{margin:9px 0 0;font-size:18px;line-height:1.5}
+  .call-lead .lead{font-size:16.5px;font-weight:700;line-height:1.45;margin:0}
+  .call-lead ul.pts{margin:9px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+  .call-lead ul.pts li{position:relative;padding-left:16px;line-height:1.45;font-size:14.5px}
+  .call-lead ul.pts li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
   .call-lead b{font-weight:700}
   .call .money{font-weight:700;color:var(--reduce);font-variant-numeric:tabular-nums}
   .call .reload-hi{font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
@@ -68,7 +72,7 @@
   .kpi .foot{font-size:13.5px;color:var(--muted);margin-top:10px}
   .kpi.hi{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
   .kpi.hi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
-  .kpi.key{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:0 0 0 1.5px var(--accent),var(--shadow)}
+  .kpi.key{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:0 0 0 2px var(--accent), 0 14px 30px -8px color-mix(in srgb,var(--accent) 55%,transparent), var(--shadow);transform:translateY(-2px)}
   .kpi.key::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent)}
   .kpi .keytag{display:none}
   .kpi.key .keytag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);padding:2px 8px;border-radius:20px;margin-bottom:9px}
@@ -344,18 +348,38 @@
 
   <section class="kpis" id="kpis"></section>
 
+  <div class="card col12" id="acqParetoCard" style="margin-bottom:15px">
+    <div class="card-h"><h3>Where the money goes — and is the headline real?</h3><span class="hint">spend vs new depositors won</span></div>
+    <p class="sub2">Codes sorted biggest-spend first: does each code's slice of spend buy a fair slice of new depositors, and does the blended "cost per new depositor" survive dropping one big code?</p>
+    <div class="tgrid">
+      <div class="tchart"><h4>Spend vs depositors won <span>cumulative share · below the line = money not pulling its weight</span></h4><div id="acqLorenz"></div></div>
+      <div class="tchart"><h4>Drop one code, re-check the headline <span>one code at a time</span></h4><div id="acqLoo"></div></div>
+    </div>
+    <div id="acqParetoNote" class="fine" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card col12" id="acqFunnelCard" style="margin-bottom:15px">
+    <div class="card-h"><h3>Claim → deposit — and the money that walks</h3><span class="hint">bonus claimed, no deposit</span></div>
+    <p class="sub2">Of everyone who claimed a welcome bonus, how many actually made a first deposit — and how much bonus went to the ones who never did?</p>
+    <div class="tgrid">
+      <div class="tchart"><h4>The funnel <span>claimers → first depositors</span></h4><div id="acqFunnel"></div></div>
+      <div class="tchart"><h4>Where it leaks <span>top codes · RM spent on non-depositors</span></h4><div id="acqLeakTbl"></div></div>
+    </div>
+    <div id="acqFunnelNote" class="fine" style="margin-top:10px"></div>
+  </div>
+
   <div class="card col12" style="margin-bottom:15px">
     <div class="card-h"><h3>Decision rules</h3></div>
-    <p class="sub2">Each verdict comes from the thresholds below — set from where the codes actually fall, and can be changed without rebuilding the report.</p>
-    <div class="rulewrap">
-      <div class="rule"><h4>Thresholds</h4><div id="ruleLines"></div></div>
+    <p class="sub2">Each verdict comes from the thresholds — set from where the codes actually fall, and can be changed without rebuilding the report. The matrix turns cost × come-back into a call; the actions beside it say what to do.</p>
+    <div class="rule"><h4>Thresholds</h4><div id="ruleLines" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px"></div></div>
+    <div class="rulewrap" style="grid-template-columns:1.15fr 1fr;margin-top:22px;align-items:start">
+      <div class="rule"><h4>Decision matrix</h4><div id="ruleMatrix" style="overflow-x:auto"></div></div>
       <div class="rule"><h4>Verdicts &amp; actions</h4><div id="ruleDefs"></div></div>
     </div>
-    <div class="rule" style="margin-top:20px"><h4>Decision matrix</h4><div id="ruleMatrix"></div></div>
   </div>
 
   <div class="grid">
-    <div class="card col6"><div class="card-h"><h3>Cost per first-time depositor</h3><span class="hint">lower is better</span></div><p class="sub2">What each new depositor cost us, by code (graded codes only). Colour = the recommended decision.</p><div id="chartBars"></div></div>
+    <div class="card col6"><div class="card-h"><h3>Cost per first-time depositor</h3><span class="hint">lower is better</span></div><p class="sub2">One bar per code (graded codes only). Bar length = what one new depositor cost — <b>shorter is cheaper, so shorter is better</b>; most expensive on top. Colour = the recommended call (see key below).</p><div id="chartBars"></div></div>
     <div class="card col6"><div class="card-h"><h3>Cost vs coming back</h3><span class="hint">the sweet spot</span></div><p class="sub2">Cost per depositor vs how many come back in 30 days. Bottom-left is best: cheap and they stay.</p><div id="chartScatter"></div></div>
     <div class="card col6"><div class="card-h"><h3>By bonus type</h3><span class="hint">which type wins the most new depositors</span></div><p class="sub2">Cost per depositor and how many came back within 30 days, for each bonus type.</p><div id="chartMech"></div></div>
     <div class="card col6"><div class="card-h"><h3>New depositors by month</h3><span class="hint">volume trend</span></div><p class="sub2">First-time depositors won each month across all new-player bonuses.</p><div id="chartTrend"></div></div>
@@ -487,10 +511,16 @@ codes.forEach(c=>{cnt[c.decision]=(cnt[c.decision]||0)+1;});
 const trimStop = cnt.Reduce+cnt.Stop;
 const reloadSpend = codes.filter(c=>c.decision==='Reload').reduce((a,c)=>a+c.spend,0);
 const trimSpend = codes.filter(c=>c.decision==='Reduce'||c.decision==='Stop').reduce((a,c)=>a+c.spend,0);
+const _pa=P.pareto||{}, _fn=(P.funnel||{}).blended||{}, _topLoo=(_pa.loo||[])[0];
 document.getElementById('callLead').innerHTML =
-  `<p><b>${cnt.Scale}</b> to <b>scale</b>, <b>${cnt.Maintain}</b> to <b>hold</b>, <b>${cnt.Optimise}</b> to <b>tune</b>`+
-  (trimStop?`, <b>${trimStop}</b> to <b>trim / stop</b> (<span class="money">${SYM}${fmt(trimSpend)}</span>)`:`, and none losing money on new depositors`)+`. `+
-  (reloadSpend?`<span class="reload-hi">${SYM}${fmt(reloadSpend)}</span> of "welcome" spend is really <b>deposit bonuses</b> for existing players — its value shows on the <b>Retention</b> tab, not here.`:``)+`</p>`+
+  `<p class="lead">Acquisition is working — <b>${cnt.Scale}</b> to scale, <b>${cnt.Maintain}</b> to hold, <b>${cnt.Optimise}</b> to tune`+
+  (trimStop?`, <b>${trimStop}</b> to trim / stop`:`, and none losing money on new depositors`)+`.</p>`+
+  `<ul class="pts">`+
+  (_topLoo&&_topLoo.without_cost_per_ftd!=null?`<li>One code is a money sink: <b>${_topLoo.code.replace('FT_','')}</b> is ${_pa.top1_spend_share}% of spend for just ${_pa.top1_ftd_share}% of new depositors — drop it and cost per new depositor falls from <b>${SYM}${_pa.headline_cost_per_ftd}</b> to <b>${SYM}${_topLoo.without_cost_per_ftd}</b>.</li>`:``)+
+  (_fn.leakage_rm!=null?`<li><span class="money">${SYM}${fmt(_fn.leakage_rm)}</span> (${_fn.leak_pct}% of welcome spend) went to people who claimed and <b>never made a first deposit</b>.</li>`:``)+
+  (reloadSpend?`<li><span class="reload-hi">${SYM}${fmt(reloadSpend)}</span> of "welcome" spend is really <b>deposit bonuses</b> for existing players — its value shows on <b>Retention</b>, not here.</li>`:``)+
+  (trimStop?`<li><b>${trimStop}</b> code(s) flagged to trim or stop (<span class="money">${SYM}${fmt(trimSpend)}</span>) — budget to move to what pays.</li>`:``)+
+  `</ul>`+
   `<p class="fine">${cnt.Reload} deposit-bonus code(s) routed to Retention; ${cnt.Referral} referral code(s) tracked separately (win = the referee's deposit); ${cnt['Low volume']} too few takers to grade.</p>`;
 document.getElementById('tally').innerHTML = ACTIONS.map(k=>
   `<div class="t" style="--tc:${DEC[k].c}"><div class="n">${cnt[k]}</div><div class="a" style="color:${DEC[k].c}">${k}</div><div class="d">${DEC[k].d}</div></div>`).join('');
@@ -539,6 +569,78 @@ document.getElementById('ruleMatrix').innerHTML =
 // charts
 // axis-title helper — x/y axis labels for every chart
 function axTitle(s,x,y,text,rot){const a={x,y,'text-anchor':'middle',style:'fill:var(--muted);font-size:11px;font-weight:600'};if(rot)a.transform='rotate(-90 '+x+' '+y+')';const t=el('text',a);t.textContent=text;s.append(t);}
+// decision colour key — so chart colours carry meaning
+function decLegendHTML(){return `<div class="tlegend" style="margin-top:9px">`+ACTIONS.map(k=>`<span><i style="background:${DEC[k].c}"></i>${k} — ${DEC[k].d}</span>`).join('')+`</div>`;}
+function paretoLOO(){
+  const PA=P.pareto; if(!PA) return; const hd=PA.headline_cost_per_ftd;
+  // Lorenz: cumulative share of spend (x) vs new depositors (y), codes biggest-spend first
+  (function(){
+    const box=document.getElementById('acqLorenz'); if(!box) return; box.innerHTML='';
+    const W=440,H=232,l=50,r=14,t=12,b=44; const sx=v=>l+v*(W-l-r), sy=v=>H-b-v*(H-t-b);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'}); const cv=PA.curve;
+    [0,.25,.5,.75,1].forEach(g=>{
+      s.append(el('line',{x1:sx(g),y1:t,x2:sx(g),y2:H-b,class:'gridline'}));
+      s.append(el('line',{x1:l,y1:sy(g),x2:W-r,y2:sy(g),class:'gridline'}));
+      s.append(Object.assign(el('text',{x:sx(g),y:H-b+15,'text-anchor':'middle',class:'axlab',style:'font-size:10px'}),{textContent:Math.round(g*100)+'%'}));
+      s.append(Object.assign(el('text',{x:l-6,y:sy(g)+4,'text-anchor':'end',class:'axlab',style:'font-size:10px'}),{textContent:Math.round(g*100)+'%'}));});
+    s.append(el('line',{x1:sx(0),y1:sy(0),x2:sx(1),y2:sy(1),stroke:CV('--line-2'),'stroke-dasharray':'4 4'}));
+    const area='M '+cv.map(p=>`${sx(p.x)} ${sy(p.y)}`).join(' L ')+' '+cv.slice().reverse().map(p=>`L ${sx(p.x)} ${sy(p.x)}`).join(' ')+' Z';
+    s.append(el('path',{d:area,fill:CV('--stop'),'fill-opacity':.10}));
+    s.append(el('path',{d:'M '+cv.map(p=>`${sx(p.x)} ${sy(p.y)}`).join(' L '),fill:'none',stroke:CV('--accent'),'stroke-width':2.2}));
+    axTitle(s,(l+W-r)/2,H-4,'Share of spend (biggest first) →');
+    axTitle(s,12,(t+H-b)/2,'Share of new depositors',true);
+    box.append(s);
+  })();
+  // Leave-one-out: re-blended cost/FTD when each top-5 code is removed
+  (function(){
+    const box=document.getElementById('acqLoo'); if(!box) return; box.innerHTML='';
+    const loo=PA.loo.filter(x=>x.without_cost_per_ftd!=null); if(!loo.length) return;
+    const W=440,rowH=30,top=8,bot=34,H=top+loo.length*rowH+bot,left=150,right=44;
+    const vals=loo.map(x=>x.without_cost_per_ftd).concat([hd]);
+    const lo=Math.min(...vals),hi=Math.max(...vals),pad=(hi-lo)*0.18||8,x0=lo-pad,x1=hi+pad;
+    const sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'}); const hx=sx(hd);
+    s.append(el('line',{x1:hx,y1:top-2,x2:hx,y2:H-bot+4,stroke:CV('--ink'),'stroke-dasharray':'3 3','stroke-opacity':.5}));
+    s.append(Object.assign(el('text',{x:hx,y:H-bot+16,'text-anchor':'middle',class:'axlab',style:'font-size:10px;font-weight:700'}),{textContent:'headline '+SYM+hd}));
+    loo.forEach((x,i)=>{
+      const yc=top+i*rowH+rowH/2, wx=sx(x.without_cost_per_ftd), pos=x.without_cost_per_ftd>=hd;
+      const col=pos?CV('--scale'):CV('--reduce'), nm=x.code.replace('FT_','');
+      s.append(Object.assign(el('text',{x:left-8,y:yc+4,'text-anchor':'end',class:'barlab',style:'font-size:11px'}),{textContent:nm.length>20?nm.slice(0,19)+'…':nm}));
+      s.append(el('rect',{x:Math.min(hx,wx),y:yc-6,width:Math.max(2,Math.abs(wx-hx)),height:12,rx:2,fill:col,'fill-opacity':x.material?1:.45}));
+      s.append(el('circle',{cx:wx,cy:yc,r:3.5,fill:col}));
+      s.append(Object.assign(el('text',{x:pos?wx+6:wx-6,y:yc+4,'text-anchor':pos?'start':'end',style:'font-size:10.5px;font-weight:700;fill:'+col}),{textContent:SYM+x.without_cost_per_ftd}));
+    });
+    axTitle(s,(left+W-right)/2,H-6,'Cost per new depositor if this code is removed (RM)');
+    box.append(s);
+  })();
+  const note=document.getElementById('acqParetoNote');
+  if(note){const t=PA.loo[0],drop=t?t.without_cost_per_ftd:null;
+    note.innerHTML=`Spend is concentrated — the top code is <b>${PA.top1_spend_share}%</b> of spend but only <b>${PA.top1_ftd_share}%</b> of new depositors (top 3 codes = ${PA.top3_spend_share}% of spend). `+
+      (t&&drop!=null?`Drop <b>${t.code.replace('FT_','')}</b> and the headline falls from <b>${SYM}${hd}</b> to <b>${SYM}${drop}</b> — the blended cost is inflated by one dear, low-yield code (a cap/cut candidate). `:``)+
+      `Green = codes holding the headline <i>down</i> (protect); red = codes pulling it <i>up</i>.`;}
+}
+function acqFunnelDraw(){
+  const F=P.funnel; if(!F) return; const B=F.blended;
+  (function(){
+    const box=document.getElementById('acqFunnel'); if(!box) return; box.innerHTML='';
+    const W=440,H=150,l=88,r=76,t=18,rowH=52; const maxV=B.claimers||1, sw=v=>(v/maxV)*(W-l-r);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    [['Claimed',B.claimers,CV('--inset'),CV('--muted'),''],['Deposited',B.depositors,CV('--scale'),CV('--scale'),` (${B.conv_pct}%)`]].forEach((rw,i)=>{
+      const y=t+i*rowH;
+      s.append(Object.assign(el('text',{x:l-8,y:y+24,'text-anchor':'end',class:'barlab',style:'font-size:12px'}),{textContent:rw[0]}));
+      s.append(el('rect',{x:l,y:y+8,width:Math.max(3,sw(rw[1])),height:28,rx:4,fill:rw[2]}));
+      s.append(Object.assign(el('text',{x:l+sw(rw[1])+7,y:y+27,'text-anchor':'start',style:'font-size:12px;font-weight:700;fill:'+rw[3]}),{textContent:rw[1].toLocaleString()+rw[4]}));
+    });
+    axTitle(s,(l+W-r)/2,H-4,'members');
+    box.append(s);
+  })();
+  const tb=document.getElementById('acqLeakTbl');
+  if(tb){tb.innerHTML=`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Code</th><th>Leaked</th><th>% of spend</th><th>Converted</th></tr></thead><tbody>`+
+    F.by_code.slice(0,6).map(d=>`<tr><td class="l">${d.code.replace('FT_','')}</td><td>${SYM}${fmt(d.leakage_rm)}</td><td>${d.leak_pct}%</td><td>${d.conv_pct}%</td></tr>`).join('')+`</tbody></table></div>`;}
+  const note=document.getElementById('acqFunnelNote'), top=F.by_code[0];
+  if(note){note.innerHTML=`<b>${SYM}${fmt(B.leakage_rm)}</b> — <b>${B.leak_pct}%</b> of welcome spend — went to the <b>${fmt(B.stuck)}</b> claimers who never made a first deposit.`+
+    (top?` Worst offender: <b>${top.code.replace('FT_','')}</b> (${top.leak_pct}% of its spend leaked, ${top.conv_pct}% converted). The guardrail: tighten or auto-cut codes below the conversion floor.`:``);}
+}
 function bars(){
   const d=codes.filter(c=>ACTIONS.includes(c.decision)&&c.cost_per_ftd!=null).sort((a,b)=>b.cost_per_ftd-a.cost_per_ftd);
   if(!d.length)return; const W=480,H=322,left=168,right=46,top=8,bot=44;
@@ -555,6 +657,7 @@ function bars(){
     hit.addEventListener('mousemove',e=>showTip(e,`<div class="tt-h">${x.code}</div><div class="tt-r"><span>Cost per new depositor</span><span>${SYM}${x.cost_per_ftd}</span></div><div class="tt-r"><span>New depositors</span><span>${x.ftd}</span></div><div class="tt-r"><span>Decision</span><span>${x.decision}</span></div>`));
     hit.addEventListener('mouseleave',hideTip);s.append(hit);});
   document.getElementById('chartBars').append(s);
+  document.getElementById('chartBars').insertAdjacentHTML('beforeend',decLegendHTML());
 }
 function scatter(){
   const d=codes.filter(c=>ACTIONS.includes(c.decision)&&c.cost_per_ftd!=null&&c.stick_30!=null);
@@ -579,6 +682,7 @@ function scatter(){
   const ax=el('text',{x:(l+W-r)/2,y:H-3,'text-anchor':'middle',class:'axlab'});ax.textContent='Cost per new depositor →';s.append(ax);
   axTitle(s,11,(t+H-b)/2,'Came back in 30 days (%)',true);
   document.getElementById('chartScatter').append(s);
+  document.getElementById('chartScatter').insertAdjacentHTML('beforeend',decLegendHTML());
 }
 function mech(){
   const rows=P.by_mechanic.filter(m=>m.cost_per_ftd!=null);
@@ -630,7 +734,8 @@ function table(){
   const d=[...codes].sort((a,b)=>b.spend-a.spend);
   const na=v=>v==null?'<span style="color:var(--muted)">—</span>':v;
   const ngrCell=x=>{ if(x.ngr_w7==null) return na(null); const v=x.ngr_w7;
-    return `<span style="color:${v>0?'var(--scale)':'var(--muted)'}">${(v>=0?'+':'−')+SYM+fmt(Math.abs(v))}</span>`; };
+    const col = v>0?'var(--scale)':(v<0?'var(--reduce)':'var(--muted)');
+    return `<span style="color:${col};font-weight:${v<0?600:400}">${(v>=0?'+':'−')+SYM+fmt(Math.abs(v))}</span>`; };
   const stickCell=x=>{ if(x.stick_30==null) return na(null);
     const imm=(x.stick_mature_share!=null&&x.stick_mature_share<60);
     const hint=(x.ftd_mature!=null&&x.ftd!=null&&x.ftd_mature<x.ftd)?` <span style="color:var(--muted);font-size:11.5px">(${x.ftd_mature}/${x.ftd})</span>`:'';
@@ -649,14 +754,14 @@ function table(){
   </tr>`;}).join('');
   document.getElementById('tbl').innerHTML=head+`<tbody>${body}</tbody>`;
 }
-function paint(){['chartBars','chartScatter','chartMech','chartTrend'].forEach(id=>document.getElementById(id).innerHTML='');bars();scatter();mech();trend();if(RET){rNgrBars();rQuad();rTierBars();rGrid();}}
+function paint(){['chartBars','chartScatter','chartMech','chartTrend','acqLorenz','acqLoo','acqFunnel'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();if(RET){rNgrBars();rQuad();rTierBars();rGrid();}}
 const btn=document.getElementById('themeBtn');
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';try{localStorage.setItem('acqtheme',t)}catch(e){}paint();}
 btn.addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');setTheme(cur==='dark'?'light':'dark');});
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!document.documentElement.getAttribute('data-theme'))paint();});
 window.addEventListener('scroll',()=>hideTip(),{passive:true});
 (function(){let t=null;try{t=localStorage.getItem('acqtheme')}catch(e){}if(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('themeTxt').textContent=t==='dark'?'Light':'Dark';document.getElementById('themeIcon').textContent=t==='dark'?'○':'●';}})();
-table();bars();scatter();mech();trend();
+table();bars();scatter();mech();trend();paretoLOO();acqFunnelDraw();
 
 // ============================ RETENTION TAB ============================
 const RDEC = {
@@ -1420,12 +1525,14 @@ renderTrend();
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
     leadSec('Main findings',[byId('meta'),qP('panel-acquisition','.call')]),
     leadSec('Key numbers',[byId('kpis')]),
+    cardSec(byId('acqParetoCard')),
     cardSec(cardById('ruleLines')),
     cardSec(cardById('chartBars')),
     cardSec(cardById('chartScatter')),
     cardSec(cardById('chartMech')),
     cardSec(cardById('chartTrend')),
     cardSec(cardById('tbl')),
+    cardSec(byId('acqFunnelCard')),
     plainSec(qP('panel-acquisition','.notes'),'Notes'),
   ]);
   buildPanel('panel-retention',[
