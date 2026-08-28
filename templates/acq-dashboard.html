@@ -1437,15 +1437,15 @@ function renderVIP(){
     `</div><p class="fine" style="margin-top:12px">Free up about <b>${vM(MM.laneA_stop_reduce)}</b> from move 1, keep the Weekly Rescue as a perk, and <b>put the savings toward keeping the top players who are slipping</b> (move 3) — where it does the most good.</p>`;
   // Lane tally
   document.getElementById('v_callLead').innerHTML=
-    `<p>VIP is judged in <b>four groups</b>, not one number. <b>Performance</b> rewards (${LS['A-performance'].codes} promos, ${vM(LS['A-performance'].spend)}) make ${LS['A-performance'].ngr_lift_per_rm>=0?'+':''}${VSYM}${LS['A-performance'].ngr_lift_per_rm} back for every RM1 — the small rewards pay; big no-deposit free-credit is a giveaway that nets negative, so read it on deposits attracted, not net. <b>Money-back</b> (${vM(LS['B-cashback'].spend)}) is a loyalty perk — money back after a bad week, reported not scored on return; <b>Engagement</b> (${vM(LS['D-engagement'].spend)}) pays for itself; <b>Gifts</b> (${vM(LS['C-entitlement'].spend)}) are relationship perks, not scored.</p>`;
+    `<p>VIP is judged in <b>four groups</b>, not one number. <b>Performance</b> rewards (${LS['A-performance'].codes} promos, ${vM(LS['A-performance'].spend)}) make ${LS['A-performance'].ngr_lift_per_rm>=0?'+':''}${VSYM}${LS['A-performance'].ngr_lift_per_rm} back for every RM1 — the small rewards pay; big no-deposit free-credit is a giveaway that nets negative, so read it on deposits attracted, not net. <b>Money-back</b> (${vM(LS['B-cashback'].spend)}) is a loyalty perk — money back after a bad week, reported not scored on return; <b>Gifts</b> (${vM(LS['C-entitlement'].spend)}) are relationship perks, not scored; <b>Engagement</b> (${vM(LS['D-engagement'].spend)}) pays for itself.</p>`;
   const laneRow=(name,key,codes,note)=>{const L=LS[key];const rc={};codes.forEach(c=>rc[c.decision]=(rc[c.decision]||0)+1);
     const chips=Object.entries(rc).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`<span class="lchip" style="color:${(VDEC[d]||{}).c||'var(--muted)'}">${n} ${d}</span>`).join('');
     return `<div class="lt"><div class="lth"><span class="ltn">${name}</span><span class="ltm">${L.codes} promos · ${vM(L.spend)} · ${L.ngr_lift_per_rm>=0?'+':''}${L.ngr_lift_per_rm} per RM1</span></div><div class="ltnote">${note}</div><div class="ltchips">${chips}</div></div>`;};
   document.getElementById('v_tally').innerHTML=
     laneRow('A · Performance','A-performance',LA,'Money is the judge — net revenue back for every RM1 (by tier and reward type).')+
     laneRow('B · Weekly Rescue','B-cashback',LB,'A loyalty perk — money back after a bad week, not scored on return.')+
-    laneRow('D · Engagement','D-engagement',LD,'Check-ins + Lucky Wheel / Scratch Card mini-games (renewed monthly). Does it pay for itself?')+
-    laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not scored on return.');
+    laneRow('C · Entitlement','C-entitlement',LC,'Relationship gifts — reported, not scored on return.')+
+    laneRow('D · Engagement','D-engagement',LD,'Check-ins + Lucky Wheel / Scratch Card mini-games (renewed monthly). Does it pay for itself?');
   // Rules
   document.getElementById('v_rules').innerHTML=[
     ['A · Performance','var(--scale)',[
@@ -1456,12 +1456,12 @@ function renderVIP(){
       '<b>What it is:</b> <b>money back after a losing week</b> (Weekly Rescue) — a loyalty perk given by VIP status, not a play to make money.',
       '<b>How it\'s judged:</b> <b>not scored on return</b>, like the gifts — a relationship perk, reported for transparency.',
       '<b>The rule:</b> keep it, but make sure it reaches active VIPs — tighten eligibility if it lands on inactive accounts or is farmed.']],
-    ['D · Engagement','var(--maintain)',[
-      '<b>What it is:</b> small, frequent rewards that build a habit — <b>daily check-ins and the mini-games</b> (Lucky Wheel, Scratch Card, Mystery Ang Pow); deposit-triggered and cheap.',
-      '<b>How it\'s judged:</b> <b>money + habit</b> — pays for itself (house winnings &gt; bonus) and builds a habit rather than feeding free-money collectors.']],
     ['C · Entitlement','var(--referral)',[
       '<b>What it is:</b> <b>relationship gifts given by status, not performance</b> — birthday and welcome/membership gifts.',
-      '<b>How it\'s judged:</b> <b>not scored on return</b> — they protect loyalty; only flagged if a gift reaches an inactive account.']]
+      '<b>How it\'s judged:</b> <b>not scored on return</b> — they protect loyalty; only flagged if a gift reaches an inactive account.']],
+    ['D · Engagement','var(--maintain)',[
+      '<b>What it is:</b> small, frequent rewards that build a habit — <b>daily check-ins and the mini-games</b> (Lucky Wheel, Scratch Card, Mystery Ang Pow); deposit-triggered and cheap.',
+      '<b>How it\'s judged:</b> <b>money + habit</b> — pays for itself (house winnings &gt; bonus) and builds a habit rather than feeding free-money collectors.']]
   ].map(r=>`<div class="ddef bul"><span class="lbl"><span class="dot" style="background:${r[1]}"></span>${r[0]}</span><div class="txt"><ul class="ddul">${r[2].map(b=>`<li>${b}</li>`).join('')}</ul></div></div>`).join('');
   // ---- Lanes ----
   const lanes=document.getElementById('v_lanes');
@@ -1481,17 +1481,17 @@ function renderVIP(){
     `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>The Weekly Rescue gives losing VIPs some money back — a perk that protects the relationship, not a return play. Reported for transparency; the only action is making sure it reaches <b>active VIPs</b> — tighten eligibility if it's landing on inactive accounts or being farmed.</div></div>`+
     `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Weekly Rescue by tier — where the perk lands</h3><span class="hint">the bigger picture · perk budget by tier</span></div><div id="v_rescueByTier"></div></div>`+
     `<div class="card col12"><div class="card-h"><h3>Weekly Rescue register</h3><span class="hint">every code</span></div><div id="v_tblB"></div></div>`+
+    // LANE C
+    `<div class="lanehdr" style="border-color:var(--referral)"><span class="lanetag" style="background:var(--referral)">C</span><h2>Entitlement gifts</h2><span class="lanesub">${LS['C-entitlement'].codes} promos · ${vM(LS['C-entitlement'].spend)} · not scored on return</span></div>`+
+    `<p class="ldef"><b>What it is:</b> <b>relationship gifts given by status, not performance</b> — birthday and welcome/membership gifts. Not meant to make money.</p>`+
+    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not a return play. Reported for transparency; the only action is tightening eligibility if a gift reaches an inactive account.</div></div>`+
+    `<div class="card col12"><div class="card-h"><h3>Entitlement register</h3></div><div id="v_tblC"></div></div>`+
     // LANE D
     `<div class="lanehdr" style="border-color:var(--maintain)"><span class="lanetag" style="background:var(--maintain)">D</span><h2>Engagement &amp; mini-games</h2><span class="lanesub">3 mini-game programs + ${LD.filter(c=>!['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} check-ins · ${vM(LS['D-engagement'].spend)} · ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm} per RM1</span></div>`+
     `<p class="ldef"><b>What it is:</b> small, frequent rewards that build a habit — <b>daily check-ins and the mini-games</b> (Lucky Wheel, Scratch Card, Mystery Ang Pow). Cheap, and only paid out when the player deposits to play.</p>`+
     `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Engagement &amp; mini-games — daily check-ins plus the <b>Lucky Wheel</b>, <b>Scratch Card</b> and <b>Mystery Ang Pow</b> mini-games (a WS1 product, folded here per the team). Each mini-game is <b>re-issued with a fresh code set each period</b> (old codes expire when it ends), so the ${LD.filter(c=>['lucky-wheel','scratch-card','mystery-angpow'].includes(c.sub_type)).length} codes are really <b>three ongoing programs</b>. This group <b>pays for itself handsomely</b> — ${LS['D-engagement'].ggr_coverage}× the house winnings cover its cost, and makes ${LS['D-engagement'].ngr_lift_per_rm>=0?'+':''}${LS['D-engagement'].ngr_lift_per_rm} back for every RM1.</div></div>`+
     `<div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Recurring mini-game programs</h3><span class="hint">renewed monthly · rolled up</span></div><p class="sub2">The same two mini-games, combined across their monthly code renewals (Jan–Aug). Both comfortably pay for themselves — they're deposit-triggered, so the house winnings dwarf the prize cost.</p><div id="v_mgPrograms"></div></div>`+
-    `<div class="card col12"><div class="card-h"><h3>Check-in decisions</h3><span class="hint">World Cup daily check-in variants</span></div><div id="v_tblD"></div></div>`+
-    // LANE C
-    `<div class="lanehdr" style="border-color:var(--referral)"><span class="lanetag" style="background:var(--referral)">C</span><h2>Entitlement gifts</h2><span class="lanesub">${LS['C-entitlement'].codes} promos · ${vM(LS['C-entitlement'].spend)} · not scored on return</span></div>`+
-    `<p class="ldef"><b>What it is:</b> <b>relationship gifts given by status, not performance</b> — birthday and welcome/membership gifts. Not meant to make money.</p>`+
-    `<div class="exec-note" style="margin-bottom:14px"><span class="ico">◆</span><div>Birthday and welcome gifts — relationship spend that protects loyalty, not a return play. Reported for transparency; the only action is tightening eligibility if a gift reaches an inactive account.</div></div>`+
-    `<div class="card col12"><div class="card-h"><h3>Entitlement register</h3></div><div id="v_tblC"></div></div>`;
+    `<div class="card col12"><div class="card-h"><h3>Check-in decisions</h3><span class="hint">World Cup daily check-in variants</span></div><div id="v_tblD"></div></div>`;
   // Lane A charts + table
   vBars('v_sizeBars',VIP.by_size,{value:b=>b.ngr_lift_per_rm,label:b=>b.band,ref:0,left:78,H:210,bh:24,xlab:'Net revenue per RM1 (RM)',
     colorFn:(b,v)=>v>=0?CV('--scale'):CV('--stop'),vlab:(b,v)=>VSYM+v.toFixed(2),
