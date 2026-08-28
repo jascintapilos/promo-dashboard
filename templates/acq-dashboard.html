@@ -344,8 +344,12 @@
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
-      <p class="sub2">Every code tagged to a named campaign so spend rolls up by campaign. Tags are <b>inferred from code names</b> — there is no confirmed campaign map in the system yet — so treat this as a draft to confirm with CRM / Sales / Marketing.</p>
-      <div id="s_campaignBars"></div>
+      <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Marketing campaigns <span>named theme / event pushes</span></h4><div id="s_campaignThemes"></div></div>
+        <div class="tchart"><h4>BAU mechanic buckets <span>no distinct campaign — just a mechanic</span></h4><div id="s_campaignMech"></div></div>
+      </div>
+      <div style="margin-top:14px"><h4 style="margin:0 0 6px">By owner / source team <span style="font-weight:400;color:var(--muted);font-size:12px">who ran the spend — inferred, confirm with the team</span></h4><div id="s_campaignOwners"></div></div>
       <div id="s_campaignCov" class="fine" style="margin-top:10px"></div>
       <div style="margin-top:14px"><h4 style="margin:0 0 6px">Gap register — for the source teams <span style="font-weight:400;color:var(--muted);font-size:12px">codes / owners not yet confirmed</span></h4><div id="s_campaignGap"></div></div>
     </div>
@@ -1419,33 +1423,46 @@ renderSweetSpot();
 // ===== Executive Summary (cross-pillar synthesis) =====
 function campaignView(){
   const CR=P&&P.campaign_rollup; if(!CR) return;
-  const cs=CR.campaigns.filter(c=>c.campaign!=='Unattributed');
+  const all=CR.campaigns.filter(c=>c.campaign!=='Unattributed');
+  const themes=all.filter(c=>c.campaign_type==='campaign'), mech=all.filter(c=>c.campaign_type==='mechanic');
   const cmr=v=>(v>=0?'+':'−')+SYM+Math.abs(v);
   const sMc=n=>SYM+(n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?Math.round(n/1e3)+'K':Math.round(n));
-  (function(){
-    const box=document.getElementById('s_campaignBars'); if(!box) return; box.innerHTML='';
-    const W=580,rh=30,top=8,bot=28,H=top+cs.length*rh+bot,left=150,right=182;
-    const maxSp=Math.max(...cs.map(c=>c.spend))||1,sx=v=>left+(v/maxSp)*(W-left-right);
+  const maxSp=Math.max(...all.map(c=>c.spend))||1;
+  function drawBars(boxId,list){
+    const box=document.getElementById(boxId); if(!box) return; box.innerHTML='';
+    if(!list.length){box.innerHTML='<p class="fine" style="color:var(--muted)">none</p>';return;}
+    const W=470,rh=34,top=6,bot=24,H=top+list.length*rh+bot,left=118,right=150,sx=v=>left+(v/maxSp)*(W-left-right);
     const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
-    cs.forEach((c,i)=>{const y=top+i*rh+rh/2;
+    list.forEach((c,i)=>{const y=top+i*rh+rh/2;
       const good=c.kind==='acq'?null:(c.ngr_lift_per_rm==null?null:c.ngr_lift_per_rm>=0);
       const col=good===null?CV('--accent'):(good?CV('--scale'):CV('--reduce'));
-      s.append(Object.assign(el('text',{x:left-8,y:y+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:c.campaign.length>20?c.campaign.slice(0,19)+'…':c.campaign}));
-      s.append(el('rect',{x:left,y:y-9,width:Math.max(2,sx(c.spend)-left),height:18,rx:3,fill:col,'fill-opacity':.82}));
-      s.append(Object.assign(el('text',{x:sx(c.spend)+6,y:y+4,'text-anchor':'start',style:'font-size:10.5px;fill:var(--muted)'}),{textContent:sMc(c.spend)+' ('+c.spend_share+'%)'}));
+      s.append(Object.assign(el('text',{x:left-8,y:y+3,'text-anchor':'end',class:'barlab',style:'font-size:11px'}),{textContent:c.campaign.length>16?c.campaign.slice(0,15)+'…':c.campaign}));
+      s.append(el('rect',{x:left,y:y-9,width:Math.max(2,sx(c.spend)-left),height:15,rx:3,fill:col,'fill-opacity':.82}));
+      s.append(Object.assign(el('text',{x:sx(c.spend)+6,y:y-1,'text-anchor':'start',style:'font-size:10px;fill:var(--muted)'}),{textContent:sMc(c.spend)+' ('+c.spend_share+'%)'+(c.cadence?' · '+c.cadence:'')}));
       const out=c.kind==='acq'?(c.cost_per_ftd!=null?SYM+c.cost_per_ftd+'/dep':'—'):(c.ngr_lift_per_rm!=null?cmr(c.ngr_lift_per_rm)+'/RM1':'—');
-      s.append(Object.assign(el('text',{x:W-6,y:y+4,'text-anchor':'end',style:'font-size:11px;font-weight:700;fill:'+col}),{textContent:out}));});
-    axTitle(s,(left+W-right)/2,H-6,'Bonus spend (exact)');
+      s.append(Object.assign(el('text',{x:W-6,y:y-1,'text-anchor':'end',style:'font-size:10.5px;font-weight:700;fill:'+col}),{textContent:out}));});
+    axTitle(s,(left+W-right)/2,H-6,'Bonus spend (exact) · return (directional)');
+    box.append(s);
+  }
+  drawBars('s_campaignThemes',themes); drawBars('s_campaignMech',mech);
+  (function(){
+    const box=document.getElementById('s_campaignOwners'); if(!box) return; box.innerHTML='';
+    const ow=(CR.owners||[]).filter(o=>o.spend>0);
+    const W=560,rh=26,top=4,bot=22,H=top+ow.length*rh+bot,left=88,right=180,mx=Math.max(...ow.map(o=>o.spend))||1,sx=v=>left+(v/mx)*(W-left-right);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    ow.forEach((o,i)=>{const y=top+i*rh+rh/2, unk=o.owner==='Unknown', col=unk?CV('--reduce'):CV('--accent');
+      s.append(Object.assign(el('text',{x:left-8,y:y+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'+(unk?';font-weight:700':'')}),{textContent:o.owner}));
+      s.append(el('rect',{x:left,y:y-8,width:Math.max(2,sx(o.spend)-left),height:16,rx:3,fill:col,'fill-opacity':unk?.55:.82}));
+      s.append(Object.assign(el('text',{x:sx(o.spend)+6,y:y+4,'text-anchor':'start',style:'font-size:10.5px;fill:var(--muted)'}),{textContent:sMc(o.spend)+' ('+o.share+'%) · '+o.campaigns+' campaigns'}));});
+    axTitle(s,(left+W-right)/2,H-6,'Spend by owner — red = not yet confirmed');
     box.append(s);
   })();
-  const cov=CR.coverage;
-  const covBox=document.getElementById('s_campaignCov');
-  if(covBox) covBox.innerHTML=`<b>${cov.attributed_pct}%</b> of ${sMc(cov.total_spend)} is tagged to a named campaign (${cov.unattributed_codes} codes / ${sMc(cov.unattributed_spend)} unmapped). <b>Spend is exact; the return figures are a directional own-baseline association — not proof the campaign caused them</b> (a validated holdout is the proof step). Each return is measured on that campaign's <b>money-judged codes</b>, so a cross-pillar campaign's figure covers only its retention/VIP part.`;
-  const gaps=CR.gaps||[], unk=cs.filter(c=>c.owner==='Unknown'), unkSp=unk.reduce((a,c)=>a+c.spend,0);
-  const gapBox=document.getElementById('s_campaignGap');
+  const cov=CR.coverage, covBox=document.getElementById('s_campaignCov');
+  if(covBox) covBox.innerHTML=`<b>${cov.attributed_pct}%</b> of ${sMc(cov.total_spend)} rolls up to a campaign (${cov.unattributed_codes} codes / ${sMc(cov.unattributed_spend)} unmapped). Returns are measured on each campaign's <b>money-judged codes</b> — a cross-pillar campaign's figure covers only its retention/VIP part — and are a <b>directional read, not proof of cause</b>. Note that most spend sits in the <b>mechanic buckets</b>, not named campaigns.`;
+  const gaps=CR.gaps||[], unk=(CR.owners||[]).find(o=>o.owner==='Unknown')||{spend:0}, gapBox=document.getElementById('s_campaignGap');
   if(gapBox) gapBox.innerHTML=
     (gaps.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Unmapped code</th><th class="l">Pillar</th><th>Spend</th></tr></thead><tbody>`+gaps.slice(0,6).map(g=>`<tr><td class="l">${g.code}</td><td class="l">${g.pillar}</td><td>${sMc(g.spend)}</td></tr>`).join('')+`</tbody></table></div>`:'')+
-    `<div class="fine" style="margin-top:8px"><b>${sMc(unkSp)}</b> of spend has <b>no confirmed owner</b> (campaigns: ${unk.map(c=>c.campaign).slice(0,6).join(', ')}${unk.length>6?'…':''}). Ask CRM / Sales / Marketing to confirm each campaign's <b>objective, segment and owner</b> — that is what turns this draft into validated attribution.</div>`;
+    `<div class="fine" style="margin-top:8px"><b>${sMc(unk.spend)}</b> of spend has <b>no confirmed owner</b>, and every tag is inferred. Ask CRM / Sales / Marketing to confirm each campaign's <b>objective, segment and owner</b> — that is what turns this draft into validated attribution.</div>`;
 }
 function renderSummary(){
   const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};

@@ -24,7 +24,17 @@ for f, pil in [("acq/acq-metrics-MY.json", "acq"), ("ret/ret-metrics-MY.json", "
                      "spend_new": c.get("spend_new", 0), "ftd": c.get("ftd", 0), "claimers": c.get("claimers", 0),
                      "ngr_lift": c.get("ngr_lift", 0),
                      "campaign": t.get("campaign", "Unattributed"), "owner": t.get("owner", "Unknown"),
-                     "objective": t.get("objective", "?"), "confidence": t.get("confidence", "unattributed")})
+                     "objective": t.get("objective", "?"), "confidence": t.get("confidence", "unattributed"),
+                     "cadence": t.get("cadence")})
+
+# theme/marketing campaigns vs BAU mechanic buckets (no distinct campaign)
+MECHANIC = {"Reload / deposit bonus", "Free-spins", "VIP Free Credit"}
+def ctype(camp):
+    return "unattributed" if camp == "Unattributed" else ("mechanic" if camp in MECHANIC else "campaign")
+from collections import Counter
+def dom_cad(rs):
+    c = Counter(r["cadence"] for r in rs if r.get("cadence"))
+    return c.most_common(1)[0][0] if c else None
 
 tot_spend = sum(r["spend"] for r in recs)
 by = defaultdict(list)
@@ -46,6 +56,7 @@ for camp, rs in by.items():
     msp = sum(r["spend"] for r in money); mng = sum(r["ngr_lift"] for r in money)
     campaigns.append({
         "campaign": camp, "owner": dominant(rs, "owner"), "objective": obj,
+        "campaign_type": ctype(camp), "cadence": dom_cad(rs),
         "codes": len(rs), "spend": round(spend), "spend_share": round(spend / tot_spend * 100, 1),
         "cost_per_ftd": round(sn / ftd) if ftd else None,
         "conversion": round(ftd / clm * 100, 1) if clm else None,
@@ -59,8 +70,17 @@ attr = [c for c in campaigns if c["campaign"] != "Unattributed"]
 unattr = next((c for c in campaigns if c["campaign"] == "Unattributed"), {"spend": 0, "codes": 0})
 gaps = sorted([r for r in recs if r["campaign"] == "Unattributed"], key=lambda r: -r["spend"])[:12]
 
+# owner / source-team roll-up (accountability cut)
+own = defaultdict(lambda: {"spend": 0.0, "codes": 0, "camps": set()})
+for r in recs:
+    d = own[r["owner"]]; d["spend"] += r["spend"]; d["codes"] += 1; d["camps"].add(r["campaign"])
+owners = [{"owner": k, "spend": round(v["spend"]), "share": round(v["spend"] / tot_spend * 100, 1),
+           "codes": v["codes"], "campaigns": len(v["camps"])}
+          for k, v in sorted(own.items(), key=lambda kv: -kv[1]["spend"])]
+
 rollup = {
     "campaigns": campaigns,
+    "owners": owners,
     "coverage": {"total_spend": round(tot_spend), "attributed_spend": round(sum(c["spend"] for c in attr)),
                  "attributed_pct": round(sum(c["spend"] for c in attr) / tot_spend * 100, 1),
                  "unattributed_spend": round(unattr["spend"]), "unattributed_codes": unattr["codes"]},

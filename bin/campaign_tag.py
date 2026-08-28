@@ -69,6 +69,23 @@ for code, meta in codes.items():
     else:
         out[code] = classify(code, meta)
 
+# attach cadence (Adhoc / Recurring / Check-in) from the BO campaigns table — the one
+# source-confirmed signal (~15% coverage). Best-effort; None where absent or BO unavailable.
+try:
+    sys.path.insert(0, str(ROOT))
+    from csir_config import get_client
+    cl = get_client(send_receive_timeout=60)
+    inlist = ",".join("'" + k.replace("'", "''") + "'" for k in out)
+    cad = {r[0].strip(): (r[1] or "").strip() or None
+           for r in cl.query(f"SELECT PromotionCode, Type FROM WORKSPACE.`260722_ws1_myr_campaigns` WHERE PromotionCode IN ({inlist})").result_rows}
+    for code in out:
+        out[code]["cadence"] = cad.get(code)
+    print(f"  cadence attached from BO: {sum(1 for v in out.values() if v.get('cadence'))}/{len(out)} codes")
+except Exception as e:
+    for code in out:
+        out[code].setdefault("cadence", None)
+    print(f"  cadence pull skipped: {str(e)[:80]}")
+
 json.dump(out, open(S / "campaign-map-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # --- coverage report ---
