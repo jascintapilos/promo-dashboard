@@ -68,9 +68,9 @@ decision = {
                 "scaling.").format(s=whale.get("top10pct_ngr_share")),
     "moves": [
         {"move": "Protect the top — don't cut", "why": "the top handful hold years of value; one lost to a wrong cut is unrecoverable", "type": "floor"},
-        {"move": "Retain the cooling", "why": "{n} whales slipping, {r} of net revenue at stake".format(n=whale.get("value_at_risk_members"), r="RM{:,}".format(whale.get("value_at_risk_ngr") or 0)), "type": "floor"},
+        {"move": "Retain the cooling", "why": "{n} cooling top-10% players, {r} of net revenue at stake".format(n=whale.get("value_at_risk_members"), r="RM{:,}".format(whale.get("value_at_risk_ngr") or 0)), "type": "floor"},
         {"move": "Grow the rising pipeline", "why": "climbers get more bonus AND return more — funding growth pays", "type": "band"},
-        {"move": "Test before scaling the reinvestment", "why": "keep-them is unproven observationally; the holdout decides it", "type": "band"},
+        {"move": "Test before scaling the reinvestment", "why": "we can't yet prove bonuses keep them; a holdout decides it", "type": "band"},
     ],
 }
 
@@ -112,7 +112,7 @@ for i, m in enumerate(whales):
     bonus = m.get("vip_bonus", 0) or 0
     why_bits = []
     if cooling_m:
-        why_bits.append("deposits −{}% H1→H2".format(round(drop * 100)))
+        why_bits.append("deposits −{}% vs first half".format(round(drop * 100)))
     if dorm >= 30:
         why_bits.append("last claim {}d ago".format(dorm))
     roster.append({"rank": i + 1, "ref": ref(m["member"]), "tier": norm_tier(m.get("tier_end")),
@@ -154,9 +154,17 @@ efficiency = {
     "pending": "Real 30/60/90-day forward efficiency lands with the deposit + forward-NGR pull (P2).",
 }
 
+counts_reconciliation = (
+    "Whales = the top 1% ({w} players). Of them, {c} are cooling and {r} are still reachable — we picked "
+    "the top {n} to focus on this week. (Separately, the \"{ar} players cooling\" / at-risk figures elsewhere "
+    "count the wider top 10%, a broader group than the {w} whales.)"
+).format(w=definition.get("count"), c=cooling.get("cooling"),
+         r=save_list.get("total_reachable"), n=len(save_list.get("rows", [])),
+         ar=cooling.get("at_risk_members"))
+
 j["whale_pillar"] = {
     "definition": definition, "roster": roster, "roster_stats": roster_stats,
-    "save_list": save_list, "efficiency": efficiency,
+    "save_list": save_list, "efficiency": efficiency, "counts_reconciliation": counts_reconciliation,
     "cooling": cooling, "rising": rising,
     "downside": downside, "reinvest": reinvest, "decision": decision,
     "basis": "Detection layer over existing VIP data; opaque refs only; risk/save-value are coarse "

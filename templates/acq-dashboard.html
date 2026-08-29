@@ -607,7 +607,7 @@
     <section class="kpis" id="v_kpis"></section>
     <div class="grid">
       <div class="card col12"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">share of budget vs share of value · 1.0 = balanced</span></div><p class="sub2">Each tier's <b>share of the bonus budget</b> against its <b>share of the net revenue</b>. <b>Above 1.0 = over-funded</b> (more budget than the value it returns); <b>below 1.0 = starved</b> (returns more value than it gets). The move: <b>feed the starved top tiers</b> (Diamond &amp; Platinum return more than they cost) by <b>trimming the over-funded lower ones</b> (Bronze most of all).</p><div id="v_fund" style="max-width:500px"></div><div id="v_fundTbl"></div></div>
-      <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of positive net revenue</span></div><p class="sub2">A thin slice of players carries most of the net revenue — and the declining ones (money we could lose if they leave) are the program's biggest single risk.</p><div id="v_whale"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Where value concentrates</h3><span class="hint">share of net revenue</span></div><p class="sub2">A thin slice of players carries most of the net revenue — and the declining ones (money we could lose if they leave) are the program's biggest single risk.</p><div id="v_whale"></div></div>
     </div>
     <div class="card col12" id="vipWhaleCard" style="margin-top:15px">
       <div class="card-h"><h3>At-risk whale ledger — who's cooling, and the money at stake</h3><span class="hint">top 1% by net revenue · cooling</span></div>
@@ -687,6 +687,7 @@
   <div class="panel" id="panel-whale" hidden>
     <div class="meta" id="w_meta"></div>
     <section class="kpis" id="w_kpis"></section>
+    <div id="w_counts"></div>
     <div class="card col12" id="w_decisionCard"><div class="card-h"><h3>The whale call</h3><span class="hint">protect · retain · grow · test</span></div><div id="w_decision"></div></div>
     <div class="card col12" id="w_saveListCard" style="margin-top:15px"><div class="card-h"><h3>Save-list — who to act on this week</h3><span class="hint">reachable · ranked by what's at stake</span></div><div id="w_saveList"></div></div>
     <div class="card col12" id="w_rosterCard" style="margin-top:15px"><div class="card-h"><h3>The 74 whales</h3><span class="hint">the named list · opaque refs</span></div><div id="w_roster"></div></div>
@@ -1527,7 +1528,7 @@ function renderVIP(){
     }).join('');
     box.innerHTML=
       '<p class="sub2"><b>This is why the whale call is protect, not cut.</b> We size the savings elsewhere; here we size the <b>downside</b> — how many players in a tier would have to walk to erase a saving. At the top it takes only a handful (red), so a wrong cut costs far more than it saves.</p>'+
-      '<div class="varbox" style="margin-bottom:12px"><span class="ico">◆</span><div>Only about <b>'+(dia.defections_to_wipe_floor!=null?dia.defections_to_wipe_floor:'?')+' Diamond players leaving</b> erases the '+vM(certain)+' certain saving; about <b>'+(dia.defections_to_wipe_band!=null?dia.defections_to_wipe_band:'?')+'</b>'+(diaPct?' (~'+diaPct+'% of Diamonds)':'')+' erases the full '+vM(D.band.rm)+'. And <b>'+(whales||'')+' of our biggest players are already slipping</b> — the margin for error is thin. Roll any cut out <b>gradually with a stop-loss</b>: cap a random subset first, keep the rest as a control, and reverse automatically if their deposits drop.</div></div>'+
+      '<div class="varbox" style="margin-bottom:12px"><span class="ico">◆</span><div>It takes only about <b>'+(dia.defections_to_wipe_floor!=null?('~'+Math.round(dia.defections_to_wipe_floor)):'?')+' Diamond players walking</b> to wipe out the '+vM(certain)+' certain saving (the bonus we save for sure by capping the 2 flagship no-deposit codes); about <b>'+(dia.defections_to_wipe_band!=null?('~'+Math.round(dia.defections_to_wipe_band)):'?')+'</b>'+(diaPct?' (~'+diaPct+'% of Diamonds)':'')+' wipes out the full '+vM(D.band.rm)+' cut. And <b>'+(whales||'')+' of our biggest players are already slipping</b> — the margin for error is thin. Roll any cut out <b>gradually with a stop-loss</b>: cap a random subset first, keep the rest as a control, and reverse automatically if their deposits drop.</div></div>'+
       '<div class="dregwrap"><table class="dreg"><thead><tr><th>Tier</th><th>Net revenue / member (YTD)</th><th>Defections that wipe the '+vM(certain)+' floor</th><th>… that wipe the '+vM(D.band.rm)+' band</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'+
       '<p class="fine" style="margin-top:10px">Competitor benchmark — whether rivals still offer RM400+ no-deposit credit to whales — comes with the test (later phase).</p>';
   })();
@@ -2394,10 +2395,11 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +abrow('Why this way','A single score would flatter or punish the wrong thing — a birthday gift is not meant to make money, and a money-back promo is not a growth play. Judging each job on its own is the only honest read.')
       +abrow('Good to know','Because the baseline is the player\'s <b>own recent history</b>, anything else that changed in those two weeks is mixed in, and it is only a 7-day window — so it is a <b>directional read, not proof</b>. A controlled test (a holdout) is the proof step before cutting anything big.'),
     whale:`<p class="lead">Big-player detection is about the <b>whales</b> — the handful of top players who carry most of the value — so their marketing can be decided on its own.</p>`
-      +abrow('What counts as a whale','The <b>top 1% of VIPs by net revenue</b> — about <b>74 players</b>, each worth roughly <b>RM112,721+</b> in net revenue a year. They carry <b>34% of all positive net revenue</b>, and the top 10% carry <b>75%</b>. A thin slice holds up the whole book.')
+      +abrow('What counts as a whale','The <b>top 1% of VIPs by net revenue</b> — about <b>74 players</b>, each worth roughly <b>RM112,721+</b> in net revenue a year. They carry <b>33.9% of all net revenue</b>, and the top 10% carry <b>74.8%</b>. A thin slice holds up the whole book.')
       +abrow('What this pillar does','<b>Detect</b> — who is a whale, who is <b>cooling</b> (deposits slipping), and who is <b>rising</b> toward whale status — then <b>decide</b> the whale-specific marketing: protect the top, retain the cooling, grow the rising.')
       +abrow('How we judge it','Not on bonus-ROI. The real question is <b>whether our spend actually keeps them</b> — and the <b>catastrophic downside</b> if a cut is wrong (a few defections erase years of savings). So whales get their own decision, apart from the general VIP rules.')
-      +abrow('Good to know','The "does the bonus keep them" read is <b>directional — the holdout is the proof</b>. Players are shown by an <b>opaque reference only</b>, never a name or ID.'),
+      +abrow('Good to know','The "does the bonus keep them" read is <b>directional — the holdout is the proof</b>. Players are shown by an <b>opaque reference only</b>, never a name or ID.')
+      +abrow('Plain-English key','<b>Net revenue (NGR)</b> — what the house keeps from a player’s play after their bonuses (the same measure throughout; sometimes shown as "VIP value"). <b>Holdout</b> — a group we deliberately give <b>no</b> bonus, so if they stay anyway we know the bonus wasn’t what kept them (the only real proof). <b>Directional</b> — a strong hint, not proof. <b>Tiers</b> — the VIP ladder (Silver, Gold, Platinum, Diamond at the top). <b>Cooling</b> — deposits dropping in the second half of the year vs the first.'),
   };
   // merge the four-group scorecard (summary + verdict tally) into the "four groups" definitions card (v_rules)
   (function(){
@@ -2421,8 +2423,10 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   (function(){
     if(typeof VIP==='undefined'||!VIP.whale_pillar) return;
     var WP=VIP.whale_pillar, d=WP.definition||{}, cl=WP.cooling||{}, ri=WP.rising||{}, rv=WP.reinvest||{}, dec=WP.decision||{};
+    var wcb=byId('w_counts');
+    if(wcb&&WP.counts_reconciliation) wcb.innerHTML='<div class="varbox" style="margin-top:2px"><span class="ico">◆</span><div><b>Who’s who of the counts:</b> '+WP.counts_reconciliation+'</div></div>';
     var wm=byId('w_meta'), SLm=WP.save_list||{};
-    if(wm) wm.innerHTML='<p class="lead">Three things you can’t see from the headline: we <b>under-fund the players who carry the book</b> ('+(d.bonus_share||'')+'% of the bonus for '+(d.ngr_share||'')+'% of the value), we <b>can’t yet prove our bonuses keep them</b> (they’d mostly stay anyway), and <b>'+((SLm.rows||[]).length)+' cooling whales are worth saving this week</b> — see the <a href="#" class="w-tosave" style="color:var(--scale);cursor:pointer">save-list</a>.</p>'+
+    if(wm) wm.innerHTML='<p class="lead">Three things you can’t see from the headline: we <b>under-invest in the players who carry the book</b> — they get '+(d.bonus_share||'')+'% of the bonus but make '+(d.ngr_share||'')+'% of the value, so they more than earn their keep and there’s <b>room to fund retention, not cut</b>; we <b>can’t yet prove our bonuses keep them</b> (they’d mostly stay anyway), and <b>'+((SLm.rows||[]).length)+' cooling whales are worth saving this week</b> — see the <a href="#" class="w-tosave" style="color:var(--scale);cursor:pointer">save-list</a>.</p>'+
       '<p class="fine" style="margin-top:6px">The familiar part, for context: a thin slice runs the book — the top 1% make '+(d.ngr_share||'')+'% of net revenue, the top 10% about '+(d.top10_ngr_share||'')+'%. <a href="#" class="w-toroster" style="color:var(--scale);cursor:pointer">See the '+(d.count||74)+' →</a></p>';
     var kbox=byId('w_kpis');
     if(kbox){[
@@ -2434,16 +2438,16 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     var db=byId('w_decision');
     if(db){var mv=(dec.moves||[]).map(function(m){var b='<span class="fbadge '+(m.type==='floor'?'floor':'band')+'">'+(m.type==='floor'?'DO NOW':'PROVE FIRST')+'</span>';
       return '<tr><td><b>'+m.move+'</b></td><td>'+m.why+'</td><td>'+b+'</td><td>Sales HOD · Promotions · CRM</td></tr>';}).join('');
-      db.innerHTML='<p class="sub2">Whale marketing is its own call — four moves, decide-now vs prove-first:</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owner sits with <b>Sales HOD · Promotions · CRM</b> jointly; <b>dates TBC</b> — confirm before sign-off.</p>';}
+      db.innerHTML='<p class="sub2">Whale marketing is its own call — four moves, decide-now vs prove-first:</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine" style="margin-top:8px"><b>Safe to do this week:</b> the two <b style="color:var(--scale)">DO NOW</b> moves (protect the top, retain the cooling). The two <b style="color:var(--gold)">PROVE FIRST</b> moves wait on data — proving bonuses actually retain (a holdout) and sizing the reinvestment — but they don’t block this week’s actions.</p><p class="fine">Owner sits with <b>Sales HOD · Promotions · CRM</b> jointly; <b>dates TBC</b> — confirm before sign-off.</p>';}
     var slb=byId('w_saveList'), SL=WP.save_list||{};
     if(slb&&SL.rows){var bandCol=function(b){return b==='High'?'var(--reduce)':(b==='Med'?'var(--gold)':'var(--muted)');};
       var slrows=(SL.rows||[]).map(function(r,i){
         return '<tr><td>'+(i+1)+'</td><td><b>'+r.ref+'</b></td><td>'+r.tier+'</td><td>'+VSYM+fmt(r.save_value)+'</td>'+
           '<td><span class="fbadge" style="background:color-mix(in srgb,'+bandCol(r.band)+' 18%,transparent);color:'+bandCol(r.band)+'">'+r.band+'</span></td><td class="dregrisk">'+(r.why||'')+'</td></tr>';}).join('');
       slb.innerHTML=
-        '<p class="sub2"><b>Act on these '+(SL.rows||[]).length+' this week.</b> The '+(SL.total_reachable||0)+' still-reachable cooling whales, ranked by <b>what\'s at stake</b> (their value × how fast they\'re slipping) — '+VSYM+fmt(SL.total_save_value||0)+' of net revenue in play across the reachable set.</p>'+
+        '<p class="sub2"><b>Where the owning teams should focus this week — in priority order.</b> The top '+(SL.rows||[]).length+' of '+(SL.total_reachable||0)+' still-reachable cooling players, ranked by <b>what\'s at stake</b> (their value × how fast they\'re slipping) — '+VSYM+fmt(SL.total_save_value||0)+' of net revenue at stake across the reachable set.</p>'+
         '<div class="dregwrap"><table class="dreg"><thead><tr><th>#</th><th>Player</th><th>Tier</th><th>At stake</th><th>Risk</th><th>Why flagged</th></tr></thead><tbody>'+slrows+'</tbody></table></div>'+
-        '<p class="fine">Opaque refs only. <b>At stake</b> = the player\'s YTD net revenue weighted by their churn-risk score. The score is <b>coarse today</b> (deposit decline H1→H2 + days since last claim) — a genuine early warning once the deposit pull lands (P2). Directional, not proof.</p>';}
+        '<p class="fine">This is a <b>priority list, not a call sheet</b> — each code is a stable handle for one player; the real identities live in BO, so the owning teams pull the matching players there to action. <b>At stake</b> = the player\'s net revenue weighted by their churn-risk score. Coarse today (deposit decline first→second half + days since last claim) — a genuine early warning once the deposit pull lands. A hint, not proof.</p>';}
     var eb=byId('w_eff'), EF=WP.efficiency||{};
     if(eb){eb.innerHTML=
       '<p class="sub2">Are we funding the right whales? A quick read of return-per-bonus crossed with risk — the <b>real 30/60/90-day view is the decision-grade metric and lands with the deposit pull</b>.</p>'+
@@ -2453,7 +2457,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     if(rb){var c2=ri.climbers||{}, hg=ri.held_grp||{};
       rb.innerHTML='<div class="varbox"><span class="ico">◆</span><div>Members who <b>climbed a tier</b> got more bonus AND returned more than those who held (median bonus '+VSYM+fmt(c2.med_bonus)+' vs '+VSYM+fmt(hg.med_bonus)+', median NGR '+VSYM+fmt(c2.med_ngr)+' vs '+VSYM+fmt(hg.med_ngr)+') — so the pipeline into whale status is <b>real and worth feeding</b>. This period, <b>'+(ri.into_platinum||0)+'</b> climbed into Platinum and <b>'+(ri.into_diamond||0)+'</b> into Diamond.</div></div>';}
     var rvb=byId('w_reinvest');
-    if(rvb){rvb.innerHTML='<div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div><b>This is the question that matters most — and we cannot answer it observationally yet.</b> '+(rv.signal||'')+'<div class="dregrisk" style="margin-top:6px">Treated '+(rv.n_treated||0)+' vs untreated '+(rv.n_untreated||0)+' slipping whales — barely any control group. The holdout is the proof step ('+(rv.gated_on||'')+').</div></div></div>';}
+    if(rvb){rvb.innerHTML='<p class="sub2"><b>In plain English:</b> we can’t yet prove our bonuses are what <b>keep</b> whales — most would likely stay anyway. The only way to know for sure is a <b>holdout</b> (give a matched group no bonus and see if they stay).</p><div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div><b>This is the question that matters most — and we can’t prove it from the data we have yet.</b> '+(rv.signal||'')+'<div class="dregrisk" style="margin-top:6px">Treated '+(rv.n_treated||0)+' vs untreated '+(rv.n_untreated||0)+' slipping whales — barely any comparison group. The holdout is the proof step ('+(rv.gated_on||'')+').</div></div></div>';}
     var rob=byId('w_roster');
     if(rob){var rst=WP.roster||[];
       var bc=function(b){return b==='High'?'var(--reduce)':(b==='Med'?'var(--gold)':'var(--muted)');};
@@ -2467,7 +2471,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       var strip='<div class="ngrstrip">'+
         '<div><span class="nl">Whale threshold</span><span class="nv">'+VSYM+fmt(d.threshold_ngr)+'</span><span class="ns">min NGR for the top 1%</span></div>'+
         '<div><span class="nl">Combined NGR</span><span class="nv">'+vM(rs.total_ngr)+'</span><span class="ns">'+(d.ngr_share||'')+'% of all VIP value</span></div>'+
-        '<div><span class="nl">Bonus share</span><span class="nv">'+(d.bonus_share||'')+'%</span><span class="ns">they return &gt; they cost</span></div>'+
+        '<div><span class="nl">Bonus share</span><span class="nv">'+(d.bonus_share||'')+'%</span><span class="ns">under their '+(d.ngr_share||'')+'% of value — room to invest</span></div>'+
         '<div><span class="nl">Median whale</span><span class="nv">'+VSYM+fmt(rs.median_ngr)+'</span><span class="ns">'+VSYM+fmt(rs.min_ngr)+' – '+vM(rs.max_ngr)+'</span></div>'+
         '<div><span class="nl">Cooling</span><span class="nv">'+(rs.cooling||0)+' / '+(rs.count||0)+'</span><span class="ns">deposits slipping</span></div>'+
       '</div>';
@@ -2492,7 +2496,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   buildPanel('panel-whale',[
     htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
     leadSec('Main findings',[byId('w_meta')]),
-    leadSec('Key numbers',[byId('w_kpis')]),
+    leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
     cardSec(byId('w_decisionCard')),
     cardSec(byId('w_saveListCard')),
     cardSec(cardById('v_whale')),

@@ -144,9 +144,10 @@ treated_share = round(len(treated) / len(slipping) * 100) if slipping else None
 
 if thin_control:
     signal = ("Almost every slipping whale ({sh}%) already gets deposit-tied bonuses, leaving only "
-              "{nu} as a natural control — far too few to trust. The +{d} retention gap is directional "
-              "at best; this thin control IS the reason a proper holdout is needed."
-              ).format(sh=treated_share, nu=len(untreated), d=delta)
+              "{nu} with no bonus to compare against — far too few to trust. The gap that's left "
+              "(about {pp} percentage points more staying, on those {nu} untreated) is a hint at best; "
+              "this is exactly why a proper holdout is needed."
+              ).format(sh=treated_share, nu=len(untreated), pp=round((delta or 0) * 100))
 elif positive:
     signal = "Deposit-tied bonuses ASSOCIATE with better whale retention (+{d}); directional, not yet causal.".format(d=delta)
 else:
