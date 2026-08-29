@@ -683,6 +683,7 @@
     <div class="meta" id="w_meta"></div>
     <section class="kpis" id="w_kpis"></section>
     <div class="card col12" id="w_decisionCard"><div class="card-h"><h3>The whale call</h3><span class="hint">protect · retain · grow · test</span></div><div id="w_decision"></div></div>
+    <div class="card col12" id="w_rosterCard" style="margin-top:15px"><div class="card-h"><h3>The 74 whales</h3><span class="hint">the named list · opaque refs</span></div><div id="w_roster"></div></div>
     <div class="card col12" id="w_risingCard" style="margin-top:15px"><div class="card-h"><h3>Rising — growing toward whale</h3><span class="hint">climbers this period</span></div><div id="w_rising"></div></div>
     <div class="card col12" id="w_reinvestCard" style="margin-top:15px"><div class="card-h"><h3>Does the bonus actually keep them?</h3><span class="hint">the core question · directional</span></div><div id="w_reinvest"></div></div>
     <div class="notes" id="w_notes"></div>
@@ -2413,7 +2414,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   (function(){
     if(typeof VIP==='undefined'||!VIP.whale_pillar) return;
     var WP=VIP.whale_pillar, d=WP.definition||{}, cl=WP.cooling||{}, ri=WP.rising||{}, rv=WP.reinvest||{}, dec=WP.decision||{};
-    var wm=byId('w_meta'); if(wm) wm.innerHTML='<p class="lead">'+(dec.verdict||'')+'</p>';
+    var wm=byId('w_meta');
+    if(wm) wm.innerHTML='<p class="lead">A thin slice runs the book — the top 1% (<b>'+(d.count||'')+' players</b>) make <b>'+(d.ngr_share||'')+'%</b> of all net revenue, the top 10% about <b>'+(d.top10_ngr_share||'')+'%</b>. But <b>'+(cl.cooling||'')+' of those '+(cl.of_top1pct||'')+'</b> are already cooling ('+(cl.at_risk_ngr!=null?vM(cl.at_risk_ngr):'—')+' of net revenue slipping), and whether our bonuses are what <b>keep</b> them is still unproven. <a href="#" class="w-toroster" style="color:var(--scale);cursor:pointer">See the '+(d.count||74)+' →</a></p>';
     var kbox=byId('w_kpis');
     if(kbox){[
       ['Whales (top 1%)', d.count!=null?d.count.toLocaleString():'—', (d.ngr_share||'')+'% of net revenue', true, true],
@@ -2424,13 +2426,23 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     var db=byId('w_decision');
     if(db){var mv=(dec.moves||[]).map(function(m){var b='<span class="fbadge '+(m.type==='floor'?'floor':'band')+'">'+(m.type==='floor'?'DO NOW':'PROVE FIRST')+'</span>';
       return '<tr><td><b>'+m.move+'</b></td><td>'+m.why+'</td><td>'+b+'</td><td><span style="color:var(--muted)">(TBC)</span></td></tr>';}).join('');
-      db.innerHTML='<p class="sub2">'+(dec.verdict||'')+'</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owners &amp; dates TBC — confirm before this goes to the CEO.</p>';}
+      db.innerHTML='<p class="sub2">Whale marketing is its own call — four moves, decide-now vs prove-first:</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owners &amp; dates TBC — confirm before this goes to the CEO.</p>';}
     var rb=byId('w_rising');
     if(rb){var c2=ri.climbers||{}, hg=ri.held_grp||{};
       rb.innerHTML='<div class="varbox"><span class="ico">◆</span><div>Members who <b>climbed a tier</b> got more bonus AND returned more than those who held (median bonus '+VSYM+fmt(c2.med_bonus)+' vs '+VSYM+fmt(hg.med_bonus)+', median NGR '+VSYM+fmt(c2.med_ngr)+' vs '+VSYM+fmt(hg.med_ngr)+') — so the pipeline into whale status is <b>real and worth feeding</b>. This period, <b>'+(ri.into_platinum||0)+'</b> climbed into Platinum and <b>'+(ri.into_diamond||0)+'</b> into Diamond.</div></div>';}
     var rvb=byId('w_reinvest');
     if(rvb){rvb.innerHTML='<div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div><b>This is the question that matters most — and we cannot answer it observationally yet.</b> '+(rv.signal||'')+'<div class="dregrisk" style="margin-top:6px">Treated '+(rv.n_treated||0)+' vs untreated '+(rv.n_untreated||0)+' slipping whales — barely any control group. The holdout is the proof step ('+(rv.gated_on||'')+').</div></div></div>';}
-    var nb=byId('w_notes'); if(nb) nb.innerHTML='<p class="fine">Whale = top-1% by net revenue; opaque refs only, member-level detail stays out of the report. The "does the bonus keep them" read is directional — the holdout is the proof.</p>';
+    var rob=byId('w_roster');
+    if(rob){var rst=WP.roster||[];
+      var rrows=rst.map(function(r){var st=r.cooling?'<span style="color:var(--reduce);font-weight:600">▼ cooling'+(r.drop_pct!=null?' '+r.drop_pct+'%':'')+'</span>':'<span style="color:var(--muted)">steady</span>';
+        return '<tr><td>'+r.rank+'</td><td><b>'+r.ref+'</b></td><td>'+r.tier+'</td><td>'+VSYM+fmt(r.ytd_ngr)+'</td><td>'+st+'</td></tr>';}).join('');
+      rob.innerHTML='<p class="sub2">The <b>'+rst.length+' whales</b> from the <a href="#" class="w-toabout" style="color:var(--scale);cursor:pointer">definition above</a> — each by opaque reference only (no identity). Ranked by net revenue; the <b>cooling</b> ones are the retention priority.</p>'+
+        '<div class="dregwrap" style="max-height:360px;overflow-y:auto"><table class="dreg"><thead><tr><th>#</th><th>Player</th><th>Tier</th><th>YTD net revenue</th><th>Status</th></tr></thead><tbody>'+rrows+'</tbody></table></div>';}
+    var nb=byId('w_notes'); if(nb) nb.innerHTML='<p class="fine">Data through 2026-08-26 (Malaysia). Player references are one-way hashes — they cannot be traced back to an identity.</p>';
+    var trl=document.querySelector('#w_meta .w-toroster');
+    if(trl) trl.addEventListener('click',function(e){e.preventDefault();var el=byId('w_roster'); if(el){var s=el.closest('.sec'); if(s)s.classList.remove('collapsed'); (s||el).scrollIntoView({block:'start'});}});
+    var tal=document.querySelector('#w_roster .w-toabout');
+    if(tal) tal.addEventListener('click',function(e){e.preventDefault();var s=document.querySelector('#panel-whale .sec'); if(s){s.classList.remove('collapsed'); s.scrollIntoView({block:'start'});}});
     // condensed whale summary in the VIP tab (depth lives in the whale tab)
     var sb=byId('v_whaleSummary');
     if(sb){sb.innerHTML=
@@ -2446,6 +2458,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Key numbers',[byId('w_kpis')]),
     cardSec(byId('w_decisionCard')),
     cardSec(cardById('v_whale')),
+    cardSec(byId('w_rosterCard')),
     cardSec(byId('vipWhaleCard')),
     cardSec(byId('w_risingCard')),
     cardSec(byId('vipCostWrongCard')),

@@ -8,7 +8,7 @@ template; this block supplies the detection layer + the whale decision stance.
 
 Run: python bin/vip_report/whale_detection.py
 """
-import json, os
+import json, os, hashlib
 
 SCR = os.environ.get(
     "VIP_SCR",
@@ -74,8 +74,23 @@ decision = {
     ],
 }
 
+# ---- ROSTER: the full top-1% whale list (opaque refs, same hash as whale_ledger) ----
+led = json.load(open(os.path.join(SCR, "vip", "member-ledger-MY.json"), encoding="utf-8"))
+ref = lambda x: hashlib.sha1(str(x).encode()).hexdigest()[:6].upper()   # matches whale_ledger.py
+norm_tier = lambda t: (t or "").replace(" (Trial)", "").strip()
+n_whale = definition.get("count") or 74
+whales = sorted([m for m in led if (m.get("ytd_ngr", 0) or 0) > 0], key=lambda m: -m["ytd_ngr"])[:n_whale]
+roster = []
+for i, m in enumerate(whales):
+    h1, h2 = (m.get("dep_h1", 0) or 0), (m.get("dep_h2", 0) or 0)
+    cooling_m = h1 > 0 and h2 < h1
+    roster.append({"rank": i + 1, "ref": ref(m["member"]), "tier": norm_tier(m.get("tier_end")),
+                   "ytd_ngr": round(m["ytd_ngr"]), "cooling": cooling_m,
+                   "drop_pct": round((1 - h2 / h1) * 100) if cooling_m else None})
+assert all("member" not in r for r in roster), "roster must not carry raw member ids"
+
 j["whale_pillar"] = {
-    "definition": definition, "cooling": cooling, "rising": rising,
+    "definition": definition, "roster": roster, "cooling": cooling, "rising": rising,
     "downside": downside, "reinvest": reinvest, "decision": decision,
     "basis": "Detection layer over existing VIP data; opaque refs only; reinvest is directional/holdout-gated.",
 }
@@ -85,4 +100,5 @@ print(f"whale_pillar written -> {PATH}")
 print(f"  DETECT: {definition['count']} whales (top-1%, >= RM{definition['threshold_ngr']:,}), {definition['ngr_share']}% of +NGR, top-10% = {definition['top10_ngr_share']}%")
 print(f"  COOLING: {cooling['cooling']}/{cooling['of_top1pct']} top whales, {cooling['at_risk_members']} at risk / RM{cooling['at_risk_ngr']:,}, watchlist {len(cooling['watchlist'])} (opaque)")
 print(f"  RISING: into Platinum {rising['into_platinum']} / Diamond {rising['into_diamond']}; climbers med bonus {rising['climbers'].get('med_bonus')} vs held {rising['held_grp'].get('med_bonus')}")
+print(f"  ROSTER: {len(roster)} whales (opaque refs); cooling {sum(1 for r in roster if r['cooling'])}; top ref {roster[0]['ref']} RM{roster[0]['ytd_ngr']:,}")
 print(f"  DECIDE: {len(decision['moves'])} moves")
