@@ -592,7 +592,7 @@
   </div>
   <div class="panel" id="panel-vip" hidden>
     <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">read this first</span></div><div id="v_decisionBox"></div></div>
-    <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Cost of being wrong</h3><span class="hint">how many defections wipe each saving</span></div><div id="v_costWrong"></div></div>
+    <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Why protect, not cut</h3><span class="hint">how few defections wipe a saving</span></div><div id="v_costWrong"></div></div>
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
     <div class="card col12" id="vipTrendDecompCard"><div class="card-h"><h3>Why VIP performance is sliding</h3><span class="hint">what's dragging it · cost of inaction</span></div><div id="v_trendDecomp"></div></div>
     <div class="card col12" id="vipOperatingCard"><div class="card-h"><h3>Running it monthly</h3><span class="hint">baseline · watchlist · tracker</span></div><div id="v_operating"></div></div>
@@ -1524,7 +1524,7 @@ function renderVIP(){
         '<td>'+(b.defections_to_wipe_band!=null?b.defections_to_wipe_band:'—')+'</td></tr>';
     }).join('');
     box.innerHTML=
-      '<p class="sub2">The report sizes the savings — this sizes the <b>downside</b>. Each row is how many players in that tier would have to walk to erase a saving. The top tiers are where a wrong cut hurts most (red = only a handful).</p>'+
+      '<p class="sub2"><b>This is why the whale call is protect, not cut.</b> We size the savings elsewhere; here we size the <b>downside</b> — how many players in a tier would have to walk to erase a saving. At the top it takes only a handful (red), so a wrong cut costs far more than it saves.</p>'+
       '<div class="varbox" style="margin-bottom:12px"><span class="ico">◆</span><div>Only about <b>'+(dia.defections_to_wipe_floor!=null?dia.defections_to_wipe_floor:'?')+' Diamond players leaving</b> erases the '+vM(certain)+' certain saving; about <b>'+(dia.defections_to_wipe_band!=null?dia.defections_to_wipe_band:'?')+'</b>'+(diaPct?' (~'+diaPct+'% of Diamonds)':'')+' erases the full '+vM(D.band.rm)+'. And <b>'+(whales||'')+' of our biggest players are already slipping</b> — the margin for error is thin. Roll any cut out <b>gradually with a stop-loss</b>: cap a random subset first, keep the rest as a control, and reverse automatically if their deposits drop.</div></div>'+
       '<div class="dregwrap"><table class="dreg"><thead><tr><th>Tier</th><th>Net revenue / member (YTD)</th><th>Defections that wipe the '+vM(certain)+' floor</th><th>… that wipe the '+vM(D.band.rm)+' band</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'+
       '<p class="fine" style="margin-top:10px">Competitor benchmark — whether rivals still offer RM400+ no-deposit credit to whales — comes with the test (later phase).</p>';
@@ -1603,7 +1603,7 @@ function renderVIP(){
       '<div class="dregwrap"><table class="dreg"><thead><tr><th>Climbed into</th><th>Players</th><th>Median bonus</th><th>Median NGR</th></tr></thead><tbody>'+funnelRows+'</tbody></table></div>'+
       '<h4 class="rsub">Weekly Rescue — perk right-sizing, not a cut</h4>'+
       '<p class="fine">'+(rr.note||'')+'</p>'+
-      '<p class="fine" style="margin-top:12px"><b>Does keeping the bonus keep the whale?</b> That retention read now lives in the <b>Big-player detection</b> tab (directional, holdout-gated) — alongside the whale detection, at-risk ledger and cost-of-being-wrong.</p>';
+      '<p class="fine" style="margin-top:12px"><b>Does keeping the bonus keep the whale?</b> That retention read now lives in the <b>Big-player detection</b> tab (directional, holdout-gated) — alongside the whale detection, at-risk ledger and the why-protect-not-cut case.</p>';
   })();
   (function(){
     var box=document.getElementById('v_moves'); if(!box) return;
@@ -2460,7 +2460,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     var sb=byId('v_whaleSummary');
     if(sb){sb.innerHTML=
       '<p class="sub2">The top <b>~1% of VIPs are whales</b> — about '+(d.count||'')+' players carrying <b>'+(d.top10_ngr_share||75)+'% of VIP value</b> (top 10%). They hold up the whole book and carry all the downside, so <b>protect-don\'t-cut</b> is the rule.</p>'+
-      '<div class="varbox"><span class="ico">◆</span><div><b>'+(cl.cooling||'')+' of '+(cl.of_top1pct||'')+'</b> top whales are cooling and <b>'+(cl.at_risk_ngr!=null?vM(cl.at_risk_ngr):'—')+'</b> of net revenue is slipping. The real question — <b>does the bonus actually keep them?</b> — is still unproven (they mostly stay anyway). Full detection, the at-risk watchlist, the cost-of-being-wrong and the retention read live in the <b>Big-player detection</b> tab.</div></div>'+
+      '<div class="varbox"><span class="ico">◆</span><div><b>'+(cl.cooling||'')+' of '+(cl.of_top1pct||'')+'</b> top whales are cooling and <b>'+(cl.at_risk_ngr!=null?vM(cl.at_risk_ngr):'—')+'</b> of net revenue is slipping. The real question — <b>does the bonus actually keep them?</b> — is still unproven (they mostly stay anyway). Full detection, the at-risk watchlist, the why-protect-not-cut case and the retention read live in the <b>Big-player detection</b> tab.</div></div>'+
       '<p class="fine" style="margin-top:10px"><a href="#" class="whalelink" style="color:var(--scale);font-weight:600;cursor:pointer">Open the Big-player detection tab →</a></p>';
       var a=sb.querySelector('.whalelink'); if(a) a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('[data-tab="whale"]'); if(t) t.click(); window.scrollTo(0,0);});
     }
@@ -2474,8 +2474,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('w_rosterCard')),
     cardSec(byId('vipWhaleCard')),
     cardSec(byId('w_risingCard')),
-    cardSec(byId('vipCostWrongCard')),
     cardSec(byId('w_reinvestCard')),
+    cardSec(byId('vipCostWrongCard')),
     plainSec(byId('w_notes'),'Notes'),
   ]);
   buildPanel('panel-acquisition',[
