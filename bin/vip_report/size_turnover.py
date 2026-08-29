@@ -10,6 +10,7 @@ does not.
 Run: python bin/vip_report/size_turnover.py
 """
 import json, os
+from collections import defaultdict
 
 SCR = os.environ.get(
     "VIP_SCR",
@@ -45,12 +46,17 @@ def rate(d):
 big_dep, big_nodep = acc(), acc()          # RM400+ deposit-required vs no-deposit
 by_to = {1: acc(), 2: acc(), 5: acc()}     # deposit-required, all sizes, by turnover
 big_by_to = {1: acc(), 2: acc(), 5: acc()}  # RM400+ deposit-required, by turnover
+dep_st = defaultdict(acc)                   # (size_band, to) -> deposit-required, net rev
+nodep_fc_size = defaultdict(acc)            # size_band -> no-deposit FREE-CREDIT, deposits attracted
+nodep_fc_to = defaultdict(acc)             # to -> no-deposit free-credit
 
 for r in claims:
     c = cmap.get(r.get("code"))
     if not c or c.get("lane") != "A-performance" or not r.get("mature_7"):
         continue
-    is_big = c.get("size_band") == "RM400+"
+    sb = c.get("size_band")
+    mech = c.get("mechanic")
+    is_big = sb == "RM400+"
     depreq = bool(c.get("deposit_required"))
     to = c.get("wagering_x")
     if is_big:
@@ -59,11 +65,32 @@ for r in claims:
         add(by_to[to], r)
         if is_big:
             add(big_by_to[to], r)
+    if depreq and to in (1, 2, 5):
+        add(dep_st[(sb, to)], r)
+    if (not depreq) and mech == "free-credit":
+        add(nodep_fc_size[sb], r)
+        if to in (0, 1, 2, 3, 5):
+            add(nodep_fc_to[to], r)
+
+SIZES = ["<RM50", "RM50-150", "RM150-400", "RM400+"]
+dep_size_to = [{"size_band": sb,
+                "cells": [{"to_x": t, "thin": dep_st[(sb, t)]["n"] < 30, **rate(dep_st[(sb, t)])}
+                          for t in (1, 2, 5) if dep_st[(sb, t)]["n"]]}
+               for sb in SIZES if any(dep_st[(sb, t)]["n"] for t in (1, 2, 5))]
+nodep_fc = {
+    "by_size": [{"size_band": sb, "thin": nodep_fc_size[sb]["n"] < 30, **rate(nodep_fc_size[sb])}
+                for sb in SIZES if nodep_fc_size[sb]["n"]],
+    "by_to": [{"to_x": t, "thin": nodep_fc_to[t]["n"] < 30, **rate(nodep_fc_to[t])}
+              for t in (0, 1, 2, 3, 5) if nodep_fc_to[t]["n"]],
+    "metric": "deposits attracted per RM (a giveaway's real job), with net rev shown for context",
+}
 
 size_turnover = {
     "big_dep_vs_nodep": {"deposit_required": rate(big_dep), "no_deposit": rate(big_nodep)},
     "by_turnover": [{"to_x": t, **rate(by_to[t])} for t in (1, 2, 5)],
     "big_by_turnover": [{"to_x": t, **rate(big_by_to[t])} for t in (1, 2, 5)],
+    "dep_size_to": dep_size_to,
+    "nodep_fc": nodep_fc,
     "scope": "Lane A (Performance), matured-7 claims.",
     "note": ("Size alone is not the decider. The pooled size chart's 'big loses' is mostly the no-deposit "
              "giveaways: a big (RM400+) bonus goes from -1.04/RM with no deposit to about break-even when a "
@@ -81,3 +108,8 @@ st = size_turnover
 print(f"  big RM400+: no-deposit {st['big_dep_vs_nodep']['no_deposit']['net_per_rm']}/RM  vs  deposit-required {st['big_dep_vs_nodep']['deposit_required']['net_per_rm']}/RM (dep {st['big_dep_vs_nodep']['deposit_required']['dep_per_rm']}x)")
 print("  deposit-required by TO:", ", ".join(f"{x['to_x']}x:{x['net_per_rm']}" for x in st["by_turnover"]))
 print("  big deposit-required by TO:", ", ".join(f"{x['to_x']}x:{x['net_per_rm']}(n{x['n']})" for x in st["big_by_turnover"]))
+print("  NO-DEPOSIT free-credit — deposits attracted/RM by size:",
+      ", ".join(f"{x['size_band']}:{x['dep_per_rm']}dep/{x['net_per_rm']}net(n{x['n']})" for x in nodep_fc["by_size"]))
+print("  deposit-required net/RM by size x TO:")
+for row in dep_size_to:
+    print("    " + row["size_band"] + ": " + ", ".join(f"{c['to_x']}x:{c['net_per_rm']}(n{c['n']}{'*' if c['thin'] else ''})" for c in row["cells"]))

@@ -670,8 +670,9 @@
     </div>
     <div class="card col12" id="vipDepoCard" style="margin-bottom:15px">
       <div class="card-h"><h3>Deposit-required vs no-deposit — the biggest money split</h3><span class="hint">from BO config</span></div>
-      <p class="sub2">A no-deposit bonus is pure cost up front — it only pays if the play it drives beats the give-away. This is where most VIP spend sits, and where most of the loss is.</p>
+      <p class="sub2">A no-deposit bonus is pure cost up front — it only pays if the play it drives beats the give-away. This is where most VIP spend sits, and where most of the loss is. Below, each type is read on its <b>right metric</b>: deposit-required on net revenue (by size × turnover), no-deposit free credit on the deposits it pulls in.</p>
       <div id="vipDepoSplit"></div>
+      <div id="vipDepoDeep"></div>
     </div>
     <div id="v_lanes"></div>
     <div class="notes" id="v_notes"></div>
@@ -1780,6 +1781,30 @@ vipSizing();
 vipTierMigration();
 vipGgrNgr();
 depoSplitRender('vipDepoSplit',VIP.deposit_split,'money',VSYM);
+  (function(){
+    var box=document.getElementById('vipDepoDeep'); if(!box||typeof VIP==='undefined'||!VIP.size_turnover) return;
+    var S=VIP.size_turnover, dst=S.dep_size_to||[], nf=(S.nodep_fc||{}).by_size||[];
+    var sign=function(v){return v==null?'—':(v>=0?'+':'')+v;};
+    var col=function(v){return v==null?'var(--muted)':(v>=0?'var(--scale)':'var(--reduce)');};
+    var TOS=[1,2,5];
+    var depRows=dst.map(function(r){
+      var cells=TOS.map(function(t){var c=(r.cells||[]).find(function(x){return x.to_x===t;});
+        return '<td style="color:'+(c?col(c.net_per_rm):'var(--muted)')+'">'+(c?sign(c.net_per_rm)+(c.thin?'*':''):'—')+'</td>';}).join('');
+      return '<tr><td><b>'+r.size_band+'</b></td>'+cells+'</tr>';
+    }).join('');
+    var nfRows=nf.map(function(x){
+      return '<tr><td><b>'+x.size_band+'</b></td><td style="color:'+col(x.dep_per_rm)+'">'+sign(x.dep_per_rm)+'×</td><td class="dregrisk">net '+sign(x.net_per_rm)+'</td></tr>';
+    }).join('');
+    box.innerHTML=
+      '<div class="tgrid" style="margin-top:14px">'+
+        '<div class="tchart"><h4>Deposit-required — net rev per RM1, size × turnover <span style="font-weight:400;color:var(--muted);font-size:12px">green pays, red loses</span></h4>'+
+          '<div class="dregwrap"><table class="dreg"><thead><tr><th>Size</th><th>TO 1×</th><th>TO 2×</th><th>TO 5×</th></tr></thead><tbody>'+depRows+'</tbody></table></div>'+
+          '<p class="fine"><b>Turnover is the lever</b> — the big bonuses (RM150–400, RM400+) go positive at 5×. <i>* thin cell.</i></p></div>'+
+        '<div class="tchart"><h4>No-deposit free credit — deposits attracted per RM <span style="font-weight:400;color:var(--muted);font-size:12px">its real job · ≥1× means it at least paid back its cost</span></h4>'+
+          '<div class="dregwrap"><table class="dreg"><thead><tr><th>Size</th><th>Deposits / RM</th><th></th></tr></thead><tbody>'+nfRows+'</tbody></table></div>'+
+          '<p class="fine">A giveaway should pull in <b>more than it costs (≥1×)</b>. It doesn’t — and the <b>big ones attract essentially nothing</b>. That is why no-deposit free credit is judged on attraction here, not on net revenue (which is negative by design).</p></div>'+
+      '</div>';
+  })();
 
 // ===== VIP sweet spot by tier =====
 function ssBars(boxId, data){
@@ -2201,18 +2226,20 @@ function renderAcqSweet(){
 renderSweetByTier((typeof VIP!=='undefined'&&VIP)?VIP.sweet_by_tier:null, {size:'vst_vip_size',depreq:'vst_vip_depreq',mech:'vst_vip_mech',reco:'vst_vip_reco'}, VSYM);
   (function(){
     var box=document.getElementById('vst_complete'); if(!box||typeof VIP==='undefined'||!VIP.size_turnover) return;
-    var S=VIP.size_turnover, dv=S.big_dep_vs_nodep||{}, dep=dv.deposit_required||{}, nod=dv.no_deposit||{};
+    var S=VIP.size_turnover, nf=(S.nodep_fc||{}).by_size||[];
+    var nfBig=nf.find(function(x){return x.size_band==='RM400+';})||{};
     var sign=function(v){return (v>=0?'+':'')+v;};
+    var col=function(v){return v==null?'var(--muted)':(v>=0?'var(--scale)':'var(--reduce)');};
     var toRows=(S.by_turnover||[]).map(function(x){
       var big=(S.big_by_turnover||[]).find(function(b){return b.to_x===x.to_x;})||{};
-      var col=function(v){return v==null?'var(--muted)':(v>=0?'var(--scale)':'var(--reduce)');};
       return '<tr><td><b>'+x.to_x+'×</b></td><td style="color:'+col(x.net_per_rm)+'">'+sign(x.net_per_rm)+'</td><td style="color:'+col(big.net_per_rm)+'">'+(big.net_per_rm==null?'—':sign(big.net_per_rm))+'</td></tr>';
     }).join('');
     box.innerHTML=
-      '<h4 style="margin:0 0 7px;font-size:14px">Size alone isn’t the decider — the deposit gate and turnover are <span style="font-weight:400;color:var(--muted);font-size:12px">the complete picture</span></h4>'+
-      '<div class="varbox" style="margin-bottom:10px"><span class="ico">◆</span><div>The same big (RM400+) bonus goes from <b style="color:var(--reduce)">'+sign(nod.net_per_rm)+'/RM</b> with <b>no deposit</b> to <b style="color:var(--gold)">'+sign(dep.net_per_rm)+'/RM</b> when a <b>deposit is required</b> (and it then pulls in '+dep.dep_per_rm+'× its cost in deposits). So a big bonus isn’t the problem — a big <b>no-deposit</b> bonus is.</div></div>'+
+      '<h4 style="margin:0 0 8px;font-size:14px">Size alone isn’t the decider — the two bonus types are judged on two different things</h4>'+
+      '<div class="varbox" style="margin-bottom:10px;border-color:var(--reduce)"><span class="ico">◆</span><div><b>A big no-deposit bonus is free credit — a giveaway.</b> Its job is to pull deposits in, so judge it on <b>deposits attracted</b>, not net revenue. But it barely does that: no-deposit free credit pulls in only about <b>0.3–0.4×</b> its cost in deposits, and the <b>big (RM400+) ones about '+sign(nfBig.dep_per_rm)+'× — essentially none</b>. So the big giveaway isn’t a turnover problem — it’s a giveaway that isn’t even buying deposits.</div></div>'+
+      '<div class="varbox" style="margin-bottom:10px;border-color:var(--gold)"><span class="ico">◆</span><div><b>Deposit-required bonuses are the ones judged on net revenue</b> — and there, <b>turnover (TO) is the swing lever, not size</b>: they move from −0.89/RM at 1× to +0.42 at 5×, and even big (RM400+) ones flip to <b style="color:var(--scale)">+0.63</b> at 5×.</div></div>'+
       '<div class="dregwrap" style="max-width:440px"><table class="dreg"><thead><tr><th>Turnover (TO)</th><th>All deposit-required</th><th>Big (RM400+)</th></tr></thead><tbody>'+toRows+'</tbody></table></div>'+
-      '<p class="fine">Net rev per RM1, deposit-required only — <b>turnover is the swing lever</b>: at 5× even big bonuses pay (+0.63). So the decision is size <b>and</b> deposit-gate <b>and</b> turnover together, not size alone. <i>Directional own-baseline; the thinner big/5× cell (~174 claims) needs the matched test to pin the exact optimum.</i></p>';
+      '<p class="fine">So the call is <b>bonus type first</b> — a giveaway (judged on attraction, and the big ones fail it) vs a deposit-required bonus (judged on net revenue, where TO is the lever) — then size and turnover, not size alone. Full size × TO breakdown is in the deposit-split section below. <i>Directional own-baseline; thinner cells need the matched test.</i></p>';
   })();
 renderSweetByTier((typeof RET!=='undefined'&&RET)?RET.sweet_by_tier:null, {size:'vst_ret_size',depreq:'vst_ret_depreq',mech:'vst_ret_mech',reco:'vst_ret_reco'}, RSYM);
 renderAcqSweet();
