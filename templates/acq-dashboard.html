@@ -629,6 +629,7 @@
         <div class="tchart"><h4>Deposit-required vs no-deposit <span>the realistic split, per tier</span></h4><div id="vst_vip_depreq"></div></div>
       </div>
       <div style="margin-top:14px"><h4 style="margin:0 0 7px;font-size:14px">By mechanic — net rev per RM1 <span style="font-weight:400;color:var(--muted);font-size:12px">the money read per type, per tier (money-judged)</span></h4><div id="vst_vip_mech"></div></div>
+      <div id="vst_complete" style="margin-top:16px"></div>
       <div id="vst_vip_reco" style="margin-top:14px"></div>
     </div>
     <div class="card col12" id="vipTierCard" style="margin-top:15px">
@@ -2198,6 +2199,21 @@ function renderAcqSweet(){
     ((gate&&give)?'<div class="srrow" style="color:var(--muted)"><b>No-deposit welcome offers are the giveaway</b> — at '+sym+give.cost_per_ftd+'/FTD ('+give.conversion+'% convert) they cost far more than deposit-gated offers ('+sym+gate.cost_per_ftd+'/FTD, '+gate.conversion+'% convert), but the ones they win <b>stick best ('+give.stick_30+'% vs '+gate.stick_30+'%)</b>. Their job is reach — winning players the deposit-gated offers can\'t — not being the cheap workhorse.</div>':'');
 }
 renderSweetByTier((typeof VIP!=='undefined'&&VIP)?VIP.sweet_by_tier:null, {size:'vst_vip_size',depreq:'vst_vip_depreq',mech:'vst_vip_mech',reco:'vst_vip_reco'}, VSYM);
+  (function(){
+    var box=document.getElementById('vst_complete'); if(!box||typeof VIP==='undefined'||!VIP.size_turnover) return;
+    var S=VIP.size_turnover, dv=S.big_dep_vs_nodep||{}, dep=dv.deposit_required||{}, nod=dv.no_deposit||{};
+    var sign=function(v){return (v>=0?'+':'')+v;};
+    var toRows=(S.by_turnover||[]).map(function(x){
+      var big=(S.big_by_turnover||[]).find(function(b){return b.to_x===x.to_x;})||{};
+      var col=function(v){return v==null?'var(--muted)':(v>=0?'var(--scale)':'var(--reduce)');};
+      return '<tr><td><b>'+x.to_x+'×</b></td><td style="color:'+col(x.net_per_rm)+'">'+sign(x.net_per_rm)+'</td><td style="color:'+col(big.net_per_rm)+'">'+(big.net_per_rm==null?'—':sign(big.net_per_rm))+'</td></tr>';
+    }).join('');
+    box.innerHTML=
+      '<h4 style="margin:0 0 7px;font-size:14px">Size alone isn’t the decider — the deposit gate and turnover are <span style="font-weight:400;color:var(--muted);font-size:12px">the complete picture</span></h4>'+
+      '<div class="varbox" style="margin-bottom:10px"><span class="ico">◆</span><div>The same big (RM400+) bonus goes from <b style="color:var(--reduce)">'+sign(nod.net_per_rm)+'/RM</b> with <b>no deposit</b> to <b style="color:var(--gold)">'+sign(dep.net_per_rm)+'/RM</b> when a <b>deposit is required</b> (and it then pulls in '+dep.dep_per_rm+'× its cost in deposits). So a big bonus isn’t the problem — a big <b>no-deposit</b> bonus is.</div></div>'+
+      '<div class="dregwrap" style="max-width:440px"><table class="dreg"><thead><tr><th>Turnover (TO)</th><th>All deposit-required</th><th>Big (RM400+)</th></tr></thead><tbody>'+toRows+'</tbody></table></div>'+
+      '<p class="fine">Net rev per RM1, deposit-required only — <b>turnover is the swing lever</b>: at 5× even big bonuses pay (+0.63). So the decision is size <b>and</b> deposit-gate <b>and</b> turnover together, not size alone. <i>Directional own-baseline; the thinner big/5× cell (~174 claims) needs the matched test to pin the exact optimum.</i></p>';
+  })();
 renderSweetByTier((typeof RET!=='undefined'&&RET)?RET.sweet_by_tier:null, {size:'vst_ret_size',depreq:'vst_ret_depreq',mech:'vst_ret_mech',reco:'vst_ret_reco'}, RSYM);
 renderAcqSweet();
 // ---- "Bonus sweet spot" summary that headlines each pillar's Main findings ----
