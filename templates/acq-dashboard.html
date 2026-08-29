@@ -322,6 +322,11 @@
   .rsub{font-size:13px;font-weight:700;margin:15px 0 7px;color:var(--ink)}
   .scopenote{font-size:13px;color:var(--ink);line-height:1.5;margin-bottom:12px;padding-left:12px;border-left:3px solid var(--line)}
   .scopenote:last-child{margin-bottom:0}
+  .ngrstrip{display:flex;flex-wrap:wrap;gap:12px 24px;margin:2px 0 14px;padding:13px 15px;background:var(--inset);border-radius:11px}
+  .ngrstrip>div{display:flex;flex-direction:column;min-width:118px}
+  .ngrstrip .nl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .ngrstrip .nv{font-size:19px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px}
+  .ngrstrip .ns{font-size:11px;color:var(--muted);margin-top:2px}
   .lt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:9px}
   .lt .lth{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   .lt .ltn{font-size:15px;font-weight:700;color:var(--ink)}
@@ -2436,7 +2441,15 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     if(rob){var rst=WP.roster||[];
       var rrows=rst.map(function(r){var st=r.cooling?'<span style="color:var(--reduce);font-weight:600">▼ cooling'+(r.drop_pct!=null?' '+r.drop_pct+'%':'')+'</span>':'<span style="color:var(--muted)">steady</span>';
         return '<tr><td>'+r.rank+'</td><td><b>'+r.ref+'</b></td><td>'+r.tier+'</td><td>'+VSYM+fmt(r.ytd_ngr)+'</td><td>'+st+'</td></tr>';}).join('');
-      rob.innerHTML='<p class="sub2">The <b>'+rst.length+' whales</b> from the <a href="#" class="w-toabout" style="color:var(--scale);cursor:pointer">definition above</a> — each by opaque reference only (no identity). Ranked by net revenue; the <b>cooling</b> ones are the retention priority.</p>'+
+      var rs=WP.roster_stats||{};
+      var strip='<div class="ngrstrip">'+
+        '<div><span class="nl">Whale threshold</span><span class="nv">'+VSYM+fmt(d.threshold_ngr)+'</span><span class="ns">min NGR for the top 1%</span></div>'+
+        '<div><span class="nl">Combined NGR</span><span class="nv">'+vM(rs.total_ngr)+'</span><span class="ns">'+(d.ngr_share||'')+'% of all VIP value</span></div>'+
+        '<div><span class="nl">Bonus share</span><span class="nv">'+(d.bonus_share||'')+'%</span><span class="ns">they return &gt; they cost</span></div>'+
+        '<div><span class="nl">Median whale</span><span class="nv">'+VSYM+fmt(rs.median_ngr)+'</span><span class="ns">'+VSYM+fmt(rs.min_ngr)+' – '+vM(rs.max_ngr)+'</span></div>'+
+        '<div><span class="nl">Cooling</span><span class="nv">'+(rs.cooling||0)+' / '+(rs.count||0)+'</span><span class="ns">deposits slipping</span></div>'+
+      '</div>';
+      rob.innerHTML=strip+'<p class="sub2">The <b>'+rst.length+' whales</b> from the <a href="#" class="w-toabout" style="color:var(--scale);cursor:pointer">definition above</a> — each by opaque reference only (no identity). Ranked by net revenue; the <b>cooling</b> ones are the retention priority.</p>'+
         '<div class="dregwrap" style="max-height:360px;overflow-y:auto"><table class="dreg"><thead><tr><th>#</th><th>Player</th><th>Tier</th><th>YTD net revenue</th><th>Status</th></tr></thead><tbody>'+rrows+'</tbody></table></div>';}
     var nb=byId('w_notes'); if(nb) nb.innerHTML='<p class="fine">Data through 2026-08-26 (Malaysia). Player references are one-way hashes — they cannot be traced back to an identity.</p>';
     var trl=document.querySelector('#w_meta .w-toroster');

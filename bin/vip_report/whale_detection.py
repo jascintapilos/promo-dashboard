@@ -88,9 +88,20 @@ for i, m in enumerate(whales):
                    "ytd_ngr": round(m["ytd_ngr"]), "cooling": cooling_m,
                    "drop_pct": round((1 - h2 / h1) * 100) if cooling_m else None})
 assert all("member" not in r for r in roster), "roster must not carry raw member ids"
+ngrs = sorted(r["ytd_ngr"] for r in roster)
+roster_stats = {
+    "count": len(roster),
+    "total_ngr": sum(ngrs),
+    "median_ngr": ngrs[len(ngrs) // 2] if ngrs else 0,
+    "min_ngr": min(ngrs) if ngrs else 0,
+    "max_ngr": max(ngrs) if ngrs else 0,
+    "cooling": sum(1 for r in roster if r["cooling"]),
+    "program_total_ngr": round((prog := j.get("program", {})).get("total_ytd_ngr", 0)),
+}
 
 j["whale_pillar"] = {
-    "definition": definition, "roster": roster, "cooling": cooling, "rising": rising,
+    "definition": definition, "roster": roster, "roster_stats": roster_stats,
+    "cooling": cooling, "rising": rising,
     "downside": downside, "reinvest": reinvest, "decision": decision,
     "basis": "Detection layer over existing VIP data; opaque refs only; reinvest is directional/holdout-gated.",
 }
