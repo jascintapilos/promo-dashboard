@@ -67,10 +67,10 @@ decision = {
                 "its own decision: protect the top, retain the cooling, grow the rising, and test before "
                 "scaling.").format(s=whale.get("top10pct_ngr_share")),
     "moves": [
-        {"move": "Protect the top — don't cut", "why": "catastrophic downside; a few defections erase years of savings", "type": "floor"},
-        {"move": "Retain the cooling", "why": "{n} at risk, {r} NGR slipping".format(n=whale.get("value_at_risk_members"), r=whale.get("value_at_risk_ngr")), "type": "floor"},
-        {"move": "Grow the rising pipeline", "why": "climbers get more bonus AND return more", "type": "band"},
-        {"move": "Test before scaling reinvestment", "why": "the retention read is directional, not proven", "type": "band"},
+        {"move": "Protect the top — don't cut", "why": "the top handful hold years of value; one lost to a wrong cut is unrecoverable", "type": "floor"},
+        {"move": "Retain the cooling", "why": "{n} whales slipping, {r} of net revenue at stake".format(n=whale.get("value_at_risk_members"), r="RM{:,}".format(whale.get("value_at_risk_ngr") or 0)), "type": "floor"},
+        {"move": "Grow the rising pipeline", "why": "climbers get more bonus AND return more — funding growth pays", "type": "band"},
+        {"move": "Test before scaling the reinvestment", "why": "keep-them is unproven observationally; the holdout decides it", "type": "band"},
     ],
 }
 
