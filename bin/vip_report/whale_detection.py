@@ -154,12 +154,15 @@ efficiency = {
     "pending": "Real 30/60/90-day forward efficiency lands with the deposit + forward-NGR pull (P2).",
 }
 
+reach_cool = sum(1 for r in roster if r.get("reachable") and r.get("cooling"))
+cool_gone = sum(1 for r in roster if r.get("cooling") and not r.get("reachable"))
 counts_reconciliation = (
-    "Whales = the top 1% ({w} players). Of them, {c} are cooling and {r} are still reachable — we picked "
-    "the top {n} to focus on this week. (Separately, the \"{ar} players cooling\" / at-risk figures elsewhere "
-    "count the wider top 10%, a broader group than the {w} whales.)"
-).format(w=definition.get("count"), c=cooling.get("cooling"),
-         r=save_list.get("total_reachable"), n=len(save_list.get("rows", [])),
+    "Whales = the top 1% ({w} players). {c} are cooling (deposits down vs the first half); {rc} of those are "
+    "still <b>reachable</b> — active recently or still depositing — while ~{cg} look already gone. The save-list "
+    "is the top {n} of the {r} whales still worth a save. (Separately, the \"{ar} players cooling\" figure "
+    "elsewhere counts the wider top 10%, a broader group than the {w} whales.)"
+).format(w=definition.get("count"), c=cooling.get("cooling"), rc=reach_cool, cg=cool_gone,
+         n=len(save_list.get("rows", [])), r=save_list.get("total_reachable"),
          ar=cooling.get("at_risk_members"))
 
 j["whale_pillar"] = {

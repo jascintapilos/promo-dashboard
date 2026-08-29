@@ -591,7 +591,7 @@
     <div class="soon" id="r_soon"></div>
   </div>
   <div class="panel" id="panel-vip" hidden>
-    <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">read this first</span></div><div id="v_decisionBox"></div></div>
+    <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">the call · Cut / Hold / Test</span></div><div id="v_decisionBox"></div></div>
     <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Why protect, not cut</h3><span class="hint">how few defections wipe a saving</span></div><div id="v_costWrong"></div></div>
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
     <div class="card col12" id="vipTrendDecompCard"><div class="card-h"><h3>Why VIP performance is sliding</h3><span class="hint">what's dragging it · cost of inaction</span></div><div id="v_trendDecomp"></div></div>
@@ -2399,7 +2399,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +abrow('What this pillar does','<b>Detect</b> — who is a whale, who is <b>cooling</b> (deposits slipping), and who is <b>rising</b> toward whale status — then <b>decide</b> the whale-specific marketing: protect the top, retain the cooling, grow the rising.')
       +abrow('How we judge it','Not on bonus-ROI. The real question is <b>whether our spend actually keeps them</b> — and the <b>catastrophic downside</b> if a cut is wrong (a few defections erase years of savings). So whales get their own decision, apart from the general VIP rules.')
       +abrow('Good to know','The "does the bonus keep them" read is <b>directional — the holdout is the proof</b>. Players are shown by an <b>opaque reference only</b>, never a name or ID.')
-      +abrow('Plain-English key','<b>Net revenue (NGR)</b> — what the house keeps from a player’s play after their bonuses (the same measure throughout; sometimes shown as "VIP value"). <b>Holdout</b> — a group we deliberately give <b>no</b> bonus, so if they stay anyway we know the bonus wasn’t what kept them (the only real proof). <b>Directional</b> — a strong hint, not proof. <b>Tiers</b> — the VIP ladder (Silver, Gold, Platinum, Diamond at the top). <b>Cooling</b> — deposits dropping in the second half of the year vs the first.'),
+      +abrow('Plain-English key','<b>Net revenue (NGR)</b> — what the house keeps from a player’s play after their bonuses (the same measure throughout; sometimes shown as "VIP value"). <b>Holdout</b> — a group we deliberately give <b>no</b> bonus, so if they stay anyway we know the bonus wasn’t what kept them (the only real proof). <b>Directional</b> — a strong hint, not proof. <b>Tiers</b> — the VIP ladder (Silver, Gold, Platinum, Diamond at the top). <b>Cooling</b> — deposits dropping in the second half of the year vs the first. <b>YTD</b> — year-to-date. <b>BO</b> — the Back Office system (where the real player identities live). <b>HOD / CRM</b> — Head of Department / the customer-relations team (the owning teams).'),
   };
   // merge the four-group scorecard (summary + verdict tally) into the "four groups" definitions card (v_rules)
   (function(){
@@ -2414,8 +2414,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_portfolio')),
     cardSec(byId('s_trendCard')),
     cardSec(cardById('s_frontier')),
-    cardSec(cardById('s_confidence')),
     cardSec(cardById('s_ledger')),
+    cardSec(cardById('s_confidence')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
   ]);
@@ -2451,7 +2451,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     var eb=byId('w_eff'), EF=WP.efficiency||{};
     if(eb){eb.innerHTML=
       '<p class="sub2">Are we funding the right whales? A quick read of return-per-bonus crossed with risk — the <b>real 30/60/90-day view is the decision-grade metric and lands with the deposit pull</b>.</p>'+
-      '<div class="ngrstrip"><div><span class="nl">Median return / bonus RM</span><span class="nv">'+VSYM+(EF.median_ngr_per_bonus_rm||0)+'</span></div><div><span class="nl">Over-fed &amp; steady</span><span class="nv" style="color:var(--gold)">'+(EF.over_fed_steady||0)+'</span><span class="ns">trim candidates</span></div><div><span class="nl">Under-attended &amp; cooling</span><span class="nv" style="color:var(--scale)">'+(EF.under_attended_cooling||0)+'</span><span class="ns">fund these</span></div></div>'+
+      '<div class="ngrstrip"><div><span class="nl">Median return per RM1 of bonus</span><span class="nv">'+VSYM+(EF.median_ngr_per_bonus_rm||0)+'</span></div><div><span class="nl">Look over-funded</span><span class="nv" style="color:var(--gold)">≈'+(EF.over_fed_steady||0)+'</span><span class="ns">low-risk, above-median bonus</span></div><div><span class="nl">Look under-funded</span><span class="nv" style="color:var(--scale)">≈'+(EF.under_attended_cooling||0)+'</span><span class="ns">cooling, below-median bonus</span></div></div>'+
       '<div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div><b>Placeholder.</b> '+(EF.pending||'')+' Today this is a single YTD ratio; the read that actually decides funding is <b>whether a whale\'s bonus pays back over 30 → 60 → 90 days</b> — that needs the forward-NGR pull.</div></div>';}
     var rb=byId('w_rising');
     if(rb){var c2=ri.climbers||{}, hg=ri.held_grp||{};
@@ -2497,72 +2497,71 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
     leadSec('Main findings',[byId('w_meta')]),
     leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
-    cardSec(byId('w_decisionCard')),
-    cardSec(byId('w_saveListCard')),
-    cardSec(cardById('v_whale')),
-    cardSec(byId('w_rosterCard')),
-    cardSec(byId('vipWhaleCard')),
-    cardSec(byId('w_risingCard')),
-    cardSec(byId('w_reinvestCard')),
-    cardSec(byId('w_effCard')),
-    cardSec(byId('vipCostWrongCard')),
+    cardSec(cardById('v_whale')),           // Where value concentrates (concept, before the call)
+    cardSec(byId('w_rosterCard')),          // The 74 whales
+    cardSec(byId('vipWhaleCard')),          // At-risk ledger (before the save-list it feeds)
+    cardSec(byId('w_saveListCard')),        // Save-list (ranked filter of the ledger)
+    cardSec(byId('w_decisionCard')),        // The whale call (decision, after concept + evidence)
+    cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
+    cardSec(byId('w_risingCard')),          // Rising
+    cardSec(byId('w_reinvestCard')),        // Does the bonus keep them?
+    cardSec(byId('w_effCard')),             // Is the bonus spend working?
     plainSec(byId('w_notes'),'Notes'),
   ]);
   buildPanel('panel-acquisition',[
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
     leadSec('Key numbers',[byId('kpis')]),
-    cardSec(byId('acqParetoCard')),
-    cardSec(cardById('ruleLines')),
-    cardSec(cardById('chartBars')),
-    cardSec(cardById('chartScatter')),
-    cardSec(cardById('chartMech')),
-    cardSec(byId('acqSweetCard')),
-    cardSec(byId('acqDepoCard')),
-    cardSec(cardById('chartTrend')),
-    cardSec(cardById('tbl')),
-    cardSec(byId('acqFunnelCard')),
+    cardSec(cardById('ruleLines')),          // rules before results
+    cardSec(cardById('chartBars')),          // cost per FTD (simplest evidence)
+    cardSec(cardById('chartScatter')),       // cost vs coming back
+    cardSec(cardById('chartMech')),          // by bonus type
+    cardSec(byId('acqDepoCard')),            // deposit-split (concept, before sweet spot)
+    cardSec(byId('acqSweetCard')),           // sweet spot
+    cardSec(cardById('chartTrend')),         // new depositors by month
+    cardSec(byId('acqFunnelCard')),          // claim→deposit leakage
+    cardSec(byId('acqParetoCard')),          // is the headline real? (robustness capstone, late)
+    cardSec(cardById('tbl')),                // decision table (reference)
     plainSec(qP('panel-acquisition','.notes'),'Notes'),
   ]);
   buildPanel('panel-retention',[
     htmlSec("What Retention is — and how it's judged", ABOUT.retention),
     leadSec('Main findings',[byId('r_meta'),byId('retSweetSummary'),qP('panel-retention','.call')]),
     leadSec('Key numbers',[byId('r_kpis')]),
-    cardSec(byId('retLifecycleCard')),
-    cardSec(byId('retIncrCard')),
-    cardSec(byId('retDepoCard')),
-    cardSec(byId('retSurvivalCard')),
-    cardSec(cardById('r_ruleLines')),
-    cardSec(cardById('r_chartNgr')),
-    cardSec(cardById('r_chartQuad')),
-    cardSec(cardById('r_chartTier')),
-    cardSec(cardById('r_chartGrid')),
-    cardSec(byId('retSweetTierCard')),
-    cardSec(cardById('r_tbl')),
+    cardSec(byId('retDepoCard')),            // deposit-split (concept, up front)
+    cardSec(cardById('r_ruleLines')),        // rules before results
+    cardSec(byId('retLifecycleCard')),       // who the money reaches (lifecycle)
+    cardSec(byId('retSurvivalCard')),        // does the value last? (60/90)
+    cardSec(byId('retIncrCard')),            // extra returns / incrementality (abstract)
+    cardSec(cardById('r_chartNgr')),         // net rev per RM by promo
+    cardSec(cardById('r_chartQuad')),        // money × retention
+    cardSec(cardById('r_chartGrid')),        // bonus type × tier GRID (before the tier card that refs it)
+    cardSec(cardById('r_chartTier')),        // by player tier
+    cardSec(byId('retSweetTierCard')),       // sweet spot by tier
+    cardSec(cardById('r_tbl')),              // decision table (reference)
     plainSec(byId('r_notes'),'Notes'),
     plainSec(byId('r_soon'),null),
   ]);
   buildPanel('panel-vip',[
-    // ── THE ANSWERS — what the analysis found ──
-    cardSec(byId('vipDecisionBox')),        // read-this-first: verdict + hero number + Cut/Hold/Test
-    htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // method leads
+    // ── ORIENT → CORE CONCEPTS → EVIDENCE → THE CALL (basics-first) ──
+    htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // orient first (a decision needs an object)
     leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
-    cardSec(byId('vipCoverageCard')),      // who carries whom — does the loss keep the big players (cross-subsidy)
-    cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier — size × type × tier
-    cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit — the biggest money split
-    cardSec(byId('vipWhaleSummaryCard')),  // condensed whale summary — full depth in the Big-player detection tab
-    cardSec(byId('vipReallocCard')),       // what the reinvestment is worth — return on moving money
+    leadSec('Key numbers',[byId('v_kpis')]),                                 // lifted up — the KPI baseline
+    cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
+    cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
+    cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
+    cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
+    cardSec(byId('vipWhaleSummaryCard')),  // whales — the big players (concept, before cross-subsidy)
+    cardSec(byId('vipDecisionBox')),       // the decision — verdict + Cut/Hold/Test (after the evidence)
     cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when
-    // ── NEED TO KNOW — supporting detail (lighter on insight) ──
-    htmlSec('Need to know — supporting detail', '<p class="lead">The answers are above. Everything below is supporting detail and reference — the method in full, the four groups and lanes behind the verdict, and the secondary analyses.</p>'),
-    leadSec('Key numbers',[byId('v_kpis')]),
-    cardSec(cardById('v_rules')),          // the four groups + scorecard
-    ...laneSecs(),                          // the four lanes A/B/D/C
-    cardSec(byId('vipTrendDecompCard')),   // why VIP performance is sliding — decomposition + projection
+    // ── DEEPER ANALYSES & REFERENCE ──
+    htmlSec('Need to know — supporting detail', '<p class="lead">Above is the core story and the call. Below: the four lanes in full, the deeper program-wide analyses, monitoring and reference.</p>'),
+    ...laneSecs(),                          // the four lanes A/B/D/C (the four-groups detail)
+    cardSec(byId('vipCoverageCard')),      // who carries whom — cross-subsidy (needs the whales concept above)
+    cardSec(byId('vipReallocCard')),       // what the reinvestment is worth
+    cardSec(byId('vipTrendDecompCard')),   // why VIP performance is sliding
     cardSec(byId('vipGgrCard')),           // where the bonus eats the margin
-    // (retired: vipSizingCard + v_sweetCard — consolidated into "The bonus sweet spot by tier")
-    cardSec(cardById('v_fund')),           // funding balance by tier
-    cardSec(byId('vipTierCard')),          // tier migration
+    cardSec(byId('vipTierCard')),          // are we growing players up the tiers?
     cardSec(byId('vipOperatingCard')),     // running it monthly — baseline, watchlist, tracker
     cardSec(byId('vipFarmCard')),          // bonus-farming watch
     cardSec(byId('vipScopeCard')),         // scope & compliance flags (MY-only, RG, VM incentive)
