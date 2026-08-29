@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Emit the `whale_pillar` block into vip-metrics-MY.json.
+
+Powers the Big-player detection tab (detect + decide). Reads ONLY existing
+blocks in vip-metrics-MY.json — no pulls. The detailed cards (concentration,
+at-risk ledger, cost-of-being-wrong, reinvest) are RELOCATED into the tab in the
+template; this block supplies the detection layer + the whale decision stance.
+
+Run: python bin/vip_report/whale_detection.py
+"""
+import json, os
+
+SCR = os.environ.get(
+    "VIP_SCR",
+    "C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/"
+    "879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad",
+)
+PATH = os.path.join(SCR, "vip", "vip-metrics-MY.json")
+
+j = json.load(open(PATH, encoding="utf-8"))
+whale = (j.get("program", {}) or {}).get("whale", {}) or {}
+wl = j.get("whale_ledger", {}) or {}
+wsum = wl.get("summary", {}) or {}
+tm = j.get("tier_migration", {}) or {}
+be = (j.get("decision", {}) or {}).get("breakeven", []) or []
+cprw = (j.get("reallocation", {}) or {}).get("cost_per_retained_whale", {}) or {}
+
+# ---- DETECT ---------------------------------------------------------------
+definition = {
+    "rule": "A whale = a top-1% VIP by net revenue.",
+    "threshold_ngr": wsum.get("whale_threshold_ngr"),
+    "count": whale.get("top1pct_members"),
+    "ngr_share": whale.get("top1pct_ngr_share"),
+    "bonus_share": whale.get("top1pct_bonus_share"),
+    "top10_ngr_share": whale.get("top10pct_ngr_share"),
+}
+cooling = {
+    "cooling": wsum.get("cooling"), "of_top1pct": wsum.get("whales"),
+    "at_risk_members": whale.get("value_at_risk_members"),
+    "at_risk_ngr": whale.get("value_at_risk_ngr"),
+    "watchlist": [{"ref": m.get("ref"), "tier": m.get("tier"), "ytd_ngr": m.get("ytd_ngr"),
+                   "drop_pct": m.get("drop_pct"), "signal": m.get("signal")}
+                  for m in (wl.get("members", []) or []) if (m.get("drop_pct") or 0) > 0],
+    "rule": "Cooling = a top whale whose 2nd-half deposits dropped vs the 1st half.",
+}
+by_end = {e["tier"]: e for e in (tm.get("by_end_tier", []) or [])}
+rising = {
+    "into_platinum": (by_end.get("Platinum", {}) or {}).get("climbed_in"),
+    "into_diamond": (by_end.get("Diamond", {}) or {}).get("climbed_in"),
+    "climbers": tm.get("climbers", {}), "held_grp": tm.get("held_grp", {}),
+    "rule": "Rising = members who climbed a tier this period (toward whale status).",
+}
+
+# ---- ECONOMICS (summary; full cards are relocated into the tab) -----------
+downside = {"breakeven": [b for b in be if b.get("tier") in ("Diamond", "Platinum")]}
+reinvest = {
+    "delta": cprw.get("delta"), "treated_share_pct": cprw.get("treated_share_pct"),
+    "n_treated": cprw.get("n_treated"), "n_untreated": cprw.get("n_untreated"),
+    "control_confidence": cprw.get("control_confidence"),
+    "signal": cprw.get("signal"),
+    "gated_on": cprw.get("gated_on"),
+}
+
+# ---- DECIDE (the whale-specific marketing stance) -------------------------
+decision = {
+    "verdict": ("Whales are the top ~1% of VIPs and about {s}% of all VIP value — so their marketing is "
+                "its own decision: protect the top, retain the cooling, grow the rising, and test before "
+                "scaling.").format(s=whale.get("top10pct_ngr_share")),
+    "moves": [
+        {"move": "Protect the top — don't cut", "why": "catastrophic downside; a few defections erase years of savings", "type": "floor"},
+        {"move": "Retain the cooling", "why": "{n} at risk, {r} NGR slipping".format(n=whale.get("value_at_risk_members"), r=whale.get("value_at_risk_ngr")), "type": "floor"},
+        {"move": "Grow the rising pipeline", "why": "climbers get more bonus AND return more", "type": "band"},
+        {"move": "Test before scaling reinvestment", "why": "the retention read is directional, not proven", "type": "band"},
+    ],
+}
+
+j["whale_pillar"] = {
+    "definition": definition, "cooling": cooling, "rising": rising,
+    "downside": downside, "reinvest": reinvest, "decision": decision,
+    "basis": "Detection layer over existing VIP data; opaque refs only; reinvest is directional/holdout-gated.",
+}
+json.dump(j, open(PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+
+print(f"whale_pillar written -> {PATH}")
+print(f"  DETECT: {definition['count']} whales (top-1%, >= RM{definition['threshold_ngr']:,}), {definition['ngr_share']}% of +NGR, top-10% = {definition['top10_ngr_share']}%")
+print(f"  COOLING: {cooling['cooling']}/{cooling['of_top1pct']} top whales, {cooling['at_risk_members']} at risk / RM{cooling['at_risk_ngr']:,}, watchlist {len(cooling['watchlist'])} (opaque)")
+print(f"  RISING: into Platinum {rising['into_platinum']} / Diamond {rising['into_diamond']}; climbers med bonus {rising['climbers'].get('med_bonus')} vs held {rising['held_grp'].get('med_bonus')}")
+print(f"  DECIDE: {len(decision['moves'])} moves")

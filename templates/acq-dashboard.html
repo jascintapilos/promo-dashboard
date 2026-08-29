@@ -404,7 +404,7 @@
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Big-player detection <span class="badge">soon</span></button>
+    <button class="tab" data-tab="whale">Big-player detection</button>
     <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
@@ -610,6 +610,7 @@
       <div id="vipWhaleTbl"></div>
       <div id="vipWhaleNote" class="fine" style="margin-top:10px"></div>
     </div>
+    <div class="card col12" id="vipWhaleSummaryCard" style="margin-top:15px"><div class="card-h"><h3>Whales — the big players</h3><span class="hint">summary · full analysis in the Big-player detection tab</span></div><div id="v_whaleSummary"></div></div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Decision register</h3><span class="hint">who · how · when · RM</span></div><div id="v_moves"></div></div>
     <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The simple rule: VIP bonus money <b>makes money as a cheap game reward</b> (mini-game or check-in) and <b>gives money away as big no-deposit free-credit</b> — a giveaway meant to pull deposits in, judged on deposits attracted, not net revenue. In the table below, each bonus is filed by the <b>actual amount paid out</b> — so a promo that can pay "up to RM15,500" shows its big payouts, not just its average. Cheap rewards make money at every size; big free-credit runs negative on net revenue by design — and the higher the player's tier, the more the cheap rewards pay.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × amount paid out <span style="font-weight:400;color:var(--muted);font-size:12px">profit for every RM1 given · each payout in its real size · green makes money, red loses</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
     <div class="card col12" id="vipSizingCard" style="margin-top:15px">
@@ -679,7 +680,12 @@
     <div class="soon" id="v_soon"></div>
   </div>
   <div class="panel" id="panel-whale" hidden>
-    <div class="placeholder"><span class="ptag">Queued</span><h3>Big-player detection</h3><p>Promos used to find and grow high-value players. Built after the core pillars.</p></div>
+    <div class="meta" id="w_meta"></div>
+    <section class="kpis" id="w_kpis"></section>
+    <div class="card col12" id="w_decisionCard"><div class="card-h"><h3>The whale call</h3><span class="hint">protect · retain · grow · test</span></div><div id="w_decision"></div></div>
+    <div class="card col12" id="w_risingCard" style="margin-top:15px"><div class="card-h"><h3>Rising — growing toward whale</h3><span class="hint">climbers this period</span></div><div id="w_rising"></div></div>
+    <div class="card col12" id="w_reinvestCard" style="margin-top:15px"><div class="card-h"><h3>Does the bonus actually keep them?</h3><span class="hint">the core question · directional</span></div><div id="w_reinvest"></div></div>
+    <div class="notes" id="w_notes"></div>
   </div>
   <div class="panel" id="panel-branding" hidden>
     <div class="placeholder"><span class="ptag">Different shape</span><h3>Branding</h3><p>Production, ambassador and sponsorship spend — brand-marketing, not player giveaways. This pillar's spend lives outside the promo-code system, so it needs a separate data source and a different layout.</p></div>
@@ -1530,11 +1536,7 @@ function renderVIP(){
     var lr=li.map(function(x){return '<tr><td>'+x.label+'</td><td><b>'+fmtInd(x)+'</b></td><td class="dregrisk">Δ next month</td><td class="dregrisk">'+(x.good||'')+'</td></tr>';}).join('');
     var trk=mt.map(function(x){return '<tr><td>'+x.action+'</td><td>'+x.watch+'</td><td>'+(x.baseline==null?'—':x.baseline)+'</td><td>'+TBC+'</td></tr>';}).join('');
     box.innerHTML=
-      '<p class="sub2">Turns this one-off snapshot into a monthly rhythm: a locked baseline (as of '+(bl.as_of||'')+'), the few numbers to watch, and the specific whales to act on now.</p>'+
-      '<h4 class="rsub">Whale-slip watchlist <span class="fbadge band">ACT NOW</span></h4>'+
-      '<div class="varbox" style="margin-bottom:8px"><span class="ico">◆</span><div><b>'+(ws.cooling_top1pct||'')+' of '+(ws.top1pct_total||'')+'</b> top whales are cooling; <b>'+(ws.at_risk_members_all||'')+'</b> at risk overall ('+vM(ws.at_risk_ngr_all)+' NGR). '+(ws.rule||'')+'</div></div>'+
-      '<div class="dregwrap"><table class="dreg"><thead><tr><th>Player</th><th>Tier</th><th>YTD NGR</th><th>Deposit drop</th><th>Signal</th></tr></thead><tbody>'+wr+'</tbody></table></div>'+
-      '<p class="fine">Players shown by opaque ref (no names or ids). Top '+(ws.shown||0)+' by value; full at-risk cohort is '+(ws.at_risk_members_all||'')+'.</p>'+
+      '<p class="sub2">Turns this one-off snapshot into a monthly rhythm: a locked baseline (as of '+(bl.as_of||'')+'), the few numbers to watch, and the moves to track. The <b>whale-slip watchlist</b> (who to act on now) lives in the <b>Big-player detection</b> tab.</p>'+
       '<h4 class="rsub">Watch these each month</h4>'+
       '<div class="dregwrap"><table class="dreg"><thead><tr><th>Indicator</th><th>Now</th><th>Change</th><th>Good direction</th></tr></thead><tbody>'+lr+'</tbody></table></div>'+
       '<h4 class="rsub">Move tracker — did the actions work?</h4>'+
@@ -1595,9 +1597,7 @@ function renderVIP(){
       '<div class="dregwrap"><table class="dreg"><thead><tr><th>Climbed into</th><th>Players</th><th>Median bonus</th><th>Median NGR</th></tr></thead><tbody>'+funnelRows+'</tbody></table></div>'+
       '<h4 class="rsub">Weekly Rescue — perk right-sizing, not a cut</h4>'+
       '<p class="fine">'+(rr.note||'')+'</p>'+
-      '<h4 class="rsub">What keeping a slipping whale is worth <span class="fbadge band">DIRECTIONAL</span></h4>'+
-      '<div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div>'+(cw.signal||'')+
-        '<div class="dregrisk" style="margin-top:6px">Slipping whales '+(cw.n_slipping_whales||0)+' · treated '+(cw.n_treated||0)+' (kept '+Math.round((cw.treated_retention||0)*100)+'%) vs untreated '+(cw.n_untreated||0)+' (kept '+Math.round((cw.untreated_retention||0)*100)+'%). Illustrative recoverable NGR '+vM(tu.recoverable_ngr_directional||0)+' — <b>not bankable</b> until the holdout. '+(cw.caveat||'')+'</div></div></div>';
+      '<p class="fine" style="margin-top:12px"><b>Does keeping the bonus keep the whale?</b> That retention read now lives in the <b>Big-player detection</b> tab (directional, holdout-gated) — alongside the whale detection, at-risk ledger and cost-of-being-wrong.</p>';
   })();
   (function(){
     var box=document.getElementById('v_moves'); if(!box) return;
@@ -2385,6 +2385,11 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +abrow('Measured against what','The "extra" is a <b>before-vs-after</b> comparison. <b>Net revenue</b> = house winnings from the player\'s play <b>minus the bonus</b>. The <b>extra</b> is that net revenue in the <b>7 days after</b> the bonus, minus the player\'s <b>own normal level in the 14 days before</b> it. So "<b>+RM0.07 per RM1</b>" means the bonus drove that much <b>on top of what the player was already doing</b> — every verdict is measured against the player themselves, not against zero.')
       +abrow('Why this way','A single score would flatter or punish the wrong thing — a birthday gift is not meant to make money, and a money-back promo is not a growth play. Judging each job on its own is the only honest read.')
       +abrow('Good to know','Because the baseline is the player\'s <b>own recent history</b>, anything else that changed in those two weeks is mixed in, and it is only a 7-day window — so it is a <b>directional read, not proof</b>. A controlled test (a holdout) is the proof step before cutting anything big.'),
+    whale:`<p class="lead">Big-player detection is about the <b>whales</b> — the handful of top players who carry most of the value — so their marketing can be decided on its own.</p>`
+      +abrow('What counts as a whale','The <b>top 1% of VIPs by net revenue</b> — about <b>74 players</b>, each worth roughly <b>RM112,721+</b> in net revenue a year. They carry <b>34% of all positive net revenue</b>, and the top 10% carry <b>75%</b>. A thin slice holds up the whole book.')
+      +abrow('What this pillar does','<b>Detect</b> — who is a whale, who is <b>cooling</b> (deposits slipping), and who is <b>rising</b> toward whale status — then <b>decide</b> the whale-specific marketing: protect the top, retain the cooling, grow the rising.')
+      +abrow('How we judge it','Not on bonus-ROI. The real question is <b>whether our spend actually keeps them</b> — and the <b>catastrophic downside</b> if a cut is wrong (a few defections erase years of savings). So whales get their own decision, apart from the general VIP rules.')
+      +abrow('Good to know','The "does the bonus keep them" read is <b>directional — the holdout is the proof</b>. Players are shown by an <b>opaque reference only</b>, never a name or ID.'),
   };
   // merge the four-group scorecard (summary + verdict tally) into the "four groups" definitions card (v_rules)
   (function(){
@@ -2403,6 +2408,49 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_ledger')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
+  ]);
+  // ===== Big-player detection (whale) tab — standard pillar template =====
+  (function(){
+    if(typeof VIP==='undefined'||!VIP.whale_pillar) return;
+    var WP=VIP.whale_pillar, d=WP.definition||{}, cl=WP.cooling||{}, ri=WP.rising||{}, rv=WP.reinvest||{}, dec=WP.decision||{};
+    var wm=byId('w_meta'); if(wm) wm.innerHTML='<p class="lead">'+(dec.verdict||'')+'</p>';
+    var kbox=byId('w_kpis');
+    if(kbox){[
+      ['Whales (top 1%)', d.count!=null?d.count.toLocaleString():'—', (d.ngr_share||'')+'% of net revenue', true, true],
+      ['Cooling now', (cl.cooling!=null?cl.cooling:'—')+' / '+(cl.of_top1pct||''), 'deposits slipping', true, false],
+      ['Net revenue at risk', cl.at_risk_ngr!=null?vM(cl.at_risk_ngr):'—', (cl.at_risk_members||'')+' players cooling', false, false],
+      ['Rising toward whale', ((ri.into_platinum||0)+(ri.into_diamond||0)).toLocaleString(), 'into Platinum / Diamond', false, false]
+    ].forEach(function(k){var e=document.createElement('div');e.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');e.innerHTML=(k[4]?'<span class="keytag">Key metric</span>':'')+'<span class="eyebrow">'+k[0]+'</span><div class="v">'+k[1]+'</div><div class="foot">'+k[2]+'</div>';kbox.append(e);});}
+    var db=byId('w_decision');
+    if(db){var mv=(dec.moves||[]).map(function(m){var b='<span class="fbadge '+(m.type==='floor'?'floor':'band')+'">'+(m.type==='floor'?'DO NOW':'PROVE FIRST')+'</span>';
+      return '<tr><td><b>'+m.move+'</b></td><td>'+m.why+'</td><td>'+b+'</td><td><span style="color:var(--muted)">(TBC)</span></td></tr>';}).join('');
+      db.innerHTML='<p class="sub2">'+(dec.verdict||'')+'</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owners &amp; dates TBC — confirm before this goes to the CEO.</p>';}
+    var rb=byId('w_rising');
+    if(rb){var c2=ri.climbers||{}, hg=ri.held_grp||{};
+      rb.innerHTML='<div class="varbox"><span class="ico">◆</span><div>Members who <b>climbed a tier</b> got more bonus AND returned more than those who held (median bonus '+VSYM+fmt(c2.med_bonus)+' vs '+VSYM+fmt(hg.med_bonus)+', median NGR '+VSYM+fmt(c2.med_ngr)+' vs '+VSYM+fmt(hg.med_ngr)+') — so the pipeline into whale status is <b>real and worth feeding</b>. This period, <b>'+(ri.into_platinum||0)+'</b> climbed into Platinum and <b>'+(ri.into_diamond||0)+'</b> into Diamond.</div></div>';}
+    var rvb=byId('w_reinvest');
+    if(rvb){rvb.innerHTML='<div class="varbox" style="border-color:var(--gold)"><span class="ico">◆</span><div><b>This is the question that matters most — and we cannot answer it observationally yet.</b> '+(rv.signal||'')+'<div class="dregrisk" style="margin-top:6px">Treated '+(rv.n_treated||0)+' vs untreated '+(rv.n_untreated||0)+' slipping whales — barely any control group. The holdout is the proof step ('+(rv.gated_on||'')+').</div></div></div>';}
+    var nb=byId('w_notes'); if(nb) nb.innerHTML='<p class="fine">Whale = top-1% by net revenue; opaque refs only, member-level detail stays out of the report. The "does the bonus keep them" read is directional — the holdout is the proof.</p>';
+    // condensed whale summary in the VIP tab (depth lives in the whale tab)
+    var sb=byId('v_whaleSummary');
+    if(sb){sb.innerHTML=
+      '<p class="sub2">The top <b>~1% of VIPs are whales</b> — about '+(d.count||'')+' players carrying <b>'+(d.top10_ngr_share||75)+'% of VIP value</b> (top 10%). They hold up the whole book and carry all the downside, so <b>protect-don\'t-cut</b> is the rule.</p>'+
+      '<div class="varbox"><span class="ico">◆</span><div><b>'+(cl.cooling||'')+' of '+(cl.of_top1pct||'')+'</b> top whales are cooling and <b>'+(cl.at_risk_ngr!=null?vM(cl.at_risk_ngr):'—')+'</b> of net revenue is slipping. The real question — <b>does the bonus actually keep them?</b> — is still unproven (they mostly stay anyway). Full detection, the at-risk watchlist, the cost-of-being-wrong and the retention read live in the <b>Big-player detection</b> tab.</div></div>'+
+      '<p class="fine" style="margin-top:10px"><a href="#" class="whalelink" style="color:var(--scale);font-weight:600;cursor:pointer">Open the Big-player detection tab →</a></p>';
+      var a=sb.querySelector('.whalelink'); if(a) a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('[data-tab="whale"]'); if(t) t.click(); window.scrollTo(0,0);});
+    }
+  })();
+  buildPanel('panel-whale',[
+    htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
+    leadSec('Main findings',[byId('w_meta')]),
+    leadSec('Key numbers',[byId('w_kpis')]),
+    cardSec(byId('w_decisionCard')),
+    cardSec(cardById('v_whale')),
+    cardSec(byId('vipWhaleCard')),
+    cardSec(byId('w_risingCard')),
+    cardSec(byId('vipCostWrongCard')),
+    cardSec(byId('w_reinvestCard')),
+    plainSec(byId('w_notes'),'Notes'),
   ]);
   buildPanel('panel-acquisition',[
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
@@ -2446,9 +2494,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('vipCoverageCard')),      // who carries whom — does the loss keep the big players (cross-subsidy)
     cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier — size × type × tier
     cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit — the biggest money split
-    cardSec(cardById('v_whale')),          // where value concentrates
-    cardSec(byId('vipWhaleCard')),         // at-risk whale ledger
-    cardSec(byId('vipCostWrongCard')),     // cost of being wrong — whale break-even
+    cardSec(byId('vipWhaleSummaryCard')),  // condensed whale summary — full depth in the Big-player detection tab
     cardSec(byId('vipReallocCard')),       // what the reinvestment is worth — return on moving money
     cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when
     // ── NEED TO KNOW — supporting detail (lighter on insight) ──
