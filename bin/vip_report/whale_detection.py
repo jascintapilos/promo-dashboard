@@ -76,6 +76,9 @@ decision = {
 
 # ---- ROSTER: the full top-1% whale list (opaque refs, same hash as whale_ledger) ----
 led = json.load(open(os.path.join(SCR, "vip", "member-ledger-MY.json"), encoding="utf-8"))
+# Grain B forward outcomes (per member) — the P2 pull; keyed by member id (stays local, never emitted)
+fwd_by_m = {r["member"]: r for r in json.load(
+    open(os.path.join(SCR, "vip", "forward-outcomes-member-MY.json"), encoding="utf-8"))}
 ref = lambda x: hashlib.sha1(str(x).encode()).hexdigest()[:6].upper()   # matches whale_ledger.py
 norm_tier = lambda t: (t or "").replace(" (Trial)", "").strip()
 n_whale = definition.get("count") or 74
@@ -100,6 +103,7 @@ def _clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 roster = []
+whale_eff = []   # parallel to roster, NO member ids — forward economics for the efficiency block
 for i, m in enumerate(whales):
     h1, h2 = (m.get("dep_h1", 0) or 0), (m.get("dep_h2", 0) or 0)
     cooling_m = h1 > 0 and h2 < h1
@@ -110,6 +114,14 @@ for i, m in enumerate(whales):
     reachable = band != "Low" and (dorm < 45 or h2 > 0)
     ytd = round(m["ytd_ngr"])
     bonus = m.get("vip_bonus", 0) or 0
+    # real forward efficiency (grain B): net revenue per RM of bonus in the 30/60/90d after first claim
+    fb = fwd_by_m.get(m["member"])
+    def _eff(w):
+        return round(fb["fwd_ngr_%d" % w] / max(bonus, 1), 2) if (fb and fb.get("mature_%d" % w)) else None
+    whale_eff.append({"bonus": bonus, "band": band, "cooling": cooling_m,
+                      "fwd_ngr_90": (fb or {}).get("fwd_ngr_90"),
+                      "mat90": bool(fb and fb.get("mature_90")),
+                      "e30": _eff(30), "e60": _eff(60), "e90": _eff(90)})
     why_bits = []
     if cooling_m:
         why_bits.append("deposits −{}% vs first half".format(round(drop * 100)))
@@ -144,14 +156,27 @@ save_list = {
 }
 assert all("member" not in r for r in save_list["rows"]), "save_list must not carry raw member ids"
 
-# ---- EFFICIENCY: coarse placeholder (real 30/60/90 forward efficiency needs the P2 pull) ----
-effs = sorted(r["eff_coarse"] for r in roster)
-med_eff = effs[len(effs) // 2] if effs else 0
+# ---- EFFICIENCY: real forward payback (grain B — net revenue per RM of bonus, 30/60/90d after claim) ----
+import statistics
+def _med(xs):
+    xs = [x for x in xs if x is not None]
+    return round(statistics.median(xs), 2) if xs else 0
+mat = [w for w in whale_eff if w["mat90"]]
+med_bonus = statistics.median([w["bonus"] for w in whale_eff]) if whale_eff else 0
 efficiency = {
-    "median_ngr_per_bonus_rm": med_eff,
-    "over_fed_steady": sum(1 for r in roster if r["band"] == "Low" and r["eff_coarse"] > med_eff),
-    "under_attended_cooling": sum(1 for r in roster if r["band"] != "Low" and r["eff_coarse"] < med_eff),
-    "pending": "Real 30/60/90-day forward efficiency lands with the deposit + forward-NGR pull (P2).",
+    "median_ngr_per_bonus_rm": _med([w["e90"] for w in mat]),      # now REAL & forward (was a YTD ratio)
+    "eff_30": _med([w["e30"] for w in mat]),
+    "eff_60": _med([w["e60"] for w in mat]),
+    "eff_90": _med([w["e90"] for w in mat]),
+    "median_fwd_ngr_90": round(statistics.median([w["fwd_ngr_90"] for w in mat])) if mat else 0,
+    "net_positive_share_90": round(100 * sum(1 for w in mat if (w["fwd_ngr_90"] or 0) > 0) / len(mat)) if mat else 0,
+    # over/under-funded = a bonus-SIZE split (matches the card labels): low-risk getting big bonus vs cooling getting little
+    "over_fed_steady": sum(1 for w in whale_eff if w["band"] == "Low" and w["bonus"] > med_bonus),
+    "under_attended_cooling": sum(1 for w in whale_eff if w["band"] != "Low" and w["bonus"] < med_bonus),
+    "mature_n": len(mat), "total_n": len(whale_eff),
+    "note": ("Forward net revenue (net of bonus) in the 30/60/90 days after each whale's first claim, over the "
+             "{m} of {t} whales with a full 90-day window. Observational — the holdout is the causal proof.").format(
+                 m=len(mat), t=len(whale_eff)),
 }
 
 reach_cool = sum(1 for r in roster if r.get("reachable") and r.get("cooling"))
@@ -170,8 +195,9 @@ j["whale_pillar"] = {
     "save_list": save_list, "efficiency": efficiency, "counts_reconciliation": counts_reconciliation,
     "cooling": cooling, "rising": rising,
     "downside": downside, "reinvest": reinvest, "decision": decision,
-    "basis": "Detection layer over existing VIP data; opaque refs only; risk/save-value are coarse "
-             "(H1/H2 decline + days-since-last-claim) until the P2 pull; reinvest is holdout-gated.",
+    "basis": "Detection layer over existing VIP data; opaque refs only. Bonus efficiency is now measured "
+             "(forward 30/60/90-day NGR pull, observational); risk/save-value remain coarse (H1/H2 decline + "
+             "days-since-last-claim proxy); reinvest is holdout-gated.",
 }
 json.dump(j, open(PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
@@ -183,5 +209,5 @@ print(f"  ROSTER: {len(roster)} whales (opaque refs); cooling {sum(1 for r in ro
 bands = {b: sum(1 for r in roster if r['band'] == b) for b in ('High', 'Med', 'Low')}
 print(f"  RISK bands: High {bands['High']} / Med {bands['Med']} / Low {bands['Low']} | reachable {save_list['total_reachable']} | save-value pool RM{save_list['total_save_value']:,}")
 print(f"  SAVE-LIST (top {len(save_list['rows'])} to act on): " + ", ".join(f"{x['ref']}({x['band']},RM{x['save_value']:,})" for x in save_list['rows'][:5]) + " ...")
-print(f"  EFFICIENCY (placeholder): median {med_eff}/RM | over-fed-steady {efficiency['over_fed_steady']} | under-attended-cooling {efficiency['under_attended_cooling']}")
+print(f"  EFFICIENCY (forward, {efficiency['mature_n']}/{efficiency['total_n']} mature): NGR/RM 30/60/90 = {efficiency['eff_30']}/{efficiency['eff_60']}/{efficiency['eff_90']} | net-positive 90d {efficiency['net_positive_share_90']}% | over-fed {efficiency['over_fed_steady']} / under-funded {efficiency['under_attended_cooling']}")
 print(f"  DECIDE: {len(decision['moves'])} moves")
