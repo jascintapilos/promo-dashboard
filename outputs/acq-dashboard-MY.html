@@ -1540,7 +1540,7 @@ function renderVIP(){
       return '<tr><td><b>'+m.ref+'</b></td><td>'+m.tier+'</td><td>'+VSYM+fmt(m.ytd_ngr)+'</td><td style="color:var(--reduce);font-weight:700">-'+m.drop_pct+'%</td><td class="dregrisk">'+(m.signal||'')+'</td></tr>';
     }).join('');
     var lr=li.map(function(x){return '<tr><td>'+x.label+'</td><td><b>'+fmtInd(x)+'</b></td><td class="dregrisk">Δ next month</td><td class="dregrisk">'+(x.good||'')+'</td></tr>';}).join('');
-    var trk=mt.map(function(x){return '<tr><td>'+x.action+'</td><td>'+x.watch+'</td><td>'+(x.baseline==null?'—':x.baseline)+'</td><td>'+TBC+'</td></tr>';}).join('');
+    var trk=mt.map(function(x){return '<tr><td>'+x.action+'</td><td>'+x.watch+'</td><td>'+(x.baseline==null?'—':x.baseline)+'</td><td>Sales HOD · Promotions · CRM</td></tr>';}).join('');
     box.innerHTML=
       '<p class="sub2">Turns this one-off snapshot into a monthly rhythm: a locked baseline (as of '+(bl.as_of||'')+'), the few numbers to watch, and the moves to track. The <b>whale-slip watchlist</b> (who to act on now) lives in the <b>Big-player detection</b> tab.</p>'+
       '<h4 class="rsub">Watch these each month</h4>'+
@@ -1623,12 +1623,12 @@ function renderVIP(){
     var bodyHtml=rows.map(function(r){
       var badge='<span class="fbadge '+r[6]+'">'+(r[6]==='floor'?'DO NOW':'PROVE FIRST')+'</span>';
       return '<tr><td><b>'+r[0]+'</b><div class="dregrisk">'+r[1]+'</div></td>'+
-        '<td>'+r[2]+' '+TBC+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td>'+r[5]+'</td><td>'+badge+'</td></tr>';
+        '<td>Sales HOD · Promotions · CRM</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td>'+r[5]+'</td><td>'+badge+'</td></tr>';
     }).join('');
     box.innerHTML='<div class="dregwrap"><table class="dreg"><thead><tr>'+
       '<th>Action</th><th>Owner</th><th>How it’s enforced</th><th>RM at stake</th><th>Gate · when</th><th>Type</th>'+
       '</tr></thead><tbody>'+bodyHtml+'</tbody></table></div>'+
-      '<p class="fine" style="margin-top:10px">Owners and dates are <b>TBC</b> — confirm before this goes to the CEO. The cap is a rule on what VIP managers may hand out (they push 81% of this spend), so it needs a <b>hard system limit</b>, not a guideline.</p>';
+      '<p class="fine" style="margin-top:10px">Owner sits with <b>Sales HOD · Promotions · CRM</b> jointly; <b>dates TBC</b> — confirm before this goes to the CEO. The cap is a rule on what VIP managers may hand out (they push 81% of this spend), so it needs a <b>hard system limit</b>, not a guideline.</p>';
   })();
   // Lane tally
   document.getElementById('v_callLead').innerHTML=
@@ -2430,8 +2430,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     ].forEach(function(k){var e=document.createElement('div');e.className='kpi'+(k[3]?' hi':'')+(k[4]?' key':'');e.innerHTML=(k[4]?'<span class="keytag">Key metric</span>':'')+'<span class="eyebrow">'+k[0]+'</span><div class="v">'+k[1]+'</div><div class="foot">'+k[2]+'</div>';kbox.append(e);});}
     var db=byId('w_decision');
     if(db){var mv=(dec.moves||[]).map(function(m){var b='<span class="fbadge '+(m.type==='floor'?'floor':'band')+'">'+(m.type==='floor'?'DO NOW':'PROVE FIRST')+'</span>';
-      return '<tr><td><b>'+m.move+'</b></td><td>'+m.why+'</td><td>'+b+'</td><td><span style="color:var(--muted)">(TBC)</span></td></tr>';}).join('');
-      db.innerHTML='<p class="sub2">Whale marketing is its own call — four moves, decide-now vs prove-first:</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owners &amp; dates TBC — confirm before this goes to the CEO.</p>';}
+      return '<tr><td><b>'+m.move+'</b></td><td>'+m.why+'</td><td>'+b+'</td><td>Sales HOD · Promotions · CRM</td></tr>';}).join('');
+      db.innerHTML='<p class="sub2">Whale marketing is its own call — four moves, decide-now vs prove-first:</p><div class="dregwrap"><table class="dreg"><thead><tr><th>Move</th><th>Why</th><th>Type</th><th>Owner</th></tr></thead><tbody>'+mv+'</tbody></table></div><p class="fine">Owner sits with <b>Sales HOD · Promotions · CRM</b> jointly; <b>dates TBC</b> — confirm before this goes to the CEO.</p>';}
     var rb=byId('w_rising');
     if(rb){var c2=ri.climbers||{}, hg=ri.held_grp||{};
       rb.innerHTML='<div class="varbox"><span class="ico">◆</span><div>Members who <b>climbed a tier</b> got more bonus AND returned more than those who held (median bonus '+VSYM+fmt(c2.med_bonus)+' vs '+VSYM+fmt(hg.med_bonus)+', median NGR '+VSYM+fmt(c2.med_ngr)+' vs '+VSYM+fmt(hg.med_ngr)+') — so the pipeline into whale status is <b>real and worth feeding</b>. This period, <b>'+(ri.into_platinum||0)+'</b> climbed into Platinum and <b>'+(ri.into_diamond||0)+'</b> into Diamond.</div></div>';}
