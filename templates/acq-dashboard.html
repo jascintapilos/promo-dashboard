@@ -415,7 +415,7 @@
 
   <div class="panel" id="panel-summary" hidden>
     <div class="exec-note" id="s_banner"></div>
-    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and the money sitting in the wrong place.</p><div id="s_portfolio"></div></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
       <div class="card col6"><div class="card-h"><h3>Best-to-worst return on spend</h3><span class="hint">money is the test</span></div><p class="sub2">Every promo ranked best-to-worst return. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (can be moved elsewhere).</p><div id="s_frontier"></div></div>
@@ -570,7 +570,7 @@
       <div class="card col6"><div class="card-h"><h3>Net revenue back for every RM1, by promo</h3><span class="hint">higher is better · zero means it just paid for itself</span></div><p class="sub2">Extra net revenue kept for every RM1 of bonus, top promos by spend. Colour = the recommended call.</p><div id="r_chartNgr"></div></div>
       <div class="card col6"><div class="card-h"><h3>Money × retention</h3><span class="hint">the quadrant</span></div><p class="sub2">Makes money (right) vs retains above its type's norm (up). Top-right = scale; bottom-left = stop. Bubble = spend.</p><div id="r_chartQuad"></div></div>
       <div class="card col6"><div class="card-h"><h3>By player tier</h3><span class="hint">read within a bonus type, not across</span></div><p class="sub2">Net revenue back for every RM1, by tier. The pattern is mostly caused by the mix of bonus types — see the grid before steering budget by tier.</p><div id="r_chartTier"></div></div>
-      <div class="card col6"><div class="card-h"><h3>Bonus type × tier</h3><span class="hint">the budget-steering map</span></div><p class="sub2">Net revenue back for every RM1, for each type at each tier. Deposit-required bonuses earn well at every tier; no-deposit free credit runs negative here by design — it's a giveaway to pull deposits in, so judge it on deposits attracted (sweet-spot card below), not on net revenue.</p><div id="r_chartGrid"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Bonus type × tier</h3><span class="hint">the budget-steering map</span></div><p class="sub2">Net revenue back for every RM1, for each type at each tier. Deposit-required bonuses earn well at every tier; no-deposit free credit runs negative here by design — it's a giveaway to pull deposits in, so judge it on deposits attracted, not on net revenue.</p><div id="r_chartGrid"></div></div>
       <div class="card col12" id="retSweetTierCard" style="margin-top:15px">
         <div class="card-h"><h3>The bonus sweet spot by tier</h3><span class="hint">by tier · the realistic split</span></div>
         <p class="sub2">Where each tier's ringgit works hardest. <b>No-deposit bonuses are giveaways meant to pull deposits in</b> — judged on <b>deposits attracted</b>; deposit-required bonuses on <b>net revenue</b>. Retention players respond more broadly than VIPs — several sizes still pay, and deposit-required earns strongly here.</p>
@@ -2374,7 +2374,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   function htmlSec(title,html){const d=document.createElement('div');d.className='about';d.innerHTML=html;return {title,hint:'',nodes:[d]};}
   const ABOUT={
     summary:`<p class="lead">This report grades every promo by the job it's meant to do, then rolls the pillars up into one decision view.</p>`
-      +abrow('What it is','A single place to see promo spend by objective, what each objective honestly buys, and where money is sitting in the wrong place.')
+      +abrow('What it is','A single place to see promo spend by objective, what each objective honestly buys, and where money may be sitting in the wrong place.')
       +abrow('How we judge it','Each pillar on its <b>own yardstick</b> — new depositors for Acquisition, money kept for Retention, overall health for VIP — so there is <b>no single overall score</b>.')
       +abrow('Why this way','Different promos have different jobs. Forcing them onto one metric hides which are working; judging each on its own job, then rolling up, is the honest read.')
       +abrow('Good to know','Reads are <b>directional</b> (each promo vs its own before-and-after), not a controlled experiment — solid for ranking and sizing, with a proper holdout as the next proof step. Net-revenue figures are already after the bonus cost.'),
@@ -2513,12 +2513,12 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
     leadSec('Key numbers',[byId('kpis')]),
     cardSec(cardById('ruleLines')),          // rules before results
-    cardSec(cardById('chartBars')),          // cost per FTD (simplest evidence)
+    cardSec(cardById('chartTrend')),         // new depositors by month (simplest single-axis on-ramp)
+    cardSec(cardById('chartBars')),          // cost per FTD
     cardSec(cardById('chartScatter')),       // cost vs coming back
     cardSec(cardById('chartMech')),          // by bonus type
     cardSec(byId('acqDepoCard')),            // deposit-split (concept, before sweet spot)
     cardSec(byId('acqSweetCard')),           // sweet spot
-    cardSec(cardById('chartTrend')),         // new depositors by month
     cardSec(byId('acqFunnelCard')),          // claim→deposit leakage
     cardSec(byId('acqParetoCard')),          // is the headline real? (robustness capstone, late)
     cardSec(cardById('tbl')),                // decision table (reference)
@@ -2532,12 +2532,12 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('r_ruleLines')),        // rules before results
     cardSec(byId('retLifecycleCard')),       // who the money reaches (lifecycle)
     cardSec(byId('retSurvivalCard')),        // does the value last? (60/90)
-    cardSec(byId('retIncrCard')),            // extra returns / incrementality (abstract)
-    cardSec(cardById('r_chartNgr')),         // net rev per RM by promo
+    cardSec(cardById('r_chartNgr')),         // net rev per RM by promo (simple single-axis)
     cardSec(cardById('r_chartQuad')),        // money × retention
     cardSec(cardById('r_chartGrid')),        // bonus type × tier GRID (before the tier card that refs it)
     cardSec(cardById('r_chartTier')),        // by player tier
     cardSec(byId('retSweetTierCard')),       // sweet spot by tier
+    cardSec(byId('retIncrCard')),            // extra returns / incrementality (caveated capstone, late)
     cardSec(cardById('r_tbl')),              // decision table (reference)
     plainSec(byId('r_notes'),'Notes'),
     plainSec(byId('r_soon'),null),
