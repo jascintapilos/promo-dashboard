@@ -2499,10 +2499,10 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
     cardSec(cardById('v_whale')),           // Where value concentrates (concept, before the call)
     cardSec(byId('w_rosterCard')),          // The 74 whales
-    cardSec(byId('vipWhaleCard')),          // At-risk ledger (before the save-list it feeds)
-    cardSec(byId('w_saveListCard')),        // Save-list (ranked filter of the ledger)
-    cardSec(byId('w_decisionCard')),        // The whale call (decision, after concept + evidence)
+    cardSec(byId('vipWhaleCard')),          // At-risk ledger (the who's-at-risk evidence)
+    cardSec(byId('w_decisionCard')),        // The whale call (the decision, after concept + evidence)
     cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
+    cardSec(byId('w_saveListCard')),        // Save-list (the tactic that executes 'retain the cooling')
     cardSec(byId('w_risingCard')),          // Rising
     cardSec(byId('w_reinvestCard')),        // Does the bonus keep them?
     cardSec(byId('w_effCard')),             // Is the bonus spend working?
