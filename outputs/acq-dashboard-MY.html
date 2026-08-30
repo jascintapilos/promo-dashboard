@@ -423,6 +423,7 @@
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
+    <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
       <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal.</p>
@@ -2070,6 +2071,19 @@ function renderSummary(){
     `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Staged cutover — ${review.length} graded promo(s) to re-review.</b> The fair-comparison (Tier-2) number disagrees with the current call on these; nothing is auto-changed — check before acting: `+
     review.map(x=>{const em=ATTR.engine_map[x.code];const earns=em.f>=0;return `<b>${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</b> <span class="pilltag">${x.pillar}</span> now <i>${x.dec}</i> → fair says it <b style="color:${earns?'var(--scale)':'var(--reduce)'}">${earns?'earns':'loses'}</b> (${(em.f>=0?'+':'−')+SYM+Math.abs(em.f)}/RM)`;}).join(' · ')+
     `.</div></div>`);
+  // ---- what to do next ----
+  if(typeof ATTR!=='undefined' && ATTR){
+    const A=ATTR, SY=(PAYLOAD&&PAYLOAD.sym)||'RM', nc=document.getElementById('s_nextCard');
+    if(nc) nc.hidden=false;
+    const act=(n,title,body)=>`<div class="cfr" style="align-items:flex-start;padding:9px 0"><span class="cfk" style="color:var(--scale);min-width:20px;font-weight:800">${n}</span><span><b>${title}</b><div style="color:var(--muted);font-size:13px;margin-top:2px">${body}</div></span></div>`;
+    const cs=A.cap_segment, cov=A.coverage;
+    const nxt=document.getElementById('s_next');
+    if(nxt) nxt.innerHTML=
+      `<p class="sub2">The concrete moves out of the fair-comparison work above. Owner: <b>Sales HOD · Promotions · CRM</b>. Nothing here is auto-applied — these are decisions for the team.</p>`+
+      act(1,`Re-review the ${review.length} flipped promos`,`The fair comparison reverses the keep/cut verdict on these — they're listed in the cutover queue under Top decisions. Check before acting: don't cut a promo that earns, or keep feeding one that loses.`)+
+      (cs?act(2,`Cap the VIP repeat segment — ${cs.cap_n} members, ${SY}${cs.cap_bonus.toLocaleString()}`,`Underwater, repeat-claiming, still-active VIPs (give-to-take &gt;1). Cap the next same-code claim. And <b>protect</b> the ${cs.protect_n.toLocaleString()} cooling VIPs — retain, never cap.`):'')+
+      act(3,`Run a holdout — the one thing that needs a live test`,`It proves the cap is safe <b>and</b> settles the ${cov.n_need_holdout} promos with no fair comparison. The three designs are ready (cashback · whale-cap · retention). This is what turns "review these" into "proven".`);
+  }
   // ---- pillar cards (nav) ----
   const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
   const money=n=>SYM+(n/1000).toFixed(1)+'K';
@@ -2474,6 +2488,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_ledger')),
     cardSec(cardById('s_confidence')),
     cardSec(byId('s_attribCard')),
+    cardSec(byId('s_nextCard')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
   ]);
