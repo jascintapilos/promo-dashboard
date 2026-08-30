@@ -98,14 +98,28 @@ for code, ts in tre_by_code.items():
         "pretrend_gap_med": round(statistics.median(ptgap)) if ptgap else None})   # ~0 = parallel = valid
 
 results.sort(key=lambda r: -r["bonus"])
-json.dump(results, open(ATTR / "matched-did-MY.json", "w", encoding="utf-8"), default=str)
-print(f"Matched-DiD (Phase 1.1, pre-trend matched) on {len(results)} codes | active control pool {len({r['member'] for r in ctrl}):,}")
-print(f"{'code':<32}{'pillar':<5}{'nT':>5}{'own/RM':>8}{'DiD/RM':>8}{'RTMgap':>8}{'ptGap':>8}")
 for r in results:
-    flag = "" if (r["pretrend_gap_med"] is not None and abs(r["pretrend_gap_med"]) < 300) else "  <-pretrend?"
-    print(f"{r['code'][:31]:<32}{r['pillar']:<5}{r['n_treated']:>5}{r['own_incr_per_rm']:>8}{r['did_incr_per_rm']:>8}{r['rtm_gap_per_rm']:>8}{str(r['pretrend_gap_med']):>8}{flag}")
-valid = [r for r in results if r["pretrend_gap_med"] is not None and abs(r["pretrend_gap_med"]) < 300]
+    r["parallel_trends"] = r["pretrend_gap_med"] is not None and abs(r["pretrend_gap_med"]) < 300
+json.dump(results, open(ATTR / "matched-did-MY.json", "w", encoding="utf-8"), default=str)
+
+valid = [r for r in results if r["parallel_trends"]]
 tb = sum(r["bonus"] for r in valid); to = sum(r["own_incr_ngr"] for r in valid); td = sum(r["did_incr_ngr"] for r in valid)
-print(f"\nAGG over PARALLEL-TREND codes ({len(valid)}/{len(results)}): own {round(to/tb,2)}/RM vs matched-control {round(td/tb,2)}/RM "
-      f"| RTM gap {round((to-td)/tb,2)}/RM ({round(100*(to-td)/to) if to else 0}% of own-baseline)")
+# direction of the correction (bonus-weighted), on valid codes
+pess = [r for r in valid if r["rtm_gap_per_rm"] < -0.2]     # DiD > own by >0.2 -> report too pessimistic
+opti = [r for r in valid if r["rtm_gap_per_rm"] > 0.2]      # DiD < own -> report too optimistic
+same = [r for r in valid if abs(r["rtm_gap_per_rm"]) <= 0.2]
+bshare = lambda g: round(100 * sum(x["bonus"] for x in g) / tb) if tb else 0
+print(f"=== Matched-DiD (Phase 1.1) across ALL codes ===")
+print(f"codes with >=20 matched treated: {len(results)} | pass parallel-trends (valid): {len(valid)} | RM{tb:,} bonus covered")
+print(f"AGG over valid codes: own {round(to/tb,2)}/RM vs matched-control {round(td/tb,2)}/RM | RTM gap {round((to-td)/tb,2)}/RM ({round(100*(to-td)/to) if to else 0}% of own-baseline)")
+print(f"\nDirection of the correction (valid codes, count | % of valid bonus):")
+print(f"  report TOO PESSIMISTIC (matched > own): {len(pess):>3} codes | {bshare(pess)}% of bonus")
+print(f"  about right (|gap|<=0.2/RM):            {len(same):>3} codes | {bshare(same)}% of bonus")
+print(f"  report TOO OPTIMISTIC (matched < own):  {len(opti):>3} codes | {bshare(opti)}% of bonus")
+print(f"\nBiggest corrections (valid codes, by |RTM gap/RM|):")
+for r in sorted(valid, key=lambda x:-abs(x["rtm_gap_per_rm"]))[:12]:
+    d = "too pessimistic" if r["rtm_gap_per_rm"] < 0 else "too optimistic"
+    print(f"  {r['code'][:30]:<31}{r['pillar']:<4} own {r['own_incr_per_rm']:>6}/RM -> DiD {r['did_incr_per_rm']:>6}/RM  (gap {r['rtm_gap_per_rm']:>6}, {d})")
+inval = [r for r in results if not r["parallel_trends"]]
+print(f"\nNO valid observational control ({len(inval)} codes, RM{sum(r['bonus'] for r in inval):,} bonus) -> need the holdout.")
 print("Saved scratchpad/attribution/matched-did-MY.json")
