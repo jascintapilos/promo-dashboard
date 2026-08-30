@@ -85,6 +85,23 @@ if (out.includes(ltvMarker) && fs.existsSync(ltvPath)) {
   ltvNote = `LTV ${ltv.cohorts.length} cohorts / mature ${ltv.symbol}${ltv.summary.mature_final}`;
 }
 
+// LTV-by-source payload (acquisition: LTV by welcome mechanic)
+const ltvSrcMarker = '/*__LTVSRC_PAYLOAD__*/ null';
+let ltvSrcNote = 'no LTVSRC';
+const ltvSrcPath = path.join(SCR, 'ltv/ltv-by-source-MY.json');
+if (out.includes(ltvSrcMarker) && fs.existsSync(ltvSrcPath)) {
+  out = out.replace(ltvSrcMarker, fs.readFileSync(ltvSrcPath, 'utf8').trim());
+  ltvSrcNote = 'LTVSRC ok';
+}
+
+// Whale-LTV payload (whale lifetime value)
+const wltvMarker = '/*__WHALELTV_PAYLOAD__*/ null';
+const wltvPath = path.join(SCR, 'ltv/whale-ltv-MY.json');
+if (out.includes(wltvMarker) && fs.existsSync(wltvPath)) {
+  out = out.replace(wltvMarker, fs.readFileSync(wltvPath, 'utf8').trim());
+  ltvSrcNote += ' / WHALELTV ok';
+}
+
 fs.mkdirSync(path.join(ROOT, 'outputs'), { recursive: true });
 const dest = path.join(ROOT, DEST);
 fs.writeFileSync(dest, out, 'utf8');

@@ -516,6 +516,11 @@
     </div>
   </div>
 
+  <div class="card col12" id="acqLtvCard" style="margin-top:15px" hidden>
+    <div class="card-h"><h3>Which welcome brings keepers — lifetime value by source</h3><span class="hint">mature cohorts · whole-book</span></div>
+    <div id="acqLtv"></div>
+  </div>
+
   <div class="card col12" style="margin-top:15px">
     <div class="card-h"><h3>Decision table</h3><span class="hint">every code · sorted by spend</span></div>
     <p class="sub2">One row per bonus. The call follows from cost per new depositor and how many came back within 30 days. <b>New %</b> = share of takers who were genuinely new; below 40% the code is a deposit bonus, judged in Retention. <b>Click any row</b> for how much to trust the call; a <span class="cflag">provisional</span> tag means too few players to be sure.</p>
@@ -707,6 +712,7 @@
     <div class="card col12" id="w_decisionCard"><div class="card-h"><h3>The whale call</h3><span class="hint">protect · retain · grow · test</span></div><div id="w_decision"></div></div>
     <div class="card col12" id="w_saveListCard" style="margin-top:15px"><div class="card-h"><h3>Save-list — who to act on this week</h3><span class="hint">reachable · ranked by what's at stake</span></div><div id="w_saveList"></div></div>
     <div class="card col12" id="w_rosterCard" style="margin-top:15px"><div class="card-h"><h3>The 74 top players</h3><span class="hint">the named list · opaque refs</span></div><div id="w_roster"></div></div>
+    <div class="card col12" id="w_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a whale is worth over its life</h3><span class="hint">full history · protect-don't-cut, in numbers</span></div><div id="w_ltv"></div></div>
     <div class="card col12" id="w_risingCard" style="margin-top:15px"><div class="card-h"><h3>Rising — growing toward whale</h3><span class="hint">climbers this period</span></div><div id="w_rising"></div></div>
     <div class="card col12" id="w_reinvestCard" style="margin-top:15px"><div class="card-h"><h3>Does the bonus actually keep them?</h3><span class="hint">the core question · directional</span></div><div id="w_reinvest"></div></div>
     <div class="card col12" id="w_effCard" style="margin-top:15px"><div class="card-h"><h3>Is the bonus spend working?</h3><span class="hint">bonus efficiency · 30/60/90 forward · observational</span></div><div id="w_eff"></div></div>
@@ -732,6 +738,105 @@ const VIP = {"market":"MY","currency":"MYR","period":"2026-01-01 to 2026-08-25",
 const TREND = {"market":"MY","currency":"MYR","data_as_of":"2026-08-26","months":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"],"labels":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"],"partial":{"2026-08":true},"spend_by_pillar":{"acq":[27385,27395,41246,41328,33897,26593,35065,25913],"ret":[1253338,197010,594715,226853,227443,301585,458611,456093],"vip":[2354651,1254688,784888,872035,722567,1264874,891013,315470]},"cashback_spend":[1027233,356694,196644,143261,107950,116206,131533,62465],"claims":{"acq":[568,615,828,803,702,499,741,612],"ret":[47388,8273,13171,6048,7008,6819,4507,5963],"vip":[13162,8447,8828,11868,8622,62308,17365,1955]},"efficiency":[{"month":"2026-01","spend_m7":2341160,"ngr_m7":1644286,"per_rm":0.7,"per_rm_ret":1.81,"ret_spend":1253338,"per_rm_vip":-0.57,"vip_spend":1087822},{"month":"2026-02","spend_m7":954250,"ngr_m7":166600,"per_rm":0.17,"per_rm_ret":2.95,"ret_spend":197010,"per_rm_vip":-0.55,"vip_spend":757240},{"month":"2026-03","spend_m7":1018301,"ngr_m7":-333597,"per_rm":-0.33,"per_rm_ret":0.04,"ret_spend":594715,"per_rm_vip":-0.84,"vip_spend":423586},{"month":"2026-04","spend_m7":737557,"ngr_m7":142528,"per_rm":0.19,"per_rm_ret":2.01,"ret_spend":226853,"per_rm_vip":-0.61,"vip_spend":510704},{"month":"2026-05","spend_m7":624213,"ngr_m7":-11411,"per_rm":-0.02,"per_rm_ret":0.97,"ret_spend":227443,"per_rm_vip":-0.59,"vip_spend":396770},{"month":"2026-06","spend_m7":721731,"ngr_m7":-172093,"per_rm":-0.24,"per_rm_ret":0.93,"ret_spend":301585,"per_rm_vip":-1.07,"vip_spend":420146},{"month":"2026-07","spend_m7":774132,"ngr_m7":-46592,"per_rm":-0.06,"per_rm_ret":0.72,"ret_spend":458611,"per_rm_vip":-1.19,"vip_spend":315521},{"month":"2026-08","spend_m7":561590,"ngr_m7":370628,"per_rm":0.66,"per_rm_ret":1.09,"ret_spend":431692,"per_rm_vip":-0.78,"vip_spend":129898}],"acq":[{"month":"2026-01","spend_new":13802,"ftd":197,"cost_per_ftd":70},{"month":"2026-02","spend_new":16350,"ftd":236,"cost_per_ftd":69},{"month":"2026-03","spend_new":26003,"ftd":320,"cost_per_ftd":81},{"month":"2026-04","spend_new":24695,"ftd":309,"cost_per_ftd":80},{"month":"2026-05","spend_new":16700,"ftd":223,"cost_per_ftd":75},{"month":"2026-06","spend_new":12317,"ftd":181,"cost_per_ftd":68},{"month":"2026-07","spend_new":18759,"ftd":277,"cost_per_ftd":68},{"month":"2026-08","spend_new":15811,"ftd":256,"cost_per_ftd":62}],"read":{"ret_early":1.6,"ret_late":0.87,"ret_dir":"degrading","vip_early":-0.65,"vip_late":-0.95,"vip_dir":"degrading"},"sym":"RM"};
 const ATTR = {"as_of":"2026-08-30","preview":true,"coverage":{"n_valid":74,"bonus_valid":2792242,"n_need_holdout":44,"bonus_need_holdout":1317041},"correction":{"own_per_rm":-0.61,"did_per_rm":0.01,"gap_per_rm":-0.62,"pct_of_own":102},"direction":{"too_pessimistic_codes":46,"too_pessimistic_bonus_pct":75,"too_optimistic_codes":25,"too_optimistic_bonus_pct":22},"flips":[{"code":"REL DOUBLEDATE MAY 250FS G","pillar":"RET","n":586,"bonus":33003,"own":-5.98,"did":0.52,"flip":"loser→winner","thin":false},{"code":"SL 50FS GOO 7X","pillar":"RET","n":1495,"bonus":28604,"own":-0.46,"did":3.44,"flip":"loser→winner","thin":false},{"code":"88 Free Spins Bonus - Plat","pillar":"RET","n":871,"bonus":17828,"own":2.37,"did":-4.66,"flip":"winner→loser","thin":false},{"code":"VM FC 88 8X","pillar":"VIP","n":91,"bonus":16632,"own":1.8,"did":-4.79,"flip":"winner→loser","thin":true},{"code":"LC 20PCT 7X","pillar":"RET","n":129,"bonus":6764,"own":-5.51,"did":0.58,"flip":"loser→winner","thin":true},{"code":"VMFS GOO 168","pillar":"RET","n":21,"bonus":1823,"own":0.15,"did":-0.59,"flip":"winner→loser","thin":true},{"code":"CNY 88FS GOO 5X DY4","pillar":"RET","n":98,"bonus":1564,"own":-13.68,"did":7.29,"flip":"loser→winner","thin":true},{"code":"REL 27PCT HSD D1","pillar":"RET","n":103,"bonus":824,"own":-9.54,"did":14.34,"flip":"loser→winner","thin":true}],"tiers":[["directional","a rough read — compares a player to their own recent past (most numbers today)"],["fair-comparison checked","compared to look-alike players who did not get the promo"],["proven","survived a live holdout (random) test — none yet"]],"fatigue":{"vip_ord4":0.67,"ret_ord5":0.9,"ret_ord6":0.7,"overall_ord4":0.79},"engine_map":{"optimove_my_weekly_rescue_bonus_tier_3e":{"t":"dir","f":1.42},"10PERCENTUNLIMITEDBONUS":{"t":"fair","f":1.55},"FT_VM_FC_VARIABLE_8X_V2":{"t":"fair","f":-0.57},"FT_VM_FC_VARIABLE_5X_V2":{"t":"fair","f":-0.82},"FT_VM_FC_388_8X":{"t":"fair","f":-1.2},"FT_VM_DEP1000_GET500_5X":{"t":"hold","f":0.3},"FT_PAYDAY_30PCT":{"t":"fair","f":4.99},"optimove_my_weekly_rescue_bonus_tier_3d":{"t":"hold","f":1.22},"optimove_my_weekly_rescue_bonus_tier_3c":{"t":"hold","f":0.3},"FT_VM_FC_288_8X":{"t":"fair","f":-1.22},"optimove_my_weekly_rescue_bonus_tier_1":{"t":"hold","f":-7.08},"FT_REL_TLEO_45PCT_228MX":{"t":"dir","f":0},"FT_VM_FC_588_8X":{"t":"hold","f":-0.16},"optimove_my_weekly_rescue_bonus_tier_2":{"t":"hold","f":5.38},"FT_REL_TLEO_45PCT_888MX":{"t":"dir","f":0.59},"FT_VM_DEP1000_GET800_2X":{"t":"fair","f":-0.24},"FT_MV_58":{"t":"fair","f":-2.29},"FT_108FC_5X_GL_DY4":{"t":"hold","f":14.17},"FT_HV_68":{"t":"fair","f":-7.38},"FT_58FC_5X_SIL_DY4":{"t":"fair","f":-1.1},"FT_VM_FC_588_5X":{"t":"fair","f":-2.32},"optimove_my_weekly_rescue_bonus_tier_3b":{"t":"hold","f":9.58},"FT_DY4_VIP_FC588_5X":{"t":"hold","f":16.07},"FT_VM_DEP700_GET300_2X":{"t":"hold","f":14.78},"FT_VM_DEP600_GET200_5X":{"t":"hold","f":5.42},"FT_VM_DEP1000_GET900_1X":{"t":"fair","f":-0.72},"FT_VM_DEP1000_GET700_2X":{"t":"hold","f":-2.63},"FT_LV_38":{"t":"fair","f":-1.33},"FT_RET_CHECKIN_88PCT_8X_GLD":{"t":"dir","f":0},"FT_VM_DEP1000_GET500_1X":{"t":"fair","f":-0.63},"FT_VM_DEP800_GET400_2X":{"t":"fair","f":-0.9},"FT_REL_TLEO_45PCT_688MX":{"t":"dir","f":-4.48},"FT_VM_DEP1000_GET1000_1X":{"t":"dir","f":35.66},"FT_VM_DEP1000_GET1000_2X":{"t":"dir","f":1.22},"FT_VM_DEP1000_GET500_2X":{"t":"fair","f":-1.09},"FT_VM_DEP800_GET400_1X":{"t":"hold","f":-4.82},"FT_38FC_5X_SIL_DY1":{"t":"fair","f":-1.43},"FT_VM_DEP1000_GET700_1X":{"t":"hold","f":1.84},"FT_REL_TLEO_45PCT_458MX":{"t":"dir","f":0},"FT_VMFC_VARIABLE_3X":{"t":"dir","f":0},"FT_RET_CHECKIN_38PCT_8X_GLD":{"t":"dir","f":0},"FT_VM_FC_188_8X":{"t":"fair","f":-2.84},"FT_VM_DEP1000_GET800_1X":{"t":"hold","f":-4.38},"FT_VM_FC_388_5X":{"t":"hold","f":0.42},"FT_VM_FC_888_8X":{"t":"dir","f":0.98},"FT_58FC_5X_GL_DY1":{"t":"hold","f":-3.38},"FT_DOUDLEDATE_JUNE_100FS_GOO":{"t":"dir","f":0},"FT_VM_FC_888_5X":{"t":"dir","f":-0.18},"FT_MIDVALUE_388FS":{"t":"fair","f":-3.11},"FT_RET_CHECKIN_28PCT_8X_GLD":{"t":"dir","f":0},"FT_WC26_FB_250_DMD":{"t":"dir","f":0},"FT_RET_CHECKIN_88FS_8X_1_GLD":{"t":"dir","f":0},"FT_LOWVALUE_288FS":{"t":"fair","f":0.16},"FT_REL_DOUBLEDATE_MAY_250FS_GOO_8X":{"t":"fair","f":0.52},"FT_VM_FC_88_8X":{"t":"fair","f":-4.79},"FT_100FS_10X_060_GOO_V2":{"t":"dir","f":0},"FT_SL_50FS_GOO_7X":{"t":"fair","f":3.44},"FT_RET_CRM_REL_100FS_GOO_AUG":{"t":"dir","f":0},"FT_28FC_5X_BR_DY4":{"t":"fair","f":7.4},"FT_VM_FC_1088_8X":{"t":"dir","f":4.48},"FT_VM_FC_1088_5X":{"t":"dir","f":-0.79},"FT_VM_DEP1000_GET900_2X":{"t":"dir","f":29.78},"FT_CHURN14DAYS_20_PCT":{"t":"fair","f":2.31},"FT_PAYDAY_100FS_GOO_MD250":{"t":"hold","f":27.9},"FT_VM_DEP300_GET100_5X":{"t":"hold","f":17.81},"FT_HIGHVALUE_350FS":{"t":"fair","f":-0.55},"FT_FB_REL_88FS_GOO_5X":{"t":"fair","f":32.96},"FT_LOWVALUE_NODEP_180FS":{"t":"fair","f":-6.74},"FT_BR_RET_40PCT_12X_100":{"t":"hold","f":11.62},"FT_MIDVALUE_NODEP_250FS":{"t":"hold","f":-2.86},"FT_MIDMONTH_188FS":{"t":"fair","f":7.1},"FT_WC26_FB_100_GLD":{"t":"dir","f":0},"FT_HIGHVALUE_NODEP_299FS":{"t":"hold","f":-13.52},"FT_20PCT_SLCS_MMM":{"t":"hold","f":7.59},"FT_REL_288FS_GOO_MMM":{"t":"hold","f":38.14},"FT_VM_FC_288_5X":{"t":"fair","f":-4.47},"FT_88 Free Spins Bonus - Platinum/Diamond":{"t":"fair","f":-4.66},"FT_REL_54PCT_HSD_D4":{"t":"fair","f":6.89},"FT_REL_28PCT_5X_GL_DY3":{"t":"hold","f":95.93},"FT_FC50_MAX100":{"t":"hold","f":3.91},"FT_VM_FC_188_5X":{"t":"hold","f":0.32},"FT_REL_28PCT_MAX800_D3":{"t":"hold","f":45.41},"FT_VM_REL100PCT_X1":{"t":"dir","f":0},"FT_DOUDLEDATE_JUNE_88FS_GOO":{"t":"dir","f":0},"FT_100FC_15X_WCCHURNED":{"t":"dir","f":0},"FT_RET_CHECKIN_18PCT_8X_GLD":{"t":"dir","f":0},"FT_RET_CHECKIN_28PCT_10X_SLVR":{"t":"dir","f":0},"FT_REL_58PCT_HSD_D4":{"t":"fair","f":4.7},"FT_WC26_DEP_30PCT_2K_PLTDMD":{"t":"dir","f":0},"FT_WC26_FB_160_PLT":{"t":"dir","f":0},"FT_REL_18PCT_MAX800_D2":{"t":"hold","f":40.06},"FT_88FS_10X_040_GOO_V2":{"t":"dir","f":0},"FT_VM_DEP700_GET300_1X":{"t":"dir","f":16.07},"FT_VM_FC_1288_5X":{"t":"dir","f":0.36},"FT_LC_20PCT_7X":{"t":"fair","f":0.58},"FT_28FS_5X_040_GOO_MIN100":{"t":"dir","f":0},"FT_FC20_MAX100":{"t":"fair","f":-11.44},"FT_REL_28PCT_5X_SIL_DY3":{"t":"fair","f":11.62},"FT_CRM_RET_288FS_GOO_MMM":{"t":"dir","f":0},"FT_REL_DOUBLEDATE_MAY_150FS_GOO_8X":{"t":"fair","f":6.53},"optimove_my_weekly_rescue_bonus_tier_3a_1":{"t":"dir","f":14.02},"FT_CRM_RET_20PCT_SLCS_MMM":{"t":"dir","f":0},"FT_REL_18PCT_5X_GL_DY2":{"t":"hold","f":187.33},"FT_REL_70PCT_18X_MIN500":{"t":"dir","f":0},"FT_PAYDAY_100FS_GOO_MD150":{"t":"fair","f":25.17},"FT_REL_188FS_GOO_MMM":{"t":"fair","f":16.24},"FT_VM_DEP150_GET50_5X":{"t":"hold","f":29.65},"FT_SIL_FC300_5X":{"t":"dir","f":0.73},"FT_RET_CRM_REL_88FS_GOO_AUG":{"t":"dir","f":0},"FT_VMFC_2588_3XTO":{"t":"dir","f":0},"FT_CRM_CHURN_HV_68":{"t":"dir","f":0},"FT_CNY_88FS_GOO_5X_DY2":{"t":"hold","f":84.42},"FT_8FC_5X_BR_DY1":{"t":"fair","f":18.37},"FT_REL_18PCT_5X_SIL_DY2":{"t":"fair","f":17.35},"FT_REL_28PCT_MAX600_D3":{"t":"fair","f":7.94},"FT_DY15_VIP_FC888_5X":{"t":"dir","f":4.91},"FT_RET_CRM_ADHOC_20PCT_12X_GLD_V2":{"t":"dir","f":0},"FT_18FS_5X_040_GOO":{"t":"dir","f":0},"FT_REL_29PCT_HSD_D1":{"t":"fair","f":-0.67},"FT_RET_CHECKIN_88FS_10X_02_SLVR":{"t":"dir","f":0},"FT_RET_CHECKIN_88FS_10X_CLS":{"t":"dir","f":0},"FT_RET_CHECKIN_38PCT_10X_SLVR":{"t":"dir","f":0},"FT_50FC_15X_WCCHURNED":{"t":"dir","f":0},"FT_VM_FC_1588_8X":{"t":"dir","f":-3.01},"FT_REL_38PCT_HSD_D1":{"t":"hold","f":21.01},"FT_VM_DEP1200_GET600_2X":{"t":"dir","f":-54.21},"FT_REL_TLEO_LC_45PCT_138MX":{"t":"dir","f":-26.56},"FT_RET_CRM_ADHOC_20PCT_12X_GLD":{"t":"dir","f":0},"FT_REL_TLEO_45PCT_48MX":{"t":"dir","f":0},"FT_REL_70PCT_18X_MIN300":{"t":"dir","f":0},"FT_3DAY_NODEP_188FS":{"t":"fair","f":25.03},"FT_RET_CHECKIN_18PCT_10X_SLVR":{"t":"dir","f":0},"FT_DY8_VIP_FC588_5X":{"t":"dir","f":-5.66},"FT_RET_WS1V4_DIA_W2":{"t":"dir","f":0},"FT_FS_GOO_88":{"t":"fair","f":81.34},"FT_RET_88FS":{"t":"fair","f":6.97},"FT_FS_GOO_299":{"t":"fair","f":2.29},"FT_VM_DEP1200_GET600_1X":{"t":"dir","f":-34.62},"FT_VM_DEP600_GET200_2X":{"t":"dir","f":-15.45},"FT_BR_RET_40PCT_12X":{"t":"fair","f":3.84},"FT_VM_FC_88_5X":{"t":"dir","f":0},"FT_REL_18PCT_MAX600_D2":{"t":"hold","f":30.6},"FT_RET_CHECKIN_28PCT_10X_CLS":{"t":"dir","f":0},"FT_REL_TLEO_LC_45PCT_888MX":{"t":"dir","f":0},"FT_CRM_CHURN_MV_58":{"t":"dir","f":0},"FT_RELBONUS_80PCT":{"t":"fair","f":6.09},"FT_REL_TLEO_LC_45PCT_228MX":{"t":"dir","f":0},"FT_highroller_30PC":{"t":"dir","f":47.07},"FT_MIDMONTH_288FS":{"t":"hold","f":254.86},"FT_VM_FC_2088_5XTO":{"t":"dir","f":19.16},"FT_VMFC_2088_3XTO":{"t":"dir","f":0},"FT_REL_70PCT_18X_MIN100":{"t":"dir","f":0},"FT_REL_28PCT_MAX200_D3":{"t":"fair","f":20.7},"FT_DEPBOOSTER_MIN300":{"t":"dir","f":288.28},"FT_VMFS_GOO_138":{"t":"fair","f":8.91},"FT_VM_FC_1288_8X":{"t":"dir","f":-4.74},"FT_VM_DEP300_GET100_2X":{"t":"dir","f":-68.28},"FT_CRM_RET_188FS_GOO_MMM":{"t":"dir","f":0},"FT_ADHOC_FC50_5X":{"t":"fair","f":-1.78},"FT_RELBONUS_90PCT":{"t":"fair","f":4.66},"FT_REL_28PCT_5X_BR_DY3":{"t":"fair","f":11.81},"FT_REL_56PCT_HSD_D4":{"t":"fair","f":27.93},"FT_RET_WS1V4_DIA_POE":{"t":"dir","f":0},"FT_CRM_CHURN_LV_38":{"t":"dir","f":0},"FT_RET_WS1V4_PLAT_W2":{"t":"dir","f":0},"FT_RET_CHECKIN_18PCT_10X_CLS":{"t":"dir","f":0},"FT_RELBONUS_85PCT":{"t":"fair","f":-4.99},"FT_CRM_RET_SL_50FS_GOO_7X":{"t":"dir","f":0},"FT_48FS_5X_040_GOO_MIN100_V1":{"t":"dir","f":0},"FT_VMFS_GOO_148":{"t":"fair","f":11.02},"FT_CNY_96FS_GOO_5X_DY2":{"t":"hold","f":-40.5},"FT_CNY_88FS_GOO_5X_DY6":{"t":"fair","f":61.27},"FT_REL_TLEO_LC_45PCT_688MX":{"t":"dir","f":0},"FT_RET_CRM_ADHOC_20PCT_12X_SIL_V2":{"t":"dir","f":0},"FT_DY4_FC188_5X":{"t":"dir","f":9.68},"FT_DY4_FC288_5X":{"t":"dir","f":8.82},"FT_REL_TLEO_LC_45PCT_228MX_BR":{"t":"dir","f":-117.9},"FT_REL_18PCT_MAX200_D2":{"t":"fair","f":7.07},"FT_REL_LC_40PCT_DC1toDC2":{"t":"dir","f":25.13},"FT_REL_SLOTS_40PCT_DC1toDC2":{"t":"fair","f":7.53},"FT_RELBONUS_95PCT":{"t":"dir","f":0.22},"FT_RET_SD_DB1_1.0":{"t":"dir","f":1.26},"FT_DY12_VIP_FC588_5X":{"t":"dir","f":5.34},"FT_RET_SD_FC1_1.0":{"t":"fair","f":-0.63},"FT_CNY_88FS_GOO_5X_DY3":{"t":"fair","f":49.96},"FT_REL_TLEO_20PCT_100MX":{"t":"dir","f":0},"FT_REL_TLEO_LC_45PCT_458MX_BR":{"t":"dir","f":7.11},"FT_BR_FC100_5X":{"t":"hold","f":-0.21},"FT_REL_LV_188FS_FOO_5X":{"t":"fair","f":23.11},"FT_VM_FC_358_5X":{"t":"dir","f":1.85},"FT_48FS_5X_040_GOO_MIN300":{"t":"dir","f":0},"FT_RET_CRM_ADHOC_20PCT_12X_SIL":{"t":"dir","f":0},"FT_CRM_CHURN_HIGHVALUE_350FS":{"t":"dir","f":0},"FT_RET_WS1V4_GOLD_W2":{"t":"dir","f":0},"FT_CNY_88FS_GOO_5X_DY4":{"t":"fair","f":7.29},"FT_VM_FC_2088_8X":{"t":"dir","f":38.31},"FT_RELBONUS_100PCT":{"t":"dir","f":-0.41},"FT_REL_LV_288FS_FOO_5X":{"t":"fair","f":13.16},"FT_SIL_FC58_5X":{"t":"dir","f":25.79},"FT_POWERUP_BONUS_188FS_5X":{"t":"dir","f":56.66},"FT_SIL_FC58_5X_DY2":{"t":"dir","f":17.93},"FT_CRM_CHURN_MIDVALUE_388FS":{"t":"dir","f":0},"FT_CNY_88FS_GOO_5X_DY9":{"t":"hold","f":-10.46},"FT_RET_WS1V4_GOLD_POE":{"t":"dir","f":0},"FT_VMFS_GOO_168":{"t":"fair","f":-0.59},"FT_28FS_GOO_15X_040_WCCHURNED_D1":{"t":"dir","f":0},"FT_RET_CRM_ADHOC_20PCT_12X_BR":{"t":"dir","f":0},"FT_28FC_15X_WCCHURNED_D1":{"t":"dir","f":0},"FT_RET_CRM_ADHOC_20PCT_12X_BR_V2":{"t":"dir","f":0},"Sportsbook_First_Bet_Tier_3":{"t":"dir","f":0},"FT_VMFS_GOO_158":{"t":"fair","f":7.54},"FT_RET_MD_DB1_2.0":{"t":"dir","f":-1.2},"FC_KYC_30":{"t":"fair","f":6.86},"FT_15PCT_SLCS_MMM":{"t":"dir","f":2.67},"FT_CNY_88FS_GOO_5X_DY8":{"t":"hold","f":148.26},"FT_28FS_GOO_15X_040_WCCHURNED_D2":{"t":"dir","f":0},"FT_CRM_CHURN_LOWVALUE_288FS":{"t":"dir","f":0},"FT_CNY_88FS_GOO_5X_DY5":{"t":"fair","f":-5.55},"FT_SIL_FC58_5X_DY3":{"t":"dir","f":4.38},"FT_REL_SLOTS_25PCT_DC1toDC2":{"t":"fair","f":21.68},"FT_REL_50PCT_18X_MIN500":{"t":"dir","f":0},"FT_REL_TLEO_50PCT_25MX_SLOT":{"t":"dir","f":0},"FT_REL_LC_25PCT_DC1toDC2":{"t":"dir","f":37.06},"optimove_my_ss_waterfall_increase_bet_c":{"t":"dir","f":69.41},"FT_REL_TLEO_45PCT_138MX":{"t":"dir","f":0},"FT_28FC_15X_WCCHURNED_D2":{"t":"dir","f":0},"FT_28FS_GOO_15X_040_WCCHURNED_D3":{"t":"dir","f":0},"FT_RELBONUS_100PCT388":{"t":"dir","f":-0.35},"FT_REL_TLEO_LC_20PCT_20MX_BR":{"t":"hold","f":-62.39},"FT_REL_50PCT_18X_MIN300":{"t":"dir","f":0},"FT_REL_TLEO_45PCT_228MX_BR":{"t":"dir","f":0},"FT_28FC_15X_WCCHURNED_D3":{"t":"dir","f":0},"FT_REL_27PCT_HSD_D1":{"t":"fair","f":14.34},"FT_DEPBOOSTER_MIN100":{"t":"hold","f":162.1},"FT_ADHOC_REL_200FS_GOO_5X":{"t":"fair","f":-1.28},"FT_CRM_RET_LC_20PCT_7X":{"t":"dir","f":0},"FT_JUNE_SIL_D1_FC100":{"t":"dir","f":0},"FT_POWERUP_BONUS_288FS_5X":{"t":"dir","f":56.95},"optimove_my_ss_waterfall_increase_bet_a":{"t":"hold","f":41.89},"FT_RET_WS1V4_SILVER_W2":{"t":"dir","f":0},"optimove_my_ss_waterfall_increase_bet_d":{"t":"dir","f":-7.54},"FT_FS_GOO_199_0.6":{"t":"dir","f":-1.78},"FT_WC26_DEP_30PCT_1K_GLD":{"t":"dir","f":0},"FT_28FS_GOO_15X_020_WCCHURNED_D1":{"t":"dir","f":0},"FT_28FS_5X_040_GOO_MIN300":{"t":"dir","f":0},"FT_REL_TLEO_LC_45PCT_458MX":{"t":"dir","f":0},"FT_VMFS_GOO_178":{"t":"dir","f":-0.37},"FT_28FS_GOO_15X_020_WCCHURNED_D2":{"t":"dir","f":0},"FT_RET_HD_DB1_ADHOC":{"t":"dir","f":27.42},"FT_REL_TLEO_20PCT_200MX":{"t":"dir","f":0},"FT_3DAY_NODEP_388FS":{"t":"dir","f":280.66},"optimove_my_ss_waterfall_increase_bet_b":{"t":"dir","f":46.77},"FT_RET_SD_DB2_1.0":{"t":"dir","f":2.92},"FT_BR_FC38_5X":{"t":"dir","f":-0.76},"FT_FS_GOO_199_0.4":{"t":"dir","f":187.25},"optimove_my_ss_waterfall_increase_bet_e":{"t":"dir","f":2.52},"FT_VM_FC_688_5X":{"t":"dir","f":-0.45},"FT_RET_CHECKIN_8PCT_10X_CLS":{"t":"dir","f":0},"FT_REL_SPORTS_40PCT_DC1toDC2":{"t":"dir","f":0},"FT_RET_WS1V4_SILVER_POE":{"t":"dir","f":0},"FT_CRM_ACQ_REL_POWERUP_BONUS_288FS_5X":{"t":"dir","f":0},"FT_RET_CHECKIN_8PCT_10X_SLVR":{"t":"dir","f":0},"FT_DY15_FC288_5X":{"t":"dir","f":11.34},"FT_28FS_GOO_15X_020_WCCHURNED_D3":{"t":"dir","f":0},"FT_REL_50PCT_18X_MIN100":{"t":"dir","f":0},"FT_CRM_ACQ_REL_SLOTS_40PCT_DC1toDC2":{"t":"dir","f":0},"You_Lose_We_Pay_2026":{"t":"dir","f":0},"AM_FS_OLYMP_10":{"t":"fair","f":75.49},"FT_REL_30PCT_18X_MIN500":{"t":"dir","f":0},"FT_CRM_RET_15PCT_SLCS_MMM":{"t":"dir","f":0},"FT_BOOSTER_288FS_300":{"t":"dir","f":796.84},"FT_highroller_50PC":{"t":"dir","f":40.64},"FT_CRM_ACQ_REL_POWERUP_BONUS_188FS_5X":{"t":"dir","f":0},"FT_JUNE_SIL_D2_FC70":{"t":"dir","f":0},"FT_48FS_5X_040_GOO_MIN500":{"t":"dir","f":0},"FT_REL_30PCT_18X_MIN300":{"t":"dir","f":0},"FT_RELBONUS_105PCT":{"t":"dir","f":-44.52},"FT_CRM_RET_FS_GOO_88":{"t":"dir","f":0},"FT_REL_TLEO_45PCT_458MX_BR":{"t":"dir","f":0},"FT_VM_FC_458_5X":{"t":"dir","f":-3.04},"FT_BR_REL_38FS_FOO_5X":{"t":"hold","f":-6.73},"FT_JUNE_SIL_D4_FC50":{"t":"dir","f":0},"EZUGI_ANGPAO_GIVEAWAY_FC450":{"t":"dir","f":-13.08},"FT_SIL_REL_58FS_FOO_5X":{"t":"hold","f":-28.36},"FT_BR_FC38_5X_DY3":{"t":"dir","f":-0.36},"FT_BR_FC38_5X_DY2":{"t":"dir","f":-0.91},"FT_SIL_REL_58FS_SR_5X":{"t":"dir","f":20.71},"FT_FS_GOO_99":{"t":"fair","f":23.2},"FT_REL_30PCT_18X_MIN100":{"t":"dir","f":0},"FT_WEL_18FS_020_GOO":{"t":"dir","f":0},"FT_10FC_15X_WCCHURNED_D1":{"t":"dir","f":0},"FT_JUNE_SIL_D3_FC50":{"t":"dir","f":0},"FT_68FS_5X_040_GOO":{"t":"dir","f":0},"FT_JUNE_BR_D1_FC50":{"t":"dir","f":0},"FT_RELBONUS_115PCT":{"t":"dir","f":9.86},"FT_REL_MV_188FS_CCS_5X":{"t":"dir","f":10.5},"FT_108 Free Spins Bonus - Gates of Olympus":{"t":"dir","f":7.33},"FT_CRM_ACQ_REL_SPORTS_40PCT_DC1toDC2":{"t":"dir","f":0},"FT_REL_18PCT_MIN888_18X":{"t":"dir","f":201.9},"FT_CRM_ACQ_REL_LC_40PCT_DC1toDC2":{"t":"dir","f":0},"FT_VMFS_GOO_198":{"t":"dir","f":-9.17},"FT_VMFS_GOO_188":{"t":"dir","f":-170.65},"FT_REL_18PCT_MIN388_18X":{"t":"dir","f":175.43},"FT_RET_WS1V4_PLAT_POE":{"t":"dir","f":0},"FT_REL_100PCT_22X_WCFTD":{"t":"dir","f":0},"FT_RET_CRM_CHURN_38FS_10X_040_GOO_SIL_V2":{"t":"dir","f":0},"FT_10FC_15X_WCCHURNED_D2":{"t":"dir","f":0},"FT_REL_MV_288FS_CCS_5X":{"t":"dir","f":50.3},"FT_10FC_15X_WCCHURNED_D3":{"t":"dir","f":0},"WELC_VIPMIGRATION_22X":{"t":"dir","f":25.11},"FT_RET_WS1V4_CLASSIC_POE":{"t":"dir","f":0},"FT_JUNE_SIL_D5_FC30":{"t":"dir","f":0},"FT_JUNE_BR_D3_FC30":{"t":"dir","f":0},"optimove_my_new_20pct_exclusive":{"t":"dir","f":2},"FT_REL_COMEBACK_BONUS_50PCT_7X":{"t":"dir","f":1.84},"FT_RET_CRM_CHURN_68FS_10X_040_GOO_GLD_V2":{"t":"dir","f":0},"FT_88FS_5X_040_GOO_V1":{"t":"dir","f":0},"EZUGI_ANGPAO_GIVEAWAY_FC230":{"t":"dir","f":453.33},"FT_REL_TLEO_LC_45PCT_48MX":{"t":"dir","f":0},"FT_CRM_ACQ_REL_SLOTS_25PCT_DC1toDC2":{"t":"dir","f":0},"FT_REL_TLEO_20PCT_20MX_BR":{"t":"dir","f":0},"FT_JUNE_BR_D2_FC30":{"t":"dir","f":0},"FT_REL_ALLGAMES_20PCT":{"t":"dir","f":0},"FT_COMEBACK_BONUS_50FS_5X":{"t":"dir","f":4.51},"FT_DY8_FC188_5X":{"t":"dir","f":0.09},"FC_minigames_RM188":{"t":"dir","f":-2846.86},"FT_REL_SPORTS_25PCT_DC1toDC2":{"t":"dir","f":0.28},"FT_JUNE_BR_D5_FC20":{"t":"dir","f":0},"FT_JUNE_BR_D4_FC20":{"t":"dir","f":0},"FT_RET_CRM_CHURN_18FC_15X_SIL_V1":{"t":"dir","f":0},"EZUGI_ANGPAO_GIVEAWAY_FC90":{"t":"dir","f":291.12},"FC_minigames_RM88":{"t":"dir","f":92.75},"FT_SIL_REL_58FS_GOO_5X":{"t":"dir","f":56.01},"FT_CRM_ACQ_REL_LC_25PCT_DC1toDC2":{"t":"dir","f":0},"FT_RET_CRM_CHURN_38FC_15X_GLD_V1":{"t":"dir","f":0},"FT_RET_CRM_CHURN_38FC_15X_GLD_D2_V1":{"t":"dir","f":0},"FT_RET_HD_DB2_ADHOC":{"t":"dir","f":17.03},"FT_CASINO_50%_WB":{"t":"dir","f":0},"FT_VM_DEP150_GET50_2X":{"t":"dir","f":67.97},"FT_BR_REL_38FS_GOO_5X":{"t":"dir","f":-8.34},"FT_REL_20PCT_MIN588_20X":{"t":"dir","f":119.55},"FT_CNY_88FS_GOO_5X_DY7":{"t":"dir","f":248.57},"FT_RET_CRM_CHURN_38FC_15X_GLD_D3_V1":{"t":"dir","f":0},"FT_RET_CRM_CHURN_68FS_10X_040_GOO_GLD_D2":{"t":"dir","f":0},"FT_RELBONUS_110PCT":{"t":"dir","f":-38.06},"FT_RET_CRM_CHURN_18FC_15X_SIL_D2_V1":{"t":"dir","f":0},"FT_RET_WS1V4_CLASSIC_W2":{"t":"dir","f":0},"FT_JUNE_BR_D6_REL50":{"t":"dir","f":0},"FC_STREAM8_100_5X":{"t":"dir","f":0},"FT_REL_50PCT_15X_WCFTD":{"t":"dir","f":0},"FC_STREAM9_100_5X":{"t":"dir","f":0},"FT_RND_218FS_GOO_SS_120825":{"t":"dir","f":0.44},"FT_CRM_ACQ_REL_COMEBACK_BONUS_50PCT_7X":{"t":"dir","f":0},"FT_RET_CRM_CHURN_18FC_15X_SIL_D3_V1":{"t":"dir","f":0},"FT_REL_HV_188FS_MW3_5X":{"t":"dir","f":38.85},"FT_ADHOC_RND_2507":{"t":"dir","f":0},"FT_RET_CRM_CHURN_38FS_10X_040_GOO_SIL_D2":{"t":"dir","f":0},"FT_CRM_ACQ_REL_COMEBACK_BONUS_30FS_5X":{"t":"dir","f":0},"FT_BR_REL_38FS_SR_5X":{"t":"dir","f":-16.05},"FT_REL_TLEO_50PCT_25MX_LC":{"t":"dir","f":0},"FT_CRM_RET_PAYDAY_100FS_GOO_MD250":{"t":"dir","f":0},"FT_RET_CRM_CHURN_28FS_10X_040_GOO_SIL_V2":{"t":"dir","f":0},"FT_RET_CRM_CHURN_38FS_10X_040_GOO_SIL_D3":{"t":"dir","f":0},"FT_CRM_ACQ_REL_COMEBACK_BONUS_50FS_5X":{"t":"dir","f":0},"FT_COMEBACK_BONUS_30FS_5X":{"t":"dir","f":46.83},"FT_REL_COMEBACK_BONUS_20PCT_5X":{"t":"dir","f":19.13},"FT_FC50_MAX50_15X":{"t":"dir","f":-0.02},"FT_REL_LV_88FS_FOO_5X":{"t":"dir","f":7.18},"FT_MIDMONTH_15PCT":{"t":"dir","f":-25.04},"AM_FS_OLYMP_100":{"t":"dir","f":-91.05},"FT_TEST_PP2_GOO_88FS_10X":{"t":"dir","f":0},"FT_RET_CRM_CHURN_68FS_10X_040_GOO_GLD_D3":{"t":"dir","f":0},"REL_199FS_GOO_CROSS_070525":{"t":"dir","f":1.71},"FT_MIDMONTH_20PCT":{"t":"dir","f":-2406.76},"FT_138FS_5X_040_GOO_V1":{"t":"dir","f":0},"FT_MIGRATION_NODEP_180FS":{"t":"dir","f":-10.34},"FT_REL_20PCT_MIN128_20X":{"t":"dir","f":0},"FT_CRM_ACQ_REL_COMEBACK_BONUS_20PCT_5X":{"t":"dir","f":0},"FT_REL_MV_88FS_CCS_5X":{"t":"dir","f":-3.33},"FT_REL_TLEO_SL_20PCT_10MX":{"t":"dir","f":0},"FT_FC20":{"t":"dir","f":332.35},"FT_RET_CRM_CHURN_18FC_15X_SIL_D3_V2":{"t":"dir","f":0},"FT_RET_CRM_CHURN_18FC_15X_SIL_D2_V2":{"t":"dir","f":0},"FT_RET_CRM_CHURN_18FC_15X_SIL_V2":{"t":"dir","f":0},"FT_REL_188FS_15X":{"t":"dir","f":5.5},"FT_RET_CRM_CHURN_28FS_10X_040_GOO_SIL_D2":{"t":"dir","f":0},"88FS_CROSS_FREE_SET-AA":{"t":"dir","f":6.5},"TEST_FT_30PCT_1X":{"t":"dir","f":0},"FT_RET_CRM_CHURN_58FS_10X_040_GOO_GLD_V2":{"t":"dir","f":0},"FT_RET_CRM_CHURN_28FS_10X_040_GOO_SIL_D3":{"t":"dir","f":0},"FT_10 Free Spins Bonus - Classic/Bronze":{"t":"dir","f":6291.5}},"forward_plan":{"free_up":2026428,"stops_losing":{"exp":2214305,"lo":1717243,"hi":2711366},"reinvest_into_winners":{"rate":2,"reinvestable":1013214,"exp":2026428,"lo":810571,"hi":2634357},"total_swing_exp":4240733,"dont_cut":{"n":24,"freed_if_cut":491906,"codes":[{"code":"optimove_my_weekly_rescue_bonus_tier_3c","pillar":"VIP","per_rm":0.3,"freed_if_cut":96036},{"code":"FT_108FC_5X_GL_DY4","pillar":"Retention","per_rm":14.17,"freed_if_cut":48600},{"code":"optimove_my_weekly_rescue_bonus_tier_3b","pillar":"VIP","per_rm":9.58,"freed_if_cut":45930},{"code":"FT_VM_DEP700_GET300_2X","pillar":"VIP","per_rm":14.78,"freed_if_cut":42900},{"code":"FT_VM_DEP1000_GET1000_1X","pillar":"VIP","per_rm":35.66,"freed_if_cut":32000},{"code":"FT_VM_DEP1000_GET1000_2X","pillar":"VIP","per_rm":1.22,"freed_if_cut":31000},{"code":"FT_VM_DEP1000_GET700_1X","pillar":"VIP","per_rm":1.84,"freed_if_cut":28350},{"code":"FT_VM_FC_388_5X","pillar":"VIP","per_rm":0.42,"freed_if_cut":24250}]},"not_bankable_holdout":1491024,"by_pillar":{"Retention":{"current_spend":3801230,"freed":493593,"proposed_after_cuts":3307637},"VIP":{"current_spend":8460186,"freed":1532836,"proposed_after_cuts":6927350}}},"cap_segment":{"cap_n":393,"cap_bonus":516256,"protect_n":3306,"protect_bonus":4340386,"keep_n":3145,"by_tier":[{"tier":"Silver","n":168,"bonus":165051},{"tier":"Gold","n":56,"bonus":135499},{"tier":"Diamond","n":13,"bonus":123748},{"tier":"Platinum","n":13,"bonus":55582},{"tier":"Bronze","n":142,"bonus":34617},{"tier":"Classic","n":1,"bonus":1759}]}};
 const LTV = {"market":"MY","currency":"MYR","symbol":"RM","as_of":"2026-08-30","basis":"Whole-book player value (not promo-attributed): every member's first-ever deposit dates the cohort; cumulative net revenue per member follows the FULL snapshot history back to 2018 — the real lifetime curve, not the YTD window the promo-cut analysis uses.","cohorts":[{"year":2019,"n":19721,"max_offset":7,"cum_per_member":{"0":-234,"1":1013,"2":2620,"3":3995,"4":5095,"5":6170,"6":7475,"7":8367}},{"year":2020,"n":21052,"max_offset":6,"cum_per_member":{"0":748,"1":1960,"2":2634,"3":3178,"4":3864,"5":4622,"6":5197}},{"year":2021,"n":24006,"max_offset":5,"cum_per_member":{"0":907,"1":1898,"2":2497,"3":3083,"4":3823,"5":4304}},{"year":2022,"n":30399,"max_offset":4,"cum_per_member":{"0":510,"1":1370,"2":1973,"3":2588,"4":2931}},{"year":2023,"n":39695,"max_offset":3,"cum_per_member":{"0":346,"1":826,"2":1321,"3":1621}},{"year":2024,"n":82451,"max_offset":2,"cum_per_member":{"0":459,"1":1098,"2":1480}},{"year":2025,"n":91524,"max_offset":1,"cum_per_member":{"0":574,"1":1068}},{"year":2026,"n":40465,"max_offset":0,"cum_per_member":{"0":317}}],"blended_cum_per_member":{"0":473,"1":1196,"2":1847,"3":2689,"4":3811,"5":4975,"6":6299,"7":8367},"summary":{"mature_year":2019,"mature_offset":7,"mature_yr0":-234,"mature_final":8367,"blended_yr0":473,"blended_yr1":1196,"blended_yr3":2689,"yr1_multiple":2.5,"cohorts_negative_yr0":[2019]}};
+const LTVSRC = {
+  "market": "MY",
+  "currency": "MYR",
+  "symbol": "RM",
+  "as_of": "2026-08-30",
+  "basis": "Join-year cohorts 2019-2024 split by the mechanic of each player's FIRST bonus; cumulative net revenue per member over years, whole-book. Which welcome mechanic acquires keepers.",
+  "groups": [
+    {
+      "mech": "FreeCredit",
+      "label": "Free credit",
+      "n": 50609,
+      "max_offset": 7,
+      "cum_per_member": {
+        "0": 609,
+        "1": 1592,
+        "2": 2346,
+        "3": 3358,
+        "4": 4562,
+        "5": 5903,
+        "6": 7403,
+        "7": 8981
+      }
+    },
+    {
+      "mech": "DepositBonus",
+      "label": "Deposit bonus",
+      "n": 81601,
+      "max_offset": 7,
+      "cum_per_member": {
+        "0": 467,
+        "1": 1360,
+        "2": 2029,
+        "3": 2662,
+        "4": 3271,
+        "5": 3917,
+        "6": 4719,
+        "7": 5436
+      }
+    },
+    {
+      "mech": "Organic",
+      "label": "No welcome bonus",
+      "n": 84827,
+      "max_offset": 7,
+      "cum_per_member": {
+        "0": 364,
+        "1": 942,
+        "2": 1377,
+        "3": 1762,
+        "4": 2202,
+        "5": 2600,
+        "6": 2693,
+        "7": 2676
+      }
+    }
+  ],
+  "summary": {
+    "best_by_yr3": "Free credit",
+    "best_yr3": 3358,
+    "ranking_yr3": [
+      {
+        "label": "Free credit",
+        "n": 50609,
+        "yr3": 3358,
+        "yr1": 1592
+      },
+      {
+        "label": "Deposit bonus",
+        "n": 81601,
+        "yr3": 2662,
+        "yr1": 1360
+      },
+      {
+        "label": "No welcome bonus",
+        "n": 84827,
+        "yr3": 1762,
+        "yr1": 942
+      }
+    ]
+  }
+};
+const WHALELTV = {
+  "market": "MY",
+  "currency": "MYR",
+  "symbol": "RM",
+  "as_of": "2026-08-30",
+  "threshold_ytd_ngr": 112721,
+  "n_whales": 74,
+  "avg_lifetime_ngr": 1226613.0,
+  "median_lifetime_ngr": 673395.0,
+  "max_lifetime_ngr": 9289748.0,
+  "avg_ytd_ngr": 491570.0,
+  "avg_tenure_years": 3.3,
+  "total_lifetime_ngr": 90769358.0,
+  "total_ytd_ngr": 36376187.0,
+  "lifetime_to_ytd_ratio": 2.5,
+  "pct_joined_before_2025": 59,
+  "basis": "Members whose YTD net revenue clears the top-1% whale threshold, with their FULL-history cumulative net revenue and tenure — whole-book, not promo-attributed. Shows whales are multi-year assets: what one is worth over its life vs this year."
+};
 const P = PAYLOAD, SYM = P.sym || 'RM';
 const DEC = {
   Scale:{c:'var(--scale)',bg:'var(--scale-bg)',d:'grow it'}, Maintain:{c:'var(--maintain)',bg:'var(--maintain-bg)',d:'hold steady'},
@@ -1967,6 +2072,21 @@ function campaignView(){
     (gaps.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Unmapped code</th><th class="l">Pillar</th><th>Spend</th></tr></thead><tbody>`+gaps.slice(0,6).map(g=>`<tr><td class="l">${g.code}</td><td class="l">${g.pillar}</td><td>${sMc(g.spend)}</td></tr>`).join('')+`</tbody></table></div>`:'')+
     `<div class="fine" style="margin-top:8px"><b>${sMc(unk.spend)}</b> of spend has <b>no confirmed owner</b>, and every tag is inferred. Ask CRM / Sales / Marketing to confirm each campaign's <b>objective, segment and owner</b> — that is what turns this draft into validated attribution.</div>`;
 }
+function renderWhaleLTV(){
+  if(typeof WHALELTV==='undefined' || !WHALELTV) return;
+  const card=document.getElementById('w_ltvCard'); if(card)card.hidden=false;
+  const box=document.getElementById('w_ltv'); if(!box)return;
+  const W=WHALELTV, SY=W.symbol||'RM';
+  const M=v=>SY+(Math.abs(v)>=1e6?(v/1e6).toFixed(2)+'M':Math.abs(v)>=1e3?Math.round(v/1e3)+'k':Math.round(v));
+  box.innerHTML=
+    `<p class="sub2">The ${W.n_whales} whales aren't a one-year number — they're <b>multi-year assets</b>. Here's what one is worth over its whole life vs just this year (full history back to 2018).</p>`+
+    `<div class="ngrstrip">`+
+      `<div><span class="nl">A whale is worth (lifetime)</span><span class="nv" style="color:var(--scale)">${M(W.avg_lifetime_ngr)}</span><span class="ns">avg over ${W.avg_tenure_years} years — ${W.lifetime_to_ytd_ratio}× this year's ${M(W.avg_ytd_ngr)}</span></div>`+
+      `<div><span class="nl">Median whale</span><span class="nv">${M(W.median_lifetime_ngr)}</span><span class="ns">top whale ${M(W.max_lifetime_ngr)} lifetime</span></div>`+
+      `<div><span class="nl">All ${W.n_whales} whales, combined</span><span class="nv">${M(W.total_lifetime_ngr)}</span><span class="ns">${W.pct_joined_before_2025}% joined before 2025</span></div>`+
+    `</div>`+
+    `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">◆</span><div><b>Why this is the protect-don't-cut number.</b> A wrong cut doesn't cost you one year of a whale — it risks the <b>${M(W.avg_lifetime_ngr)} of lifetime value</b> already built over ${W.avg_tenure_years} years. Judge whale spend against the lifetime figure, not the annual one. <span class="fine">Whole-book net revenue (after bonus), not promo-attributed.</span></div></div>`;
+}
 function renderLTV(){
   if(typeof LTV==='undefined' || !LTV) return;
   const card=document.getElementById('s_ltvCard'); if(card)card.hidden=false;
@@ -2405,6 +2525,36 @@ function renderSweetByTier(block, ids, sym){
   reco.className='fine';
   reco.innerHTML='<div class="srlegend"><span><i style="background:var(--scale)"></i>higher = better</span><span><i style="background:var(--stop)"></i>lower / negative</span><span><i class="ring"></i>tier best</span></div>'+rows+note;
 }
+function renderAcqLTV(){
+  if(typeof LTVSRC==='undefined' || !LTVSRC) return;
+  const card=document.getElementById('acqLtvCard'); if(card)card.hidden=false;
+  const box=document.getElementById('acqLtv'); if(!box)return; box.innerHTML=''; box.style.maxWidth='700px';
+  const SY=LTVSRC.symbol||'RM', groups=LTVSRC.groups, S=LTVSRC.summary;
+  const COL={'Free credit':CV('--scale'),'Deposit bonus':CV('--accent'),'Free spins':CV('--optimise'),'No welcome bonus':CV('--muted')};
+  const km=v=>SY+(Math.abs(v)>=1000?(v/1000).toFixed(Math.abs(v)<10000?1:0)+'k':Math.round(v));
+  const maxOff=Math.max(...groups.map(g=>g.max_offset));
+  const allV=groups.flatMap(g=>Object.values(g.cum_per_member));
+  const minY=Math.min(0,...allV), maxY=Math.max(...allV);
+  const W=560,H=280,l=52,r=96,t=14,b=38;
+  const sx=v=>l+(v/(maxOff||1))*(W-l-r), sy=v=>H-b-((v-minY)/((maxY-minY)||1))*(H-t-b);
+  const nt=(lo,hi,n)=>{const sp=hi-lo;if(sp<=0)return[lo];const raw=sp/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),nm=raw/mag,st=(nm<1.5?1:nm<3?2:nm<7?5:10)*mag,o=[];for(let v=Math.ceil(lo/st)*st;v<=hi+st*0.001;v+=st)o.push(v);return o;};
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:l,y1:sy(0),x2:W-r,y2:sy(0),stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+  nt(minY,maxY,5).forEach(g=>{const y=sy(g); if(g!==0)s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,stroke:CV('--line-2'),'stroke-opacity':.3}));
+    const ty=el('text',{x:l-6,y:y+3.5,'text-anchor':'end',class:'axlab',style:'font-size:10px'});ty.textContent=km(g);s.append(ty);});
+  for(let x=0;x<=maxOff;x++){const px=sx(x);const tx=el('text',{x:px,y:H-b+14,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent='yr'+x;s.append(tx);}
+  groups.forEach(g=>{const col=COL[g.label]||CV('--accent'), offs=Object.keys(g.cum_per_member).map(Number).sort((a,b)=>a-b); if(!offs.length)return;
+    let d=''; offs.forEach((o,i)=>{d+=(i?'L':'M')+sx(o)+' '+sy(g.cum_per_member[o])+' ';});
+    s.append(el('path',{d,fill:'none',stroke:col,'stroke-width':2.2}));
+    const lo=offs[offs.length-1], lt=el('text',{x:sx(lo)+5,y:sy(g.cum_per_member[lo])+3,'text-anchor':'start',style:'font-size:10px;font-weight:600;fill:'+col});lt.textContent=g.label;s.append(lt);});
+  axTitle(s,(l+W-r)/2,H-3,'years since first deposit →');
+  axTitle(s,12,(t+H-b)/2,'cumulative net revenue / member',true);
+  box.append(s);
+  const worst=(S.ranking_yr3||[]).slice(-1)[0];
+  box.insertAdjacentHTML('beforeend',
+    `<p class="sub2" style="margin-top:10px">New players split by the <b>mechanic of their first bonus</b>, followed over years (mature cohorts). This is which welcome <b>acquires keepers</b> — not just who's cheap to sign up.</p>`+
+    `<div class="varbox" style="border-color:var(--scale);margin-top:6px"><span class="ico">◆</span><div><b>${S.best_by_yr3} welcomes bring the best players</b> — worth <b>${SY}${(S.best_yr3||0).toLocaleString()}</b> per member by year 3${worst&&worst.label!==S.best_by_yr3?`, vs ${SY}${(worst.yr3||0).toLocaleString()} for ${worst.label.toLowerCase()}`:''}. A <b>cheap sign-up isn't the same as a valuable one</b> — weight acquisition toward the mechanic that brings lifetime value, not just low cost-per-depositor. <span class="fine">Whole-book value, directional; individual codes change but the mechanic pattern holds.</span></div></div>`);
+}
 function renderAcqSweet(){
   const B=(typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLOAD.sweet_sizetype:null; if(!B) return;
   const sym=(PAYLOAD&&PAYLOAD.sym)||'RM';
@@ -2451,6 +2601,7 @@ renderSweetByTier((typeof VIP!=='undefined'&&VIP)?VIP.sweet_by_tier:null, {size:
   })();
 renderSweetByTier((typeof RET!=='undefined'&&RET)?RET.sweet_by_tier:null, {size:'vst_ret_size',depreq:'vst_ret_depreq',mech:'vst_ret_mech',reco:'vst_ret_reco'}, RSYM);
 renderAcqSweet();
+renderAcqLTV();
 // ---- "Bonus sweet spot" summary that headlines each pillar's Main findings ----
 function ssTemplate(pillar,type,size,tier,verdict){
   return '<div class="sweetsum"><div class="sshdr"><span class="ssico">◆</span> Bonus sweet spot — '+pillar+'</div>'+
@@ -2702,12 +2853,14 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       var a=sb.querySelector('.whalelink'); if(a) a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector('[data-tab="whale"]'); if(t) t.click(); window.scrollTo(0,0);});
     }
   })();
+  renderWhaleLTV();
   buildPanel('panel-whale',[
     htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
     leadSec('Main findings',[byId('w_meta')]),
     leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
     cardSec(cardById('v_whale')),           // Where value concentrates (concept, before the call)
     cardSec(byId('w_rosterCard')),          // The 74 whales
+    cardSec(byId('w_ltvCard')),             // whale lifetime value
     cardSec(byId('vipWhaleCard')),          // At-risk ledger (the who's-at-risk evidence)
     cardSec(byId('w_decisionCard')),        // The whale call (the decision, after concept + evidence)
     cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
@@ -2728,6 +2881,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('chartMech')),          // by bonus type
     cardSec(byId('acqDepoCard')),            // deposit-split (concept, before sweet spot)
     cardSec(byId('acqSweetCard')),           // sweet spot
+    cardSec(byId('acqLtvCard')),             // LTV by welcome source
     cardSec(byId('acqFunnelCard')),          // claim→deposit leakage
     cardSec(byId('acqParetoCard')),          // is the headline real? (robustness capstone, late)
     cardSec(cardById('tbl')),                // decision table (reference)
