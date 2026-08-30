@@ -65,6 +65,17 @@ try:
     }
 except FileNotFoundError:
     pass
+
+# cap segment (give-to-take) — optional
+try:
+    csj = json.load(open(SCR / "cap-segment-MY.json", encoding="utf-8"))
+    cs = csj["summary"]
+    out["cap_segment"] = {"cap_n": cs["CAP"]["n"], "cap_bonus": cs["CAP"]["bonus"],
+                          "protect_n": cs["PROTECT"]["n"], "protect_bonus": cs["PROTECT"]["bonus"],
+                          "keep_n": cs["KEEP"]["n"],
+                          "by_tier": [{"tier": t, "n": v["n"], "bonus": v["bonus"]} for t, v in csj.get("cap_by_tier", {}).items()]}
+except FileNotFoundError:
+    pass
 json.dump(out, open(SCR / "attribution-summary-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 print(f"attribution summary: valid {len(valid)} / need-holdout {len(holdo)} | own {own} -> fair {did} /RM (gap {gap}) | "
       f"too-pess {bshare(pess)}% / too-opt {bshare(opti)}% | {len(flip_rows)} flips")

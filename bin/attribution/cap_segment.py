@@ -57,11 +57,16 @@ for r in rows:
     by_rec[r["rec"]]["n"] += 1; by_rec[r["rec"]]["bonus"] += r["vip_bonus"]
 
 cap = sorted([r for r in rows if r["rec"] == "CAP"], key=lambda r: -r["vip_bonus"])
+cap_by_tier = defaultdict(lambda: {"n": 0, "bonus": 0})
+for r in cap:
+    a = cap_by_tier[r["tier"]]; a["n"] += 1; a["bonus"] += r["vip_bonus"]
+cap_by_tier = dict(sorted(cap_by_tier.items(), key=lambda kv: -kv[1]["bonus"]))
 out = {
     "as_of": "2026-08-30", "key_metric": "give_to_take = vip_bonus / house-margin(GGR); >1 = underwater",
     "filters": {"trigger": f"max repeat claims of one code >= {REPEAT_MIN}", "underwater": "give_to_take > 1 OR ytd_ngr < 0",
                 "safe_to_cut": "active (deposited in H2)", "exclude": "cooling (H2 < H1) -> PROTECT"},
     "summary": {k: by_rec[k] for k in ("CAP", "PROTECT", "KEEP", "REVIEW")},
+    "cap_by_tier": cap_by_tier,
     "cap_top": [{"ref": r["ref"], "tier": r["tier"], "give_to_take": r["give_to_take"], "max_repeat": r["max_repeat"],
                  "vip_bonus": r["vip_bonus"]} for r in cap[:15]],
 }
@@ -74,6 +79,7 @@ mean = {"CAP": "cap the next same-code repeat", "PROTECT": "cooling -> retain, n
 for k in ("CAP", "PROTECT", "KEEP", "REVIEW"):
     print(f"{k:<9}{by_rec[k]['n']:>9,}{('RM'+format(by_rec[k]['bonus'],',')):>13}   {mean[k]}")
 print(f"\nCAP pool bonus (recoverable target) = RM{by_rec['CAP']['bonus']:,} across {by_rec['CAP']['n']:,} members")
+print("CAP by tier:  " + "  ".join(f"{t} {v['n']} (RM{v['bonus']:,})" for t, v in cap_by_tier.items()))
 print("Top CAP members (opaque ref · tier · give-to-take · repeats · bonus):")
 for r in cap[:10]:
     print(f"   {r['ref']}  {r['tier']:<9} g2t {r['give_to_take']:>5}  x{r['max_repeat']:<3} claims  RM{r['vip_bonus']:,}")
