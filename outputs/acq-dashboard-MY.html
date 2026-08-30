@@ -218,6 +218,16 @@
   @media(max-width:640px){.sweetsum .ssrow{grid-template-columns:1fr;gap:3px}}
   @media(max-width:760px){.toc ol{grid-template-columns:1fr}}
   @media(max-width:640px){.about .abrow{grid-template-columns:1fr;gap:3px}}
+  @media print{
+    :root{color-scheme:light}
+    .toc,.tabs,.tabbar,nav.toc,footer{display:none!important}
+    .sec.collapsed .sec-b{display:block!important}   /* expand every section so the printout shows content */
+    .sec-h .chev{display:none}
+    .card,.sec,table,.varbox{break-inside:avoid}
+    .card{box-shadow:none}
+    /* print the active tab in light ink even if viewed in dark mode */
+    :root[data-theme="dark"]{--bg:#fff;--surface:#fff;--ink:#1a2420;--muted:#5a6b64;--line:#e2e8e4;--line-2:#eef2ef}
+  }
   /* tabs + panels */
   .tabs{display:flex;gap:2px;flex-wrap:wrap;margin:22px 0 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;background:var(--bg);padding-top:9px;transition:box-shadow .18s ease}
   .tabs.stuck{box-shadow:0 9px 20px -12px rgba(0,0,0,.34);border-bottom-color:var(--line-2)}
@@ -2470,7 +2480,9 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +abrow('What it is','A single place to see promo spend by objective, what each objective honestly buys, and where money may be sitting in the wrong place.')
       +abrow('How we judge it','Each pillar on its <b>own yardstick</b> — new depositors for Acquisition, money kept for Retention, overall health for VIP — so there is <b>no single overall score</b>.')
       +abrow('Why this way','Different promos have different jobs. Forcing them onto one metric hides which are working; judging each on its own job, then rolling up, is the honest read.')
-      +abrow('Good to know','Reads are <b>directional</b> (each promo vs its own before-and-after), not a controlled experiment — solid for ranking and sizing, with a proper holdout as the next proof step. Net-revenue figures are already after the bonus cost.'),
+      +abrow('Good to know','Reads are <b>directional</b> (each promo vs its own before-and-after), not a controlled experiment — solid for ranking and sizing, with a proper holdout as the next proof step. Net-revenue figures are already after the bonus cost.')
+      +abrow('How much to trust a number','Every figure carries a confidence tag: <b>directional</b> — a rough own-baseline read (most numbers today) · <b>fair-comparison checked</b> — measured against look-alike players · <b>proven</b> — survived a live holdout test (none yet). The same idea appears elsewhere as <i>a read, not proof</i> / <i>verified</i> / <i>unproven</i>. Today nothing is above the fair-comparison level.')
+      +abrow('Key terms','<b>NGR</b> net revenue, already after the bonus · <b>GGR</b> gross house winnings before bonus · <b>FTD</b> first-time depositor (first-ever deposit) · <b>net rev per RM1</b> money kept for every RM1 of bonus (0 = it paid for itself) · <b>redeposit / stick</b> came back and deposited again · <b>TO / wagering</b> times a bonus must be played before withdrawal · <b>lanes A–D</b> the four VIP jobs — Performance, Money-back, Gifts, Engagement · <b>give-to-take</b> bonus given ÷ house margin (over 1 = underwater).'),
     acquisition:`<p class="lead">Acquisition is about winning <b>brand-new depositors</b> — people making their first-ever deposit — with welcome and new-player bonuses.</p>`
       +abrow('How we judge it','By <b>cost per new depositor</b> (new-player spend ÷ new depositors) and <b>how many come back within 30 days</b>. Profit is context only here.')
       +abrow('Why this way','Welcome offers are <b>meant to run at a loss at first</b> — you pay to get someone in the door — so grading them on early profit would kill the offers that actually work. Cost-to-win and whether they stick is the fair test.')
