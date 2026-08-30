@@ -424,6 +424,7 @@
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
     <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
+    <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · v1 · directional</span></div><div id="s_plan"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
       <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal.</p>
@@ -2084,6 +2085,27 @@ function renderSummary(){
       (cs?act(2,`Cap the VIP repeat segment — ${cs.cap_n} members, ${SY}${cs.cap_bonus.toLocaleString()}`,`Underwater, repeat-claiming, still-active VIPs (give-to-take &gt;1). Cap the next same-code claim. And <b>protect</b> the ${cs.protect_n.toLocaleString()} cooling VIPs — retain, never cap.`):'')+
       act(3,`Run a holdout — the one thing that needs a live test`,`It proves the cap is safe <b>and</b> settles the ${cov.n_need_holdout} promos with no fair comparison. The three designs are ready (cashback · whale-cap · retention). This is what turns "review these" into "proven".`);
   }
+  // ---- forward plan (the money) ----
+  if(typeof ATTR!=='undefined' && ATTR && ATTR.forward_plan){
+    const P0=ATTR.forward_plan, SY=(PAYLOAD&&PAYLOAD.sym)||'RM', pc=document.getElementById('s_planCard');
+    if(pc) pc.hidden=false;
+    const M=v=>(v<0?'−':'')+SY+(Math.abs(v)>=1e6?(Math.abs(v)/1e6).toFixed(2)+'M':Math.round(Math.abs(v)/1000)+'k');
+    const sl=P0.stops_losing, ri=P0.reinvest_into_winners, dc=P0.dont_cut;
+    const strip=(lbl,val,sub,col)=>`<div><span class="nl">${lbl}</span><span class="nv" style="color:${col||'var(--ink)'}">${val}</span><span class="ns">${sub}</span></div>`;
+    const eb=document.getElementById('s_plan');
+    if(eb) eb.innerHTML=
+      `<p class="sub2">The moves above, in money. Leads with the <b>near-certain</b> freed budget, then the <b>estimated</b> net-revenue swing — <b>directional, a range not a point</b>. Assumes Stop frees 100% / Reduce-Trim 50% of a code's bonus.</p>`+
+      `<div class="ngrstrip">`+
+        strip('Free up (near-certain)', M(P0.free_up), 'by cutting the losing promos', 'var(--scale)')+
+        strip('Stop losing — net rev', M(sl.exp), `${M(sl.lo)}–${M(sl.hi)} · directional`, 'var(--scale)')+
+        strip('Redirect into winners', '+'+M(ri.exp), `${M(ri.lo)}–${M(ri.hi)} · conservative`, 'var(--scale)')+
+        strip('Total net-rev swing', M(P0.total_swing_exp), 'expected — treat as a range', 'var(--gold)')+
+      `</div>`+
+      `<div class="ngrstrip" style="margin-top:10px">`+
+        Object.entries(P0.by_pillar).map(([p,v])=>strip(p+' budget', M(v.current_spend)+' → '+M(v.proposed_after_cuts), 'frees '+M(v.freed))).join('')+
+      `</div>`+
+      `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Two guardrails on this money.</b> <b>Don't cut ${dc.n} codes</b> the fair check says actually earn (cutting them would wrongly free ${M(dc.freed_if_cut)} but lose the revenue). And <b>${M(P0.not_bankable_holdout)}</b> of the swing rests on promos that <b>need the holdout</b> to confirm — not bankable until it runs.</div></div>`;
+  }
   // ---- pillar cards (nav) ----
   const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
   const money=n=>SYM+(n/1000).toFixed(1)+'K';
@@ -2489,6 +2511,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_confidence')),
     cardSec(byId('s_attribCard')),
     cardSec(byId('s_nextCard')),
+    cardSec(byId('s_planCard')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
   ]);

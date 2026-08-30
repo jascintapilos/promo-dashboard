@@ -75,6 +75,14 @@ try:
 except FileNotFoundError:
     pass
 
+# forward plan — optional
+try:
+    fp = json.load(open(SCR / "forward-plan-MY.json", encoding="utf-8"))
+    out["forward_plan"] = {k: fp[k] for k in ("free_up", "stops_losing", "reinvest_into_winners",
+        "total_swing_exp", "dont_cut", "not_bankable_holdout", "by_pillar")}
+except FileNotFoundError:
+    pass
+
 # cap segment (give-to-take) — optional
 try:
     csj = json.load(open(SCR / "cap-segment-MY.json", encoding="utf-8"))
