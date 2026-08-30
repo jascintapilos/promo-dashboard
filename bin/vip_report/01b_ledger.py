@@ -17,23 +17,23 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
 START, END1 = "2026-01-01", "2026-08-26"     # [start, end) -> 2026-08-25 inclusive
 MID = "2026-05-01"                            # H1 (Jan-Apr) vs H2 (May-Aug) split for deposit slope
-LOGSITE = "WS1_MYS_MYR"
+# LOGSITE comes from the market seam (csir_config)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
-codes = json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8"))
+codes = json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8"))
 all_inlist = ",".join("'" + r["code"].replace("'", "''") + "'" for r in codes)
 rescue_inlist = ",".join("'" + r["code"].replace("'", "''") + "'" for r in codes if r["lane"] == "B-cashback")
 
 c = get_client(send_receive_timeout=400)
 SET = {"readonly": 1, "max_execution_time": 390, "max_memory_usage": 50000000000, "max_result_rows": 500000}
 CLAIMERS = f"""SELECT DISTINCT MEMBER_ID FROM WORKSPACE.GetBonus_ABC
-  WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+  WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
     AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
     AND BonusCode IN ({all_inlist})"""
 
@@ -42,7 +42,7 @@ q1 = f"""
 SELECT MEMBER_ID, sum(BonusAmount) AS vip_bonus, count() AS vip_claims,
        countIf(BonusCode IN ({rescue_inlist})) AS rescue_claims
 FROM WORKSPACE.GetBonus_ABC
-WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
   AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
   AND BonusCode IN ({all_inlist})
 GROUP BY MEMBER_ID
@@ -63,11 +63,11 @@ SELECT MEMBER_ID, sum(ngr) AS ytd_ngr, sum(ggr) AS ytd_ggr,
 FROM (
     SELECT MEMBER_ID, SnapshotDate AS sd, DepositAmount AS dep, GGR AS ggr, NGR AS ngr
     FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE Currency='MYR' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END1}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM mem)
+    WHERE Currency='{CURRENCY}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END1}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM mem)
     UNION ALL
     SELECT MEMBER_ID, SnapshotDate, DepositAmount, GGR, NGR
     FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE Currency='MYR' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END1}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM mem)
+    WHERE Currency='{CURRENCY}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END1}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM mem)
 )
 GROUP BY MEMBER_ID
 """
@@ -96,7 +96,7 @@ for mid, d in led.items():
     d["tier_start"] = ts.get(mid, "Unknown"); d["tier_end"] = te.get(mid, "Unknown")
 
 out = list(led.values())
-json.dump(out, open(VIP / "member-ledger-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(VIP / f"member-ledger-{SUF}.json", "w", encoding="utf-8"), default=str)
 
 # ---- verify ----
 tot_bonus = sum(d["vip_bonus"] for d in out)

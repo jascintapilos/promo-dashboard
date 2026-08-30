@@ -15,6 +15,9 @@ Usage: python bin/build_trend.py
 import json
 from collections import defaultdict
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from csir_config import SUF, CURRENCY, MARKET
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 MON_LABELS = {"01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun",
@@ -24,13 +27,13 @@ PARTIAL = {"2026-08"}  # 7-day windows for late-Aug claims not yet matured at da
 def mkey(d): return d[:7]  # YYYY-MM
 
 # ---- load ----
-ret_m = json.load(open(SCR / "ret/ret-metrics-MY.json", encoding="utf-8"))
+ret_m = json.load(open(SCR / f"ret/ret-metrics-{SUF}.json", encoding="utf-8"))
 holds = set(c["code"] for c in ret_m["codes"] if c["decision"] == "Hold")
-ret_rows = json.load(open(SCR / "ret/claim-rows-MY.json", encoding="utf-8"))
-vip_m = json.load(open(SCR / "vip/vip-metrics-MY.json", encoding="utf-8"))
+ret_rows = json.load(open(SCR / f"ret/claim-rows-{SUF}.json", encoding="utf-8"))
+vip_m = json.load(open(SCR / f"vip/vip-metrics-{SUF}.json", encoding="utf-8"))
 lane = {c["code"]: c["lane"] for c in vip_m["codes"]}
-vip_rows = json.load(open(SCR / "vip/claim-rows-MY.json", encoding="utf-8"))
-acq_out = json.load(open(SCR / "acq/claim-outcomes-MY.json", encoding="utf-8"))
+vip_rows = json.load(open(SCR / f"vip/claim-rows-{SUF}.json", encoding="utf-8"))
+acq_out = json.load(open(SCR / f"acq/claim-outcomes-{SUF}.json", encoding="utf-8"))
 
 # ---- per-month accumulators ----
 # spend by pillar (money out the door each month)
@@ -99,7 +102,7 @@ def direction(e, l):
            "degrading" if (l is not None and e is not None and l < e - 0.05) else "broadly flat"
 
 out = {
-    "market": "MY", "currency": "MYR", "data_as_of": "2026-08-26",
+    "market": MARKET, "currency": CURRENCY, "data_as_of": "2026-08-26",
     "months": months, "labels": labels, "partial": {m: True for m in months if m in PARTIAL},
     "spend_by_pillar": {"acq": col(sp_acq, months), "ret": col(sp_ret, months), "vip": col(sp_vip, months)},
     "cashback_spend": col(sp_cashback, months),
@@ -109,7 +112,7 @@ out = {
     "read": {"ret_early": ret_early, "ret_late": ret_late, "ret_dir": direction(ret_early, ret_late),
              "vip_early": vip_early, "vip_late": vip_late, "vip_dir": direction(vip_early, vip_late)},
 }
-json.dump(out, open(SCR / "trend-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(out, open(SCR / f"trend-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # ---- self-checks: roll-up to published headlines ----
 def close(a, b, tol): return abs(a - b) <= tol
@@ -117,7 +120,7 @@ checks = []
 eff_ng_tot = sum(eff_ng.values())
 RET_SPEND, RET_NGR = ret_m["kpis"]["spend"], ret_m["kpis"]["ngr_lift"]
 VIPA_NGR = vip_m["lane_summary"]["A-performance"]["ngr_lift"]
-acq_k = json.load(open(SCR / "acq/acq-metrics-MY.json", encoding="utf-8"))["kpis"]
+acq_k = json.load(open(SCR / f"acq/acq-metrics-{SUF}.json", encoding="utf-8"))["kpis"]
 checks.append(("RET spend (all non-Hold)", sum(sp_ret.values()), RET_SPEND, 50))
 checks.append(("efficiency NGR (retM7 + vipA_M7)", eff_ng_tot, RET_NGR + VIPA_NGR, 50))
 checks.append(("ACQ new-FTD total", sum(acq_ftd.values()), acq_k["ftd"], 2))

@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
@@ -20,7 +20,7 @@ START, END1 = "2026-01-01", "2026-08-26"
 SNAP_LO, SNAP_HI = "2025-12-01", "2026-11-30"
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
-codes = json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8"))
+codes = json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8"))
 rescue = [r["code"] for r in codes if r["lane"] == "B-cashback"]
 inlist = ",".join("'" + c.replace("'", "''") + "'" for c in rescue)
 
@@ -29,7 +29,7 @@ q = f"""
 WITH per_cm AS (
     SELECT SITE, MEMBER_ID, BonusCode, min(toDate(BonusTime_gmt8)) AS claim_date
     FROM WORKSPACE.GetBonus_ABC
-    WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
       AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
       AND BonusCode IN ({inlist})
     GROUP BY SITE, MEMBER_ID, BonusCode
@@ -37,11 +37,11 @@ WITH per_cm AS (
 snap AS (
     SELECT SITE AS ss, MEMBER_ID AS sm, SnapshotDate AS sd, DepositAmount AS dep, NGR AS ngr, GGR AS ggr
     FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE Currency='MYR' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
+    WHERE Currency='{CURRENCY}' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
     UNION ALL
     SELECT SITE, MEMBER_ID, SnapshotDate, DepositAmount, NGR, GGR
     FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE Currency='MYR' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
+    WHERE Currency='{CURRENCY}' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
 )
 SELECT p.MEMBER_ID AS MEMBER_ID, p.BonusCode AS BonusCode, p.claim_date AS claim_date,
     sumIf(ifNull(s.ggr,0), w.off < 0) AS pre_loss_ggr,
@@ -62,7 +62,7 @@ for row in res.result_rows:
                 "pre_loss_ggr": round(float(d["pre_loss_ggr"])),
                 "fwd_ngr_30": round(float(d["fwd_ngr_30"])), "fwd_ngr_60": round(float(d["fwd_ngr_60"])),
                 "fwd_ngr_90": round(float(d["fwd_ngr_90"])), "redep_30": int(d["redep_30"])})
-json.dump(out, open(VIP / "rescue-forward-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(VIP / f"rescue-forward-{SUF}.json", "w", encoding="utf-8"), default=str)
 
 n = len(out)
 losing = sum(1 for r in out if r["pre_loss_ggr"] > 0)     # house-positive GGR before = player lost

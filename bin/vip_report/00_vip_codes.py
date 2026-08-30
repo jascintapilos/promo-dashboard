@@ -18,7 +18,7 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
@@ -60,7 +60,7 @@ def classify(name, btype, code):
     mech = "reload" if btype == "DepositBonus" else "free-credit" if btype == "FreeCredit" else "free-spins" if btype == "FreeSpinBonus" else "other"
     return sub, lane, mech, cb, mg
 
-tl = json.load(open(VIP / "tl-vip-codes-MY.json", encoding="utf-8"))
+tl = json.load(open(VIP / f"tl-vip-codes-{SUF}.json", encoding="utf-8"))
 meta = {}
 for r in tl:
     code = r["code"].strip()
@@ -74,7 +74,7 @@ inlist = ",".join("'" + x.replace("'", "''") + "'" for x in codes)
 q = f"""
 SELECT BonusCode, count() AS claims, sum(BonusAmount) AS amt
 FROM WORKSPACE.GetBonus_ABC
-WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
   AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
   AND BonusCode IN ({inlist})
 GROUP BY BonusCode
@@ -88,7 +88,7 @@ for code in codes:
                 "lane": m["lane"], "mechanic": m["mechanic"], "is_cashback": m["is_cashback"],
                 "is_minigame": m["is_minigame"], "claims": cl, "bonus_amt": round(amt)})
 out.sort(key=lambda x: -x["bonus_amt"])
-json.dump(out, open(VIP / "vip-codes-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(out, open(VIP / f"vip-codes-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 by_lane = defaultdict(lambda: {"n": 0, "claims": 0, "amt": 0})
 by_sub = defaultdict(lambda: {"n": 0, "claims": 0, "amt": 0})

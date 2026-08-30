@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
@@ -21,13 +21,13 @@ VIP = SCR / "vip"
 START, END = "2026-01-01", "2026-08-25"
 SNAP_END = "2026-08-27"
 RECENCY_FLOOR = "2025-09-01"
-LOGSITE = "WS1_MYS_MYR"
+# LOGSITE comes from the market seam (csir_config)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
 d_max = date.fromisoformat("2026-08-26")
 MAT = {n: (d_max - timedelta(days=n - 1)).isoformat() for n in (7, 30, 60, 90)}
 
-codes = [r["code"] for r in json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8"))]
+codes = [r["code"] for r in json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8"))]
 inlist = ",".join("'" + c.replace("'", "''") + "'" for c in codes)
 
 d0, d1 = date.fromisoformat(START), date.fromisoformat(END)
@@ -38,7 +38,7 @@ P = {
     "end7": (d1 + timedelta(days=7)).isoformat(),
     "start7": (d0 - timedelta(days=7)).isoformat(),
     "start21": (d0 - timedelta(days=21)).isoformat(),
-    "cur": "MYR", "inlist": inlist, "statuses": STATUSES,
+    "cur": CURRENCY, "SITE_EDIT": SITE_EDIT, "inlist": inlist, "statuses": STATUSES,
 }
 
 c = get_client(send_receive_timeout=600)
@@ -53,7 +53,7 @@ all_bonuses_raw AS (
            if(BonusCode='', 'Undefined', BonusCode) AS BonusCode, BonusAmount
     FROM WORKSPACE.GetBonus_ABC
     WHERE BonusTime_gmt8 >= '{start7} 00:00:00' AND BonusTime_gmt8 < '{end7} 00:00:00'
-      AND SITE_edit='WS1' AND Currency='{cur}'
+      AND SITE_edit='{SITE_EDIT}' AND Currency='{cur}'
       AND BonusStatus IN {statuses} AND BonusAmount > 0
 ),
 bonuses AS (
@@ -150,7 +150,7 @@ SQL_BEHAV = """
 WITH vip_claims AS (
     SELECT SITE, MEMBER_ID, BonusCode, BonusTime_gmt8, toDate(BonusTime_gmt8) AS bonus_date, BonusAmount
     FROM WORKSPACE.GetBonus_ABC
-    WHERE SITE_edit='WS1' AND Currency='{cur}' AND BonusAmount>0 AND BonusStatus IN {statuses}
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{cur}' AND BonusAmount>0 AND BonusStatus IN {statuses}
       AND BonusTime_gmt8 >= '{start} 00:00:00' AND BonusTime_gmt8 < '{end1} 00:00:00'
       AND BonusCode IN ({inlist})
 ),
@@ -205,7 +205,7 @@ SQL_REC = """
 WITH per_cm AS (
     SELECT SITE, MEMBER_ID, BonusCode, min(toDate(BonusTime_gmt8)) AS claim_date
     FROM WORKSPACE.GetBonus_ABC
-    WHERE SITE_edit='WS1' AND Currency='{cur}' AND BonusAmount>0 AND BonusStatus IN {statuses}
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{cur}' AND BonusAmount>0 AND BonusStatus IN {statuses}
       AND BonusTime_gmt8 >= '{start} 00:00:00' AND BonusTime_gmt8 < '{end1} 00:00:00'
       AND BonusCode IN ({inlist})
     GROUP BY SITE, MEMBER_ID, BonusCode
@@ -267,7 +267,7 @@ for key in keys:
         "mature_90": maturity(cd, 90) if cd else False,
     })
 
-json.dump(out, open(VIP / "claim-rows-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(VIP / f"claim-rows-{SUF}.json", "w", encoding="utf-8"), default=str)
 
 # ---------------------------------------------------------------- verify
 n = len(out)

@@ -16,14 +16,16 @@ Usage: python bin/vip_report/02_compute_metrics.py
 import json, re
 from collections import defaultdict
 from pathlib import Path
+import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET, money
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
 MIN_NORM_N = 30
 
-rows = json.load(open(VIP / "claim-rows-MY.json", encoding="utf-8"))
-meta = {r["code"]: r for r in json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8"))}
-fwd = {(r["code"], r["member"]): r for r in json.load(open(VIP / "rescue-forward-MY.json", encoding="utf-8"))}
+rows = json.load(open(VIP / f"claim-rows-{SUF}.json", encoding="utf-8"))
+meta = {r["code"]: r for r in json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8"))}
+fwd = {(r["code"], r["member"]): r for r in json.load(open(VIP / f"rescue-forward-{SUF}.json", encoding="utf-8"))}
 
 TIER_ORDER = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Classic", "Unknown", "Other"]
 
@@ -40,10 +42,13 @@ def recency_bucket(days):
     if days <= 60: return "dormant 31-60d"
     return "lapsed 60-120d"
 
-SIZE_ORDER = ["<RM50", "RM50-150", "RM150-400", "RM400+"]
+_sb = [round(money(50)), round(money(150)), round(money(400))]
+SIZE_ORDER = [f"<{SYMBOL}{_sb[0]}", f"{SYMBOL}{_sb[0]}-{_sb[1]}", f"{SYMBOL}{_sb[1]}-{_sb[2]}", f"{SYMBOL}{_sb[2]}+"]
 def size_band(spend, claims):
     a = spend / max(1, claims)
-    return "<RM50" if a < 50 else "RM50-150" if a < 150 else "RM150-400" if a < 400 else "RM400+"
+    return SIZE_ORDER[0] if a < _sb[0] else SIZE_ORDER[1] if a < _sb[1] else SIZE_ORDER[2] if a < _sb[2] else SIZE_ORDER[3]
+def size_rank(spend, claims):
+    return SIZE_ORDER.index(size_band(spend, claims))
 def wager(blob):
     m = re.search(r"(\d+)\s*[xX]\b", blob or "")
     return m.group(1) + "X" if m else "none/other"
@@ -91,7 +96,7 @@ for code, rs in by.items():
          "ngr_lift": round(ngr), "ngr_lift_per_rm": round(ngr / spend_m7, 2) if spend_m7 else None,
          "ggr_window": round(ggr_win), "ggr_coverage": round(ggr_win / spend, 1) if spend else None,
          "avg_amount": round(spend / claims) if claims else None,
-         "size_band": size_band(spend, claims), "wagering": wager(code + " " + m.get("name", "")),
+         "size_band": size_band(spend, claims), "size_rank": size_rank(spend, claims), "wagering": wager(code + " " + m.get("name", "")),
          "tier_top": None}
     tmix = defaultdict(float)
     for r in rs: tmix[r["ntier"]] += r["bonus_cost"]
@@ -200,7 +205,7 @@ by_wagering = [{"wagering": k, "codes": v["n"], "spend": round(v["spend"]),
                 "ngr_lift_per_rm": round(v["ngr"] / v["spend"], 2) if v["spend"] else None} for k, v in wg.items()]
 by_wagering.sort(key=lambda x: -x["spend"])
 
-facts = {"market": "MY", "currency": "MYR", "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
+facts = {"market": MARKET, "currency": CURRENCY, "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
          "basis": ("TL Pillar=VIP; 4 lanes. NGR Lift = 7-day window vs 14-day baseline, NET of bonus (break-even 0). "
                    "Lane A (Performance) judged on NGR/RM (tier x mechanic comparator); Lane B (CASHBACK — Weekly "
                    "Rescue is a tiered loss-cashback, confirmed by WY; 98% of claimers were losing) judged on "
@@ -209,7 +214,7 @@ facts = {"market": "MY", "currency": "MYR", "period": "2026-01-01 to 2026-08-25"
                    "Lane C (Entitlement) not graded. Directional (own-baseline) pending a matched control."),
          "lane_summary": lane_sum, "by_tier": by_tier, "mech_tier_grid": mech_tier_grid,
          "by_size": by_size, "by_wagering": by_wagering, "codes": codes}
-json.dump(facts, open(VIP / "vip-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(facts, open(VIP / f"vip-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 print("LANE SUMMARY:")
 for L, d in lane_sum.items():
