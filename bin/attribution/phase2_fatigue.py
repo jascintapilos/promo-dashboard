@@ -19,7 +19,7 @@ from csir_config import get_client
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ATTR = SCR / "attribution"
 START, CLAIM_END = "2026-01-01", "2026-07-27"    # 30d-maturity cutoff (data to 2026-08-26)
-SNAP_LO, SNAP_HI = "2026-01-01", "2026-08-27"
+SNAP_LO, SNAP_HI = "2025-12-01", "2026-08-27"    # LO covers the -30d pre-window of the earliest claim
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
 ret = json.load(open(SCR / "ret/ret-codes-MY.json", encoding="utf-8"))
@@ -56,13 +56,14 @@ snap AS (
 maxord AS (SELECT MEMBER_ID, BonusCode, max(ord) AS mo FROM ranked GROUP BY MEMBER_ID, BonusCode),
 per_claim AS (
     SELECT r.MEMBER_ID AS member, r.BonusCode AS code, r.ord AS ord, r.bonus AS bonus,
-        sumIf(ifNull(s.ngr,0), w.off >= 0 AND w.off < 30) AS fwd30
+        sumIf(ifNull(s.ngr,0), w.off >= -30 AND w.off < 0) AS pre30,
+        sumIf(ifNull(s.ngr,0), w.off >= 0  AND w.off < 30) AS fwd30
     FROM ranked r
-    CROSS JOIN (SELECT toInt32(number) AS off FROM numbers(30)) w
+    CROSS JOIN (SELECT toInt32(number) - 30 AS off FROM numbers(60)) w
     LEFT JOIN snap s ON r.SITE=s.ss AND r.MEMBER_ID=s.sm AND addDays(r.cd, w.off)=s.sd
     GROUP BY r.MEMBER_ID, r.BonusCode, r.ord, r.cd, r.bonus
 )
-SELECT pc.member AS member, pc.code AS code, pc.ord AS ord, pc.bonus AS bonus, pc.fwd30 AS fwd30
+SELECT pc.member AS member, pc.code AS code, pc.ord AS ord, pc.bonus AS bonus, pc.pre30 AS pre30, pc.fwd30 AS fwd30
 FROM per_claim pc
 INNER JOIN maxord mx ON pc.member=mx.MEMBER_ID AND pc.code=mx.BonusCode
 WHERE mx.mo >= 2
@@ -103,8 +104,35 @@ allpairs = list(mc.values())
 overall = balanced(allpairs)
 by_pillar = {p: balanced([d for (m, cd), d in mc.items() if pillar_of.get(cd) == p]) for p in ("RET", "VIP")}
 
+# ---- CAP LINE: absolute own-baseline lift per RM by ordinal (natural cohort of nth claims), by pillar ----
+lv = sorted(float(r["fwd30"]) - float(r["pre30"]) for r in rows)
+LW_LO, LW_HI = lv[int(len(lv)*0.01)], lv[int(len(lv)*0.99)]
+lwins = lambda v: LW_LO if v < LW_LO else (LW_HI if v > LW_HI else v)
+cap_agg = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0]))    # scope -> ord -> [bonus, lift, n]
+for r in rows:
+    lift = lwins(float(r["fwd30"]) - float(r["pre30"])); b = float(r["bonus"]); o = int(r["ord"])
+    for sc in (pillar_of.get(r["code"]), "ALL"):
+        a = cap_agg[sc][o]; a[0] += b; a[1] += lift; a[2] += 1
+def capcurve(sc):
+    d = cap_agg[sc]
+    return {o: {"lift_per_rm": round(d[o][1]/d[o][0], 2) if d[o][0] else None, "n": d[o][2],
+                "bonus": round(d[o][0])} for o in sorted(d)}
+def capline(cv, margin=0.0):
+    for o in sorted(cv):
+        if cv[o]["lift_per_rm"] is not None and cv[o]["lift_per_rm"] <= margin:
+            return o
+    return None
+cap = {sc: capcurve(sc) for sc in ("ALL", "RET", "VIP")}
+cap_at = {sc: capline(cap[sc]) for sc in cap}
+# spend sitting at/after the cap line (recoverable if capped there)
+recover = {}
+for sc in ("ALL", "RET", "VIP"):
+    cl = cap_at[sc]
+    recover[sc] = round(sum(v["bonus"] for o, v in cap[sc].items() if cl is not None and o >= cl)) if cl else 0
+
 out = {"as_of": "2026-08-30", "window": "forward 30d, net of bonus", "method": "balanced within-member panel (ord-1 vs ord-n, same members)",
-       "ordinal_cap": "6+", "overall": overall, "by_pillar": by_pillar}
+       "ordinal_cap": "6+", "overall": overall, "by_pillar": by_pillar,
+       "cap_curve": cap, "cap_line": cap_at, "recoverable_bonus_at_cap": recover}
 json.dump(out, open(ATTR / "fatigue-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2, default=str)
 
 print("BONUS FATIGUE (within-member, selection-controlled) — forward-30d NGR/RM, same members at ord-1 vs ord-n:")
@@ -115,4 +143,16 @@ for n in range(2, 7):
 print("\nby pillar (within-member factor, ord-n vs ord-1):")
 for p in ("RET", "VIP"):
     cv = by_pillar[p]; print(f"  {p}: " + " ".join(f"{('6+' if n==6 else n)}:x{cv[n]['factor']}" for n in range(2, 7) if cv.get(n)))
+
+print("\nCAP LINE — own-baseline lift per RM by claim number (natural cohort). RTM-BIASED: Phase 1 showed the own-baseline")
+print("OVER-states losses for these (peak-claimed) VIP codes, so the true crossing is LATER; exact cap needs matched-control per claim.")
+print(f"{'ord':>4}{'ALL':>9}{'RET':>9}{'VIP':>9}")
+for o in range(1, 7):
+    row = f"{('6+' if o==6 else o):>4}"
+    for sc in ("ALL", "RET", "VIP"):
+        v = cap[sc].get(o, {}).get("lift_per_rm"); row += f"{str(v):>9}"
+    print(row)
+for sc in ("ALL", "RET", "VIP"):
+    cl = cap_at[sc]
+    print(f"  {sc}: payback goes <=0 at claim #{cl if cl else '>6 (never in range)'} | spend at/after that cap: RM{recover[sc]:,}")
 print("Saved scratchpad/attribution/fatigue-MY.json")
