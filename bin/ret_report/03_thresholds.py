@@ -30,6 +30,7 @@ SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloa
 RET = SCR / "ret"
 
 VOL_FLOOR = 15 if MARKET == 'MY' else 8
+SCALE_VOL_FLOOR = 2 * VOL_FLOOR   # a budget-INCREASE call (Scale) needs a robust base, not a bare-floor sample
 GIVE_FLOOR = 0.5
 SCALE_HI = 2.0
 DEADBAND = 1.0        # pp: |uplift| < DEADBAND = at-norm (not incremental, not below)
@@ -84,6 +85,11 @@ def decide(c):
 
 for c in codes:
     d, why, do, prov = decide(c)
+    # volume guard: a budget-increase (Scale) needs a robust base, not a bare-floor sample
+    m30 = c.get("matured_30") or 0
+    if d == "Scale" and m30 < SCALE_VOL_FLOOR:
+        d, do = "Maintain", DO["Maintain"]
+        why = f"Strong return ({SYMBOL}{c['ngr_lift_per_rm']:.2f} back for every RM1) but held back from Scale — only {m30} players watched to 30 days, too thin to grow the budget on yet (need {SCALE_VOL_FLOOR})."
     # single-member concentration guard: a Scale carried by one whale is demoted
     share, ex1 = c.get("ngr_top1_share"), c.get("ngr_lift_per_rm_ex_top1")
     if d == "Scale" and share and share > CONC_HARD:
@@ -112,7 +118,7 @@ sp = defaultdict(float)
 for c in codes: sp[c["decision"]] += c["spend"]
 money_to_move = round(sp.get("Stop", 0) + sp.get("Reduce", 0))
 f["thresholds"] = {
-    "vol_floor": VOL_FLOOR, "give_floor": GIVE_FLOOR, "scale_hi": SCALE_HI, "deadband_pp": DEADBAND,
+    "vol_floor": VOL_FLOOR, "scale_vol_floor": SCALE_VOL_FLOOR, "give_floor": GIVE_FLOOR, "scale_hi": SCALE_HI, "deadband_pp": DEADBAND,
     "conc_share": CONC_SHARE, "break_even": 0,
     "incr_rule": f"repeat-deposit rate is more than +{DEADBAND}pp above what that type of player normally does",
     "note": ("Draft, from how the codes spread out. Money = net revenue back for every RM1 (after the bonus is paid; zero means it paid for itself). "

@@ -18,6 +18,7 @@ from csir_config import SYMBOL, SUF, MARKET
 
 ACQ = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/acq")
 FLOOR = 20 if MARKET == 'MY' else 8   # min redeemed claimers to make a call (lower for thinner markets)
+SCALE_FLOOR = 2 * FLOOR   # a budget-INCREASE call (Scale) needs a robust base, not a bare-floor sample
 RELOAD_PURITY = 40   # below this % new, a "welcome" code is mostly existing players -> judge under Retention
 
 f = json.load(open(ACQ / f"acq-metrics-{SUF}.json", encoding="utf-8"))
@@ -45,7 +46,7 @@ c_p25 = c_p25 if c_p25 is not None else 0
 c_p50 = c_p50 if c_p50 is not None else 0
 c_p75 = c_p75 if c_p75 is not None else 0
 s_med = s_med if s_med is not None else 0
-thr = {"floor_claimers": FLOOR, "cost_per_ftd_p25": round(c_p25), "cost_per_ftd_p50": round(c_p50),
+thr = {"floor_claimers": FLOOR, "scale_floor_claimers": SCALE_FLOOR, "cost_per_ftd_p25": round(c_p25), "cost_per_ftd_p50": round(c_p50),
        "cost_per_ftd_p75": round(c_p75), "stick_median": round(s_med, 1), "reload_purity": RELOAD_PURITY,
        "status": "DRAFT"}
 
@@ -64,7 +65,10 @@ def decide(c):
     cheap, dear = cost <= c_p25, cost >= c_p75
     good_stick = stick >= s_med
     if cheap and good_stick:
-        return "Scale", f"cheap to bring in new players ({SYMBOL}{cost} per new depositor, among the cheapest) and they keep playing ({stick}% stayed)"
+        if c["claimers"] >= SCALE_FLOOR:
+            return "Scale", f"cheap to bring in new players ({SYMBOL}{cost} per new depositor, among the cheapest) and they keep playing ({stick}% stayed)"
+        # promising but too thin to back a budget increase — hold at Maintain, don't Scale on a bare-floor sample
+        return "Maintain", f"promising ({SYMBOL}{cost} per new depositor, {stick}% stayed) but only {c['claimers']} claimers — too thin to back a budget increase yet (need {SCALE_FLOOR})"
     if dear and not good_stick:
         return "Reduce", f"expensive ({SYMBOL}{cost} per new depositor, among the priciest) and few keep playing ({stick}%)"
     if dear or not good_stick:
