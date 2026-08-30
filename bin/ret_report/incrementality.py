@@ -11,10 +11,12 @@ Run after rf_forward.py. Usage: python bin/ret_report/incrementality.py
 import json
 from collections import defaultdict
 from pathlib import Path
+import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from csir_config import SUF
 
 RET = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/ret")
-m = json.load(open(RET / "ret-metrics-MY.json", encoding="utf-8"))
-fwd = json.load(open(RET / "forward-outcomes-MY.json", encoding="utf-8"))
+m = json.load(open(RET / f"ret-metrics-{SUF}.json", encoding="utf-8"))
+fwd = json.load(open(RET / f"forward-outcomes-{SUF}.json", encoding="utf-8"))
 
 meta = {c["code"]: c for c in m["codes"]}
 by_code = defaultdict(list)
@@ -69,8 +71,8 @@ m["incrementality"] = {
               "NGR is net of the bonus. Directional own-baseline, NOT a controlled test (confounded by "
               "regression-to-mean). Win-back codes excluded (held for VIP)."),
 }
-json.dump(m, open(RET / "ret-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-json.load(open(RET / "ret-metrics-MY.json", encoding="utf-8"))  # round-trip
+json.dump(m, open(RET / f"ret-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.load(open(RET / f"ret-metrics-{SUF}.json", encoding="utf-8"))  # round-trip
 
 s = m["incrementality"]["summary"]
 print(f"INCREMENTALITY (forward NGR, own-baseline) — {s['codes']} codes | fwd90 RM{s['total_fwd_ngr_90']:,} vs pre90 RM{s['total_pre_ngr_90']:,} -> incremental RM{s['incremental_ngr_90']:+,}")

@@ -23,19 +23,21 @@ Usage: python bin/ret_report/03_thresholds.py
 import json
 from collections import defaultdict
 from pathlib import Path
+import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from csir_config import SYMBOL, SUF, MARKET, money
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
 
-VOL_FLOOR = 15
+VOL_FLOOR = 15 if MARKET == 'MY' else 8
 GIVE_FLOOR = 0.5
 SCALE_HI = 2.0
 DEADBAND = 1.0        # pp: |uplift| < DEADBAND = at-norm (not incremental, not below)
-OVER_REWARD_CPR = 500
+OVER_REWARD_CPR = round(money(500))   # cost-per-retained is real money -> rescale for the market
 CONC_SHARE = 0.30     # top-1 member NGR share above which a Scale is one-whale-sensitive (demote if ex-whale weak)
 CONC_HARD = 0.50      # top-1 share above which a Scale is ALWAYS demoted (too concentrated to grow budget on)
 
-f = json.load(open(RET / "ret-metrics-MY.json", encoding="utf-8"))
+f = json.load(open(RET / f"ret-metrics-{SUF}.json", encoding="utf-8"))
 codes = f["codes"]
 
 DO = {
@@ -61,24 +63,24 @@ def decide(c):
         return "Monitor", f"Too little to judge — {why}.", DO["Monitor"], False
     if c["matured_30"] < VOL_FLOOR:
         d = "clearly losing" if money < 0 else "strong" if money >= SCALE_HI else "around paying for itself"
-        return "Watch-money", f"Money seen so far (RM{money:.2f} back for every RM1, {d}) but the repeat deposits haven't had time yet — a read, not proof; firm at 30 days.", DO["Watch-money"], True
+        return "Watch-money", f"Money seen so far ({SYMBOL}{money:.2f} back for every RM1, {d}) but the repeat deposits haven't had time yet — a read, not proof; firm at 30 days.", DO["Watch-money"], True
     incr = (up is not None and up > DEADBAND)
     below = (up is not None and up < -DEADBAND)
     if money < 0 and not incr:
-        return "Stop", f"Loses money (RM{money:.2f} back for every RM1) and doesn't keep players any better than the {mech}.", DO["Stop"], False
+        return "Stop", f"Loses money ({SYMBOL}{money:.2f} back for every RM1) and doesn't keep players any better than the {mech}.", DO["Stop"], False
     if money < 0 and incr:
-        return "Reduce", f"Keeps more players than the {mech} average (+{up:.0f}pp) but loses money (RM{money:.2f} back for every RM1) — too generous.", DO["Reduce"], False
+        return "Reduce", f"Keeps more players than the {mech} average (+{up:.0f}pp) but loses money ({SYMBOL}{money:.2f} back for every RM1) — too generous.", DO["Reduce"], False
     if money < GIVE_FLOOR:
         cpr = c.get("cost_per_retained")
-        tag = f" — RM{cpr:,} per kept player is steep" if (cpr and cpr > OVER_REWARD_CPR) else ""
-        return "Optimise", f"Only RM{money:.2f} back for every RM1 — it barely pays for itself and margins are thin{tag}. Right-size it.", DO["Optimise-size"], False
+        tag = f" — {SYMBOL}{cpr:,} per kept player is steep" if (cpr and cpr > OVER_REWARD_CPR) else ""
+        return "Optimise", f"Only {SYMBOL}{money:.2f} back for every RM1 — it barely pays for itself and margins are thin{tag}. Right-size it.", DO["Optimise-size"], False
     if not incr:
         if below:
-            return "Optimise", f"Profitable (RM{money:.2f} back for every RM1) but they deposited again LESS than the {mech} average ({up:.0f}pp) — the offer isn't keeping players; rework it.", DO["Optimise-rework"], False
-        return "Optimise", f"Profitable (RM{money:.2f} back for every RM1) but they deposited again about the {mech} average — mostly paying players who'd come back anyway; tighten who gets it.", DO["Optimise-target"], False
+            return "Optimise", f"Profitable ({SYMBOL}{money:.2f} back for every RM1) but they deposited again LESS than the {mech} average ({up:.0f}pp) — the offer isn't keeping players; rework it.", DO["Optimise-rework"], False
+        return "Optimise", f"Profitable ({SYMBOL}{money:.2f} back for every RM1) but they deposited again about the {mech} average — mostly paying players who'd come back anyway; tighten who gets it.", DO["Optimise-target"], False
     if money < SCALE_HI:
-        return "Maintain", f"Profitable (RM{money:.2f} back for every RM1) and keeping more players than the {mech} average (+{up:.0f}pp).", DO["Maintain"], False
-    return "Scale", f"Strong return (RM{money:.2f} back for every RM1) and keeps more players than the {mech} average (+{up:.0f}pp).", DO["Scale"], False
+        return "Maintain", f"Profitable ({SYMBOL}{money:.2f} back for every RM1) and keeping more players than the {mech} average (+{up:.0f}pp).", DO["Maintain"], False
+    return "Scale", f"Strong return ({SYMBOL}{money:.2f} back for every RM1) and keeps more players than the {mech} average (+{up:.0f}pp).", DO["Scale"], False
 
 for c in codes:
     d, why, do, prov = decide(c)
@@ -91,16 +93,16 @@ for c in codes:
     elif d == "Scale" and share and share > CONC_SHARE and ex1 is not None and ex1 < SCALE_HI:
         if ex1 < GIVE_FLOOR:
             d, do = "Optimise", DO["Optimise-size"]
-            why = f"Looks strong (RM{c['ngr_lift_per_rm']:.2f} per RM) but {int(share*100)}% of the profit comes from ONE player; without them it's RM{ex1:.2f} back for every RM1. Treat as thin — right-size."
+            why = f"Looks strong ({SYMBOL}{c['ngr_lift_per_rm']:.2f} per RM) but {int(share*100)}% of the profit comes from ONE player; without them it's {SYMBOL}{ex1:.2f} back for every RM1. Treat as thin — right-size."
         else:
             d, do = "Maintain", DO["Maintain"]
-            why = f"Profitable but held back from Scale — {int(share*100)}% of the profit comes from ONE player; without them it's RM{ex1:.2f} back for every RM1 (not Scale-strong)."
+            why = f"Profitable but held back from Scale — {int(share*100)}% of the profit comes from ONE player; without them it's {SYMBOL}{ex1:.2f} back for every RM1 (not Scale-strong)."
     c["decision"], c["reason"], c["do"], c["provisional"] = d, why, do, prov
     flags = []
     if c.get("implied_tier") and c.get("target_purity") is not None and c["target_purity"] < 50:
         flags.append(f"wrong players: labelled '{c['implied_tier']}' but {c['target_purity']:.0f}% actually reached that group")
     if c.get("cost_per_retained") and c["cost_per_retained"] > OVER_REWARD_CPR and (c["ngr_lift_per_rm"] or 0) < GIVE_FLOOR:
-        flags.append(f"over-generous: RM{c['cost_per_retained']:,} per kept player")
+        flags.append(f"over-generous: {SYMBOL}{c['cost_per_retained']:,} per kept player")
     if share and share > CONC_SHARE:
         flags.append(f"one-player-heavy: {int(share*100)}% of net revenue from a single player")
     c["flags"] = flags
@@ -120,23 +122,23 @@ f["thresholds"] = {
 f["money_to_move"] = {
     "stop_reduce": money_to_move, "optimise": round(sp.get("Optimise", 0)), "scale": round(sp.get("Scale", 0)),
     "watch_money": round(sp.get("Watch-money", 0)),
-    "line": (f"RM{money_to_move:,} sits in Stop/Reduce promos — move it into the Scale winners "
-             f"(RM{round(sp.get('Scale',0)):,} today). RM{round(sp.get('Optimise',0)):,} in Optimise promos is "
-             f"partly recoverable by right-sizing; RM{round(sp.get('Watch-money',0)):,} is a read, not proof yet (still waiting to see who deposits again)."),
+    "line": (f"{SYMBOL}{money_to_move:,} sits in Stop/Reduce promos — move it into the Scale winners "
+             f"({SYMBOL}{round(sp.get('Scale',0)):,} today). {SYMBOL}{round(sp.get('Optimise',0)):,} in Optimise promos is "
+             f"partly recoverable by right-sizing; {SYMBOL}{round(sp.get('Watch-money',0)):,} is a read, not proof yet (still waiting to see who deposits again)."),
 }
-json.dump(f, open(RET / "ret-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(f, open(RET / f"ret-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # ---- report ----
 ORDER = ["Scale", "Maintain", "Optimise", "Reduce", "Stop", "Watch-money", "Monitor", "Hold"]
 hist = defaultdict(lambda: [0, 0.0])
 for c in codes: hist[c["decision"]][0] += 1; hist[c["decision"]][1] += c["spend"]
 tot = sum(c["spend"] for c in codes)
-print(f"thresholds: vol={VOL_FLOOR} | give=RM{GIVE_FLOOR} | scale=RM{SCALE_HI} | deadband=±{DEADBAND}pp | break-even 0 (NGR net) | conc>{int(CONC_SHARE*100)}%")
+print(f"thresholds: vol={VOL_FLOOR} | give={SYMBOL}{GIVE_FLOOR} | scale={SYMBOL}{SCALE_HI} | deadband=±{DEADBAND}pp | break-even 0 (NGR net) | conc>{int(CONC_SHARE*100)}%")
 print(f"\n  {'DECISION':12s} {'CODES':>5} {'SPEND(RM)':>11} {'%':>5}")
 for d in ORDER:
     n, s = hist[d]
     if n: print(f"  {d:12s} {n:>5} {round(s):>11,} {s/tot*100:>4.0f}%")
-print(f"\n  MONEY TO MOVE: RM{money_to_move:,} (Stop+Reduce) | Scale RM{round(sp.get('Scale',0)):,} | Optimise RM{round(sp.get('Optimise',0)):,} | Watch-money RM{round(sp.get('Watch-money',0)):,}")
+print(f"\n  MONEY TO MOVE: {SYMBOL}{money_to_move:,} (Stop+Reduce) | Scale {SYMBOL}{round(sp.get('Scale',0)):,} | Optimise {SYMBOL}{round(sp.get('Optimise',0)):,} | Watch-money {SYMBOL}{round(sp.get('Watch-money',0)):,}")
 demoted = [c for c in codes if any('one-player-heavy' in fl for fl in c['flags'])]
 print(f"  single-whale flagged: {len(demoted)} | win-back Held: {sum(1 for c in codes if c['decision']=='Hold')}")
 print("\n  TOP 12 BY SPEND:")

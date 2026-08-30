@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
@@ -22,7 +22,7 @@ SNAP_LO, SNAP_HI = "2025-10-01", "2026-11-30"
 AS_OF = date(2026, 8, 26)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
-codes = [c["code"] for c in json.load(open(RET / "ret-codes-MY.json", encoding="utf-8"))]
+codes = [c["code"] for c in json.load(open(RET / f"ret-codes-{SUF}.json", encoding="utf-8"))]
 inlist = ",".join("'" + c.replace("'", "''") + "'" for c in codes)
 
 q = f"""
@@ -32,7 +32,7 @@ WITH per_cm AS (
            sum(BonusAmount)            AS bonus_amount,
            count()                     AS claims
     FROM WORKSPACE.GetBonus_ABC
-    WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
       AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
       AND BonusCode IN ({inlist})
     GROUP BY SITE, MEMBER_ID, BonusCode
@@ -40,11 +40,11 @@ WITH per_cm AS (
 snap AS (
     SELECT SITE AS ss, MEMBER_ID AS sm, SnapshotDate AS sd, DepositAmount AS dep, NGR AS ngr, GGR AS ggr
     FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE Currency='MYR' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
+    WHERE Currency='{CURRENCY}' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
     UNION ALL
     SELECT SITE, MEMBER_ID, SnapshotDate, DepositAmount, NGR, GGR
     FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE Currency='MYR' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
+    WHERE Currency='{CURRENCY}' AND (DepositAmount>0 OR NGR!=0 OR GGR!=0) AND SnapshotDate >= '{SNAP_LO}' AND SnapshotDate < '{SNAP_HI}'
 )
 SELECT p.MEMBER_ID AS MEMBER_ID, p.BonusCode AS BonusCode, p.claim_date AS claim_date,
     p.bonus_amount AS bonus_amount, p.claims AS claims,
@@ -78,7 +78,7 @@ for row in res.result_rows:
         rec[k] = round(float(d[k]))
     rec.update(maturity(d["claim_date"]))
     out.append(rec)
-json.dump(out, open(RET / "forward-outcomes-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(RET / f"forward-outcomes-{SUF}.json", "w", encoding="utf-8"), default=str)
 
 m90 = sum(1 for r in out if r["mature_90"])
 f90 = sum(r["fwd_ngr_90"] for r in out if r["mature_90"])

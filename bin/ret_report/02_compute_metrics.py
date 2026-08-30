@@ -22,13 +22,15 @@ Usage: python bin/ret_report/02_compute_metrics.py
 import json, re
 from collections import defaultdict
 from pathlib import Path
+import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
 MIN_NORM_N = 30   # min matured rows for a comparator cell to be trusted before falling back
 
-rows = json.load(open(RET / "claim-rows-MY.json", encoding="utf-8"))
-meta = {r["code"]: r for r in json.load(open(RET / "ret-codes-MY.json", encoding="utf-8"))}
+rows = json.load(open(RET / f"claim-rows-{SUF}.json", encoding="utf-8"))
+meta = {r["code"]: r for r in json.load(open(RET / f"ret-codes-{SUF}.json", encoding="utf-8"))}
 
 TIER_ORDER = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Classic", "Unknown", "Other"]
 TIER_KEYWORDS = {"bronze": "Bronze", "silver": "Silver", "gold": "Gold",
@@ -211,7 +213,7 @@ tn_mech = {k: round(v[0] / v[1] * 100, 1) for k, v in mnorm.items() if v[1]}
 tn_cell = {f"{t}|{mm}": round(v[0] / v[1] * 100, 1) for (t, mm), v in cell.items() if v[1] >= MIN_NORM_N}
 
 facts = {
-    "market": "MY", "currency": "MYR", "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
+    "market": MARKET, "currency": CURRENCY, "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
     "basis": ("TL Pillar=Retention; redeemed/active claims. NGR Lift = 7-day post-claim window vs 14-day "
               "pre-claim baseline (time-decay, concurrency-split), gated on 7-day maturity; NGR is NET of the "
               "promo bonus (verified: corr(bonus,GGR-NGR)=0.79) so break-even=0. Retained = redeposit on days "
@@ -222,7 +224,7 @@ facts = {
     "by_recency": by_recency, "winback": winback,
     "tier_normal_mech": tn_mech, "tier_normal_cell": tn_cell, "codes": codes,
 }
-json.dump(facts, open(RET / "ret-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(facts, open(RET / f"ret-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # ---- cross-foot + report ----
 assert abs(sum(c["spend"] for c in jcodes) - tot_spend) < 1

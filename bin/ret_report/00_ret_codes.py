@@ -13,7 +13,7 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
@@ -39,7 +39,7 @@ def classify(name, btype, code):
     else: mech = "other"
     return mech, wb
 
-tl = json.load(open(RET / "tl-ret-codes-MY.json", encoding="utf-8"))
+tl = json.load(open(RET / f"tl-ret-codes-{SUF}.json", encoding="utf-8"))
 meta = {}
 for r in tl:
     code = r["code"].strip()
@@ -55,7 +55,7 @@ STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 
 q = f"""
 SELECT BonusCode, count() AS claims, sum(BonusAmount) AS amt
 FROM WORKSPACE.GetBonus_ABC
-WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
   AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
   AND BonusCode IN ({inlist})
 GROUP BY BonusCode
@@ -69,7 +69,7 @@ for code in codes:
     out.append({"code": code, "name": m["name"], "type": m["type"], "mechanic": m["mechanic"],
                 "is_winback": m["is_winback"], "claims": cl, "bonus_amt": round(amt)})
 out.sort(key=lambda x: -x["bonus_amt"])
-json.dump(out, open(RET / "ret-codes-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(out, open(RET / f"ret-codes-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 by_mech = defaultdict(lambda: {"n": 0, "claims": 0, "amt": 0})
 for r in out:
