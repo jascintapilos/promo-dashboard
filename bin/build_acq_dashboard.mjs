@@ -65,7 +65,17 @@ if (out.includes(trendMarker) && fs.existsSync(trendPath)) {
   trendNote = `TREND ${trend.months.length}mo / ret ${trend.read.ret_dir} · VIP-perf ${trend.read.vip_dir}`;
 }
 
+// ATTRIBUTION payload (optional — matched-control strengthening summary, preview)
+const attrMarker = '/*__ATTR_PAYLOAD__*/ null';
+let attrNote = 'no ATTR payload';
+const attrPath = path.join(SCR, 'attribution/attribution-summary-MY.json');
+if (out.includes(attrMarker) && fs.existsSync(attrPath)) {
+  const attr = JSON.parse(fs.readFileSync(attrPath, 'utf8'));
+  out = out.replace(attrMarker, JSON.stringify(attr));
+  attrNote = `ATTR ${attr.coverage.n_valid} fair-checked / ${attr.coverage.n_need_holdout} need-holdout / ${attr.flips.length} flips`;
+}
+
 fs.mkdirSync(path.join(ROOT, 'outputs'), { recursive: true });
 const dest = path.join(ROOT, DEST);
 fs.writeFileSync(dest, out, 'utf8');
-console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote}`);
+console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote} | ${attrNote}`);
