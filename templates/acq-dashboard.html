@@ -436,6 +436,7 @@
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
     <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
     <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · v1 · directional</span></div><div id="s_plan"></div></div>
+    <div class="card col12" id="s_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a player is worth over time — lifetime value</h3><span class="hint">real multi-year cohorts · whole-book</span></div><div id="s_ltv"></div></div>
     <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional · deeper breakdown coming</span></div>
@@ -730,6 +731,7 @@ const RET = /*__RET_PAYLOAD__*/ null;
 const VIP = /*__VIP_PAYLOAD__*/ null;
 const TREND = /*__TREND_PAYLOAD__*/ null;
 const ATTR = /*__ATTR_PAYLOAD__*/ null;
+const LTV = /*__LTV_PAYLOAD__*/ null;
 const P = PAYLOAD, SYM = P.sym || 'RM';
 const DEC = {
   Scale:{c:'var(--scale)',bg:'var(--scale-bg)',d:'grow it'}, Maintain:{c:'var(--maintain)',bg:'var(--maintain-bg)',d:'hold steady'},
@@ -1965,6 +1967,39 @@ function campaignView(){
     (gaps.length?`<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Unmapped code</th><th class="l">Pillar</th><th>Spend</th></tr></thead><tbody>`+gaps.slice(0,6).map(g=>`<tr><td class="l">${g.code}</td><td class="l">${g.pillar}</td><td>${sMc(g.spend)}</td></tr>`).join('')+`</tbody></table></div>`:'')+
     `<div class="fine" style="margin-top:8px"><b>${sMc(unk.spend)}</b> of spend has <b>no confirmed owner</b>, and every tag is inferred. Ask CRM / Sales / Marketing to confirm each campaign's <b>objective, segment and owner</b> — that is what turns this draft into validated attribution.</div>`;
 }
+function renderLTV(){
+  if(typeof LTV==='undefined' || !LTV) return;
+  const card=document.getElementById('s_ltvCard'); if(card)card.hidden=false;
+  const box=document.getElementById('s_ltv'); if(!box)return; box.innerHTML=''; box.style.maxWidth='700px';
+  const S=LTV.summary, SY=LTV.symbol||'RM', cohorts=LTV.cohorts;
+  const km=v=>SY+(Math.abs(v)>=1000?(v/1000).toFixed(Math.abs(v)%1000&&Math.abs(v)<10000?1:0)+'k':Math.round(v));
+  const maxOff=Math.max(...cohorts.map(c=>c.max_offset));
+  const allV=cohorts.flatMap(c=>Object.values(c.cum_per_member));
+  const minY=Math.min(0,...allV), maxY=Math.max(...allV);
+  const W=560,H=300,l=52,r=52,t=14,b=38;
+  const sx=v=>l+(v/(maxOff||1))*(W-l-r), sy=v=>H-b-((v-minY)/((maxY-minY)||1))*(H-t-b);
+  const nt=(lo,hi,n)=>{const sp=hi-lo;if(sp<=0)return[lo];const raw=sp/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),nm=raw/mag,st=(nm<1.5?1:nm<3?2:nm<7?5:10)*mag,o=[];for(let v=Math.ceil(lo/st)*st;v<=hi+st*0.001;v+=st)o.push(v);return o;};
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:l,y1:sy(0),x2:W-r,y2:sy(0),stroke:CV('--line-2'),'stroke-dasharray':'3 4'}));
+  nt(minY,maxY,5).forEach(g=>{const y=sy(g); if(g!==0)s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,stroke:CV('--line-2'),'stroke-opacity':.3}));
+    const ty=el('text',{x:l-6,y:y+3.5,'text-anchor':'end',class:'axlab',style:'font-size:10px'});ty.textContent=km(g);s.append(ty);});
+  for(let x=0;x<=maxOff;x++){const px=sx(x);const tx=el('text',{x:px,y:H-b+14,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent='yr'+x;s.append(tx);}
+  cohorts.forEach(c=>{const isM=c.year===S.mature_year, offs=Object.keys(c.cum_per_member).map(Number).sort((a,b)=>a-b); if(!offs.length)return;
+    let d=''; offs.forEach((o,i)=>{d+=(i?'L':'M')+sx(o)+' '+sy(c.cum_per_member[o])+' ';});
+    s.append(el('path',{d,fill:'none',stroke:isM?CV('--scale'):CV('--accent'),'stroke-width':isM?2.6:1.3,'stroke-opacity':isM?1:0.3+0.5*c.max_offset/maxOff}));
+    const lo=offs[offs.length-1], lt=el('text',{x:sx(lo)+4,y:sy(c.cum_per_member[lo])+3,'text-anchor':'start',style:'font-size:9.5px;fill:'+(isM?CV('--scale'):CV('--muted'))+(isM?';font-weight:700':'')});lt.textContent=c.year;s.append(lt);});
+  axTitle(s,(l+W-r)/2,H-3,'years since first deposit →');
+  axTitle(s,12,(t+H-b)/2,'cumulative net revenue / member',true);
+  box.append(s);
+  box.insertAdjacentHTML('beforeend',
+    `<p class="sub2" style="margin-top:10px">Real <b>lifetime value</b> — each player's cumulative net revenue followed across the <b>full multi-year history</b> (not the YTD promo window). One line per join-year cohort; the ${S.mature_year} cohort (green) has the longest track.</p>`+
+    `<div class="ngrstrip" style="margin-top:8px">`+
+      `<div><span class="nl">A ${S.mature_year} player is worth</span><span class="nv" style="color:var(--scale)">${SY}${S.mature_final.toLocaleString()}</span><span class="ns">over ${S.mature_offset} years — but ${S.mature_yr0<0?'<b>lost</b> '+SY+Math.abs(S.mature_yr0):SY+S.mature_yr0} in year 0</span></div>`+
+      `<div><span class="nl">Value by year 1</span><span class="nv">${S.yr1_multiple}×</span><span class="ns">${SY}${S.blended_yr0} (yr0) → ${SY}${S.blended_yr1} (yr1), blended</span></div>`+
+      `<div><span class="nl">By year 3</span><span class="nv">${SY}${S.blended_yr3.toLocaleString()}</span><span class="ns">and still climbing for years</span></div>`+
+    `</div>`+
+    `<div class="varbox" style="margin-top:10px"><span class="ico">◆</span><div><b>Why it matters:</b> a new player is worth <b>far more than any 7–90 day window shows</b> — welcome offers that lose early can be the best investments (the ${S.mature_year} cohort went ${SY}${S.mature_yr0} → ${SY}${S.mature_final.toLocaleString()}). Judge <b>acquisition and whale</b> spend on this horizon, not week 1. <b>Whole-book value</b> (not promo-attributed); newer cohorts start lower — worth watching.</div></div>`);
+}
 function renderSummary(){
   const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
   const chip=(n,l,c)=>n>0?`<span class="lchip" style="color:${c}">${n} ${l}</span>`:'';
@@ -2170,7 +2205,7 @@ function renderSummary(){
     if(el2) el2.innerHTML=
       `<p class="sub2">The report is honest about its edges — these are known gaps to fix next, not hidden ones. Weigh decisions against them.</p>`+
       li('Singapore','MY only. SG — about <b>half the WS1 market</b> — isn\'t built yet, so every portfolio total here is the <b>MY book alone</b>.')+
-      li('Value horizon (LTV)','Promos are judged on <b>7–90 days</b>, so welcome offers (which lose in week 1 <i>by design</i>) and whale saves (worth many months) are <b>under-counted</b>. <b>The fix:</b> a lifetime-value (LTV) view — follow each <b>join month\'s cumulative net revenue</b> over time — most needed for <b>Acquisition</b> (which sources bring high-lifetime players) and <b>whales</b> (worth a year+). It uncovers promos that look bad short-term but pay back slowly. We only have ~7 months of data, so it <b>matures as more history builds</b>.')+
+      li('Value horizon (LTV)','<b style="color:var(--scale)">Now added</b> — the <b>lifetime-value card above</b> shows real multi-year cohorts: a player is worth far more than any 7–90 day window (the '+((typeof LTV!=='undefined'&&LTV)?LTV.summary.mature_year+' cohort: '+LTV.symbol+LTV.summary.mature_yr0+' in year 0 → '+LTV.symbol+LTV.summary.mature_final.toLocaleString()+' by year '+LTV.summary.mature_offset:'2019 cohort went negative in year 0 to RM8,367 by year 7')+'). The <b>promo-cut</b> analysis still uses the 7–90 day window (right for judging recent promo performance), so welcome offers and whale saves are under-counted <i>there</i>. <b>Next:</b> LTV split <b>by acquisition source / promo</b> — to say which promos bring high-lifetime players, not just whole-book value.')+
       li('Cost','Spend and break-even are <b>bonus only</b> — no comms, VM/CRM servicing time, or platform overhead. Codes grading near zero are likely <b>loss-making</b> once cost-to-serve is added.')+
       li('Evidence','Most figures are <b>directional</b>. Only <b>'+nv+'</b> of ~200 codes are fair-comparison checked; <b>none are holdout-proven</b>. Act on the confidence tiers, not the exact point numbers.')+
       li('Margin mix','NGR is one <b>blended</b> number — no split by game/vertical. A promo that lifts NGR while pushing low-margin play still looks fine here.')+
@@ -2199,6 +2234,7 @@ function renderSummary(){
     pend('Branding','Production, ambassador & sponsorship spend — separate data source.');
 }
 renderSummary();
+renderLTV();
 campaignView();
 
 // ===== Month-over-month trend =====
@@ -2586,6 +2622,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_confidence')),
     cardSec(byId('s_nextCard')),
     cardSec(byId('s_planCard')),
+    cardSec(byId('s_ltvCard')),
     cardSec(byId('s_limitsCard')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),

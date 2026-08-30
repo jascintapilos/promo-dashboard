@@ -75,7 +75,17 @@ if (out.includes(attrMarker) && fs.existsSync(attrPath)) {
   attrNote = `ATTR ${attr.coverage.n_valid} fair-checked / ${attr.coverage.n_need_holdout} need-holdout / ${attr.flips.length} flips`;
 }
 
+// LTV payload (optional — real multi-year cohort lifetime value, whole-book)
+const ltvMarker = '/*__LTV_PAYLOAD__*/ null';
+let ltvNote = 'no LTV payload';
+const ltvPath = path.join(SCR, 'ltv/cohort-ltv-MY.json');
+if (out.includes(ltvMarker) && fs.existsSync(ltvPath)) {
+  const ltv = JSON.parse(fs.readFileSync(ltvPath, 'utf8'));
+  out = out.replace(ltvMarker, JSON.stringify(ltv));
+  ltvNote = `LTV ${ltv.cohorts.length} cohorts / mature ${ltv.symbol}${ltv.summary.mature_final}`;
+}
+
 fs.mkdirSync(path.join(ROOT, 'outputs'), { recursive: true });
 const dest = path.join(ROOT, DEST);
 fs.writeFileSync(dest, out, 'utf8');
-console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote} | ${attrNote}`);
+console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote} | ${attrNote} | ${ltvNote}`);
