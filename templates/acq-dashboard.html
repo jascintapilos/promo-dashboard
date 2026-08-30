@@ -1953,6 +1953,10 @@ function campaignView(){
       s.append(Object.assign(el('text',{x:sx(o.spend)+6,y:y+4,'text-anchor':'start',style:'font-size:10.5px;fill:var(--muted)'}),{textContent:sMc(o.spend)+' ('+o.share+'%) · '+o.campaigns+' campaigns'}));});
     axTitle(s,(left+W-right)/2,H-6,'Spend by owner — red = not yet confirmed');
     box.append(s);
+    // clarify what "Unknown" actually holds — it dominates the chart and otherwise reads as lost money
+    const unkC=(CR.campaigns||[]).filter(c=>(c.owner||'')==='Unknown'&&c.campaign!=='Unattributed').sort((a,b)=>b.spend-a.spend);
+    const topU=unkC[0], una=(CR.campaigns||[]).find(c=>c.campaign==='Unattributed');
+    if(topU) box.insertAdjacentHTML('beforeend',`<div class="fine" style="margin-top:6px;color:var(--muted)"><b>What "Unknown" holds:</b> not lost money — mostly the standing <b>${(topU.campaign||'').toLowerCase()}</b> mechanic (${sMc(topU.spend)}) plus broad <b>perks</b> (birthday, mini-games, check-ins) that no single team "runs". Only <b>${una?sMc(una.spend):'a little'}</b> is truly unmapped; the named campaigns still need a team to confirm the owner.</div>`);
   })();
   const cov=CR.coverage, covBox=document.getElementById('s_campaignCov');
   if(covBox) covBox.innerHTML=`<b>${cov.attributed_pct}%</b> of ${sMc(cov.total_spend)} rolls up to a campaign (${cov.unattributed_codes} codes / ${sMc(cov.unattributed_spend)} unmapped). Returns are measured on each campaign's <b>money-judged codes</b> — a cross-pillar campaign's figure covers only its retention/VIP part — and are a <b>directional read, not proof of cause</b>. Note that most spend sits in the <b>mechanic buckets</b>, not named campaigns.`;
