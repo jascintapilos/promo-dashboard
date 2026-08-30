@@ -236,6 +236,7 @@
   .tab:hover{color:var(--ink);background:var(--surface-2)}
   .tab.active{color:var(--accent-ink);border-bottom-color:var(--accent)}
   .tab .badge{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--inset);border-radius:5px;padding:1px 6px;margin-left:6px;text-transform:uppercase;letter-spacing:.03em}
+  .tab .badge.dir{color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent)}
   .panel[hidden]{display:none}
   .ctabs{display:inline-flex;gap:3px;background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:3px;margin:22px 0 0}
   .ctab{appearance:none;background:none;border:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--muted);padding:8px 20px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center}
@@ -419,7 +420,7 @@
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Big-player detection</button>
+    <button class="tab" data-tab="whale">Big-player detection <span class="badge dir">directional</span></button>
     <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
@@ -2002,7 +2003,7 @@ function renderSummary(){
   if(fpts.length){
     let cx=0,cy=0; const cum=[{x:0,y:0}]; let peakY=-1e18,peakX=0;
     fpts.forEach(p=>{cx+=p.spend;cy+=p.ngr;cum.push({x:cx,y:cy});if(cy>peakY){peakY=cy;peakX=cx;}});
-    const TS=cx,TN=cy,W=480,H=300,l=58,r=16,t=16,b=32;
+    const TS=cx,TN=cy,W=480,H=300,l=58,r=16,t=16,b=44;
     const minY=Math.min(0,...cum.map(p=>p.y)),maxY=Math.max(...cum.map(p=>p.y));
     const sx=v=>l+(v/TS)*(W-l-r), sy=v=>H-b-((v-minY)/((maxY-minY)||1))*(H-t-b);
     const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
@@ -2018,8 +2019,17 @@ function renderSummary(){
     // peak marker
     s.append(el('line',{x1:sx(peakX),y1:t,x2:sx(peakX),y2:H-b,stroke:CV('--scale'),'stroke-dasharray':'2 3','stroke-width':1.3}));
     const pk=el('text',{x:sx(peakX)-5,y:t+11,'text-anchor':'end',class:'axlab',style:'fill:'+CV('--scale')+';font-weight:700;font-size:11px'});pk.textContent='peak '+sM(peakY);s.append(pk);
-    // y ticks
-    [minY,0,maxY].forEach(g=>{const y=sy(g);const ty=el('text',{x:l-7,y:y+4,'text-anchor':'end',class:'axlab',style:'font-size:10.5px'});ty.textContent=sM(g);s.append(ty);});
+    // nice round tick values so magnitudes are readable on both axes
+    const niceTicks=(lo,hi,n)=>{const sp=hi-lo; if(sp<=0)return[lo]; const raw=sp/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),nm=raw/mag,st=(nm<1.5?1:nm<3?2:nm<7?5:10)*mag,out=[];for(let v=Math.ceil(lo/st)*st;v<=hi+st*0.001;v+=st)out.push(v);return out;};
+    // y ticks + faint gridlines + tick marks + value labels
+    niceTicks(minY,maxY,5).forEach(g=>{const y=sy(g);
+      if(g!==0)s.append(el('line',{x1:l,y1:y,x2:W-r,y2:y,stroke:CV('--line-2'),'stroke-opacity':.35}));
+      s.append(el('line',{x1:l-4,y1:y,x2:l,y2:y,stroke:CV('--line-2')}));
+      const ty=el('text',{x:l-7,y:y+3.5,'text-anchor':'end',class:'axlab',style:'font-size:10.5px'});ty.textContent=sM(g);s.append(ty);});
+    // x ticks + value labels
+    niceTicks(0,TS,5).forEach(g=>{const x=sx(g);
+      s.append(el('line',{x1:x,y1:H-b,x2:x,y2:H-b+4,stroke:CV('--line-2')}));
+      const tx=el('text',{x,y:H-b+15,'text-anchor':'middle',class:'axlab',style:'font-size:10px'});tx.textContent=sM(g);s.append(tx);});
     // x axis label
     const ax=el('text',{x:(l+W-r)/2,y:H-4,'text-anchor':'middle',class:'axlab'});ax.textContent='total spent so far →';s.append(ax);
     axTitle(s,13,(t+H-b)/2,'Cumulative net revenue',true);
@@ -2547,6 +2557,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +abrow('How much to trust a number','Same three tiers as the Summary: <b>directional</b> — the own before-and-after read (the 7-day per-RM here) · <b>fair-comparison checked</b> — measured against look-alike players (only <b>13 of the 59 Lane-A codes</b> qualify; look for the <span style="color:var(--gold)">fair</span> tag in the decisions table — the rest are tagged <span style="color:var(--muted)">own</span>) · <b>proven</b> — survived a live holdout (none yet). On the 13 codes actually checked the fair read is <b>about the same as own-baseline</b> (still a loss, ≈−RM0.95/RM) — so the fair check does <b>not</b> rescue Lane-A; the case against a blanket cut rests on <b>deposits attracted and the 90-day payback</b>, which the 7-day fair number does not touch.')
       +abrow('Good to know','Because the baseline is the player\'s <b>own recent history</b>, anything else that changed in those two weeks is mixed in, and it is only a 7-day window — so it is a <b>directional read, not proof</b>. A controlled test (a holdout) is the proof step before cutting anything big.'),
     whale:`<p class="lead">Big-player detection is about the <b>whales</b> — the handful of top players who carry most of the value — so their marketing can be decided on its own.</p>`
+      +`<div class="varbox" style="border-color:var(--gold);margin:8px 0"><span class="ico">◆</span><div><b>Status — directional.</b> The <b>detection</b> is solid: who's a whale, who's cooling, who to save this week, where the value concentrates. What's <b>not</b> proven is whether a bonus actually <i>keeps</i> a whale — that's a directional read that needs a <b>live holdout test</b> to settle. Act on the detection now; treat the "does the bonus retain them" question as a hypothesis to prove.</div></div>`
       +abrow('What counts as a whale','The <b>top 1% of VIPs by net revenue</b> — about <b>74 players</b>, each worth roughly <b>RM112,721+</b> in net revenue a year. They carry <b>33.9% of all net revenue</b>, and the top 10% carry <b>74.8%</b>. A thin slice holds up the whole book.')
       +abrow('What this pillar does','<b>Detect</b> — who is a whale, who is <b>cooling</b> (deposits slipping), and who is <b>rising</b> toward whale status — then <b>decide</b> the whale-specific marketing: protect the top, retain the cooling, grow the rising.')
       +abrow('How we judge it','Not on bonus-ROI. The real question is <b>whether our spend actually keeps them</b> — and the <b>catastrophic downside</b> if a cut is wrong (a few defections erase years of savings). So whales get their own decision, apart from the general VIP rules.')
