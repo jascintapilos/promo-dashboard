@@ -13,16 +13,18 @@ Bases (stated on the report):
   30-day stick = of FTDs with a mature 30-day window, share who deposited again within 30 days
 Usage: python bin/acq_report/02_compute_metrics.py
 """
-import json, statistics as st
+import sys, json, statistics as st
 from pathlib import Path
 from collections import defaultdict
+ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT))
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"
 MONTHS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"]
 
-rows = json.load(open(ACQ / "claim-outcomes-MY.json", encoding="utf-8"))
-meta = {r["code"]: r for r in json.load(open(ACQ / "acq-codes-MY.json", encoding="utf-8"))}
+rows = json.load(open(ACQ / f"claim-outcomes-{SUF}.json", encoding="utf-8"))
+meta = {r["code"]: r for r in json.load(open(ACQ / f"acq-codes-{SUF}.json", encoding="utf-8"))}
 
 by = defaultdict(list)
 for r in rows:
@@ -114,18 +116,18 @@ for r in rows:
 trend = [{"month": m[5:], "ftd": tr.get(m, 0)} for m in MONTHS]
 
 facts = {
-    "market": "MY", "currency": "MYR",
+    "market": MARKET, "currency": CURRENCY,
     "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
     "basis": "TL-approved Pillar=Acquisition; redeemed/active claims; FTD=first-ever deposit within 7 days of claim; 30-day stick on matured claims (<=2026-07-28); claims after ~20 Aug have partial 7-day windows",
     "kpis": kpis, "by_mechanic": by_mech, "trend": trend, "trend_partial_month": "08", "codes": codes,
 }
-json.dump(facts, open(ACQ / "acq-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(facts, open(ACQ / f"acq-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # --- cross-foot + sanity ---
 assert sum(c["ftd"] for c in codes) == tot_ftd
 assert abs(sum(c["spend"] for c in codes) - tot_spend) < 1
 bad = [c["code"] for c in codes if c["conversion"] > 100 or c["purity"] > 100 or (c["stick_30"] or 0) > 100]
-print(f"codes: {len(codes)} | claimers {tot_claimers:,} | FTDs {tot_ftd:,} | spend RM{tot_spend:,} | blended cost/FTD RM{kpis['cost_per_ftd']} | conv {kpis['conversion']}% | stick {kpis['stick_30']}%")
+print(f"codes: {len(codes)} | claimers {tot_claimers:,} | FTDs {tot_ftd:,} | spend {SYMBOL}{tot_spend:,} | blended cost/FTD {SYMBOL}{kpis['cost_per_ftd']} | conv {kpis['conversion']}% | stick {kpis['stick_30']}%")
 print(f"  range check (conv/purity/stick <=100): {'OK' if not bad else 'FAIL '+str(bad)}")
 print(f"  by mechanic: " + " | ".join(f"{m['mechanic']} RM{m['cost_per_ftd']}/FTD stick {m['stick_30']}%" for m in by_mech))
 print(f"  FTD trend: " + " ".join(f"{t['month']}:{t['ftd']}" for t in trend))

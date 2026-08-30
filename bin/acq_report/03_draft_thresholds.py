@@ -11,14 +11,16 @@ what YG/WY sign off. Rules (design section 7):
 Writes decision + reason + thresholds back into acq-metrics-MY.json.
 Usage: python bin/acq_report/03_draft_thresholds.py
 """
-import json, statistics as st
+import sys, json, statistics as st
 from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT))
+from csir_config import SYMBOL, SUF, MARKET
 
 ACQ = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/acq")
-FLOOR = 20            # min redeemed claimers to make a call
+FLOOR = 20 if MARKET == 'MY' else 8   # min redeemed claimers to make a call (lower for thinner markets)
 RELOAD_PURITY = 40   # below this % new, a "welcome" code is mostly existing players -> judge under Retention
 
-f = json.load(open(ACQ / "acq-metrics-MY.json", encoding="utf-8"))
+f = json.load(open(ACQ / f"acq-metrics-{SUF}.json", encoding="utf-8"))
 codes = f["codes"]
 
 def pct(xs, p):
@@ -38,6 +40,11 @@ costs = [c["cost_per_ftd"] for c in judged]
 sticks = [c["stick_30"] for c in judged if c["stick_30"] is not None]
 c_p25, c_p50, c_p75 = pct(costs, .25), pct(costs, .50), pct(costs, .75)
 s_med = pct(sticks, .50)
+# thin-market guard: no judgeable codes -> keep neutral cutoffs so nothing crashes (unused when judged is empty)
+c_p25 = c_p25 if c_p25 is not None else 0
+c_p50 = c_p50 if c_p50 is not None else 0
+c_p75 = c_p75 if c_p75 is not None else 0
+s_med = s_med if s_med is not None else 0
 thr = {"floor_claimers": FLOOR, "cost_per_ftd_p25": round(c_p25), "cost_per_ftd_p50": round(c_p50),
        "cost_per_ftd_p75": round(c_p75), "stick_median": round(s_med, 1), "reload_purity": RELOAD_PURITY,
        "status": "DRAFT"}
@@ -47,7 +54,7 @@ def decide(c):
         return "Referral", "referral reward — its payoff is the referred friend's deposit, tracked separately (needs a link between referrer and friend)"
     if is_reload(c):
         ngr = c.get("ngr_w7") or 0
-        ngrtxt = f"+RM{ngr:,}" if ngr >= 0 else f"−RM{abs(ngr):,}"
+        ngrtxt = f"+{SYMBOL}{ngr:,}" if ngr >= 0 else f"−{SYMBOL}{abs(ngr):,}"
         return "Reload", f"only {c['purity']:.0f}% new players — this is a deposit bonus for existing players ({ngrtxt} week-1 net revenue). Judge its value on the Retention tab, not as bringing in new players."
     if c["claimers"] < FLOOR:
         return "Low volume", f"only {c['claimers']} people claimed it — too few to judge (need at least {FLOOR})"
@@ -57,13 +64,13 @@ def decide(c):
     cheap, dear = cost <= c_p25, cost >= c_p75
     good_stick = stick >= s_med
     if cheap and good_stick:
-        return "Scale", f"cheap to bring in new players (RM{cost} per new depositor, among the cheapest) and they keep playing ({stick}% stayed)"
+        return "Scale", f"cheap to bring in new players ({SYMBOL}{cost} per new depositor, among the cheapest) and they keep playing ({stick}% stayed)"
     if dear and not good_stick:
-        return "Reduce", f"expensive (RM{cost} per new depositor, among the priciest) and few keep playing ({stick}%)"
+        return "Reduce", f"expensive ({SYMBOL}{cost} per new depositor, among the priciest) and few keep playing ({stick}%)"
     if dear or not good_stick:
-        why = f"expensive (RM{cost} per new depositor)" if dear else f"few keep playing ({stick}%)"
+        why = f"expensive ({SYMBOL}{cost} per new depositor)" if dear else f"few keep playing ({stick}%)"
         return "Optimise", f"{why} — test a smaller amount or aim it at the right players"
-    return "Maintain", f"acceptable (RM{cost} per new depositor, {stick}% stayed)"
+    return "Maintain", f"acceptable ({SYMBOL}{cost} per new depositor, {stick}% stayed)"
 
 hist = {}
 for c in codes:
@@ -71,19 +78,19 @@ for c in codes:
     c["decision"], c["reason"] = d, why
     hist[d] = hist.get(d, 0) + 1
 f["thresholds"] = thr
-json.dump(f, open(ACQ / "acq-metrics-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(f, open(ACQ / f"acq-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 order = ["Scale", "Maintain", "Optimise", "Reduce", "Stop", "Reload", "Referral", "Low volume"]
 print("DRAFT thresholds:", json.dumps(thr))
 print("decision histogram:", {k: hist.get(k, 0) for k in order})
 spend_by = {}
 for c in codes: spend_by[c["decision"]] = spend_by.get(c["decision"], 0) + c["spend"]
-print("spend by decision:", {k: f"RM{spend_by.get(k,0):,}" for k in order})
+print("spend by decision:", {k: f"{SYMBOL}{spend_by.get(k,0):,}" for k in order})
 print()
 print(f"  {'DECISION':10s} {'CODE':32s} {'CLM':>5} {'FTD':>4} {'RM/FTD':>7} {'STICK':>6}  REASON")
 for d in order:
     for c in sorted([x for x in codes if x["decision"] == d], key=lambda x: -x["spend"]):
-        cf = ('RM'+str(c['cost_per_ftd'])) if c['cost_per_ftd'] else 'n/a'
+        cf = (SYMBOL+str(c['cost_per_ftd'])) if c['cost_per_ftd'] else 'n/a'
         sk = (str(c['stick_30'])+'%') if c['stick_30'] is not None else 'n/a'
         print(f"  {d:10s} {c['code'][:32]:32s} {c['claimers']:>5} {c['ftd']:>4} {cf:>7} {sk:>6}  {c['reason'][:46]}")
 print("Saved acq-metrics-MY.json with DRAFT decisions")

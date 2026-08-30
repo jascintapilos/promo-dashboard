@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"
@@ -28,7 +28,7 @@ START, END1 = "2026-01-01", "2026-08-26"
 SNAP_END = "2026-08-27"          # snapshot scan bound (data max = 2026-08-26)
 MATURE_30 = "2026-07-28"         # claim_date <= this -> full 30-day window (claim+29 <= 2026-08-26)
 
-codes = [r["code"] for r in json.load(open(ACQ / "acq-codes-MY.json", encoding="utf-8"))]
+codes = [r["code"] for r in json.load(open(ACQ / f"acq-codes-{SUF}.json", encoding="utf-8"))]
 inlist = ",".join("'" + c.replace("'", "''") + "'" for c in codes)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
@@ -36,7 +36,7 @@ q = f"""
 WITH acq_claims AS (
     SELECT SITE, MEMBER_ID, BonusCode, toDate(BonusTime_gmt8) AS bonus_date, BonusAmount
     FROM WORKSPACE.GetBonus_ABC
-    WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0
       AND BonusStatus IN {STATUSES}
       AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
       AND BonusCode IN ({inlist})
@@ -49,11 +49,11 @@ per_cm AS (
 snap AS (
     SELECT SITE AS ss, MEMBER_ID AS sm, SnapshotDate AS sd, DepositAmount AS dep, NGR AS ngr
     FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE Currency='MYR' AND SnapshotDate >= '{START}' AND SnapshotDate < '{SNAP_END}' AND (DepositAmount>0 OR NGR!=0)
+    WHERE Currency='{CURRENCY}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{SNAP_END}' AND (DepositAmount>0 OR NGR!=0)
     UNION ALL
     SELECT SITE, MEMBER_ID, SnapshotDate, DepositAmount, NGR
     FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE Currency='MYR' AND SnapshotDate >= '{START}' AND SnapshotDate < '{SNAP_END}' AND (DepositAmount>0 OR NGR!=0)
+    WHERE Currency='{CURRENCY}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{SNAP_END}' AND (DepositAmount>0 OR NGR!=0)
 )
 SELECT p.MEMBER_ID AS MEMBER_ID, p.BonusCode AS BonusCode, p.claim_date AS claim_date,
        p.claims AS claims, p.bonus_cost AS bonus_cost,
@@ -72,7 +72,7 @@ res = c.query(q, settings={"max_execution_time": 390, "max_memory_usage": 600000
                            "max_result_rows": 500000, "result_overflow_mode": "break"})
 rows = [dict(zip(res.column_names, r)) for r in res.result_rows]
 
-fd = json.load(open(ACQ / "first-deposit-MY.json", encoding="utf-8"))   # member -> [first_dep_date, amt]
+fd = json.load(open(ACQ / f"first-deposit-{SUF}.json", encoding="utf-8"))   # member -> [first_dep_date, amt]
 out = []
 for r in rows:
     mid = str(r["MEMBER_ID"]); cd = str(r["claim_date"])
@@ -92,7 +92,7 @@ for r in rows:
         "mature_30": cd <= MATURE_30,
         "first_dep_amt": (f[1] if f else 0.0),
     })
-json.dump(out, open(ACQ / "claim-outcomes-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(ACQ / f"claim-outcomes-{SUF}.json", "w", encoding="utf-8"), default=str)
 
 n_ftd = sum(1 for r in out if r["ftd_in_7d"])
 n_new = sum(1 for r in out if r["is_new"])
@@ -100,8 +100,8 @@ n_prior = sum(1 for r in out if r["had_prior_deposit"])
 tot_cost = sum(r["bonus_cost"] for r in out)
 tot_w7 = sum(r["w7_dep"] for r in out)
 print(f"per-(code,member) rows: {len(out):,}")
-print(f"  redeemed/approved bonus_cost total: RM{tot_cost:,.0f}   (vs all-status RM996,049)")
+print(f"  redeemed/approved bonus_cost total: {SYMBOL}{tot_cost:,.0f}")
 print(f"  FTD-in-7d (members x code): {n_ftd:,} | is_new: {n_new:,} | had_prior_deposit(existing): {n_prior:,}")
-print(f"  7-day window deposit total: RM{tot_w7:,.0f}")
+print(f"  7-day window deposit total: {SYMBOL}{tot_w7:,.0f}")
 print(f"  claims with mature 30-day window (<= {MATURE_30}): {sum(1 for r in out if r['mature_30']):,} / {len(out):,}")
 print("Saved scratchpad/acq/claim-outcomes-MY.json")

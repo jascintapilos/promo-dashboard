@@ -90,6 +90,50 @@ IS_TUNNEL: bool = (HOST, PORT) == (
 )
 
 
+# ── Market seam ───────────────────────────────────────────────────────────────
+# Which brand market the PROMO-REPORT pipeline pulls. Flip PROMO_MARKET to run the
+# same pull/compute/build scripts for another market; they read MARKET / CURRENCY /
+# LOGSITE / SUF / SYMBOL from here instead of hardcoding 'MYR' / 'WS1_MYS_MYR' / '-MY'.
+# SITE_EDIT is the same brand (WS1) for every market — only currency + logsite move.
+#
+# IMPORTANT: money-denominated thresholds (size bands, loss/reward floors) are NOT a
+# symbol swap — a "RM400 bonus" band means a different real amount than "S$400". Use
+# money(my_value) to rescale a MY-tuned money threshold into the current market's
+# currency (S$1 ≈ RM3.3, Aug 2026). Dimensionless per-RM RATIOS (NGR-lift/RM,
+# give-to-take, fatigue factors, attributed_per_rm) transfer UNCHANGED — never money()
+# those. And figures that are MY analysis RESULTS (e.g. a frequency-cap saving) must be
+# RE-DERIVED per market, not rescaled.
+_MARKETS = {
+    "MY": {"currency": "MYR", "logsite": "WS1_MYS_MYR", "suffix": "MY", "symbol": "RM", "myr_per_unit": 1.0},
+    "SG": {"currency": "SGD", "logsite": "WS1_SGP_SGD", "suffix": "SG", "symbol": "S$", "myr_per_unit": 3.3},
+}
+PROMO_MARKET: str = os.getenv("PROMO_MARKET", "MY").strip().upper()
+if PROMO_MARKET not in _MARKETS:
+    raise SystemExit(f"PROMO_MARKET must be one of {sorted(_MARKETS)}; got {PROMO_MARKET!r}.")
+
+MARKET: str = PROMO_MARKET
+CURRENCY: str = _MARKETS[PROMO_MARKET]["currency"]        # 'MYR' / 'SGD' — the ClickHouse Currency filter + facts tag
+LOGSITE: str = _MARKETS[PROMO_MARKET]["logsite"]          # membership-log SITE key
+SUF: str = _MARKETS[PROMO_MARKET]["suffix"]               # filename suffix: acq-codes-{SUF}.json
+SYMBOL: str = _MARKETS[PROMO_MARKET]["symbol"]            # 'RM' / 'S$' — for persisted text fields
+SITE_EDIT: str = "WS1"                                    # brand, same across markets
+_MYR_PER_UNIT: float = _MARKETS[PROMO_MARKET]["myr_per_unit"]
+
+
+def money(my_value: float, step: float | None = None) -> float:
+    """Rescale a MY-tuned money threshold into the current market's currency.
+
+    money(400) -> 400 for MY, ~121 for SG (400/3.3). Pass step to round to a tidy
+    band edge in the target currency (e.g. money(400, step=50) -> 100 for SG). Use
+    ONLY for real-money thresholds (size bands, loss/reward floors); never for
+    dimensionless per-RM ratios, which transfer unchanged.
+    """
+    v = my_value / _MYR_PER_UNIT
+    if step:
+        v = round(v / step) * step
+    return round(v, 2) if step is None else v
+
+
 def env_file_path() -> Path:
     return Path(os.getenv("CSIR_ENV_FILE", DEFAULT_ENV_FILE))
 

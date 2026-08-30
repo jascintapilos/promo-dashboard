@@ -14,14 +14,14 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, MARKET
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"; ACQ.mkdir(parents=True, exist_ok=True)
 START, END1 = "2026-01-01", "2026-08-26"   # claim window [start, end) -> 2026-08-25 inclusive
 
 # --- classification: TL-approved assigned pillar = Acquisition (live All Codes tab) ---
-tl_list = json.load(open(ACQ / "tl-acq-codes-MY.json", encoding="utf-8"))
+tl_list = json.load(open(ACQ / f"tl-acq-codes-{SUF}.json", encoding="utf-8"))
 acq = {r["code"].strip(): (r["name"] or "").strip() for r in tl_list}
 mech_sheet = {r["code"].strip(): (r["mechanic"] or "").strip() for r in tl_list}
 acq_codes = sorted(acq)
@@ -32,7 +32,7 @@ inlist = ",".join("'" + x.replace("'", "''") + "'" for x in acq_codes)
 q = f"""
 SELECT BonusCode, BonusType, count() AS claims, sum(BonusAmount) AS amt
 FROM WORKSPACE.GetBonus_ABC
-WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0
+WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0
   AND BonusTime_gmt8 >= '{START} 00:00:00' AND BonusTime_gmt8 < '{END1} 00:00:00'
   AND BonusCode IN ({inlist})
 GROUP BY BonusCode, BonusType
@@ -52,11 +52,11 @@ for code in acq_codes:
         mism.append((code, mech, ch_mech))
     out.append({"code": code, "name": acq[code], "mechanic": mech or ch_mech, "claims": d["claims"], "bonus_amt": round(d["amt"])})
 out.sort(key=lambda x: -x["bonus_amt"])
-json.dump(out, open(ACQ / "acq-codes-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(out, open(ACQ / f"acq-codes-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 nz = [r for r in out if r["claims"] > 0]
-print(f"Acquisition codes (MY) — TL-approved assigned pillar = Acquisition: {len(out)}  |  with claims in window: {len(nz)}")
-print(f"  total acquisition claims: {sum(r['claims'] for r in out):,} | total raw bonus amount (all-status): RM{sum(r['bonus_amt'] for r in out):,}")
+print(f"Acquisition codes ({MARKET}) — TL-approved assigned pillar = Acquisition: {len(out)}  |  with claims in window: {len(nz)}")
+print(f"  total acquisition claims: {sum(r['claims'] for r in out):,} | total raw bonus amount (all-status): {SYMBOL}{sum(r['bonus_amt'] for r in out):,}")
 if mism:
     print(f"  mechanic (sheet vs claims) mismatches: {mism}")
 print()
