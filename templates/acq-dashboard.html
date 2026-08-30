@@ -428,7 +428,7 @@
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
-      <div class="card col6"><div class="card-h"><h3>Best-to-worst return on spend</h3><span class="hint">money is the test</span></div><p class="sub2">Every promo ranked best-to-worst return. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (can be moved elsewhere).</p><div id="s_frontier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Best-to-worst return on spend</h3><span class="hint">money is the test</span></div><p class="sub2">Every promo ranked best-to-worst return — on the <b>fair-comparison</b> number where it's been checked, else the own-baseline. The curve climbs while each RM still adds net revenue, then rolls over — the shaded tail is spend that destroys value (can be moved elsewhere).</p><div id="s_frontier"></div></div>
       <div class="card col6"><div class="card-h"><h3>How much can we trust this?</h3><span class="hint">coverage &amp; confidence</span></div><div id="s_confidence"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
@@ -1184,9 +1184,11 @@ function rTable(){
     const bwrap=document.createElement('div'); bwrap.className='grp-b';
     const body=rows.map(x=>{
       const up=x.redeposit_uplift, upTxt=up==null?na(null):`<span style="color:${up>0?'var(--scale)':up<0?'var(--reduce)':'var(--muted)'}">${up>0?'+':''}${up}pp</span>`;
-      const mv=x.ngr_lift_per_rm, mTxt=mv==null?na(null):`<span style="font-weight:700;color:${mv>0?'var(--ink)':'var(--reduce)'}">${RSYM}${mv.toFixed(2)}</span>`;
+      const useFair=x.fair_per_rm!=null, mv=useFair?x.fair_per_rm:x.ngr_lift_per_rm;
+      const mTxt=mv==null?na(null):`<span style="font-weight:700;color:${mv>0?'var(--ink)':'var(--reduce)'}">${RSYM}${mv.toFixed(2)}</span>${useFair?' <span class="fine" style="color:var(--gold)">fair</span>':''}`;
       const flag=(x.flags&&x.flags.length)?`<div class="cname" style="color:var(--optimise)">⚑ ${x.flags[0]}</div>`:'';
-      return `<tr class="drow"><td class="l"><div class="code">${x.code}${confTag(x.robustness)}</div><div class="cname">${x.name||''}</div>${flag}</td>
+      const rg=x.regraded?`<div class="cname" style="color:var(--scale)">⤳ fair-graded · was ${x.regraded_from}</div>`:'';
+      return `<tr class="drow"><td class="l"><div class="code">${x.code}${confTag(x.robustness)}</div><div class="cname">${x.name||''}</div>${rg}${flag}</td>
         <td><span class="mech">${mechLabel(x.mechanic)}</span></td><td>${RSYM}${fmt(x.spend)}</td><td>${mTxt}</td><td>${upTxt}</td>
         <td>${x.redeposit_rate!=null?x.redeposit_rate+'%':na(null)}</td>
         <td class="l" style="max-width:32ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.reason||''}</td></tr><tr class="dconf" hidden><td colspan="7">${confDetail(x.robustness,'depositors',RSYM)}</td></tr>`;}).join('');
@@ -1969,8 +1971,10 @@ function renderSummary(){
     `</tbody></table></div>`;
   // ---- spend-efficiency frontier ----
   const fpts=[];
-  if(RET)RET.codes.forEach(c=>{if(c.ngr_lift_per_rm!=null&&c.ngr_lift!=null)fpts.push({r:c.ngr_lift_per_rm,spend:c.spend,ngr:c.ngr_lift,code:c.code,p:'Ret'});});
-  if(VIP)VIP.codes.forEach(c=>{if(c.lane==='A-performance'&&c.ngr_lift_per_rm!=null&&c.ngr_lift!=null)fpts.push({r:c.ngr_lift_per_rm,spend:c.spend,ngr:c.ngr_lift,code:c.code,p:'VIP'});});
+  // rank on the fair-comparison number where it exists (else own-baseline); accumulate the matching NGR
+  const fpt=c=>{const pr=c.fair_per_rm!=null?c.fair_per_rm:c.ngr_lift_per_rm, ng=c.fair_per_rm!=null?c.fair_per_rm*c.spend:c.ngr_lift; return (pr!=null&&ng!=null)?{r:pr,spend:c.spend,ngr:ng,code:c.code}:null;};
+  if(RET)RET.codes.forEach(c=>{const p=fpt(c);if(p)fpts.push(Object.assign(p,{p:'Ret'}));});
+  if(VIP)VIP.codes.forEach(c=>{if(c.lane==='A-performance'){const p=fpt(c);if(p)fpts.push(Object.assign(p,{p:'VIP'}));}});
   fpts.sort((a,b)=>b.r-a.r);
   const box=document.getElementById('s_frontier'); box.innerHTML='';
   if(fpts.length){
