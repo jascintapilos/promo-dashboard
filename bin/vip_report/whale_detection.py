@@ -63,12 +63,12 @@ reinvest = {
 
 # ---- DECIDE (the whale-specific marketing stance) -------------------------
 decision = {
-    "verdict": ("Whales are the top ~1% of VIPs and about {s}% of all VIP value — so their marketing is "
-                "its own decision: protect the top, retain the cooling, grow the rising, and test before "
-                "scaling.").format(s=whale.get("top10pct_ngr_share")),
+    "verdict": ("Whales are the top ~1% of VIPs, and the top 10% hold about {s}% of all net revenue — so their "
+                "marketing is its own decision: protect the top, retain the cooling, grow the rising, and test "
+                "before scaling.").format(s=whale.get("top10pct_ngr_share")),
     "moves": [
         {"move": "Protect the top — don't cut", "why": "the top handful hold years of value; one lost to a wrong cut is unrecoverable", "type": "floor"},
-        {"move": "Retain the cooling", "why": "{n} cooling top-10% players, {r} of net revenue at stake".format(n=whale.get("value_at_risk_members"), r="RM{:,}".format(whale.get("value_at_risk_ngr") or 0)), "type": "floor"},
+        {"move": "Retain the cooling", "why": "{n} cooling top-1% whales, {r} of net revenue at stake".format(n=wsum.get("cooling"), r="RM{:,}".format(wsum.get("ngr_at_risk") or 0)), "type": "floor"},
         {"move": "Grow the rising pipeline", "why": "climbers get more bonus AND return more — funding growth pays", "type": "band"},
         {"move": "Test before scaling the reinvestment", "why": "we can't yet prove bonuses keep them; a holdout decides it", "type": "band"},
     ],
@@ -179,15 +179,17 @@ efficiency = {
                  m=len(mat), t=len(whale_eff)),
 }
 
-reach_cool = sum(1 for r in roster if r.get("reachable") and r.get("cooling"))
-cool_gone = sum(1 for r in roster if r.get("cooling") and not r.get("reachable"))
+# Derive the reachable/gone split from the SAME count the save-list card shows (total_reachable),
+# so the reconciliation can't contradict the "top N of R" line beneath it.
+reach_n = save_list.get("total_reachable")
+gone_n = max(0, cooling.get("cooling") - reach_n)
 counts_reconciliation = (
     "Whales = the top 1% ({w} players). {c} are cooling (deposits down vs the first half); {rc} of those are "
     "still <b>reachable</b> — active recently or still depositing — while ~{cg} look already gone. The save-list "
-    "is the top {n} of the {r} whales still worth a save. (Separately, the \"{ar} players cooling\" figure "
+    "is the top {n} of those {r} still worth a save. (Separately, the \"{ar} players cooling\" figure "
     "elsewhere counts the wider top 10%, a broader group than the {w} whales.)"
-).format(w=definition.get("count"), c=cooling.get("cooling"), rc=reach_cool, cg=cool_gone,
-         n=len(save_list.get("rows", [])), r=save_list.get("total_reachable"),
+).format(w=definition.get("count"), c=cooling.get("cooling"), rc=reach_n, cg=gone_n,
+         n=len(save_list.get("rows", [])), r=reach_n,
          ar=cooling.get("at_risk_members"))
 
 j["whale_pillar"] = {
