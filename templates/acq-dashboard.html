@@ -435,6 +435,7 @@
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
     <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
     <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · v1 · directional</span></div><div id="s_plan"></div></div>
+    <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
       <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal.</p>
@@ -2116,6 +2117,21 @@ function renderSummary(){
       `</div>`+
       `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Two guardrails on this money.</b> <b>Don't cut ${dc.n} codes</b> the fair check says actually earn (cutting them would wrongly free ${M(dc.freed_if_cut)} but lose the revenue). And <b>${M(P0.not_bankable_holdout)}</b> of the swing rests on promos that <b>need the holdout</b> to confirm — not bankable until it runs.</div></div>`;
   }
+  // ---- what this report does NOT yet cover (honest limits) ----
+  {
+    const nv=(typeof ATTR!=='undefined'&&ATTR&&ATTR.coverage)?ATTR.coverage.n_valid:74, lc=document.getElementById('s_limitsCard');
+    if(lc) lc.hidden=false;
+    const li=(t,b)=>`<div class="cfr" style="align-items:flex-start;padding:8px 0"><span class="cfk" style="color:var(--gold);min-width:130px">${t}</span><span style="color:var(--muted);font-size:13px">${b}</span></div>`;
+    const el2=document.getElementById('s_limits');
+    if(el2) el2.innerHTML=
+      `<p class="sub2">The report is honest about its edges — these are known gaps to fix next, not hidden ones. Weigh decisions against them.</p>`+
+      li('Singapore','MY only. SG — about <b>half the WS1 market</b> — isn\'t built yet, so every portfolio total here is the <b>MY book alone</b>.')+
+      li('Value horizon','Promos are judged on <b>7–90 days</b>. No long-term (LTV) value, so welcome offers (which lose in week 1 <i>by design</i>) and whale saves (worth many months) are <b>under-counted</b>. Only ~7 months of data exists, so true LTV isn\'t computable yet.')+
+      li('Cost','Spend and break-even are <b>bonus only</b> — no comms, VM/CRM servicing time, or platform overhead. Codes grading near zero are likely <b>loss-making</b> once cost-to-serve is added.')+
+      li('Evidence','Most figures are <b>directional</b>. Only <b>'+nv+'</b> of ~200 codes are fair-comparison checked; <b>none are holdout-proven</b>. Act on the confidence tiers, not the exact point numbers.')+
+      li('Margin mix','NGR is one <b>blended</b> number — no split by game/vertical. A promo that lifts NGR while pushing low-margin play still looks fine here.')+
+      li('Targets & tracking','No <b>budget/target lines</b> yet (can\'t say "ahead/behind plan"), and the month-to-month <b>move-tracker isn\'t live</b> — it needs a second period to populate.');
+  }
   // ---- pillar cards (nav) ----
   const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
   const money=n=>SYM+(n/1000).toFixed(1)+'K';
@@ -2524,6 +2540,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('s_attribCard')),
     cardSec(byId('s_nextCard')),
     cardSec(byId('s_planCard')),
+    cardSec(byId('s_limitsCard')),
     cardSec(byId('s_campaignCard')),
     cardSec(cardById('summaryGrid')),
   ]);
