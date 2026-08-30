@@ -54,6 +54,17 @@ out = {
               ["fair-comparison checked", "compared to look-alike players who did not get the promo"],
               ["proven", "survived a live holdout (random) test — none yet"]],
 }
+
+# fatigue (within-member) — optional
+try:
+    fat = json.load(open(SCR / "fatigue-MY.json", encoding="utf-8"))
+    f = lambda cv, n: (cv.get(str(n)) or cv.get(n) or {}).get("factor")
+    out["fatigue"] = {
+        "vip_ord4": f(fat["by_pillar"]["VIP"], 4), "ret_ord5": f(fat["by_pillar"]["RET"], 5),
+        "ret_ord6": f(fat["by_pillar"]["RET"], 6), "overall_ord4": f(fat["overall"], 4),
+    }
+except FileNotFoundError:
+    pass
 json.dump(out, open(SCR / "attribution-summary-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 print(f"attribution summary: valid {len(valid)} / need-holdout {len(holdo)} | own {own} -> fair {did} /RM (gap {gap}) | "
       f"too-pess {bshare(pess)}% / too-opt {bshare(opti)}% | {len(flip_rows)} flips")
