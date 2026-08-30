@@ -2039,11 +2039,37 @@ function renderSummary(){
   const top=led.slice(0,14);
   document.getElementById('s_ledger').innerHTML=
     `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Why</th></tr></thead><tbody>`+
-    top.map(x=>`<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
+    top.map(x=>{
+      let engHint='';
+      const em=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
+      if(em){
+        const lbl=em.t==='fair'?'fair-checked':em.t==='hold'?'needs live test':'directional';
+        const col=em.t==='fair'?'var(--gold)':em.t==='hold'?'var(--muted)':'var(--line-2)';
+        const cut=['Stop','Reduce','Trim'].includes(x.dec), grow=['Scale'].includes(x.dec);
+        const f=em.f, fstr=(f>=0?'+':'−')+SYM+Math.abs(f)+'/RM';
+        let flag='';
+        if(em.t==='fair'&&f!=null){
+          if(cut&&f>=0) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ fair check: it <b>earns</b> (${fstr}) — review</div>`;
+          else if(grow&&f<0) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ fair check: it <b>loses</b> (${fstr}) — review</div>`;
+        }
+        engHint=`<div class="fine" style="color:${col};margin-top:2px">${lbl}</div>`+flag;
+      }
+      return `<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
       `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
-      `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
-      `<td class="l" style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`).join('')+
-    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} to act on, across pillars. Click a pillar to see the full list.</p>`;
+      `<td><span class="lchip" style="color:${x.col}">${x.dec}</span>${engHint}</td>`+
+      `<td class="l" style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`;}).join('')+
+    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} to act on, across pillars. Each action carries its <b>confidence</b> (fair-checked / directional / needs live test); <b>⚠</b> = the fair comparison disagrees with the call — review before acting. Click a pillar to see the full list.</p>`;
+  // ---- staged cutover: graded promos where the fair-comparison number disagrees with the call ----
+  const review=led.filter(x=>{
+    const em=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
+    if(!em||em.t!=='fair'||em.f==null) return false;
+    const cut=['Stop','Reduce','Trim'].includes(x.dec), grow=['Scale'].includes(x.dec);
+    return (cut&&em.f>=0)||(grow&&em.f<0);
+  }).sort((a,b)=>b.spend-a.spend);
+  if(review.length) document.getElementById('s_ledger').insertAdjacentHTML('beforeend',
+    `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Staged cutover — ${review.length} graded promo(s) to re-review.</b> The fair-comparison (Tier-2) number disagrees with the current call on these; nothing is auto-changed — check before acting: `+
+    review.map(x=>{const em=ATTR.engine_map[x.code];const earns=em.f>=0;return `<b>${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</b> <span class="pilltag">${x.pillar}</span> now <i>${x.dec}</i> → fair says it <b style="color:${earns?'var(--scale)':'var(--reduce)'}">${earns?'earns':'loses'}</b> (${(em.f>=0?'+':'−')+SYM+Math.abs(em.f)}/RM)`;}).join(' · ')+
+    `.</div></div>`);
   // ---- pillar cards (nav) ----
   const pend=(name,txt)=>`<div class="pcard pending"><div class="peyebrow">Pending</div><div class="ptitle">${name}</div><div class="ppending">${txt}</div></div>`;
   const money=n=>SYM+(n/1000).toFixed(1)+'K';

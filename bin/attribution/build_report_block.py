@@ -66,6 +66,15 @@ try:
 except FileNotFoundError:
     pass
 
+# unified engine map (code -> tier + canonical fair number) for the staged cutover on the ledger
+try:
+    eng = json.load(open(SCR / "attribution-engine-MY.json", encoding="utf-8"))
+    tcode = {"fair-comparison": "fair", "directional": "dir", "needs-holdout": "hold"}
+    out["engine_map"] = {c["code"]: {"t": tcode.get(c["tier"], "dir"), "f": c["attributed_per_rm"]}
+                         for c in eng["codes"]}
+except FileNotFoundError:
+    pass
+
 # cap segment (give-to-take) — optional
 try:
     csj = json.load(open(SCR / "cap-segment-MY.json", encoding="utf-8"))
