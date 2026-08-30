@@ -437,8 +437,8 @@
     <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · v1 · directional</span></div><div id="s_plan"></div></div>
     <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
-      <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional</span></div>
-      <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal.</p>
+      <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional · deeper breakdown coming</span></div>
+      <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal. <span style="color:var(--gold)">⏭ Coming next: a fuller per-campaign breakdown — confirmed owners, the exact codes inside each campaign, and campaign-level targets — once the teams confirm the map.</span></p>
       <div class="tgrid">
         <div class="tchart"><h4>Marketing campaigns <span>named theme / event pushes</span></h4><div id="s_campaignThemes"></div></div>
         <div class="tchart"><h4>BAU mechanic buckets <span>no distinct campaign — just a mechanic</span></h4><div id="s_campaignMech"></div></div>
@@ -1926,7 +1926,7 @@ function campaignView(){
   function drawBars(boxId,list){
     const box=document.getElementById(boxId); if(!box) return; box.innerHTML='';
     if(!list.length){box.innerHTML='<p class="fine" style="color:var(--muted)">none</p>';return;}
-    const W=470,rh=34,top=6,bot=24,H=top+list.length*rh+bot,left=118,right=150,sx=v=>left+(v/maxSp)*(W-left-right);
+    const W=470,rh=40,top=6,bot=24,H=top+list.length*rh+bot,left=118,right=120,sx=v=>left+(v/maxSp)*(W-left-right);
     const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
     list.forEach((c,i)=>{const y=top+i*rh+rh/2;
       const good=c.kind==='acq'?null:(c.ngr_lift_per_rm==null?null:c.ngr_lift_per_rm>=0);
@@ -1935,7 +1935,8 @@ function campaignView(){
       s.append(el('rect',{x:left,y:y-9,width:Math.max(2,sx(c.spend)-left),height:15,rx:3,fill:col,'fill-opacity':.82}));
       s.append(Object.assign(el('text',{x:sx(c.spend)+6,y:y-1,'text-anchor':'start',style:'font-size:10px;fill:var(--muted)'}),{textContent:sMc(c.spend)+' ('+c.spend_share+'%)'+(c.cadence?' · '+c.cadence:'')}));
       const out=c.kind==='acq'?(c.cost_per_ftd!=null?SYM+c.cost_per_ftd+'/dep':'—'):(c.ngr_lift_per_rm!=null?cmr(c.ngr_lift_per_rm)+'/RM1':'—');
-      s.append(Object.assign(el('text',{x:W-6,y:y-1,'text-anchor':'end',style:'font-size:10.5px;font-weight:700;fill:'+col}),{textContent:out}));});
+      // return sits on its OWN line below the bar (right-aligned) so it never overlaps the spend label on a long bar
+      s.append(Object.assign(el('text',{x:W-6,y:y+13,'text-anchor':'end',style:'font-size:10.5px;font-weight:700;fill:'+col}),{textContent:out}));});
     axTitle(s,(left+W-right)/2,H-6,'Bonus spend (exact) · return (directional)');
     box.append(s);
   }
@@ -1997,7 +1998,7 @@ function renderSummary(){
   if(RET)RET.codes.forEach(c=>{const p=fpt(c);if(p)fpts.push(Object.assign(p,{p:'Ret'}));});
   if(VIP)VIP.codes.forEach(c=>{if(c.lane==='A-performance'){const p=fpt(c);if(p)fpts.push(Object.assign(p,{p:'VIP'}));}});
   fpts.sort((a,b)=>b.r-a.r);
-  const box=document.getElementById('s_frontier'); box.innerHTML='';
+  const box=document.getElementById('s_frontier'); box.innerHTML=''; box.style.maxWidth='620px';  // cardSec dissolves the col6 wrapper, so cap the width or the SVG stretches full-screen
   if(fpts.length){
     let cx=0,cy=0; const cum=[{x:0,y:0}]; let peakY=-1e18,peakX=0;
     fpts.forEach(p=>{cx+=p.spend;cy+=p.ngr;cum.push({x:cx,y:cy});if(cy>peakY){peakY=cy;peakX=cx;}});
@@ -2037,16 +2038,18 @@ function renderSummary(){
     `<div class="concbar" style="margin-top:2px"><div class="cseg" style="width:${mpct}%;background:var(--scale)"></div><div class="cseg" style="width:${100-mpct}%;background:var(--line-2)"></div></div>`+
     `<div class="conclegend"><span><i style="background:var(--scale)"></i>Graded — has an actionable call · ${mpct}%</span><span><i style="background:var(--line-2)"></i>Set aside — still held (too new, thin, or watch) · ${100-mpct}%</span></div>`+
     `<div class="conflist">`+
-     `<div class="cfr"><span class="cfk" style="color:var(--scale)">✓ Verified</span><span>Net revenue is <b>already after the bonus cost</b> (checked against the data) — zero means it just paid for itself, and no cost is counted twice.</span></div>`+
-     `<div class="cfr"><span class="cfk" style="color:var(--gold)">~ A read, not proof</span><span>The extra is measured against similar players, <b>not a proper controlled test</b>. Good for ranking promos against each other; not yet proof of cause.</span></div>`+
-     `<div class="cfr"><span class="cfk" style="color:var(--reduce)">✗ Unproven</span><span>The VIP money-back's extra effect can't be settled just by watching the data — a <b>proper controlled test</b> is the proof step.</span></div>`+
+     `<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Three different claims at three levels of trust — this is about <b>what kind of statement</b> a number lets us make, <b>not</b> one metric being checked while the others aren't:</div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--scale)">✓ The accounting is solid</span><span>Every net-revenue figure is <b>already after the bonus cost</b> and never counts a cost twice (checked against the data) — so RM0 means a promo exactly paid for itself.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--gold)">~ The comparison is a read, not proof</span><span>The <b>extra</b> a promo drove is measured against <b>similar players</b>, not a proper controlled test — good for ranking promos against each other, not yet proof the promo <i>caused</i> it.</span></div>`+
+     `<div class="cfr"><span class="cfk" style="color:var(--reduce)">✗ Cause is unproven</span><span>Whether a bonus truly <b>changed</b> what a player did can't be settled by watching the data — a <b>live controlled test (holdout)</b> is the only proof step.</span></div>`+
     `</div>`;
   // ---- build the action ledger + the fair-comparison review queue up-front (the fair card, the cutover box and "what to do next" all read them) ----
   const led=[];
   const push=(c,pillar,tab,dec,col)=>led.push({code:c.code,pillar,tab,spend:c.spend,dec,why:c.reason||'',col});
   codes.filter(c=>['Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Acquisition','acquisition',c.decision,DEC[c.decision]?DEC[c.decision].c:'var(--muted)'));
   if(RET)RET.codes.filter(c=>['Scale','Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Retention','retention',c.decision,RDEC[c.decision]?RDEC[c.decision].c:'var(--muted)'));
-  if(VIP)VIP.codes.filter(c=>['Scale','Reduce','Stop','Trim','Review'].includes(c.decision)).forEach(c=>push(c,'VIP','vip',c.decision,VDEC[c.decision]?VDEC[c.decision].c:'var(--muted)'));
+  // Weekly Rescue (Lane B) is a loyalty PERK, not an ROI-scored decision — keep it off the "money moves" ledger (it's reported on the VIP tab instead).
+  if(VIP)VIP.codes.filter(c=>['Scale','Reduce','Stop','Trim','Review'].includes(c.decision)&&c.lane!=='B-cashback').forEach(c=>push(c,'VIP','vip',c.decision,VDEC[c.decision]?VDEC[c.decision].c:'var(--muted)'));
   led.sort((a,b)=>b.spend-a.spend);
   // review = graded promos where the fair number STILL disagrees with the current (already re-graded) call — the outstanding queue
   const review=led.filter(x=>{
@@ -2118,10 +2121,10 @@ function renderSummary(){
     const cs=A.cap_segment, cov=A.coverage;
     const nxt=document.getElementById('s_next');
     if(nxt) nxt.innerHTML=
-      `<p class="sub2">The concrete moves out of the fair-comparison work above. Owner: <b>Sales HOD · Promotions · CRM</b>. Nothing here is auto-applied — these are decisions for the team.</p>`+
-      (review.length?act(1,`Re-review the ${review.length} still-disagreeing promo${review.length===1?'':'s'}`,`After the re-grade, the fair number still disagrees with the call on ${review.length===1?'this one':'these'} — ${review.length===1?'it is':'they are'} listed in the cutover queue under Top decisions. Check before acting: don't cut a promo that earns, or keep feeding one that loses.`):act(1,`Grades reconciled with the fair check`,`Every fair-checked promo's call now agrees with the look-alike comparison — the re-grade already closed the gap. Nothing outstanding to re-review.`))+
-      (cs?act(2,`Cap the VIP repeat segment — ${cs.cap_n} members, ${SY}${cs.cap_bonus.toLocaleString()}`,`Underwater, repeat-claiming, still-active VIPs (give-to-take &gt;1). Cap the next same-code claim. And <b>protect</b> the ${cs.protect_n.toLocaleString()} cooling VIPs — retain, never cap.`):'')+
-      act(3,`Run a holdout — the one thing that needs a live test`,`It proves the cap is safe <b>and</b> settles the ${cov.n_need_holdout} promos with no fair comparison. The three designs are ready (cashback · whale-cap · retention). This is what turns "review these" into "proven".`);
+      `<p class="sub2">The concrete things to do, coming out of the fair-comparison check above. These are <b>decisions for the team</b> (Sales HOD · Promotions · CRM) — nothing changes automatically.</p>`+
+      (review.length?act(1,`Double-check ${review.length} promo${review.length===1?'':'s'} before acting on ${review.length===1?'it':'them'}`,`On ${review.length===1?'this one':'these'}, the fairer check — how <b>look-alike players who didn't get the promo</b> behaved — still disagrees with our keep/cut call. Look before you act: don't cut a promo that actually earns, or keep pouring money into one that loses. ${review.length===1?'It is':'They are'} in the cut-back queue under Top decisions.`):act(1,`Our keep/cut calls all hold up`,`We re-checked every graded promo against a <b>fairer yardstick</b> — how <b>look-alike players who didn't get the promo</b> behaved. Every call now agrees with that check, so <b>nothing here needs a second look</b>. (Had any disagreed, they'd be flagged here.)`))+
+      (cs?act(2,`Cap one specific VIP over-spend — ${cs.cap_n} players, ${SY}${cs.cap_bonus.toLocaleString()}`,`These are VIPs we <b>pay more in bonus than the house earns from them</b>, who keep claiming the <b>same offer over and over</b> and are still active. Cap their next same-offer claim. Everyone else — including the ${cs.protect_n.toLocaleString()} VIPs who are cooling off — we <b>protect, not cut</b>.`):'')+
+      act(3,`Run one live test to prove it — a "holdout"`,`Pick a matched group, give them <b>no</b> bonus, and see if they stay. It's the only way to turn "the data suggests" into "proven" — it would both prove the cap above is safe <b>and</b> settle the ${cov.n_need_holdout} promos we couldn't fairly check. Three test designs are ready.`);
   }
   // ---- forward plan (the money) ----
   if(typeof ATTR!=='undefined' && ATTR && ATTR.forward_plan){
@@ -2132,17 +2135,17 @@ function renderSummary(){
     const strip=(lbl,val,sub,col)=>`<div><span class="nl">${lbl}</span><span class="nv" style="color:${col||'var(--ink)'}">${val}</span><span class="ns">${sub}</span></div>`;
     const eb=document.getElementById('s_plan');
     if(eb) eb.innerHTML=
-      `<p class="sub2">The moves above, in money. Leads with the <b>near-certain</b> freed budget, then the <b>estimated</b> net-revenue swing — <b>directional, a range not a point</b>. Assumes Stop frees 100% / Reduce-Trim 50% of a code's bonus.</p>`+
+      `<p class="sub2">The same moves, now in money. The first figure is budget you can free up <b>almost for sure</b>; the rest are <b>best estimates</b> of the net revenue you'd gain — treat them as <b>ranges, not exact numbers</b>. (Assumes stopping a promo frees all its budget, trimming one frees half.)</p>`+
       `<div class="ngrstrip">`+
-        strip('Free up (near-certain)', M(P0.free_up), 'by cutting the losing promos', 'var(--scale)')+
-        strip('Stop losing — net rev', M(sl.exp), `${M(sl.lo)}–${M(sl.hi)} · directional`, 'var(--scale)')+
-        strip('Redirect into winners', '+'+M(ri.exp), `${M(ri.lo)}–${M(ri.hi)} · conservative`, 'var(--scale)')+
-        strip('Total net-rev swing', M(P0.total_swing_exp), 'expected — treat as a range', 'var(--gold)')+
+        strip('Free up now', M(P0.free_up), 'budget from cutting the losers · near-certain', 'var(--scale)')+
+        strip('Stop the bleeding', M(sl.exp), `net revenue you stop losing · ${M(sl.lo)}–${M(sl.hi)}`, 'var(--scale)')+
+        strip('Reinvest in winners', '+'+M(ri.exp), `extra if you move it to what works · ${M(ri.lo)}–${M(ri.hi)}`, 'var(--scale)')+
+        strip('Total swing', M(P0.total_swing_exp), 'best estimate if you do both — a range', 'var(--gold)')+
       `</div>`+
       `<div class="ngrstrip" style="margin-top:10px">`+
         Object.entries(P0.by_pillar).map(([p,v])=>strip(p+' budget', M(v.current_spend)+' → '+M(v.proposed_after_cuts), 'frees '+M(v.freed))).join('')+
       `</div>`+
-      `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Two guardrails on this money.</b> <b>Don't cut ${dc.n} codes</b> the current estimate says actually earn — mostly a directional read, not fair-checked (cutting them would wrongly free ${M(dc.freed_if_cut)} but lose the revenue). And <b>${M(P0.not_bankable_holdout)}</b> of the swing rests on promos that <b>need the holdout</b> to confirm — not bankable until it runs.</div></div>`;
+      `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Two cautions before acting.</b> <b>(1) Don't cut ${dc.n} promos</b> that currently look like they earn — that read is <b>rough</b> (not fully checked); cutting them would free ${M(dc.freed_if_cut)} on paper but <b>lose the revenue</b>. <b>(2) About ${M(P0.not_bankable_holdout)}</b> of the upside rests on promos we <b>can't confirm without a live test</b> — don't bank it until that test runs.</div></div>`;
   }
   // ---- what this report does NOT yet cover (honest limits) ----
   {
@@ -2153,7 +2156,7 @@ function renderSummary(){
     if(el2) el2.innerHTML=
       `<p class="sub2">The report is honest about its edges — these are known gaps to fix next, not hidden ones. Weigh decisions against them.</p>`+
       li('Singapore','MY only. SG — about <b>half the WS1 market</b> — isn\'t built yet, so every portfolio total here is the <b>MY book alone</b>.')+
-      li('Value horizon','Promos are judged on <b>7–90 days</b>. No long-term (LTV) value, so welcome offers (which lose in week 1 <i>by design</i>) and whale saves (worth many months) are <b>under-counted</b>. Only ~7 months of data exists, so true LTV isn\'t computable yet.')+
+      li('Value horizon (LTV)','Promos are judged on <b>7–90 days</b>, so welcome offers (which lose in week 1 <i>by design</i>) and whale saves (worth many months) are <b>under-counted</b>. <b>The fix:</b> a lifetime-value (LTV) view — follow each <b>join month\'s cumulative net revenue</b> over time — most needed for <b>Acquisition</b> (which sources bring high-lifetime players) and <b>whales</b> (worth a year+). It uncovers promos that look bad short-term but pay back slowly. We only have ~7 months of data, so it <b>matures as more history builds</b>.')+
       li('Cost','Spend and break-even are <b>bonus only</b> — no comms, VM/CRM servicing time, or platform overhead. Codes grading near zero are likely <b>loss-making</b> once cost-to-serve is added.')+
       li('Evidence','Most figures are <b>directional</b>. Only <b>'+nv+'</b> of ~200 codes are fair-comparison checked; <b>none are holdout-proven</b>. Act on the confidence tiers, not the exact point numbers.')+
       li('Margin mix','NGR is one <b>blended</b> number — no split by game/vertical. A promo that lifts NGR while pushing low-margin play still looks fine here.')+
