@@ -376,6 +376,11 @@
   .ptbl td,.ptbl th{vertical-align:top;padding:10px 12px}
   .ptbl .ptot td{border-top:2px solid var(--line);font-variant-numeric:tabular-nums}
   .plink.sm{padding:5px 11px;font-size:12px;margin-top:0;white-space:nowrap}
+  .gpill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--inset);border:1px solid var(--line);white-space:nowrap}
+  .glancetbl th{font-weight:700}
+  .gtake{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+  .gtake-h{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .gtake .pts{margin:0}
   .pilltag{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--inset);border:1px solid var(--line);cursor:pointer;color:var(--muted);white-space:nowrap}
   .pilltag:hover{border-color:var(--accent);color:var(--ink)}
   .ledtbl td,.ledtbl th{padding:9px 12px;vertical-align:top}
@@ -425,7 +430,7 @@
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Big-player detection <span class="badge dir">directional</span></button>
+    <button class="tab" data-tab="whale">Big-player detection</button>
     <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
@@ -471,6 +476,7 @@
   <div class="panel" id="panel-acquisition">
   <div class="meta" id="meta"></div>
   <div id="acqSweetSummary"></div>
+  <div class="card col12" style="margin-bottom:15px" id="acqGlanceCard"><div class="card-h"><h3>Acquisition at a glance</h3><span class="hint">by mechanic · year to date</span></div><p class="sub2">Every way we acquire — what it costs to win a new depositor, and whether they stay.</p><div id="s_acqGlance"></div></div>
   <div class="card col12" style="margin-bottom:15px" id="acqMonthlyCard" hidden><div class="card-h"><h3>Month by month — Acquisition</h3><span class="hint">this pillar, across the year</span></div><div id="acqMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Acquisition spend <span>by month</span></h4><div id="acqMonthlySpend"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>lower is better</span></h4><div id="acqMonthlyReturn"></div></div></div></div>
 
   <section class="call">
@@ -560,6 +566,7 @@
   <div class="panel" id="panel-retention" hidden>
     <div class="meta" id="r_meta"></div>
     <div id="retSweetSummary"></div>
+    <div class="card col12" style="margin-bottom:15px" id="retGlanceCard"><div class="card-h"><h3>Retention at a glance</h3><span class="hint">by mechanic · year to date</span></div><p class="sub2">Every retention mechanic — net revenue kept per RM1 of bonus, and how many deposit again.</p><div id="s_retGlance"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="retMonthlyCard" hidden><div class="card-h"><h3>Month by month — Retention</h3><span class="hint">this pillar, across the year</span></div><div id="retMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Retention spend <span>by month</span></h4><div id="retMonthlySpend"></div></div><div class="tchart"><h4>Net revenue back per RM1 <span>0 = paid for itself</span></h4><div id="retMonthlyReturn"></div></div></div></div>
     <div class="exec-note" id="r_exec"></div>
     <section class="call">
@@ -644,6 +651,7 @@
     <div class="meta" id="v_meta"></div>
     <div id="vipSweetSummary"></div>
     <div class="exec-note" id="v_exec"></div>
+    <div class="card col12" style="margin-bottom:15px" id="vipGlanceCard"><div class="card-h"><h3>VIP at a glance</h3><span class="hint">by lane · year to date</span></div><p class="sub2">The four VIP lanes — where the money goes and what each honestly returns. Two lanes are scored on return; money-back and gifts are loyalty perks.</p><div id="s_vipGlance"></div></div>
     <section class="kpis" id="v_kpis"></section>
     <div class="grid">
       <div class="card col12"><div class="card-h"><h3>Funding balance by tier</h3><span class="hint">share of budget vs share of value · 1.0 = balanced</span></div><p class="sub2">Each tier's <b>share of the bonus budget</b> against its <b>share of the net revenue</b>. <b>Around 1.0 is balanced</b>; a tier is <b>over-funded (trim)</b> only above <b>1.25</b>, and <b>starved (feed)</b> below <b>0.95</b>. The move: <b>feed the starved top tiers</b> (Diamond &amp; Platinum return more than they cost) by <b>trimming the over-funded lower ones</b> (Bronze most of all).</p><div id="v_fund" style="max-width:500px"></div><div id="v_fundTbl"></div></div>
@@ -2341,6 +2349,103 @@ function renderSummary(){
     pend('Branding','Production, ambassador & sponsorship spend — separate data source.');
 }
 renderSummary();
+
+// ===== Pillar "at a glance" tables (rows = each pillar's own segments) + Summary key-takeaways =====
+function renderGlanceTables(){
+  const mk=sym=>n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+sym+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
+  const cap=s=>String(s).split(/[-\s_]/).filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+  const pill=(t,c)=>`<span class="gpill" style="color:${c}">${t}</span>`;
+  const GREEN='var(--scale)',RED='var(--reduce)',AMBER='var(--optimise)',MUT='var(--muted)';
+  const put=(id,head,body,foot,take,note)=>{const e=document.getElementById(id);if(!e)return;
+    e.innerHTML=`<div class="tbl-wrap"><table class="ptbl glancetbl"><thead><tr>${head}</tr></thead><tbody>${body}${foot||''}</tbody></table></div>`+
+      (note?`<p class="fine" style="margin-top:8px;color:var(--muted)">${note}</p>`:'')+
+      (take?`<div class="gtake"><div class="gtake-h">Key takeaways</div><ul class="pts">${take}</ul></div>`:'');};
+  const HAS_RET=(typeof RET!=='undefined'&&RET), HAS_VIP=(typeof VIP!=='undefined'&&VIP), P=(typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLOAD:null;
+
+  // ---- Summary: key takeaways under the existing portfolio table ----
+  if(P){
+    const K=P.kpis, sMs=mk(SYM);
+    const totSpend=K.spend+(HAS_RET?RET.kpis.spend:0)+(HAS_VIP?VIP.program.total_bonus:0);
+    const acqMove=(P.codes||[]).filter(c=>['Reduce','Stop'].includes(c.decision)).reduce((a,c)=>a+c.spend,0);
+    const retMove=HAS_RET?RET.money_to_move.stop_reduce:0;
+    const vipMove=HAS_VIP?(VIP.money_to_move.laneA_stop_reduce+VIP.money_to_move.cashback_trim):0;
+    const totMove=acqMove+retMove+vipMove;
+    const wl=HAS_VIP&&VIP.whale_ledger&&VIP.whale_ledger.summary;
+    let li='';
+    if(HAS_VIP) li+=`<li><b>VIP is the biggest lever</b> — ${Math.round(VIP.program.total_bonus/totSpend*100)}% of promo spend (${sMs(VIP.program.total_bonus)}). Most of that play would happen anyway; the extra the bonus drives is small.</li>`;
+    if(HAS_RET) li+=`<li><b>Retention pays for itself</b> — ${RSYM}${RET.kpis.ngr_lift_per_rm} of net revenue kept for every ${RSYM}1 of bonus. ${sMs(retMove)} sits in weak promos to move into the winners.</li>`;
+    if(HAS_VIP) li+=`<li><b>VIP is where the money leaks</b> — ${sMs(VIP.program.subsidy_rm)} subsidises players the house already loses money on (${VIP.program.subsidy_share_pct}% of VIP spend).</li>`;
+    li+=`<li><b>Acquisition is cheap and works</b> — ${SYM}${K.cost_per_ftd} to win a new depositor, ${K.stick_30}% still there at 30 days — but it's only ${Math.round(K.spend/totSpend*100)}% of spend.</li>`;
+    if(wl) li+=`<li><b>Whales are the hidden risk</b> — ${wl.whales} players make about a third of all net revenue and ${wl.cooling} are cooling — up to ${sMs(wl.ngr_at_risk)} at risk. Retain them, don't cut.</li>`;
+    li+=`<li><b>Bottom line</b> — about ${sMs(totMove)} sits in promos flagged to cut back, stop, or shrink; move it into the winners${wl?', and protect the cooling whales':''}. Prove the big cuts with one live holdout test.</li>`;
+    const pf=document.getElementById('s_portfolio');
+    if(pf) pf.insertAdjacentHTML('beforeend',`<div class="gtake"><div class="gtake-h">Key takeaways</div><ul class="pts">${li}</ul></div>`);
+  }
+
+  // ---- Acquisition — by mechanic ----
+  if(P&&Array.isArray(P.by_mechanic)&&P.by_mechanic.length){
+    const K=P.kpis, sM=mk(SYM), bm=P.by_mechanic.slice().sort((a,b)=>b.spend-a.spend), tot=bm.reduce((a,c)=>a+c.spend,0)||1;
+    const bl=K.cost_per_ftd||1;  // grade each mechanic relative to the blended cost — FX-safe across markets
+    const read=m=>{const c=m.cost_per_ftd; if(c<=bl*0.9)return pill(m.stick_30>=45?'Cheap & sticky':'Cheap to win',GREEN); if(c<=bl*1.6)return pill('Fair',AMBER); return pill('Costly per depositor',RED);};
+    const rows=bm.map(m=>`<tr><td class="l"><b>${m.mech_label||cap(m.mechanic)}</b></td><td>${sM(m.spend)}</td><td>${Math.round(m.spend/tot*100)}%</td><td>${fmt(m.ftd)}</td><td>${SYM}${m.cost_per_ftd}</td><td>${m.stick_30}%</td><td class="l">${read(m)}</td></tr>`).join('');
+    const cheap=bm.slice().sort((a,b)=>a.cost_per_ftd-b.cost_per_ftd)[0], dear=bm.slice().sort((a,b)=>b.cost_per_ftd-a.cost_per_ftd)[0];
+    const take=`<li><b>${cheap.mech_label||cap(cheap.mechanic)}</b> wins depositors cheapest — ${SYM}${cheap.cost_per_ftd} each, ${cheap.stick_30}% still around at 30 days.</li>`+
+      ((dear&&dear.cost_per_ftd>200)?`<li><b>${dear.mech_label||cap(dear.mechanic)}</b> is the pricey one at ${SYM}${dear.cost_per_ftd}/depositor — keep it small and watch it.</li>`:'')+
+      `<li>Overall: ${SYM}${K.cost_per_ftd} to win each new depositor, ${K.stick_30}% come back within a month — judged on cost and stickiness, not profit.</li>`;
+    put('s_acqGlance',
+      `<th class="l">Mechanic</th><th>Spend</th><th>Share</th><th>New<br>depositors</th><th>Cost<br>each</th><th>Back<br>30d</th><th class="l">Read</th>`,
+      rows,
+      `<tr class="ptot"><td class="l"><b>All acquisition</b></td><td><b>${sM(tot)}</b></td><td>100%</td><td><b>${fmt(K.ftd)}</b></td><td><b>${SYM}${K.cost_per_ftd}</b></td><td><b>${K.stick_30}%</b></td><td class="l sub-muted">win cheap · do they stay</td></tr>`,
+      take,
+      `Spend here is the new-player share that prices each depositor (${SYM}${fmt(tot)} of the ${SYM}${fmt(K.spend)} total acquisition bonus). The Summary portfolio counts the full ${SYM}${fmt(K.spend)}.`);
+  }
+
+  // ---- Retention — by mechanic ----
+  if(HAS_RET&&Array.isArray(RET.by_mechanic)&&RET.by_mechanic.length){
+    const sM=mk(RSYM), bm=RET.by_mechanic.slice().sort((a,b)=>b.spend-a.spend), tot=bm.reduce((a,c)=>a+c.spend,0)||1;
+    const per=r=>`${r<0?'-':'+'}${RSYM}${Math.abs(r).toFixed(2)}`;
+    const read=m=>{const r=m.ngr_lift_per_rm; if(r>=1)return pill('Pays back well',GREEN); if(r>=0)return pill('Just pays for itself',AMBER); return pill('Loses money — trim',RED);};
+    const rows=bm.map(m=>`<tr><td class="l"><b>${cap(m.mechanic)}</b></td><td>${m.codes}</td><td>${sM(m.spend)}</td><td>${Math.round(m.spend/tot*100)}%</td><td style="color:${m.ngr_lift_per_rm<0?RED:GREEN};font-weight:700">${per(m.ngr_lift_per_rm)}</td><td>${m.redeposit_rate}%</td><td class="l">${read(m)}</td></tr>`).join('');
+    const win=bm.filter(m=>m.ngr_lift_per_rm>=1), lose=bm.filter(m=>m.ngr_lift_per_rm<0);
+    const take=(win.length?`<li><b>${win.map(m=>cap(m.mechanic)).join(' and ')}</b> pay back — more than ${RSYM}1 kept for every ${RSYM}1 of bonus.</li>`:'')+
+      (lose.length?`<li><b>${lose.map(m=>cap(m.mechanic)).join(' and ')}</b> ${lose.length>1?'lose':'loses'} money (${per(lose[0].ngr_lift_per_rm)} per ${RSYM}1) — trim or fix.</li>`:'')+
+      `<li>Overall retention keeps ${RSYM}${RET.kpis.ngr_lift_per_rm} per ${RSYM}1; ${sM(RET.money_to_move.stop_reduce)} sits in weak promos to move into the winners.</li>`;
+    put('s_retGlance',
+      `<th class="l">Mechanic</th><th>Codes</th><th>Spend</th><th>Share</th><th>Kept per ${RSYM}1</th><th>Deposited<br>again</th><th class="l">Read</th>`,
+      rows,``,take);
+  }
+
+  // ---- VIP — by lane ----
+  if(HAS_VIP&&VIP.lane_summary){
+    const sM=mk(VSYM), LS=VIP.lane_summary, tb=VIP.program.total_bonus||1;
+    const NAMES={'A-performance':'Performance (free credit)','B-cashback':'Weekly Rescue (money-back)','C-entitlement':'Entitlements (gifts)','D-engagement':'Engagement (mini-games)'};
+    const scored=k=>k==='A-performance'||k==='D-engagement';
+    const lanes=Object.keys(LS).map(k=>Object.assign({key:k,name:NAMES[k]||cap(k)},LS[k])).sort((a,b)=>b.spend-a.spend);
+    const per=r=>r==null?'—':`${r<0?'-':'+'}${VSYM}${Math.abs(r).toFixed(2)}`;
+    const laneRead=l=>{
+      if(l.key==='A-performance'){ if(l.fwd_incr_per_rm_90!=null&&l.ngr_lift_per_rm<0&&l.fwd_incr_per_rm_90>0)return pill("Loss now, pays by 90d — fix, don't kill",AMBER);
+        if(l.ngr_lift_per_rm<0)return pill('Loss on the 7-day read',RED); return pill('Pays back',GREEN); }
+      if(l.key==='B-cashback')return pill('Loyalty perk — judge on players kept',MUT);
+      if(l.key==='C-entitlement')return pill('Gifts — not scored on return',MUT);
+      const r=l.ngr_lift_per_rm; if(r>=1)return pill('Cheap engagement — works',GREEN); if(r>=0)return pill('Pays for itself',AMBER); return pill('Loses money',RED);
+    };
+    const rows=lanes.map(l=>{
+      const p7=scored(l.key)?`<span style="color:${l.ngr_lift_per_rm<0?RED:GREEN};font-weight:700">${per(l.ngr_lift_per_rm)}</span>`:'<span class="sub-muted">n/a — perk</span>';
+      const p90=(l.key==='A-performance'&&l.fwd_incr_per_rm_90!=null)?`<span style="color:${l.fwd_incr_per_rm_90<0?RED:GREEN};font-weight:700">${per(l.fwd_incr_per_rm_90)}</span>`:'—';
+      return `<tr><td class="l"><b>${l.name}</b></td><td>${l.codes}</td><td>${sM(l.spend)}</td><td>${Math.round(l.spend/tb*100)}%</td><td>${p7}</td><td>${p90}</td><td class="l">${laneRead(l)}</td></tr>`;
+    }).join('');
+    const A=LS['A-performance'], D=LS['D-engagement'];
+    const take=(D?`<li><b>Engagement mini-games</b> are the cheap win — +${VSYM}${(D.ngr_lift_per_rm||0).toFixed(2)} of extra net revenue per ${VSYM}1.</li>`:'')+
+      (A?`<li><b>Performance free-credit</b> is the big spend and ${A.ngr_lift_per_rm<0?'loses money in the first week':'pays back'}${(A.fwd_incr_per_rm_90!=null?`, but returns +${VSYM}${A.fwd_incr_per_rm_90.toFixed(2)} per ${VSYM}1 over 90 days — fix, don't kill`:'')}.</li>`:'')+
+      `<li><b>Weekly Rescue</b> money-back only goes to players who were already losing — it's a loyalty perk, so judge it on players kept, not 7-day return.</li>`;
+    put('s_vipGlance',
+      `<th class="l">Lane</th><th>Codes</th><th>Spend</th><th>Share</th><th>Extra per ${VSYM}1 <span style="font-weight:400;color:var(--muted)">7-day</span></th><th>Over<br>90 days</th><th class="l">Read</th>`,
+      rows,
+      `<tr class="ptot"><td class="l"><b>All VIP</b></td><td><b>${VIP.codes.length}</b></td><td><b>${sM(tb)}</b></td><td>100%</td><td colspan="3" class="l sub-muted">two lanes scored on return; money-back &amp; gifts are perks</td></tr>`,
+      take);
+  }
+}
+renderGlanceTables();
 renderLTV();
 campaignView();
 
@@ -3144,6 +3249,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   buildPanel('panel-acquisition',[
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
+    cardSec(cardById('acqGlanceCard')),      // at-a-glance: by mechanic
     leadSec('Key numbers',[byId('kpis')]),
     cardSec(byId('acqMonthlyCard')),         // pillar-scoped month-by-month
     cardSec(cardById('ruleLines')),          // rules before results
@@ -3162,6 +3268,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   buildPanel('panel-retention',[
     htmlSec("What Retention is — and how it's judged", ABOUT.retention),
     leadSec('Main findings',[byId('r_meta'),byId('retSweetSummary'),qP('panel-retention','.call')]),
+    cardSec(cardById('retGlanceCard')),      // at-a-glance: by mechanic
     leadSec('Key numbers',[byId('r_kpis')]),
     cardSec(byId('retMonthlyCard')),         // pillar-scoped month-by-month
     cardSec(byId('retDepoCard')),            // deposit-split (concept, up front)
@@ -3182,6 +3289,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     // ── ORIENT → CORE CONCEPTS → EVIDENCE → THE CALL (basics-first) ──
     htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // orient first (a decision needs an object)
     leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
+    cardSec(cardById('vipGlanceCard')),      // at-a-glance: by lane
     leadSec('Key numbers',[byId('v_kpis')]),                                 // lifted up — the KPI baseline
     cardSec(byId('vipMonthlyCard')),       // pillar-scoped month-by-month
     cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
@@ -3211,9 +3319,9 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
   var OPEN_DEF={
     'panel-summary':['s_banner','s_portfolio','s_attrib','s_ledger','s_plan','s_ltv'],
-    'panel-acquisition':['meta'],
-    'panel-retention':['r_meta'],
-    'panel-vip':['v_meta','v_rules'],
+    'panel-acquisition':['meta','s_acqGlance'],
+    'panel-retention':['r_meta','s_retGlance'],
+    'panel-vip':['v_meta','v_rules','s_vipGlance'],
     'panel-whale':['w_meta']
   };
   Object.keys(OPEN_DEF).forEach(function(pid){
