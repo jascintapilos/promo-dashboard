@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Promo Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2199,26 +2200,28 @@ function renderSummary(){
   // per-promo "decision story": one promo walked through Objective -> Behavior -> Result -> Cost -> Explanation -> Call
   function storyHtml(x){
     var c=x.c||{}, em2=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
-    var perRm=function(v){return v==null?'—':(v>=0?'+':'−')+SYM+Math.abs(v);};
+    var num=function(v){return v==null?'—':v.toLocaleString();};
     var S=[];
     // 1 Objective
     if(x.pillar==='Acquisition') S.push(['What it was for','Win a <b>brand-new depositor</b> — '+(c.mech_label||c.mechanic||'welcome')+' bonus.']);
     else if(x.pillar==='Retention') S.push(['What it was for','Keep an <b>existing depositor coming back</b> — '+(c.mechanic||'reload')+' bonus.']);
     else S.push(['What it was for','Reward a <b>top-tier (VIP) player</b>'+(c.lane==='A-performance'?' — a performance reward':(c.lane?' — '+c.lane.replace(/^[A-D]-/,''):''))+'.']);
-    // 2 What players did
-    if(x.pillar==='Acquisition') S.push(['What players did','Won <b>'+(c.ftd!=null?c.ftd.toLocaleString():'—')+' new depositors</b>'+(c.stick_30!=null?'; <b>'+c.stick_30+'%</b> came back within 30 days':'')+(c.purity!=null?'; '+c.purity+'% were genuinely new':'')+'.']);
-    else if(x.pillar==='Retention') S.push(['What players did',(c.redeposit_rate!=null?'<b>'+c.redeposit_rate+'%</b> deposited again'+(c.redeposit_uplift!=null?' — <b>'+(c.redeposit_uplift>=0?'+':'')+c.redeposit_uplift+'pp</b> vs the '+(Math.round((c.redeposit_rate-c.redeposit_uplift)*10)/10)+'% norm for this bonus type':''):'—')+'.']);
+    // 2 What players did (norm = the builder's redeposit_expected; fall back to rate-uplift if slimmed)
+    if(x.pillar==='Acquisition') S.push(['What players did','Won <b>'+num(c.ftd)+' new depositors</b>'+(c.stick_30!=null?'; <b>'+c.stick_30+'%</b> came back within 30 days':'')+(c.purity!=null?'; '+c.purity+'% were genuinely new':'')+'.']);
+    else if(x.pillar==='Retention') S.push(['What players did',(c.redeposit_rate!=null?'<b>'+c.redeposit_rate+'%</b> deposited again'+(c.redeposit_uplift!=null?' — <b>'+(c.redeposit_uplift>=0?'+':'')+c.redeposit_uplift+'pp</b> vs the '+(c.redeposit_expected!=null?c.redeposit_expected:Math.round(c.redeposit_rate-c.redeposit_uplift))+'% norm for this bonus type':''):'—')+'.']);
     else S.push(['What players did',(c.retention_after_loss!=null?'<b>'+c.retention_after_loss+'%</b> kept playing'+(c.pct_were_losing!=null?' (of players who had just lost)':''):(c.redeposit_rate!=null?'<b>'+c.redeposit_rate+'%</b> deposited again':'—'))+'.']);
-    // 3 What it earned back
-    if(x.pillar==='Acquisition') S.push(['What it earned back','Welcome offers run at a loss early by design — so this is judged on <b>'+SYM+(c.cost_per_ftd!=null?c.cost_per_ftd:'—')+'</b> to win each new depositor, and how many stick.']);
-    else S.push(['What it earned back','<b>'+perRm(c.ngr_lift_per_rm)+'</b> net revenue kept for every '+SYM+'1 of bonus (already after the bonus cost; 0 = it paid for itself).']);
+    // 3 What it earned back — acquisition is judged on cost, not earnings, so it gets its own heading
+    if(x.pillar==='Acquisition') S.push(['How it’s judged','Welcome offers run at a loss early by design — so it’s judged on <b>'+SYM+num(c.cost_per_ftd)+'</b> to win each new depositor, and how many stick.']);
+    else { var v=c.ngr_lift_per_rm; S.push(['What it earned back',(v==null?'—':'<b>'+SYM+Math.abs(v).toFixed(2)+'</b> net revenue <b>'+(v<0?'lost':'kept')+'</b>')+' for every '+SYM+'1 of bonus (already after the bonus cost; 0 = it paid for itself).']); }
     // 4 What it cost
-    S.push(['What it cost',sM(x.spend)+' in bonus, across <b>'+(c.claimers!=null?c.claimers.toLocaleString():'—')+'</b> players'+(x.pillar==='Retention'&&c.cost_per_retained?' ('+SYM+c.cost_per_retained+' per player kept)':'')+(x.pillar==='Acquisition'&&c.cost_per_ftd?' ('+SYM+c.cost_per_ftd+' per new depositor)':'')+'.']);
-    // 5 Why we know / how sure
-    var basis=(em2&&em2.t==='fair')?'Checked against <b>look-alike players</b> (fair-comparison'+(em2.f!=null?': '+(em2.f>=0?'+':'−')+SYM+Math.abs(em2.f)+' per '+SYM+'1':'')+').':(x.pillar==='Acquisition'?'Measured as cost against the other promos — a read, not a controlled test.':'Measured against the player’s <b>own before &amp; after</b> — a read, not a controlled test.');
+    S.push(['What it cost',sM(x.spend)+' in bonus, across <b>'+num(c.claimers)+'</b> players'+(x.pillar==='Retention'&&c.cost_per_retained?' ('+SYM+num(c.cost_per_retained)+' per player kept)':'')+(x.pillar==='Acquisition'&&c.cost_per_ftd?' ('+SYM+num(c.cost_per_ftd)+' per new depositor)':'')+'.']);
+    // 5 Why we know / how sure — must match the row's "Measured against" (fair / holdout-needed / own-baseline / acq cost)
+    var basis=(em2&&em2.t==='fair')?'Checked against <b>look-alike players</b> (fair-comparison'+(em2.f!=null?': '+(em2.f>=0?'+':'−')+SYM+Math.abs(em2.f)+' per '+SYM+'1':'')+').':(em2&&em2.t==='hold')?'No look-alike group exists — this one <b>needs a live holdout test</b> to grade.':(x.pillar==='Acquisition'?'Measured as cost against the other promos — a read, not a controlled test.':'Measured against the player’s <b>own before &amp; after</b> — a read, not a controlled test.');
     S.push(['Why we know — and how sure',(x.why?x.why+' ':'')+basis]);
-    // 6 The call
-    S.push(['The call','<b style="color:'+x.col+'">'+x.dec+'</b>'+(c.do?' — '+c.do:'')+'.']);
+    // 6 The call — the (regraded) decision is the verb; c.do can carry a stale leading verb, so keep only its rationale
+    var doTxt=c.do||'', dash=doTxt.indexOf(' — '), rationale=dash>0?doTxt.slice(dash+3):(c.do||'');
+    if(!rationale && x.pillar==='Acquisition') rationale=({Optimise:'rework or right-size it',Reduce:'cut the budget',Stop:'stop it',Scale:'put more behind it'})[x.dec]||'';
+    S.push(['The call','<b style="color:'+x.col+'">'+x.dec+'</b>'+(rationale?' — '+rationale:'')+(/[.!?]$/.test(rationale)?'':'.')]);
     return '<div style="padding:6px 18px 14px;background:var(--inset)">'+S.map(function(s,i){return '<div style="display:flex;gap:12px;padding:8px 0;border-top:'+(i?'1px solid var(--line)':'none')+'"><span style="min-width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span><div style="font-size:13px;line-height:1.55"><b>'+s[0]+'</b><div style="color:var(--muted)">'+s[1]+'</div></div></div>';}).join('')+'</div>';
   }
   document.getElementById('s_ledger').innerHTML=

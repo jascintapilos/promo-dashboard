@@ -15,7 +15,7 @@ const MK = (process.env.PROMO_MARKET || 'MY').toUpperCase();
 const sym = c => c === 'MYR' ? 'RM' : c === 'SGD' ? 'S$' : c;
 // drop per-code fields the panels never render (keeps the file under the pane's static-snapshot cap)
 const DROP = ['matured_60', 'matured_90', 'active_60', 'active_90', 'persist_8_29', 'dep_lift', 'dep_lift_per_rm',
-  'avg_bonus_per_claim', 'tier_top_share', 'implied_tier', 'target_purity', 'redeposit_expected', 'ggr_window',
+  'avg_bonus_per_claim', 'tier_top_share', 'implied_tier', 'target_purity', 'ggr_window',
   't1_dep', 't1_ngr'];
 const slimCodes = obj => { if (obj && Array.isArray(obj.codes)) obj.codes.forEach(c => DROP.forEach(k => delete c[k])); };
 
