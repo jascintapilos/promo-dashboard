@@ -440,21 +440,21 @@
       <div data-mvpane="period" hidden><div id="s_periodControls"></div><div id="s_periodBody"></div></div>
       <div data-mvpane="compare" hidden><div id="s_mbmTable"></div><div id="s_comparePick"></div></div>
     </div>
-    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
+    <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys, and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
-      <div class="card col6"><div class="card-h"><h3>Retention &amp; VIP-performance promos, ranked</h3><span class="hint">where the movable money is</span></div><p class="sub2">The Retention and VIP-performance promos ranked best-to-worst return (Acquisition and VIP perks/entitlements aren't on this curve). Ranked on the <b>fair-comparison</b> number where checked, else the own-baseline. The curve climbs while each ${SYM}1 still adds net revenue, then rolls over — the shaded tail (mostly <b>VIP-performance free-credit</b>) is spend that destroys value and can be moved.</p><div id="s_frontier"></div></div>
+      <div class="card col6"><div class="card-h"><h3>Retention &amp; VIP-performance promos, ranked</h3><span class="hint">where the movable money is</span></div><p class="sub2" style="color:var(--muted);font-size:13px">Scope: Retention and VIP-performance promos only — Acquisition and VIP perks/entitlements aren't on this curve.</p><div id="s_frontier"></div></div>
       <div class="card col6"><div class="card-h"><h3>How firm is each call?</h3><span class="hint">coverage &amp; evidence strength</span></div><div id="s_confidence"></div></div>
     </div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Top decisions — where the money moves</h3><span class="hint">ranked by RM across pillars</span></div><p class="sub2">The biggest actionable moves, largest spend first. Trim/stop frees budget; scale grows what pays.</p><div id="s_ledger"></div></div>
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
     <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
-    <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · v1 · directional</span></div><div id="s_plan"></div></div>
-    <div class="card col12" id="s_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a player is worth over time — lifetime value</h3><span class="hint">real multi-year cohorts · whole-book</span></div><div id="s_ltv"></div></div>
+    <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · an estimate, not a promise</span></div><div id="s_plan"></div></div>
+    <div class="card col12" id="s_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a player is worth over time — lifetime value</h3><span class="hint">player value over years</span></div><div id="s_ltv"></div></div>
     <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional · deeper breakdown coming</span></div>
-      <p class="sub2">Every code tagged by inference from its name — <b>there is no confirmed campaign map in the system yet</b>, so treat this as a draft to confirm with CRM / Sales / Marketing. <b>Spend is exact; returns are a directional association, not proof.</b> Named marketing campaigns are kept separate from plain mechanic buckets, and the cadence flag (where shown) is the one source-confirmed signal. <span style="color:var(--gold)">⏭ Coming next: a fuller per-campaign breakdown — confirmed owners, the exact codes inside each campaign, and campaign-level targets — once the teams confirm the map.</span></p>
+      <p class="sub2">Campaigns are <b>inferred from code names</b> — a <b>draft to confirm</b> with CRM / Sales. Spend is exact; the pairing to a campaign is a read, not proof.</p>
       <div class="tgrid">
         <div class="tchart"><h4>Marketing campaigns <span>named theme / event pushes</span></h4><div id="s_campaignThemes"></div></div>
         <div class="tchart"><h4>BAU mechanic buckets <span>no distinct campaign — just a mechanic</span></h4><div id="s_campaignMech"></div></div>
@@ -2037,7 +2037,7 @@ function renderLTV(){
       `<div><span class="nl">Value by year 1</span><span class="nv">${S.yr1_multiple}×</span><span class="ns">${SY}${S.blended_yr0} (yr0) → ${SY}${S.blended_yr1} (yr1), blended</span></div>`+
       `<div><span class="nl">By year 3 (all cohorts)</span><span class="nv">${SY}${S.blended_yr3.toLocaleString()}</span><span class="ns">blended across all join-years — a different, larger group than the ${S.mature_year} line, lifted by richer recent joiners</span></div>`+
     `</div>`+
-    `<div class="varbox" style="margin-top:10px"><span class="ico">◆</span><div><b>Why it matters:</b> a new player is worth <b>far more than any 7–90 day window shows</b> — welcome offers that lose early can be the best investments (the ${S.mature_year} cohort went ${SY}${S.mature_yr0} → ${SY}${S.mature_final.toLocaleString()}). Judge <b>acquisition and whale</b> spend on this horizon, not week 1. <b>Whole-book value</b> (not promo-attributed); newer cohorts start lower — worth watching.</div></div>`);
+    `<div class="varbox" style="margin-top:10px"><span class="ico">◆</span><div><b>The takeaway:</b> a new player is worth <b>far more than any 7–90 day window shows</b> — welcome offers that lose early can be the best investments (the ${S.mature_year} cohort went ${SY}${S.mature_yr0} → ${SY}${S.mature_final.toLocaleString()}). Judge <b>acquisition and whale</b> spend on this horizon, not week 1.</div></div>`);
 }
 function renderSummary(){
   const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
@@ -2249,7 +2249,7 @@ function renderSummary(){
     const strip=(lbl,val,sub,col)=>`<div><span class="nl">${lbl}</span><span class="nv" style="color:${col||'var(--ink)'}">${val}</span><span class="ns">${sub}</span></div>`;
     const eb=document.getElementById('s_plan');
     if(eb) eb.innerHTML=
-      `<p class="sub2">The same moves, now in money. The first figure is budget you can free up <b>almost for sure</b>; the rest are <b>best estimates</b> of the net revenue you'd gain — treat them as <b>ranges, not exact numbers</b>. (Assumes stopping a promo frees all its budget, trimming one frees half.)</p>`+
+      `<p class="sub2">The same moves, now in money. The first figure is budget you can free up <b>almost for sure</b>; the rest are <b>best estimates</b> — treat them as ranges, not exact numbers.</p>`+
       `<div class="ngrstrip">`+
         strip('Free up now', M(P0.free_up), 'budget from cutting the losers · near-certain', 'var(--scale)')+
         strip('Stop the bleeding', M(sl.exp), `net revenue you stop losing · ${M(sl.lo)}–${M(sl.hi)}`, 'var(--scale)')+
