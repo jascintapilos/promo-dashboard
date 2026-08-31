@@ -2138,7 +2138,7 @@ function renderSummary(){
     `</div>`;
   // ---- build the action ledger + the fair-comparison review queue up-front (the fair card, the cutover box and "what to do next" all read them) ----
   const led=[];
-  const push=(c,pillar,tab,dec,col)=>led.push({code:c.code,pillar,tab,spend:c.spend,dec,why:c.reason||'',col});
+  const push=(c,pillar,tab,dec,col)=>led.push({code:c.code,pillar,tab,spend:c.spend,dec,why:c.reason||'',col,c:c});
   codes.filter(c=>['Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Acquisition','acquisition',c.decision,DEC[c.decision]?DEC[c.decision].c:'var(--muted)'));
   if(RET)RET.codes.filter(c=>['Scale','Optimise','Reduce','Stop'].includes(c.decision)).forEach(c=>push(c,'Retention','retention',c.decision,RDEC[c.decision]?RDEC[c.decision].c:'var(--muted)'));
   // Weekly Rescue (Lane B) is a loyalty PERK, not an ROI-scored decision — keep it off the "money moves" ledger (it's reported on the VIP tab instead).
@@ -2196,9 +2196,34 @@ function renderSummary(){
   }
   // ---- action ledger (led + review already built above) ----
   const top=led.slice(0,14);
+  // per-promo "decision story": one promo walked through Objective -> Behavior -> Result -> Cost -> Explanation -> Call
+  function storyHtml(x){
+    var c=x.c||{}, em2=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
+    var perRm=function(v){return v==null?'—':(v>=0?'+':'−')+SYM+Math.abs(v);};
+    var S=[];
+    // 1 Objective
+    if(x.pillar==='Acquisition') S.push(['What it was for','Win a <b>brand-new depositor</b> — '+(c.mech_label||c.mechanic||'welcome')+' bonus.']);
+    else if(x.pillar==='Retention') S.push(['What it was for','Keep an <b>existing depositor coming back</b> — '+(c.mechanic||'reload')+' bonus.']);
+    else S.push(['What it was for','Reward a <b>top-tier (VIP) player</b>'+(c.lane==='A-performance'?' — a performance reward':(c.lane?' — '+c.lane.replace(/^[A-D]-/,''):''))+'.']);
+    // 2 What players did
+    if(x.pillar==='Acquisition') S.push(['What players did','Won <b>'+(c.ftd!=null?c.ftd.toLocaleString():'—')+' new depositors</b>'+(c.stick_30!=null?'; <b>'+c.stick_30+'%</b> came back within 30 days':'')+(c.purity!=null?'; '+c.purity+'% were genuinely new':'')+'.']);
+    else if(x.pillar==='Retention') S.push(['What players did',(c.redeposit_rate!=null?'<b>'+c.redeposit_rate+'%</b> deposited again'+(c.redeposit_uplift!=null?' — <b>'+(c.redeposit_uplift>=0?'+':'')+c.redeposit_uplift+'pp</b> vs the '+(Math.round((c.redeposit_rate-c.redeposit_uplift)*10)/10)+'% norm for this bonus type':''):'—')+'.']);
+    else S.push(['What players did',(c.retention_after_loss!=null?'<b>'+c.retention_after_loss+'%</b> kept playing'+(c.pct_were_losing!=null?' (of players who had just lost)':''):(c.redeposit_rate!=null?'<b>'+c.redeposit_rate+'%</b> deposited again':'—'))+'.']);
+    // 3 What it earned back
+    if(x.pillar==='Acquisition') S.push(['What it earned back','Welcome offers run at a loss early by design — so this is judged on <b>'+SYM+(c.cost_per_ftd!=null?c.cost_per_ftd:'—')+'</b> to win each new depositor, and how many stick.']);
+    else S.push(['What it earned back','<b>'+perRm(c.ngr_lift_per_rm)+'</b> net revenue kept for every '+SYM+'1 of bonus (already after the bonus cost; 0 = it paid for itself).']);
+    // 4 What it cost
+    S.push(['What it cost',sM(x.spend)+' in bonus, across <b>'+(c.claimers!=null?c.claimers.toLocaleString():'—')+'</b> players'+(x.pillar==='Retention'&&c.cost_per_retained?' ('+SYM+c.cost_per_retained+' per player kept)':'')+(x.pillar==='Acquisition'&&c.cost_per_ftd?' ('+SYM+c.cost_per_ftd+' per new depositor)':'')+'.']);
+    // 5 Why we know / how sure
+    var basis=(em2&&em2.t==='fair')?'Checked against <b>look-alike players</b> (fair-comparison'+(em2.f!=null?': '+(em2.f>=0?'+':'−')+SYM+Math.abs(em2.f)+' per '+SYM+'1':'')+').':(x.pillar==='Acquisition'?'Measured as cost against the other promos — a read, not a controlled test.':'Measured against the player’s <b>own before &amp; after</b> — a read, not a controlled test.');
+    S.push(['Why we know — and how sure',(x.why?x.why+' ':'')+basis]);
+    // 6 The call
+    S.push(['The call','<b style="color:'+x.col+'">'+x.dec+'</b>'+(c.do?' — '+c.do:'')+'.']);
+    return '<div style="padding:6px 18px 14px;background:var(--inset)">'+S.map(function(s,i){return '<div style="display:flex;gap:12px;padding:8px 0;border-top:'+(i?'1px solid var(--line)':'none')+'"><span style="min-width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span><div style="font-size:13px;line-height:1.55"><b>'+s[0]+'</b><div style="color:var(--muted)">'+s[1]+'</div></div></div>';}).join('')+'</div>';
+  }
   document.getElementById('s_ledger').innerHTML=
     `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Measured against</th><th class="l">Why</th></tr></thead><tbody>`+
-    top.map(x=>{
+    top.map((x,i)=>{
       const em=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
       let measured;
       if(em&&em.t==='fair'){
@@ -2217,17 +2242,20 @@ function renderSummary(){
       } else {
         measured=`<span style="color:var(--line-2)">Its own before &amp; after</span>`;
       }
-      return `<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
+      return `<tr class="ledrow" style="cursor:pointer"><td class="l"><span class="caret" style="color:var(--muted);font-size:11px;margin-right:5px">▸</span><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
       `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
       `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
       `<td class="l" style="max-width:22ch;white-space:normal;font-size:12.5px">${measured}</td>`+
-      `<td class="l" style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`;}).join('')+
-    `</tbody></table></div><p class="fine" style="margin-top:8px">The ${top.length} largest-spend moves of ${led.length}. <b>Measured against</b> = how each call was tested: <b style="color:var(--gold)">look-alike players</b> (fair check) · <b>its own before &amp; after</b> (a read) · <b>cost vs other promos</b> (acquisition) · <b>needs a live test</b>.${review.length?' <b style="color:var(--reduce)">⚠</b> = the fair check disagrees — review first.':''} Click a pillar to open its full list.</p>`;
+      `<td class="l" style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`+
+      `<tr class="ledstory" hidden><td colspan="6" style="padding:0">${storyHtml(x)}</td></tr>`;}).join('')+
+    `</tbody></table></div><p class="fine" style="margin-top:8px"><b>Click any row</b> for the full story behind the call — what it was for → what players did → what it earned → cost → why → the call. <b>Measured against</b> = how each call was tested: <b style="color:var(--gold)">look-alike players</b> (fair check) · <b>its own before &amp; after</b> (a read) · <b>cost vs other promos</b> (acquisition) · <b>needs a live test</b>.${review.length?' <b style="color:var(--reduce)">⚠</b> = the fair check disagrees — review first.':''}</p>`;
   // ---- staged cutover: graded promos where the fair-comparison number disagrees with the call (review built above) ----
   if(review.length) document.getElementById('s_ledger').insertAdjacentHTML('beforeend',
     `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Staged cutover — ${review.length} graded promo(s) to re-review.</b> The fair-comparison (Tier-2) number disagrees with the current call on these; nothing is auto-changed — check before acting: `+
     review.map(x=>{const em=ATTR.engine_map[x.code];const earns=em.f>=0;return `<b>${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</b> <span class="pilltag">${x.pillar}</span> now <i>${x.dec}</i> → fair says it <b style="color:${earns?'var(--scale)':'var(--reduce)'}">${earns?'earns':'loses'}</b> (${(em.f>=0?'+':'−')+SYM+Math.abs(em.f)}/RM)`;}).join(' · ')+
     `.</div></div>`);
+  // expand/collapse the per-promo decision story (don't hijack the pillar-tag jump)
+  (function(){var t=document.getElementById('s_ledger');if(!t)return;t.querySelectorAll('tr.ledrow').forEach(function(r){r.addEventListener('click',function(e){if(e.target.closest('[data-goto]'))return;var s=r.nextElementSibling;if(!s||!s.classList.contains('ledstory'))return;var open=s.hidden;s.hidden=!open;var car=r.querySelector('.caret');if(car)car.textContent=open?'▾':'▸';});});})();
   // ---- what to do next ----
   if(typeof ATTR!=='undefined' && ATTR){
     const A=ATTR, SY=(PAYLOAD&&PAYLOAD.sym)||'RM', nc=document.getElementById('s_nextCard');
