@@ -426,6 +426,7 @@
 
   <div class="panel" id="panel-summary" hidden>
     <div class="exec-note" id="s_banner"></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_thisMonthCard" hidden><div class="card-h"><h3>This month</h3><span class="hint">the latest month vs the one before</span></div><div id="s_thisMonth"></div></div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
@@ -2328,6 +2329,36 @@ function tLines(boxId,labels,series,opt){
   box.append(s);
   box.insertAdjacentHTML('beforeend',`<div class="tlegend">`+series.map(se=>`<span><i style="background:${se.color}"></i>${se.name}</span>`).join('')+`</div>`);
 }
+function renderThisMonth(){
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||TREND.months.length<2) return;
+  const box=document.getElementById('s_thisMonth'); if(!box) return;
+  const card=document.getElementById('s_thisMonthCard'); if(card) card.hidden=false;
+  const T=TREND, S=T.sym||'RM', labs=T.labels, n=T.months.length, cur=n-1, prev=n-2;
+  const curL=labs[cur], prevL=labs[prev], partial=!!(T.partial&&T.partial[T.months[cur]]);
+  const sm=v=>{const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(2)+'M':a>=1e3?Math.round(v/1e3)+'k':Math.round(v));};
+  // delta chip: now vs was. invert=true when LOWER is better (cost).
+  // mode: 'up' = higher is better, 'down' = lower is better (cost), 'neutral' = just show direction (spend)
+  const chip=(now,was,fmt,mode)=>{
+    if(now==null||was==null) return '<span style="color:var(--muted)">—</span>';
+    const d=now-was, flat=Math.abs(d)<=(Math.abs(was)*0.005+1e-9);
+    const arrow=flat?'→':(d>0?'▲':'▼');
+    let col='var(--muted)';
+    if(!flat && mode!=='neutral') col=((mode==='down'?d<0:d>0)?'var(--scale)':'var(--reduce)');
+    return `<span style="color:${col};font-weight:700">${arrow} ${fmt(Math.abs(d))}</span> <span style="color:var(--muted);font-size:11.5px">vs ${prevL}</span>`;
+  };
+  const sp=T.spend_by_pillar, eff=T.efficiency||[], acq=T.acq||[];
+  const eN=eff[cur]||{}, eP=eff[prev]||{}, aN=acq[cur]||{}, aP=acq[prev]||{};
+  const per=v=>(v>=0?'+':'')+S+(v==null?'—':v.toFixed(2));
+  const row=(l,v,dh)=>`<div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)"><span style="color:var(--muted)">${l}</span><span style="font-weight:700;font-variant-numeric:tabular-nums">${v}</span><span style="font-size:12.5px;text-align:right;min-width:96px">${dh}</span></div>`;
+  const col=(h,rows)=>`<div><div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:2px">${h}</div>${rows}</div>`;
+  box.innerHTML=
+    `<p class="sub2">Where the book moved in <b>${curL}</b>${partial?' <span class="cflag">provisional</span> — its 7-day windows haven\'t fully matured':''}. The totals above are year-to-date; this is what changed in the latest month.</p>`+
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:6px">`+
+      col('Spend this month', row('Acquisition',sm(sp.acq[cur]),chip(sp.acq[cur],sp.acq[prev],sm,'neutral'))+row('Retention',sm(sp.ret[cur]),chip(sp.ret[cur],sp.ret[prev],sm,'neutral'))+row('VIP',sm(sp.vip[cur]),chip(sp.vip[cur],sp.vip[prev],sm,'neutral')))+
+      col('Return this month · net rev per '+S+'1', row('Retention',per(eN.per_rm_ret),chip(eN.per_rm_ret,eP.per_rm_ret,v=>S+v.toFixed(2),'up'))+row('VIP performance',per(eN.per_rm_vip),chip(eN.per_rm_vip,eP.per_rm_vip,v=>S+v.toFixed(2),'up'))+row('Cost / new depositor',aN.cost_per_ftd!=null?S+aN.cost_per_ftd:'—',chip(aN.cost_per_ftd,aP.cost_per_ftd,v=>S+Math.round(v),'down')))+
+    `</div>`+
+    `<p class="fine" style="margin-top:10px;color:var(--muted)">Green = a better month, red = worse (for cost, lower is better); spend is shown grey because more or less spend is not itself good or bad. Figures compare the latest full month with the one before — the complete month-by-month trajectory is in "Month by month" below.</p>`;
+}
 function renderTrend(){
   if(!TREND)return;
   const T=TREND,L=T.labels,TS=T.sym||'RM',n=L.length; document.getElementById('s_trendCard').hidden=false;
@@ -2348,6 +2379,7 @@ function renderTrend(){
   tLine('s_trendCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
 }
 renderTrend();
+renderThisMonth();
 
 // tab switching
 (function(){
@@ -2678,6 +2710,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   buildPanel('panel-summary',[
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
     leadSec('Main findings',[byId('s_banner')]),
+    cardSec(byId('s_thisMonthCard')),
     cardSec(cardById('s_portfolio')),
     cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
     cardSec(byId('s_trendCard')),
