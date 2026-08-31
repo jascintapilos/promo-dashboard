@@ -452,6 +452,7 @@
     <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · an estimate, not a promise</span></div><div id="s_plan"></div></div>
     <div class="card col12" id="s_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a player is worth over time — lifetime value</h3><span class="hint">player value over years</span></div><div id="s_ltv"></div></div>
     <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
+    <div class="card col12" id="s_dataCard" style="margin-top:15px"><div class="card-h"><h3>Data &amp; method</h3><span class="hint">where the numbers come from</span></div><div id="s_data"></div></div>
     <div class="card col12" id="s_campaignCard" style="margin-top:15px">
       <div class="card-h"><h3>By campaign — where the money goes (a discovery draft)</h3><span class="hint">spend exact · returns directional · deeper breakdown coming</span></div>
       <p class="sub2">Campaigns are <b>inferred from code names</b> — a <b>draft to confirm</b> with CRM / Sales. Spend is exact; the pairing to a campaign is a read, not proof.</p>
@@ -2918,6 +2919,28 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     if(rc){ if(call) rc.appendChild(call); if(tally) rc.appendChild(tally); }
   })();
   annotateCalc();
+  // ---- Data & method (provenance) ----
+  (function(){
+    var box=document.getElementById('s_data'); if(!box) return;
+    var T=(typeof TREND!=='undefined'&&TREND)?TREND:null;
+    var mkt=(T&&T.market)||((typeof PAYLOAD!=='undefined'&&PAYLOAD&&PAYLOAD.market))||'MY';
+    var cur=(T&&T.currency)||((typeof PAYLOAD!=='undefined'&&PAYLOAD&&PAYLOAD.currency))||'';
+    var asof=(T&&T.data_as_of)||'';
+    var L=(T&&T.labels)||[], M=(T&&T.months)||[];
+    var span=L.length?(L[0]+'–'+L[L.length-1]+' '+M[0].slice(0,4)):'';
+    var nv=(typeof ATTR!=='undefined'&&ATTR&&ATTR.coverage)?ATTR.coverage.n_valid:null;
+    var mktName=mkt==='SG'?'Singapore':'Malaysia';
+    var row=function(k,v){return '<div class="cfr" style="align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)"><span class="cfk" style="color:var(--gold);min-width:150px;font-weight:600">'+k+'</span><span style="color:var(--muted);font-size:13px;line-height:1.55">'+v+'</span></div>';};
+    box.innerHTML=
+      '<p class="sub2">Where every number comes from — so any figure can be traced back.</p>'
+      +row('Source','Our <b>ClickHouse data warehouse</b> — the same records the Back Office runs on. Nothing here is hand-entered.')
+      +row('What we read','<b>Daily player snapshots</b> (deposits, withdrawals, and net revenue — the house win after bonuses) and <b>every bonus given</b> (its cost, type and time).')
+      +row('Scope','<b>'+mktName+'</b> ('+cur+') only'+(span?', <b>'+span+'</b>'+(asof?' (through '+asof+')':''):'')+'. The two markets are shown side by side, never summed.')
+      +row('Lifetime value','Uses the <b>full player history back to 2018</b>, not just this window.')
+      +row('How it’s built','Figures are <b>aggregated inside the warehouse</b> (sums and counts) by our analysis scripts — <b>no member-level data is copied out</b>. Acquisition, Retention and VIP each have their own build, plus lifetime value, the month-by-month trend, and the fair-comparison check.')
+      +row('Privacy','Players appear only as an <b>opaque reference</b> (a short code) — never a name, username or account ID.')
+      +row('How much to trust it','Most figures are a <b>directional read</b>'+(nv?'; <b>'+nv+'</b> codes are fair-comparison checked':'')+'; <b>none are holdout-proven</b> yet. See the confidence and limits notes above.');
+  })();
   // ---- per-card legibility: a plain "Why it matters" (and "How to read it" for charts) at the top of each summary card ----
   (function(){
     var HELP={
@@ -2956,6 +2979,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('s_ltvCard')),
     cardSec(byId('s_limitsCard')),
     cardSec(byId('s_campaignCard')),
+    cardSec(byId('s_dataCard')),
     cardSec(cardById('summaryGrid')),
   ]);
   // ===== Big-player detection (whale) tab — standard pillar template =====
