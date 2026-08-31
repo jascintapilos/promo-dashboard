@@ -2192,27 +2192,32 @@ function renderSummary(){
   // ---- action ledger (led + review already built above) ----
   const top=led.slice(0,14);
   document.getElementById('s_ledger').innerHTML=
-    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Why</th></tr></thead><tbody>`+
+    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Measured against</th><th class="l">Why</th></tr></thead><tbody>`+
     top.map(x=>{
-      let engHint='';
       const em=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
-      if(em){
-        const lbl=em.t==='fair'?'fair-checked':em.t==='hold'?'needs live test':'directional';
-        const col=em.t==='fair'?'var(--gold)':em.t==='hold'?'var(--muted)':'var(--line-2)';
-        const cut=['Stop','Reduce','Trim'].includes(x.dec), grow=['Scale'].includes(x.dec);
+      let measured;
+      if(em&&em.t==='fair'){
         const f=em.f, fstr=(f>=0?'+':'−')+SYM+Math.abs(f)+'/RM';
+        const cut=['Stop','Reduce','Trim'].includes(x.dec), grow=['Scale'].includes(x.dec);
         let flag='';
-        if(em.t==='fair'&&f!=null){
-          if(cut&&f>=0.5) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ fair check: it <b>earns</b> (${fstr}) — review</div>`;
-          else if(grow&&f<=-0.5) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ fair check: it <b>loses</b> (${fstr}) — review</div>`;
+        if(f!=null){
+          if(cut&&f>=0.5) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ but it <b>earns</b> (${fstr}) — review</div>`;
+          else if(grow&&f<=-0.5) flag=`<div class="fine" style="color:var(--reduce);margin-top:1px">⚠ but it <b>loses</b> (${fstr}) — review</div>`;
         }
-        engHint=`<div class="fine" style="color:${col};margin-top:2px">${lbl}</div>`+flag;
+        measured=`<b style="color:var(--gold)">Look-alike players ✓</b><div class="fine" style="color:var(--muted);margin-top:1px">fair check ${fstr}</div>`+flag;
+      } else if(em&&em.t==='hold'){
+        measured=`<span style="color:var(--muted)">Needs a live test</span>`;
+      } else if(x.pillar==='Acquisition'){
+        measured=`<span style="color:var(--line-2)">Cost vs other promos</span>`;
+      } else {
+        measured=`<span style="color:var(--line-2)">Its own before &amp; after</span>`;
       }
       return `<tr><td class="l"><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
       `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
-      `<td><span class="lchip" style="color:${x.col}">${x.dec}</span>${engHint}</td>`+
-      `<td class="l" style="max-width:40ch;white-space:normal;color:var(--muted);font-size:12.5px">${(em&&em.t==='fair')?`<span style="font-style:italic">own-data read:</span> `:''}${x.why}</td></tr>`;}).join('')+
-    `</tbody></table></div><p class="fine" style="margin-top:8px">Showing the ${top.length} largest-spend moves of ${led.length} to act on, across pillars. Each action carries its <b>confidence</b> (fair-checked / directional / needs live test)${review.length?'; <b>⚠</b> = the fair comparison disagrees with the call — review before acting':''}. Click a pillar to see the full list.</p>`;
+      `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
+      `<td class="l" style="max-width:22ch;white-space:normal;font-size:12.5px">${measured}</td>`+
+      `<td class="l" style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`;}).join('')+
+    `</tbody></table></div><p class="fine" style="margin-top:8px">The ${top.length} largest-spend moves of ${led.length}. <b>Measured against</b> = how each call was tested: <b style="color:var(--gold)">look-alike players</b> (fair check) · <b>its own before &amp; after</b> (a read) · <b>cost vs other promos</b> (acquisition) · <b>needs a live test</b>.${review.length?' <b style="color:var(--reduce)">⚠</b> = the fair check disagrees — review first.':''} Click a pillar to open its full list.</p>`;
   // ---- staged cutover: graded promos where the fair-comparison number disagrees with the call (review built above) ----
   if(review.length) document.getElementById('s_ledger').insertAdjacentHTML('beforeend',
     `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Staged cutover — ${review.length} graded promo(s) to re-review.</b> The fair-comparison (Tier-2) number disagrees with the current call on these; nothing is auto-changed — check before acting: `+
@@ -2263,7 +2268,7 @@ function renderSummary(){
       li('Markets', P.market==='MY'
         ? 'This is the <b>Malaysia</b> book. <b>Singapore is now built too</b> — use the country switcher at the top. The two markets are shown <b>side by side, not summed</b>, so every total here is Malaysia only.'
         : 'This is the <b>Singapore</b> book — directional, on a thin base (whale detection &amp; causal attribution are gated off). <b>Malaysia</b> is the other country tab. The two markets are shown <b>side by side, not summed</b>, so every total here is Singapore only.')+
-      li('Value horizon (LTV)','<b style="color:var(--scale)">Now added</b> — the <b>lifetime-value card above</b> shows real multi-year cohorts: a player is worth far more than any 7–90 day window (the '+((typeof LTV!=='undefined'&&LTV)?LTV.summary.mature_year+' cohort: '+LTV.symbol+LTV.summary.mature_yr0+' in year 0 → '+LTV.symbol+LTV.summary.mature_final.toLocaleString()+' by year '+LTV.summary.mature_offset:'2019 cohort went negative in year 0 to RM8,367 by year 7')+'). The <b>promo-cut</b> analysis still uses the 7–90 day window (right for judging recent promo performance), so welcome offers and whale saves are under-counted <i>there</i>. <b>Next:</b> LTV split <b>by acquisition source / promo</b> — to say which promos bring high-lifetime players, not just whole-book value.')+
+      li('Long-term value','The lifetime-value card above now covers whole-book player value over years. But <b>promo grades still use a 7–90 day window</b>, so welcome offers and whale saves are <b>under-counted</b> when judged win-or-lose. <b>Not yet built:</b> value split by <b>which promo brought a player in</b> — so we can\'t yet say which promos win high-lifetime players.')+
       li('Cost','Spend and break-even are <b>bonus only</b> — no comms, VM/CRM servicing time, or platform overhead. Codes grading near zero are likely <b>loss-making</b> once cost-to-serve is added.')+
       li('Evidence', P.market==='MY'
         ? 'Most figures are <b>directional</b>. Only <b>'+nv+'</b> of ~200 codes are fair-comparison checked; <b>none are holdout-proven</b>. Act on the confidence tiers, not the exact point numbers.'
