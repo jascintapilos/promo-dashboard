@@ -2064,8 +2064,8 @@ function renderSummary(){
   // ---- portfolio table ----
   const rows=[
     {name:'Acquisition',tab:'acquisition',spend:K.spend,buy:`${fmt(K.ftd)} new depositors<div class="sub-muted">${SYM}${K.cost_per_ftd} to win each new depositor · ${K.stick_30}% came back in 30 days</div>`,move:acqMove,calls:chip(cnt.Scale,'scale','var(--scale)')+chip(cnt.Optimise,'tune','var(--optimise)')+chip(cnt.Reload,'reload','var(--accent-ink)')+chip((cnt.Reduce||0)+(cnt.Stop||0),'trim','var(--reduce)')},
-    RET&&{name:'Retention',tab:'retention',spend:RET.kpis.spend,buy:`<span style="color:var(--scale);font-weight:700">+${sM(RET.kpis.ngr_lift)}</span> net revenue<div class="sub-muted">${RSYM}${RET.kpis.ngr_lift_per_rm} kept for every RM1</div>`,move:retMove,calls:chip(rc.Scale,'scale','var(--scale)')+chip(rc.Optimise,'tune','var(--optimise)')+chip((rc.Reduce||0)+(rc.Stop||0),'trim','var(--reduce)')},
-    VIP&&{name:'VIP',tab:'vip',spend:VIP.program.total_bonus,buy:`${sM(VIP.program.roi.incremental_ngr_lift)} extra on top*<div class="sub-muted">*the extra the bonus drives — the ${VIP.program.roi.total_value_ratio}× is total play, most not caused by the bonus</div>`,move:vipMove,calls:chip(vc.Scale,'scale','var(--scale)')+chip((vc.Reduce||0)+(vc.Stop||0)+(vc.Trim||0),'trim','var(--reduce)')+chip(vc.Review,'review','var(--gold)')}
+    RET&&{name:'Retention',tab:'retention',spend:RET.kpis.spend,buy:`<span style="color:var(--scale);font-weight:700">+${sM(RET.kpis.ngr_lift)}</span> net revenue<div class="sub-muted">${RSYM}${RET.kpis.ngr_lift_per_rm} kept for every RM1${RET.kpis.redeposit_rate!=null?` · <b>${RET.kpis.redeposit_rate}%</b> deposited again`:''}</div>`,move:retMove,calls:chip(rc.Scale,'scale','var(--scale)')+chip(rc.Optimise,'tune','var(--optimise)')+chip((rc.Reduce||0)+(rc.Stop||0),'trim','var(--reduce)')},
+    VIP&&{name:'VIP',tab:'vip',spend:VIP.program.total_bonus,buy:`${sM(VIP.program.roi.incremental_ngr_lift)} extra on top*<div class="sub-muted">*the extra the bonus drives — the ${VIP.program.roi.total_value_ratio}× is total play, most not caused by the bonus${(VIP.survival&&VIP.survival.overall_90!=null)?` · <b>${VIP.survival.overall_90}%</b> still depositing 90 days on`:''}</div>`,move:vipMove,calls:chip(vc.Scale,'scale','var(--scale)')+chip((vc.Reduce||0)+(vc.Stop||0)+(vc.Trim||0),'trim','var(--reduce)')+chip(vc.Review,'review','var(--gold)')}
   ].filter(Boolean);
   document.getElementById('s_portfolio').innerHTML=
     `<div class="tbl-wrap"><table class="ptbl"><thead><tr><th class="l">Pillar</th><th>Spend</th><th>Share</th><th class="l">What it buys (its own measure)</th><th>To move</th><th class="l">Top actions</th><th></th></tr></thead><tbody>`+
@@ -2225,7 +2225,7 @@ function renderSummary(){
     return '<div style="padding:6px 18px 14px;background:var(--inset)">'+S.map(function(s,i){return '<div style="display:flex;gap:12px;padding:8px 0;border-top:'+(i?'1px solid var(--line)':'none')+'"><span style="min-width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span><div style="font-size:13px;line-height:1.55"><b>'+s[0]+'</b><div style="color:var(--muted)">'+s[1]+'</div></div></div>';}).join('')+'</div>';
   }
   document.getElementById('s_ledger').innerHTML=
-    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Action</th><th class="l">Measured against</th><th class="l">Why</th></tr></thead><tbody>`+
+    `<div class="tbl-wrap"><table class="ledtbl"><thead><tr><th class="l">Promo</th><th>Pillar</th><th>Spend</th><th>Back per RM1</th><th>Action</th><th class="l">Measured against</th><th class="l">Why</th></tr></thead><tbody>`+
     top.map((x,i)=>{
       const em=(typeof ATTR!=='undefined'&&ATTR&&ATTR.engine_map)?ATTR.engine_map[x.code]:null;
       let measured;
@@ -2245,13 +2245,16 @@ function renderSummary(){
       } else {
         measured=`<span style="color:var(--line-2)">Its own before &amp; after</span>`;
       }
+      let back;
+      if(x.pillar==='Acquisition'){ const cf=x.c?x.c.cost_per_ftd:null; back=cf!=null?`<span class="fine" style="color:var(--muted)">${SYM}${cf.toLocaleString()}/dep</span>`:`<span style="color:var(--muted)">—</span>`; }
+      else { const pr=x.c?x.c.ngr_lift_per_rm:null; back=pr==null?`<span style="color:var(--muted)">—</span>`:`<b style="color:${pr>=0?'var(--scale)':'var(--reduce)'}">${(pr>=0?'+':'−')+SYM+Math.abs(pr).toFixed(2)}</b>`; }
       return `<tr class="ledrow" style="cursor:pointer"><td class="l"><span class="caret" style="color:var(--muted);font-size:11px;margin-right:5px">▸</span><span class="code">${x.code.replace('FT_','').replace('optimove_my_weekly_rescue_bonus_','rescue · ')}</span></td>`+
-      `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td>`+
+      `<td><span class="pilltag" data-goto="${x.tab}">${x.pillar}</span></td><td>${sM(x.spend)}</td><td style="white-space:nowrap">${back}</td>`+
       `<td><span class="lchip" style="color:${x.col}">${x.dec}</span></td>`+
       `<td class="l" style="max-width:22ch;white-space:normal;font-size:12.5px">${measured}</td>`+
       `<td class="l" style="max-width:34ch;white-space:normal;color:var(--muted);font-size:12.5px">${x.why}</td></tr>`+
-      `<tr class="ledstory" hidden><td colspan="6" style="padding:0">${storyHtml(x)}</td></tr>`;}).join('')+
-    `</tbody></table></div><p class="fine" style="margin-top:8px"><b>Click any row</b> for the full story behind the call — what it was for → what players did → what it earned → cost → why → the call. <b>Measured against</b> = how each call was tested: <b style="color:var(--gold)">look-alike players</b> (fair check) · <b>its own before &amp; after</b> (a read) · <b>cost vs other promos</b> (acquisition) · <b>needs a live test</b>.${review.length?' <b style="color:var(--reduce)">⚠</b> = the fair check disagrees — review first.':''}</p>`;
+      `<tr class="ledstory" hidden><td colspan="7" style="padding:0">${storyHtml(x)}</td></tr>`;}).join('')+
+    `</tbody></table></div><p class="fine" style="margin-top:8px"><b>Back per RM1</b> = net revenue kept for every RM1 of bonus (acquisition shows cost per new depositor instead). <b>Click any row</b> for the full story behind the call — what it was for → what players did → what it earned → cost → why → the call. <b>Measured against</b> = how each call was tested: <b style="color:var(--gold)">look-alike players</b> (fair check) · <b>its own before &amp; after</b> (a read) · <b>cost vs other promos</b> (acquisition) · <b>needs a live test</b>.${review.length?' <b style="color:var(--reduce)">⚠</b> = the fair check disagrees — review first.':''}</p>`;
   // ---- staged cutover: graded promos where the fair-comparison number disagrees with the call (review built above) ----
   if(review.length) document.getElementById('s_ledger').insertAdjacentHTML('beforeend',
     `<div class="varbox" style="border-color:var(--reduce);margin-top:10px"><span class="ico">⚠</span><div><b>Staged cutover — ${review.length} graded promo(s) to re-review.</b> The fair-comparison (Tier-2) number disagrees with the current call on these; nothing is auto-changed — check before acting: `+
@@ -2636,7 +2639,7 @@ renderCompare();
   tabs.forEach(t=>t.addEventListener('click',()=>show(t.dataset.tab)));
   document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]'); if(g)show(g.dataset.goto);});
   let saved=null; try{saved=localStorage.getItem('promoTab')}catch(e){}
-  show(saved && document.getElementById('panel-'+saved) ? saved : 'acquisition');
+  show(saved && document.getElementById('panel-'+saved) ? saved : 'summary');
 })();
 
 // sticky pillar tabs — add shadow once pinned to the top
