@@ -118,11 +118,7 @@ export function sgMarketPass(out, SYMBOL) {
     ' The case',
     'fair "13 codes actually checked" sentence');
 
-  // (B5) Exec banner — "brings back more than RM1" over-claims on SG (lift/RM ~0.45). Neutralise.
-  out = sub(out,
-    'Retention clearly pays (every RM1 of bonus brings back more than RM1)',
-    'Retention pays back (positive net revenue per RM1 of bonus)',
-    'exec-banner retention claim');
+  // (B5) Exec-banner retention claim is now data-driven (RSYM/SYM per market) in the template — no override needed.
 
   // (C) v_moves (Decision register) is a hard-coded MY prescription list keyed on VIP.decision,
   //     which SG metrics don't carry -> would render MY labels with NaN. Gate it, and hide the card.
