@@ -3205,12 +3205,24 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     plainSec(byId('v_notes'),'Notes'),
     plainSec(byId('v_soon'),null),
   ]);
-  // Open the "Main findings" section by default on every tab — the headline card the audience reads first,
-  // while the rest stay collapsed so they aren't overwhelmed by every card at once.
-  ['panel-summary','panel-acquisition','panel-retention','panel-vip','panel-whale'].forEach(function(pid){
+  // Open the cards the presentation walks through, by default, per tab — the flow is pre-opened while the
+  // detail cards stay collapsed (not overwhelming). Sections are matched by an INNER content id because
+  // buildPanel dissolves the .card wrapper (the card id is gone; the inner id survives inside the .sec).
+  // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
+  var OPEN_DEF={
+    'panel-summary':['s_banner','s_portfolio','s_attrib','s_ledger','s_plan','s_ltv'],
+    'panel-acquisition':['meta'],
+    'panel-retention':['r_meta'],
+    'panel-vip':['v_meta','v_rules'],
+    'panel-whale':['w_meta']
+  };
+  Object.keys(OPEN_DEF).forEach(function(pid){
     var panel=byId(pid); if(!panel) return;
-    var mf=[].slice.call(panel.querySelectorAll('.sec')).filter(function(s){var t=s.querySelector('.sectitle');return t&&t.textContent.trim()==='Main findings';})[0];
-    if(mf&&mf.classList.contains('collapsed')){ mf.classList.remove('collapsed'); var c=mf.querySelector('.chev'); if(c)c.textContent='▾'; }
+    OPEN_DEF[pid].forEach(function(innerId){
+      var el=panel.querySelector('#'+innerId); if(!el) return;
+      var sec=el.closest('.sec'); if(!sec) return;
+      if(sec.classList.contains('collapsed')){ sec.classList.remove('collapsed'); var c=sec.querySelector('.chev'); if(c)c.textContent='▾'; }
+    });
   });
 })();
 
