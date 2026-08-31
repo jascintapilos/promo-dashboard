@@ -2415,7 +2415,17 @@ function renderPeriod(){
       +'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">'+(cpf!=null?S+cpf:'—')+'</b></span><span style="color:var(--muted)">Money handed back as cashback <b style="color:var(--ink)">'+sm(cbS)+'</b></span></div>'
       +'<p class="fine" style="margin-top:10px;color:var(--muted)">0 = the bonus paid for itself. The net-rev-per-'+S+'1 figures are measured only on bonus spend whose 7-day result window has closed, so they will not tie exactly to the spend shown above'+(inProg?', and this period includes a still-in-progress month, so its return is not yet final':'')+'. '+stayNote+'</p>';
   }
-  function showYtd(){ const y0=yr(0),y1=yr(M.length-1); const span=y0===y1?(L[0]+'–'+L[M.length-1]+' '+y1):(L[0]+' '+y0+'–'+L[M.length-1]+' '+y1); box.innerHTML='<p class="sub2">Showing the <b>full year to date</b> ('+span+'). Pick a quarter or month above to see just that slice of the money — per-code decisions stay on the full year.</p>'; }
+  function showYtd(){
+    const y0=yr(0),y1=yr(M.length-1); const span=y0===y1?(L[0]+'–'+L[M.length-1]+' '+y1):(L[0]+' '+y0+'–'+L[M.length-1]+' '+y1);
+    box.innerHTML='<p class="sub2">Showing the <b>full year to date</b> ('+span+') — the whole report below already is this view. <b>Pick a quarter or month above</b> to break out just that slice of the money; per-code decisions stay on the full year.</p>'
+      +'<div style="margin-top:6px;border:1px dashed var(--line);border-radius:10px;padding:14px 16px">'
+      +'<div style="opacity:.4;pointer-events:none;display:grid;grid-template-columns:1fr 1fr;gap:22px">'
+      +colBox('Spend this period', row('Acquisition','—')+row('Retention','—')+row('VIP','—')+row('Total','—'))
+      +colBox('Net revenue kept · per '+S+'1 of bonus', row('Retention','—')+row('VIP performance','—')+row('Overall','—'))
+      +'</div>'
+      +'<div style="opacity:.4;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">—</b></span><span style="color:var(--muted)">Money handed back as cashback <b style="color:var(--ink)">—</b></span></div>'
+      +'</div>';
+  }
   const sel=document.getElementById('s_periodSel');
   sel.addEventListener('change',function(){
     const v=sel.value;
