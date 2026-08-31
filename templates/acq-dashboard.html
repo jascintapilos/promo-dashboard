@@ -426,9 +426,16 @@
 
   <div class="panel" id="panel-summary" hidden>
     <div class="exec-note" id="s_banner"></div>
-    <div class="card col12" style="margin-bottom:15px" id="s_thisMonthCard" hidden><div class="card-h"><h3>This month</h3><span class="hint">the latest month vs the one before</span></div><div id="s_thisMonth"></div></div>
-    <div class="card col12" style="margin-bottom:15px" id="s_periodCard"><div class="card-h"><h3>Period lens</h3><span class="hint">year-to-date, or zoom to one quarter / month</span></div><div id="s_periodControls"></div><div id="s_periodBody"></div></div>
-    <div class="card col12" style="margin-bottom:15px" id="s_compareCard"><div class="card-h"><h3>Compare months</h3><span class="hint">every month side by side, or pick any two</span></div><div id="s_mbmTable"></div><div id="s_comparePick"></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_monthlyCard"><div class="card-h"><h3>Monthly view</h3><span class="hint">this month · a single period · or compare</span></div>
+      <div id="s_mvSeg" role="tablist" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+        <button type="button" data-mv="now" style="font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);cursor:pointer">This month</button>
+        <button type="button" data-mv="period" style="font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);cursor:pointer">Pick a period</button>
+        <button type="button" data-mv="compare" style="font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);cursor:pointer">Compare</button>
+      </div>
+      <div data-mvpane="now"><div id="s_thisMonth"></div></div>
+      <div data-mvpane="period" hidden><div id="s_periodControls"></div><div id="s_periodBody"></div></div>
+      <div data-mvpane="compare" hidden><div id="s_mbmTable"></div><div id="s_comparePick"></div></div>
+    </div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
@@ -2387,11 +2394,10 @@ function periodList(){
   return {months:months, quarters:quarters};
 }
 function renderPeriod(){
-  const card=document.getElementById('s_periodCard');
   const ctl=document.getElementById('s_periodControls');
   const box=document.getElementById('s_periodBody');
-  if(!card||!ctl||!box) return;
-  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ card.hidden=true; return; }
+  if(!ctl||!box) return;
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ return; }
   const T=TREND, S=T.sym||'RM', M=T.months, L=T.labels, PART=T.partial||{};
   const sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, eff=T.efficiency||[], acq=T.acq||[], cb=T.cashback_spend||[];
   const sm=v=>{if(v==null) return '—';const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(2)+'M':a>=1e3?Math.round(v/1e3)+'k':Math.round(v));};
@@ -2450,8 +2456,8 @@ function renderPeriod(){
   showYtd();
 }
 function renderCompare(){
-  const card=document.getElementById('s_compareCard'); if(!card) return;
-  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ card.hidden=true; return; }
+  const tbl0=document.getElementById('s_mbmTable'); if(!tbl0) return;
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ return; }
   const T=TREND, S=T.sym||'RM', M=T.months, L=T.labels, PART=T.partial||{}, eff=T.efficiency||[], sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, acq=T.acq||[], cb=T.cashback_spend||[];
   const last=M.length-1;
   const sm=v=>{if(v==null) return '—';const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(2)+'M':a>=1e3?Math.round(v/1e3)+'k':Math.round(v));};
@@ -2546,6 +2552,19 @@ renderTrend();
 renderThisMonth();
 renderPeriod();
 renderCompare();
+(function(){ // merge This month / Period lens / Compare into one card with a segmented toggle
+  var card=document.getElementById('s_monthlyCard'); if(!card) return;
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ card.hidden=true; return; }
+  var seg=document.getElementById('s_mvSeg');
+  var btns=[].slice.call(seg.querySelectorAll('[data-mv]'));
+  var panes=[].slice.call(card.querySelectorAll('[data-mvpane]'));
+  function sel(mv){
+    panes.forEach(function(p){ p.hidden = p.getAttribute('data-mvpane')!==mv; });
+    btns.forEach(function(b){ var on=b.getAttribute('data-mv')===mv; b.setAttribute('aria-selected', on?'true':'false'); b.style.background=on?'var(--accent)':'var(--surface)'; b.style.color=on?'#fff':'var(--muted)'; b.style.borderColor=on?'var(--accent)':'var(--line)'; });
+  }
+  seg.addEventListener('click',function(e){ var b=e.target.closest('[data-mv]'); if(b) sel(b.getAttribute('data-mv')); });
+  sel(TREND.months.length>=2?'now':'compare');
+})();
 
 // tab switching
 (function(){
@@ -2876,9 +2895,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   buildPanel('panel-summary',[
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
     leadSec('Main findings',[byId('s_banner')]),
-    cardSec(byId('s_thisMonthCard')),
-    cardSec(byId('s_periodCard')),
-    cardSec(byId('s_compareCard')),
+    cardSec(byId('s_monthlyCard')),
     cardSec(cardById('s_portfolio')),
     cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
     cardSec(byId('s_trendCard')),
