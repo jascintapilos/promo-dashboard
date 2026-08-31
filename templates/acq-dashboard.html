@@ -428,6 +428,7 @@
     <div class="exec-note" id="s_banner"></div>
     <div class="card col12" style="margin-bottom:15px" id="s_thisMonthCard" hidden><div class="card-h"><h3>This month</h3><span class="hint">the latest month vs the one before</span></div><div id="s_thisMonth"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_periodCard"><div class="card-h"><h3>Period lens</h3><span class="hint">year-to-date, or zoom to one quarter / month</span></div><div id="s_periodControls"></div><div id="s_periodBody"></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_compareCard"><div class="card-h"><h3>Compare months</h3><span class="hint">every month side by side, or pick any two</span></div><div id="s_mbmTable"></div><div id="s_comparePick"></div></div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
@@ -2360,6 +2361,31 @@ function renderThisMonth(){
     `</div>`+
     `<p class="fine" style="margin-top:10px;color:var(--muted)">Green = a better month, red = worse (for cost, lower is better); spend is shown grey because more or less spend is not itself good or bad. Figures compare the latest full month with the one before — the complete month-by-month trajectory is in "Month by month" below.</p>`;
 }
+// ---- shared month/period aggregation — single source of truth for Period lens + Compare (Σnum/Σden over matured-window components; never averages ratios) ----
+function periodAgg(idxs){
+  if(typeof TREND==='undefined'||!TREND) return null;
+  const T=TREND, sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, eff=T.efficiency||[], acq=T.acq||[], cb=T.cashback_spend||[], M=T.months, PART=T.partial||{};
+  const sum=f=>idxs.reduce((a,i)=>{const v=f(i);return a+(v==null?0:v);},0);
+  const okR=i=>eff[i]&&eff[i].per_rm_ret!=null&&eff[i].ret_spend!=null;
+  const okV=i=>eff[i]&&eff[i].per_rm_vip!=null&&eff[i].vip_spend!=null;
+  const retDen=idxs.reduce((a,i)=>a+(okR(i)?eff[i].ret_spend:0),0), retNum=idxs.reduce((a,i)=>a+(okR(i)?eff[i].per_rm_ret*eff[i].ret_spend:0),0);
+  const vipDen=idxs.reduce((a,i)=>a+(okV(i)?eff[i].vip_spend:0),0), vipNum=idxs.reduce((a,i)=>a+(okV(i)?eff[i].per_rm_vip*eff[i].vip_spend:0),0);
+  const ovNum=sum(i=>eff[i]?eff[i].ngr_m7:0), ovDen=sum(i=>eff[i]?eff[i].spend_m7:0);
+  const spendNew=sum(i=>acq[i]?acq[i].spend_new:0), ftd=sum(i=>acq[i]?acq[i].ftd:0);
+  const acqS=sum(i=>sp.acq[i]), retS=sum(i=>sp.ret[i]), vipS=sum(i=>sp.vip[i]);
+  return { acqS:acqS, retS:retS, vipS:vipS, tot:acqS+retS+vipS,
+    retE: retDen?retNum/retDen:null, vipE: vipDen?vipNum/vipDen:null, ovE: ovDen?ovNum/ovDen:null,
+    cpf: idxs.length===1?(acq[idxs[0]]?acq[idxs[0]].cost_per_ftd:null):(ftd?Math.round(spendNew/ftd):null),
+    cbS: sum(i=>cb[i]), inProg: idxs.some(i=>PART[M[i]]) };
+}
+// ---- enumerate selectable periods (months + quarters) from TREND ----
+function periodList(){
+  const T=TREND, M=T.months, L=T.labels, PART=T.partial||{};
+  const months=M.map((m,i)=>({value:'m'+i, label:L[i]+' '+m.slice(0,4), idxs:[i], part:!!PART[m]}));
+  const qg={}; M.forEach((m,i)=>{const y=m.slice(0,4),mm=+m.slice(5,7),qq=Math.floor((mm-1)/3)+1,k=y+'-Q'+qq;(qg[k]=qg[k]||{y:y,q:qq,idxs:[]}).idxs.push(i);});
+  const quarters=Object.keys(qg).sort().map(k=>{const o=qg[k],lo=L[o.idxs[0]],hi=L[o.idxs[o.idxs.length-1]],inp=o.idxs.length<3||o.idxs.some(i=>PART[M[i]]);return {value:k, label:'Q'+o.q+' '+o.y+' ('+lo+(o.idxs.length>1?'–'+hi:'')+')', rlabel:'Q'+o.q+' '+o.y, idxs:o.idxs, part:inp};});
+  return {months:months, quarters:quarters};
+}
 function renderPeriod(){
   const card=document.getElementById('s_periodCard');
   const ctl=document.getElementById('s_periodControls');
@@ -2388,21 +2414,9 @@ function renderPeriod(){
   const row=(l,v,extra)=>'<div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)"><span style="color:var(--muted)">'+l+(extra?' <span style="font-size:11.5px">'+extra+'</span>':'')+'</span><span style="font-weight:700;font-variant-numeric:tabular-nums">'+v+'</span></div>';
   const colBox=(h,rows)=>'<div><div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:2px">'+h+'</div>'+rows+'</div>';
   function renderRange(idxs,label,inProg){
-    const sumBy=f=>idxs.reduce((a,i)=>{const v=f(i);return a+(v==null?0:v);},0);
-    const acqS=sumBy(i=>sp.acq[i]), retS=sumBy(i=>sp.ret[i]), vipS=sumBy(i=>sp.vip[i]), tot=acqS+retS+vipS;
+    const g=periodAgg(idxs), acqS=g.acqS, retS=g.retS, vipS=g.vipS, tot=g.tot, retE=g.retE, vipE=g.vipE, ovE=g.ovE, cpf=g.cpf, cbS=g.cbS;
     const ytdTot=ytdIdx.reduce((a,i)=>a+(sp.acq[i]||0)+(sp.ret[i]||0)+(sp.vip[i]||0),0);
     const share=ytdTot?Math.round(100*tot/ytdTot):null;
-    // per-$1 return: reconstruct numerator and denominator from the matured-window components, guarded symmetrically
-    const okR=i=>eff[i]&&eff[i].per_rm_ret!=null&&eff[i].ret_spend!=null;
-    const okV=i=>eff[i]&&eff[i].per_rm_vip!=null&&eff[i].vip_spend!=null;
-    const retNum=sumBy(i=>okR(i)?eff[i].per_rm_ret*eff[i].ret_spend:0), retDen=sumBy(i=>okR(i)?eff[i].ret_spend:0);
-    const vipNum=sumBy(i=>okV(i)?eff[i].per_rm_vip*eff[i].vip_spend:0), vipDen=sumBy(i=>okV(i)?eff[i].vip_spend:0);
-    const ovNum=sumBy(i=>eff[i]?eff[i].ngr_m7:0), ovDen=sumBy(i=>eff[i]?eff[i].spend_m7:0);
-    const retE=retDen?retNum/retDen:null, vipE=vipDen?vipNum/vipDen:null, ovE=ovDen?ovNum/ovDen:null;
-    // cost per new depositor: single month uses the builder's own value (so it agrees with the This-month card); ranges pool it
-    const spendNew=sumBy(i=>acq[i]?acq[i].spend_new:0), ftd=sumBy(i=>acq[i]?acq[i].ftd:0);
-    const cpf=idxs.length===1?(acq[idxs[0]]?acq[idxs[0]].cost_per_ftd:null):(ftd?Math.round(spendNew/ftd):null);
-    const cbS=sumBy(i=>cb[i]);
     // keep the "stays full year" note honest — only name sections that actually render (SG hides whales)
     const feats=['per-code Scale / Maintain / Reduce calls']; if(whalesShown()) feats.push('whales'); feats.push('lifetime value');
     const flist=feats.length>2?feats.slice(0,-1).join(', ')+' and '+feats[feats.length-1]:feats.join(' and ');
@@ -2434,6 +2448,65 @@ function renderPeriod(){
     const o=qOpt(v); renderRange(o.idxs, o.rlabel, o.inProg);
   });
   showYtd();
+}
+function renderCompare(){
+  const card=document.getElementById('s_compareCard'); if(!card) return;
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ card.hidden=true; return; }
+  const T=TREND, S=T.sym||'RM', M=T.months, L=T.labels, PART=T.partial||{}, eff=T.efficiency||[], sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, acq=T.acq||[], cb=T.cashback_spend||[];
+  const last=M.length-1;
+  const sm=v=>{if(v==null) return '—';const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(2)+'M':a>=1e3?Math.round(v/1e3)+'k':Math.round(v));};
+  const per=v=>v==null?'—':(v>=0?'+':'')+S+v.toFixed(2);
+  // (1) month-by-month table — months as columns, metrics as rows (each column is a single month)
+  const tbl=document.getElementById('s_mbmTable');
+  const rows=[
+    {k:'Acquisition spend', f:i=>sm(sp.acq[i])},
+    {k:'Retention spend', f:i=>sm(sp.ret[i])},
+    {k:'VIP spend', f:i=>sm(sp.vip[i])},
+    {k:'Total spend', f:i=>sm((sp.acq[i]||0)+(sp.ret[i]||0)+(sp.vip[i]||0)), bold:true},
+    {k:'Retention · net rev per '+S+'1', f:i=>per(eff[i]?eff[i].per_rm_ret:null)},
+    {k:'VIP performance · per '+S+'1', f:i=>per(eff[i]?eff[i].per_rm_vip:null)},
+    {k:'Cost / new depositor', f:i=>(acq[i]&&acq[i].cost_per_ftd!=null)?S+acq[i].cost_per_ftd:'—'},
+    {k:'Cashback', f:i=>sm(cb[i])}
+  ];
+  const stickyL='position:sticky;left:0;background:var(--surface);z-index:1';
+  const thead='<tr><th style="text-align:left;padding:6px 12px 6px 0;'+stickyL+'"></th>'+M.map((m,i)=>'<th style="text-align:right;padding:6px 10px;white-space:nowrap;font-weight:700'+(i===last?';color:var(--accent)':'')+'">'+L[i]+(PART[m]?' *':'')+'</th>').join('')+'</tr>';
+  const tbody=rows.map(r=>'<tr><td style="text-align:left;padding:5px 12px 5px 0;color:var(--muted);white-space:nowrap;'+stickyL+(r.bold?';font-weight:700;color:var(--ink)':'')+'">'+r.k+'</td>'+M.map((m,i)=>'<td style="text-align:right;padding:5px 10px;font-variant-numeric:tabular-nums;white-space:nowrap'+(r.bold?';font-weight:700':'')+(i===last?';color:var(--ink);background:var(--inset)':'')+'">'+r.f(i)+'</td>').join('')+'</tr>').join('');
+  tbl.innerHTML='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:collapse;width:100%;font-size:13px"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'
+    +'<p class="fine" style="margin-top:7px;color:var(--muted)">'+(PART[M[last]]?'* '+L[last]+' '+M[last].slice(0,4)+' is still in progress (7-day windows not fully matured). ':'')+'Net-rev-per-'+S+'1 is money kept for every '+S+'1 of bonus (0 = it paid for itself), measured on matured spend, so it will not tie exactly to the spend rows above.</p>';
+  // (2) compare any two periods
+  const {months, quarters}=periodList();
+  const opts='<optgroup label="Months">'+months.map(o=>'<option value="'+o.value+'">'+o.label+(o.part?' · in progress':'')+'</option>').join('')+'</optgroup>'
+    +'<optgroup label="Quarters">'+quarters.map(o=>'<option value="'+o.value+'">'+o.label+(o.part?' · in progress':'')+'</option>').join('')+'</optgroup>';
+  const resolve=v=>{ if(v[0]==='m'){const i=+v.slice(1);return {idxs:[i], label:months[i].label};} const q=quarters.find(x=>x.value===v); return q?{idxs:q.idxs, label:q.rlabel}:{idxs:[last], label:months[last].label}; };
+  const nMon=months.length, defA=(nMon>=2?months[nMon-2].value:months[0].value), defB=months[nMon-1].value;
+  const pick=document.getElementById('s_comparePick');
+  pick.innerHTML='<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">'
+    +'<div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Compare any two</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;margin-bottom:10px"><select id="s_cmpA" aria-label="First period" style="font:inherit;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">'+opts+'</select><span style="color:var(--muted)">vs</span><select id="s_cmpB" aria-label="Second period" style="font:inherit;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">'+opts+'</select></div><div id="s_cmpOut"></div></div>';
+  const A=document.getElementById('s_cmpA'), B=document.getElementById('s_cmpB'), outEl=document.getElementById('s_cmpOut');
+  A.value=defA; B.value=defB;
+  const chip=(a,b,fmt,mode)=>{ // a=from, b=to; mode 'up'=higher better, 'down'=lower better, 'neutral'=grey
+    if(a==null||b==null) return '<span style="color:var(--muted)">—</span>';
+    const d=b-a, flat=Math.abs(d)<=(Math.abs(a)*0.005+1e-9), arrow=flat?'→':(d>0?'▲':'▼');
+    let col='var(--muted)'; if(!flat&&mode!=='neutral') col=((mode==='down'?d<0:d>0)?'var(--scale)':'var(--reduce)');
+    return '<span style="color:'+col+';font-weight:700">'+arrow+' '+fmt(Math.abs(d))+'</span>';
+  };
+  const gc='grid-template-columns:1.5fr 1fr 1fr 1fr';
+  function draw(){
+    const pa=resolve(A.value), pb=resolve(B.value), ga=periodAgg(pa.idxs), gb=periodAgg(pb.idxs);
+    const rowC=(l,av,bv,dh)=>'<div style="display:grid;'+gc+';gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);font-size:13.5px"><span style="color:var(--muted)">'+l+'</span><span style="text-align:right;font-variant-numeric:tabular-nums">'+av+'</span><span style="text-align:right;font-variant-numeric:tabular-nums">'+bv+'</span><span style="text-align:right">'+dh+'</span></div>';
+    outEl.innerHTML='<div style="display:grid;'+gc+';gap:8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)"><span></span><span style="text-align:right">'+pa.label+'</span><span style="text-align:right">'+pb.label+'</span><span style="text-align:right">change</span></div>'
+      +rowC('Acquisition spend', sm(ga.acqS), sm(gb.acqS), chip(ga.acqS,gb.acqS,sm,'neutral'))
+      +rowC('Retention spend', sm(ga.retS), sm(gb.retS), chip(ga.retS,gb.retS,sm,'neutral'))
+      +rowC('VIP spend', sm(ga.vipS), sm(gb.vipS), chip(ga.vipS,gb.vipS,sm,'neutral'))
+      +rowC('Total spend', sm(ga.tot), sm(gb.tot), chip(ga.tot,gb.tot,sm,'neutral'))
+      +rowC('Retention · per '+S+'1', per(ga.retE), per(gb.retE), chip(ga.retE,gb.retE,function(v){return S+v.toFixed(2);},'up'))
+      +rowC('VIP performance · per '+S+'1', per(ga.vipE), per(gb.vipE), chip(ga.vipE,gb.vipE,function(v){return S+v.toFixed(2);},'up'))
+      +rowC('Cost / new depositor', ga.cpf!=null?S+ga.cpf:'—', gb.cpf!=null?S+gb.cpf:'—', chip(ga.cpf,gb.cpf,function(v){return S+Math.round(v);},'down'))
+      +rowC('Cashback', sm(ga.cbS), sm(gb.cbS), chip(ga.cbS,gb.cbS,sm,'neutral'))
+      +'<p class="fine" style="margin-top:8px;color:var(--muted)">Green = the second period is the better one (spend &amp; cashback are grey — more or less is not itself good or bad). Cost is better when lower. Net-rev-per-'+S+'1: 0 = the bonus paid for itself.</p>';
+  }
+  A.addEventListener('change',draw); B.addEventListener('change',draw); draw();
 }
 function renderTrend(){
   if(!TREND)return;
@@ -2474,6 +2547,7 @@ function renderTrend(){
 renderTrend();
 renderThisMonth();
 renderPeriod();
+renderCompare();
 
 // tab switching
 (function(){
@@ -2806,6 +2880,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Main findings',[byId('s_banner')]),
     cardSec(byId('s_thisMonthCard')),
     cardSec(byId('s_periodCard')),
+    cardSec(byId('s_compareCard')),
     cardSec(cardById('s_portfolio')),
     cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
     cardSec(byId('s_trendCard')),
