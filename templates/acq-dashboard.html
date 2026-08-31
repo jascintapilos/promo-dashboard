@@ -2937,7 +2937,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
       +row('What we read','<b>Daily player snapshots</b> (deposits, withdrawals, and net revenue — the house win after bonuses) and <b>every bonus given</b> (its cost, type and time).')
       +row('Scope','<b>'+mktName+'</b> ('+cur+') only'+(span?', <b>'+span+'</b>'+(asof?' (through '+asof+')':''):'')+'. The two markets are shown side by side, never summed.')
       +row('Lifetime value','Uses the <b>full player history back to 2018</b>, not just this window.')
-      +row('How it’s built','Figures are <b>aggregated inside the warehouse</b> (sums and counts) by our analysis scripts — <b>no member-level data is copied out</b>. Acquisition, Retention and VIP each have their own build, plus lifetime value, the month-by-month trend, and the fair-comparison check.')
+      +row('How it’s built','Figures are <b>aggregated inside the warehouse</b> (sums and counts) by our analysis scripts — <b>no member-level data is copied out</b>. Acquisition, Retention and VIP each have their own build, plus lifetime value and the month-by-month trend'+(nv?', and the fair-comparison check':'')+'.')
       +row('Privacy','Players appear only as an <b>opaque reference</b> (a short code) — never a name, username or account ID.')
       +row('How much to trust it','Most figures are a <b>directional read</b>'+(nv?'; <b>'+nv+'</b> codes are fair-comparison checked':'')+'; <b>none are holdout-proven</b> yet. See the confidence and limits notes above.');
   })();
