@@ -2227,7 +2227,9 @@ function renderSummary(){
     const el2=document.getElementById('s_limits');
     if(el2) el2.innerHTML=
       `<p class="sub2">The report is honest about its edges — these are known gaps to fix next, not hidden ones. Weigh decisions against them.</p>`+
-      li('Singapore','MY only. SG — about <b>half the WS1 market</b> — isn\'t built yet, so every portfolio total here is the <b>MY book alone</b>.')+
+      li('Markets', P.market==='MY'
+        ? 'This is the <b>Malaysia</b> book. <b>Singapore is now built too</b> — use the country switcher at the top. The two markets are shown <b>side by side, not summed</b>, so every total here is Malaysia only.'
+        : 'This is the <b>Singapore</b> book — directional, on a thin base (whale detection &amp; causal attribution are gated off). <b>Malaysia</b> is the other country tab. The two markets are shown <b>side by side, not summed</b>, so every total here is Singapore only.')+
       li('Value horizon (LTV)','<b style="color:var(--scale)">Now added</b> — the <b>lifetime-value card above</b> shows real multi-year cohorts: a player is worth far more than any 7–90 day window (the '+((typeof LTV!=='undefined'&&LTV)?LTV.summary.mature_year+' cohort: '+LTV.symbol+LTV.summary.mature_yr0+' in year 0 → '+LTV.symbol+LTV.summary.mature_final.toLocaleString()+' by year '+LTV.summary.mature_offset:'2019 cohort went negative in year 0 to RM8,367 by year 7')+'). The <b>promo-cut</b> analysis still uses the 7–90 day window (right for judging recent promo performance), so welcome offers and whale saves are under-counted <i>there</i>. <b>Next:</b> LTV split <b>by acquisition source / promo</b> — to say which promos bring high-lifetime players, not just whole-book value.')+
       li('Cost','Spend and break-even are <b>bonus only</b> — no comms, VM/CRM servicing time, or platform overhead. Codes grading near zero are likely <b>loss-making</b> once cost-to-serve is added.')+
       li('Evidence','Most figures are <b>directional</b>. Only <b>'+nv+'</b> of ~200 codes are fair-comparison checked; <b>none are holdout-proven</b>. Act on the confidence tiers, not the exact point numbers.')+
