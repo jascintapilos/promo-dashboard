@@ -2042,7 +2042,7 @@ function renderLTV(){
       `<div><span class="nl">Value by year 1</span><span class="nv">${S.yr1_multiple}×</span><span class="ns">${SY}${S.blended_yr0} (yr0) → ${SY}${S.blended_yr1} (yr1), blended</span></div>`+
       `<div><span class="nl">By year 3 (all cohorts)</span><span class="nv">${SY}${S.blended_yr3.toLocaleString()}</span><span class="ns">blended across all join-years — a different, larger group than the ${S.mature_year} line, lifted by richer recent joiners</span></div>`+
     `</div>`+
-    `<div class="varbox" style="margin-top:10px"><span class="ico">◆</span><div><b>The takeaway:</b> a new player is worth <b>far more than any 7–90 day window shows</b> — welcome offers that lose early can be the best investments (the ${S.mature_year} cohort went ${SY}${S.mature_yr0} → ${SY}${S.mature_final.toLocaleString()}). Judge <b>acquisition and whale</b> spend on this horizon, not week 1.</div></div>`);
+    `<div class="varbox" style="margin-top:10px"><span class="ico">◆</span><div><b>The takeaway:</b> a new player is worth <b>far more than any 7–90 day window shows</b> — ${S.mature_yr0<0?`welcome offers that lose early can be the best investments (the ${S.mature_year} cohort went ${SY}${S.mature_yr0} → ${SY}${S.mature_final.toLocaleString()})`:`a player keeps paying back for years (the ${S.mature_year} cohort grew from ${SY}${S.mature_yr0} in year 0 to ${SY}${S.mature_final.toLocaleString()} by year ${S.mature_offset})`}. Judge <b>acquisition and whale</b> spend on this horizon, not week 1.</div></div>`);
 }
 function renderSummary(){
   const sM=n=>{if(n==null)return'—';const s=n<0?'-':'';const a=Math.abs(n);return s+SYM+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':Math.round(a));};
@@ -2597,7 +2597,7 @@ function renderTrend(){
     const cvals=T.acq.filter((a,i)=>!T.partial[T.months[i]]&&a.cost_per_ftd!=null).map(a=>a.cost_per_ftd);
     const band=cvals.length?(TS+Math.min.apply(null,cvals)+'–'+TS+Math.max.apply(null,cvals)):null;
     const lastL=L[n-1], lastPartial=T.partial[T.months[n-1]];
-    readHTML=`When we judge by money kept, ${retClause} while ${vipClause}.${heldUp} (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in ${L[bi]}</b>.${band?` Cost to win a new depositor ranges <b>${band}</b> across the months so far.`:''} <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate.${lastPartial?` <b>${lastL} is still partial</b> (*) — its 7-day windows have not fully matured.`:''}</span>`;
+    readHTML=`When we judge by money kept, ${retClause} while ${vipClause}.${heldUp} (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in ${L[bi]}</b>.${band?` Cost to win a new depositor ranges <b>${band}</b> across the completed months${lastPartial?` (the latest is still maturing and reads higher)`:''}.`:''} <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate.${lastPartial?` <b>${lastL} is still partial</b> (*) — its 7-day windows have not fully matured.`:''}</span>`;
   }
   document.getElementById('s_trendRead').innerHTML=readHTML;
   tStack('s_trendSpend',L,[
@@ -2658,16 +2658,21 @@ renderCompare();
 // tab switching
 (function(){
   const tabs=[...document.querySelectorAll('.tab')];
+  // namespace the saved-tab key per market so MY/SG (same-origin srcdoc iframes in the unified report) don't share it
+  const MK=(typeof TREND!=='undefined'&&TREND&&TREND.market)||((typeof PAYLOAD!=='undefined'&&PAYLOAD&&PAYLOAD.market))||'MY';
+  const KEY='promoTab_'+MK;
+  // a tab is restorable only if its panel exists AND its tab button is visible (SG hides e.g. the whale tab)
+  const visible=key=>{ const t=document.querySelector('.tab[data-tab="'+key+'"]'), p=document.getElementById('panel-'+key); return !!p && (!t||getComputedStyle(t).display!=='none'); };
   const show=key=>{
     document.querySelectorAll('.panel').forEach(p=>{p.hidden = (p.id!=='panel-'+key);});
     tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===key));
-    try{localStorage.setItem('promoTab',key)}catch(e){}
+    try{localStorage.setItem(KEY,key)}catch(e){}
     scrollTo(0,0);
   };
   tabs.forEach(t=>t.addEventListener('click',()=>show(t.dataset.tab)));
   document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]'); if(g)show(g.dataset.goto);});
-  let saved=null; try{saved=localStorage.getItem('promoTab')}catch(e){}
-  show(saved && document.getElementById('panel-'+saved) ? saved : 'summary');
+  let saved=null; try{saved=localStorage.getItem(KEY)}catch(e){}
+  show(saved && visible(saved) ? saved : 'summary');
 })();
 
 // sticky pillar tabs — add shadow once pinned to the top

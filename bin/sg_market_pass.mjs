@@ -42,8 +42,8 @@ export function sgMarketPass(out, SYMBOL) {
   //      (2020, n=89). Add an honest caveat to the card's subtitle so the mature figure isn't read
   //      as firm. (MY's mature cohort is large, so this note is SG-only.)
   out = sub(out,
-    '<h3>What a player is worth over time — lifetime value</h3><span class="hint">real multi-year cohorts · whole-book</span>',
-    '<h3>What a player is worth over time — lifetime value</h3><span class="hint">real multi-year cohorts · whole-book · long-horizon values rest on small early cohorts — read as indicative</span>',
+    '<h3>What a player is worth over time — lifetime value</h3><span class="hint">player value over years</span>',
+    '<h3>What a player is worth over time — lifetime value</h3><span class="hint">player value over years · long-horizon values rest on small early cohorts — read as indicative</span>',
     'LTV thin-base caveat');
 
   // (0) Country switcher: the template is a MY report with Malaysia active and a "Singapore soon"
@@ -118,6 +118,25 @@ export function sgMarketPass(out, SYMBOL) {
     ' The case',
     'fair "13 codes actually checked" sentence');
 
+  // (B4d) The VIP "How much to trust" tier gloss cites the MY fair-check count (13 of 59) and a fair tag
+  //       that never renders on SG (no ATTR / fair pass). Neutralise it to the truth for SG.
+  out = sub(out,
+    '(only <b>13 of the 59 Lane-A codes</b> qualify; look for the <span style="color:var(--gold)">fair</span> tag in the decisions table — the rest are tagged <span style="color:var(--muted)">own</span>)',
+    '(<b>not run on the thin SG base</b> — every figure here is the own before-and-after read)',
+    'vip trust tier 13-of-59 clause');
+
+  // (B4e) VIP exec banner makes a hardcoded MY call ("runs at a loss on the flagship free-credit codes …
+  //        So we cut the flagship codes and test the rest") whose evidence cards are all gated off on SG.
+  //        Drop the flagship-loss claim and the cut-and-test call; the real per-market number stays in the parens.
+  out = sub(out,
+    'roughly breaks even overall — but runs at a loss on the flagship free-credit codes',
+    'roughly breaks even overall on this window',
+    'vip exec flagship-loss claim');
+  out = sub(out,
+    ' So we cut the flagship codes and test the rest, not cut across the board.',
+    '',
+    'vip exec cut-and-test call');
+
   // (B5) Exec-banner retention claim is now data-driven (RSYM/SYM per market) in the template — no override needed.
 
   // (C) v_moves (Decision register) is a hard-coded MY prescription list keyed on VIP.decision,
@@ -131,13 +150,20 @@ export function sgMarketPass(out, SYMBOL) {
   //   v_moves card (id-less wrapper, via :has), sweet-spot, VIP trend-decomposition,
   //   monthly-operating baseline, whale summary.
   out = sub(out, '</style>',
-    '\n  /* SG: hide interpretive cards whose enrichers/decisions are not built for the thin SG base */\n'
-    + '  .card:has(#v_moves){display:none}\n'
-    + '  #v_sweetCard,#vipTrendDecompCard,#vipOperatingCard,#vipWhaleSummaryCard,#vipCoverageNote,#vipRetainTest{display:none}\n'
+    '\n  /* SG: hide interpretive VIP/summary cards whose enrichers/decisions are not built for the thin SG base.\n'
+    + '     buildPanel DISSOLVES each .card wrapper into a .sec section (the card id is gone), so we must\n'
+    + '     target the section via :has(innerContentId) — hiding #cardId or .card:has(...) is a no-op post-build. */\n'
+    + '  .sec:has(#v_decisionBox),.sec:has(#v_costWrong),.sec:has(#v_realloc),.sec:has(#v_moves),\n'
+    + '  .sec:has(#v_whaleSummary),.sec:has(#v_trendDecomp),.sec:has(#v_operating),.sec:has(#v_sweet),\n'
+    + '  .sec:has(#vipCoverageNote),.sec:has(#vipRetainTest),.sec:has(#s_campaignThemes){display:none}\n'
     + '  /* SG: no whale (big-player) analysis on the thin base — hide the tab + its panel */\n'
     + '  [data-tab="whale"],#panel-whale{display:none}\n'
     + '</style>',
     'sg hide-cards style');
+
+  // (C2) Dual-currency min-dep annotations in code names ("Min dep = RM30/SGD50") carry the MY value
+  //      first; the blanket RM->S$ relabel would render a wrong "S$30/SGD50". Keep only the SGD figure.
+  out = out.replace(/RM\d+\s*\/\s*(SGD\d+)/g, '$1');
 
   // (D) Currency-UNIT relabel: RM -> market symbol, ONLY where RM is a standalone display unit.
   //     Scoped regex: not preceded/followed by a letter (protects CRM, confirm, platform, …)
