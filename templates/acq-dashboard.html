@@ -471,6 +471,7 @@
   <div class="panel" id="panel-acquisition">
   <div class="meta" id="meta"></div>
   <div id="acqSweetSummary"></div>
+  <div class="card col12" style="margin-bottom:15px" id="acqMonthlyCard" hidden><div class="card-h"><h3>Month by month — Acquisition</h3><span class="hint">this pillar, across the year</span></div><div id="acqMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Acquisition spend <span>by month</span></h4><div id="acqMonthlySpend"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>lower is better</span></h4><div id="acqMonthlyReturn"></div></div></div></div>
 
   <section class="call">
     <div class="call-lead" id="callLead"></div>
@@ -559,6 +560,7 @@
   <div class="panel" id="panel-retention" hidden>
     <div class="meta" id="r_meta"></div>
     <div id="retSweetSummary"></div>
+    <div class="card col12" style="margin-bottom:15px" id="retMonthlyCard" hidden><div class="card-h"><h3>Month by month — Retention</h3><span class="hint">this pillar, across the year</span></div><div id="retMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Retention spend <span>by month</span></h4><div id="retMonthlySpend"></div></div><div class="tchart"><h4>Net revenue back per RM1 <span>0 = paid for itself</span></h4><div id="retMonthlyReturn"></div></div></div></div>
     <div class="exec-note" id="r_exec"></div>
     <section class="call">
       <div class="call-lead" id="r_callLead"></div>
@@ -628,6 +630,7 @@
     <div class="soon" id="r_soon"></div>
   </div>
   <div class="panel" id="panel-vip" hidden>
+    <div class="card col12" style="margin-bottom:15px" id="vipMonthlyCard" hidden><div class="card-h"><h3>Month by month — VIP</h3><span class="hint">this pillar, across the year</span></div><div id="vipMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>VIP spend <span>by month</span></h4><div id="vipMonthlySpend"></div></div><div class="tchart"><h4>VIP performance per RM1 <span>0 = paid for itself</span></h4><div id="vipMonthlyReturn"></div></div></div></div>
     <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">the call · Cut / Hold / Test</span></div><div id="v_decisionBox"></div></div>
     <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Why protect, not cut</h3><span class="hint">how few defections wipe a saving</span></div><div id="v_costWrong"></div></div>
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
@@ -2609,7 +2612,32 @@ function renderTrend(){
   tLine('s_trendCpa',L,T.acq.map(a=>a.cost_per_ftd),{pf,color:CV('--reduce'),fmt:v=>TS+Math.round(v)});
   tLine('s_trendCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
 }
+// per-pillar month-by-month (spend + that pillar's return metric) — one card per pillar tab
+function renderPillarMonthly(){
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||TREND.months.length<2) return;
+  const T=TREND, S=T.sym||'RM', L=T.labels, M=T.months, sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, eff=T.efficiency||[], acq=T.acq||[];
+  let pf=L.length; for(let i=0;i<M.length;i++){ if(T.partial&&T.partial[M[i]]){ pf=i; break; } }
+  const money=v=>{const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?Math.round(v/1e3)+'K':Math.round(v));};
+  const cur=M.length-1, prev=M.length-2, curL=L[cur], prevL=L[prev];
+  const arrow=(now,was,lowerBetter)=>{ if(now==null||was==null) return ''; const d=now-was; if(Math.abs(d)<=Math.abs(was)*0.005+1e-9) return ' <span style="color:var(--muted)">→</span>'; const up=d>0, good=lowerBetter?!up:up; return ' <span style="color:'+(good?'var(--scale)':'var(--reduce)')+'">'+(up?'▲':'▼')+'</span>'; };
+  const per=v=>v==null?'—':(v>=0?'+'+S+v:'−'+S+Math.abs(v));
+  function show(pfx,readHtml,spendData,spendColor,retVals,retColor,retFmt,ref){
+    const card=document.getElementById(pfx+'MonthlyCard'); if(!card) return;
+    const read=document.getElementById(pfx+'MonthlyRead'); if(read) read.innerHTML=readHtml;
+    card.hidden=false;
+    tStack(pfx+'MonthlySpend',L,[{name:'Spend',color:CV(spendColor),data:spendData}],{pf,fmt:money});
+    tLine(pfx+'MonthlyReturn',L,retVals,{pf,color:CV(retColor),fmt:retFmt,ref:ref,refLabel:ref!=null?'paid for itself':undefined});
+  }
+  const aC=acq[cur]||{}, aP=acq[prev]||{}, eC=eff[cur]||{}, eP=eff[prev]||{};
+  show('acq','In <b>'+curL+'</b>: <b>'+S+(aC.cost_per_ftd!=null?aC.cost_per_ftd:'—')+'</b> to win each new depositor'+arrow(aC.cost_per_ftd,aP.cost_per_ftd,true)+' vs '+prevL+' · <b>'+(aC.ftd!=null?aC.ftd.toLocaleString():'—')+'</b> new depositors that month.',
+    sp.acq,'--optimise', acq.map(a=>a.cost_per_ftd),'--reduce', v=>S+Math.round(v), null);
+  show('ret','In <b>'+curL+'</b>: <b>'+per(eC.per_rm_ret)+'</b> net revenue kept per '+S+'1'+arrow(eC.per_rm_ret,eP.per_rm_ret,false)+' vs '+prevL+' · spend '+money(sp.ret[cur])+'.',
+    sp.ret,'--maintain', eff.map(e=>e.per_rm_ret),'--scale', v=>S+v.toFixed(1), 0);
+  show('vip','In <b>'+curL+'</b>: <b>'+per(eC.per_rm_vip)+'</b> performance net revenue per '+S+'1'+arrow(eC.per_rm_vip,eP.per_rm_vip,false)+' vs '+prevL+' · spend '+money(sp.vip[cur])+'.',
+    sp.vip,'--referral', eff.map(e=>e.per_rm_vip),'--reduce', v=>S+v.toFixed(1), 0);
+}
 renderTrend();
+renderPillarMonthly();
 renderThisMonth();
 renderPeriod();
 renderCompare();
@@ -3112,6 +3140,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
     leadSec('Key numbers',[byId('kpis')]),
+    cardSec(byId('acqMonthlyCard')),         // pillar-scoped month-by-month
     cardSec(cardById('ruleLines')),          // rules before results
     cardSec(cardById('chartTrend')),         // new depositors by month (simplest single-axis on-ramp)
     cardSec(cardById('chartBars')),          // cost per FTD
@@ -3129,6 +3158,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     htmlSec("What Retention is — and how it's judged", ABOUT.retention),
     leadSec('Main findings',[byId('r_meta'),byId('retSweetSummary'),qP('panel-retention','.call')]),
     leadSec('Key numbers',[byId('r_kpis')]),
+    cardSec(byId('retMonthlyCard')),         // pillar-scoped month-by-month
     cardSec(byId('retDepoCard')),            // deposit-split (concept, up front)
     cardSec(cardById('r_ruleLines')),        // rules before results
     cardSec(byId('retLifecycleCard')),       // who the money reaches (lifecycle)
@@ -3148,6 +3178,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // orient first (a decision needs an object)
     leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
     leadSec('Key numbers',[byId('v_kpis')]),                                 // lifted up — the KPI baseline
+    cardSec(byId('vipMonthlyCard')),       // pillar-scoped month-by-month
     cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
     cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
     cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
