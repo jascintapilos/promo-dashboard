@@ -17,12 +17,12 @@ from collections import defaultdict
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from csir_config import SUF, CURRENCY, MARKET
+from csir_config import SUF, CURRENCY, MARKET, AS_OF, MONTHS
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 MON_LABELS = {"01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun",
               "07": "Jul", "08": "Aug", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"}
-PARTIAL = {"2026-08"}  # 7-day windows for late-Aug claims not yet matured at data cut (2026-08-26)
+PARTIAL = {MONTHS[-1]}  # last month's 7-day windows aren't matured at the data cut -> provisional
 
 def mkey(d): return d[:7]  # YYYY-MM
 
@@ -102,7 +102,7 @@ def direction(e, l):
            "degrading" if (l is not None and e is not None and l < e - 0.05) else "broadly flat"
 
 out = {
-    "market": MARKET, "currency": CURRENCY, "data_as_of": "2026-08-26",
+    "market": MARKET, "currency": CURRENCY, "data_as_of": AS_OF,
     "months": months, "labels": labels, "partial": {m: True for m in months if m in PARTIAL},
     "spend_by_pillar": {"acq": col(sp_acq, months), "ret": col(sp_ret, months), "vip": col(sp_vip, months)},
     "cashback_spend": col(sp_cashback, months),

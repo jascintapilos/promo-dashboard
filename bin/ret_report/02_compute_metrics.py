@@ -23,7 +23,7 @@ import json, re
 from collections import defaultdict
 from pathlib import Path
 import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from csir_config import CURRENCY, SUF, SYMBOL, MARKET
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET, PERIOD_LABEL, AS_OF
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
@@ -213,7 +213,7 @@ tn_mech = {k: round(v[0] / v[1] * 100, 1) for k, v in mnorm.items() if v[1]}
 tn_cell = {f"{t}|{mm}": round(v[0] / v[1] * 100, 1) for (t, mm), v in cell.items() if v[1] >= MIN_NORM_N}
 
 facts = {
-    "market": MARKET, "currency": CURRENCY, "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
+    "market": MARKET, "currency": CURRENCY, "period": PERIOD_LABEL, "data_as_of": AS_OF,
     "basis": ("TL Pillar=Retention; redeemed/active claims. NGR Lift = 7-day post-claim window vs 14-day "
               "pre-claim baseline (time-decay, concurrency-split), gated on 7-day maturity; NGR is NET of the "
               "promo bonus (verified: corr(bonus,GGR-NGR)=0.79) so break-even=0. Retained = redeposit on days "

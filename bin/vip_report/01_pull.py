@@ -13,18 +13,17 @@ from datetime import date, timedelta
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE, START, END_INCL, SNAP_END, AS_OF_DATE, snap_lo
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
 
-START, END = "2026-01-01", "2026-08-25"
-SNAP_END = "2026-08-27"
-RECENCY_FLOOR = "2025-09-01"
+END = END_INCL   # inclusive; START + SNAP_END from csir_config date seam
+RECENCY_FLOOR = snap_lo(122)   # recent-activity floor ~4 months before the window start (default 2025-09-01)
 # LOGSITE comes from the market seam (csir_config)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
-d_max = date.fromisoformat("2026-08-26")
+d_max = AS_OF_DATE   # maturity reference (= data_as_of), from csir_config date seam
 MAT = {n: (d_max - timedelta(days=n - 1)).isoformat() for n in (7, 30, 60, 90)}
 
 codes = [r["code"] for r in json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8"))]

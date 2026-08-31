@@ -8,16 +8,17 @@ number behind protect-don't-cut. Aggregated in ClickHouse; no member data saved.
 Out: scratchpad/ltv/whale-ltv-{SUF}.json
 Run: python bin/ltv_report/whale_ltv.py        (PROMO_MARKET=SG for Singapore)
 """
-import sys, json, statistics
+import os, sys, json, statistics
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SUF, SYMBOL, MARKET
+from csir_config import get_client, CURRENCY, SUF, SYMBOL, MARKET, START, END_EXCL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 OUT = SCR / "ltv"; OUT.mkdir(parents=True, exist_ok=True)
-YTD_LO, YTD_HI, AS_OF = "2026-01-01", "2026-08-26", "2026-08-30"
+YTD_LO, YTD_HI = START, END_EXCL   # whale-selection window = the report window (from csir_config date seam)
+AS_OF = os.environ.get("LTV_AS_OF", "2026-08-30")   # lifetime-tenure reference (data-availability date; override per rebuild)
 
 # match the whale tab EXACTLY: take the top-N members by YTD NGR, where N = the report's whale
 # count (top-1% of VIPs = 74). Using the same set keeps the LTV card's count consistent with the tab.

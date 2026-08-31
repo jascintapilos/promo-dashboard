@@ -20,13 +20,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, START, END_EXCL, SNAP_END, mature_before
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"
-START, END1 = "2026-01-01", "2026-08-26"
-SNAP_END = "2026-08-27"          # snapshot scan bound (data max = 2026-08-26)
-MATURE_30 = "2026-07-28"         # claim_date <= this -> full 30-day window (claim+29 <= 2026-08-26)
+END1 = END_EXCL                  # from csir_config date seam; SNAP_END imported (END_EXCL + 1 day)
+MATURE_30 = mature_before(30)    # latest claim_date with a full 30-day window before AS_OF
 
 codes = [r["code"] for r in json.load(open(ACQ / f"acq-codes-{SUF}.json", encoding="utf-8"))]
 inlist = ",".join("'" + c.replace("'", "''") + "'" for c in codes)

@@ -13,11 +13,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, START, END_EXCL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 OUT = SCR / "attribution"
-START, END1 = "2026-01-01", "2026-08-26"
+END1 = END_EXCL   # from csir_config date seam (START also imported)
 SNAP_LO, SNAP_HI = "2025-06-01", "2026-09-01"
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 

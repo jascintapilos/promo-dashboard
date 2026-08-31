@@ -16,10 +16,10 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, START, END_EXCL, END_INCL, AS_OF_DATE, snap_hi
 
 VIP = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/vip")
-START, END1 = "2026-01-01", "2026-08-26"
+END1 = END_EXCL   # from csir_config date seam (START also imported)
 LOSS_FLOOR = 1000.0          # a "losing week" = house won > RM1,000 off the member that week
 LOGSITE = "WS1_MYS_MYR"
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
@@ -40,7 +40,7 @@ WITH act AS (
   SELECT DISTINCT MEMBER_ID FROM (
     SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}'
     UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}')),
-mem AS (SELECT MEMBER_ID, toDateTime('2026-08-25 23:59:59') AS asof FROM act)
+mem AS (SELECT MEMBER_ID, toDateTime('{END_INCL} 23:59:59') AS asof FROM act)
 SELECT mem.MEMBER_ID AS MEMBER_ID, ifNull(t.tier,'Unknown') AS tier
 FROM mem
 ASOF LEFT JOIN (SELECT MEMBER_ID, (TIME + INTERVAL 8 HOUR) AS tdt, NewMembershipName AS tier
@@ -60,10 +60,10 @@ q2 = f"""
 SELECT MEMBER_ID, SnapshotDate AS sd, sum(GGR) AS ggr, sum(NGR) AS ngr, sum(DepositAmount) AS dep
 FROM (
   SELECT MEMBER_ID, SnapshotDate, GGR, NGR, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A
-  WHERE Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'2026-09-30' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
+  WHERE Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
   UNION ALL
   SELECT MEMBER_ID, SnapshotDate, GGR, NGR, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-  WHERE Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'2026-09-30' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
+  WHERE Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
 ) GROUP BY MEMBER_ID, SnapshotDate
 """
 print("Q2: daily activity...")
@@ -88,13 +88,13 @@ print(f"  rescue claimers: {len(rescue_days):,} | program first claim: {prog_sta
 def mondays():
     d = date.fromisoformat(START)
     d -= timedelta(days=d.weekday())
-    end = date.fromisoformat("2026-08-25")
+    end = date.fromisoformat(END_INCL)
     while d <= end:
         yield d; d += timedelta(days=7)
 WEEKS = list(mondays())
-MATURE = date.fromisoformat("2026-08-26") - timedelta(days=37)   # week_end+30 observed
+MATURE = AS_OF_DATE - timedelta(days=37)   # week_end+30 observed
 
-MATURE60 = date.fromisoformat("2026-08-26") - timedelta(days=67)   # week_end+60 observed
+MATURE60 = AS_OF_DATE - timedelta(days=67)   # week_end+60 observed
 TIERS = ["Diamond", "Platinum", "Gold", "Silver", "Bronze"]
 
 # ---- per (member, losing-week) records: loss, prior-deposit, forward amounts ----

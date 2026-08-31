@@ -134,6 +134,83 @@ def money(my_value: float, step: float | None = None) -> float:
     return round(v, 2) if step is None else v
 
 
+# ── Date-window seam ──────────────────────────────────────────────────────────
+# The PROMO-REPORT pipeline analyses a single date window. Set it once here instead
+# of hardcoding "2026-01-01".."2026-08-26" in ~15 scripts, so the same pipeline can
+# run for any month or period.
+#
+#     PROMO_MONTH=2026-09         -> a single calendar month (Sep 1 .. Oct 1 exclusive)
+#     PROMO_START / PROMO_END     -> any custom window; PROMO_END is EXCLUSIVE
+#     (nothing set)               -> the current default window, byte-for-byte unchanged
+#
+# Scripts import START / END_EXCL / END_INCL / AS_OF / SNAP_END / MID / PERIOD_LABEL and
+# the mature_before / snap_lo / snap_hi helpers instead of hardcoding dates. Defaults are
+# tuned to reproduce every prior hardcoded constant exactly (verified in __main__).
+from datetime import date as _date, timedelta as _td
+
+
+def _first_of_month(y: int, m: int) -> _date:
+    return _date(y, m, 1)
+
+
+def _next_month(d: _date) -> _date:
+    return _date(d.year + d.month // 12, d.month % 12 + 1, 1)
+
+
+_PROMO_MONTH = os.getenv("PROMO_MONTH", "").strip()
+if _PROMO_MONTH:
+    try:
+        _y, _m = int(_PROMO_MONTH[:4]), int(_PROMO_MONTH[5:7])
+        _start = _first_of_month(_y, _m)
+        _end_excl = _next_month(_start)
+    except (ValueError, IndexError):
+        raise SystemExit(f"PROMO_MONTH must be YYYY-MM; got {_PROMO_MONTH!r}.")
+else:
+    _start = _date.fromisoformat(os.getenv("PROMO_START", "2026-01-01"))
+    _end_excl = _date.fromisoformat(os.getenv("PROMO_END", "2026-08-26"))  # EXCLUSIVE
+if _end_excl <= _start:
+    raise SystemExit(f"promo window end ({_end_excl}) must be after start ({_start}).")
+
+_data_max = _end_excl - _td(days=1)  # last day that has data (inclusive)
+
+START: str = _start.isoformat()                      # "2026-01-01"
+PROMO_START: str = START
+END_EXCL: str = _end_excl.isoformat()                # "2026-08-26"  (claims/snapshots < END_EXCL)
+END_INCL: str = _data_max.isoformat()                # "2026-08-25"
+AS_OF: str = _end_excl.isoformat()                   # "2026-08-26"  (data_as_of)
+AS_OF_DATE: _date = _end_excl                        # date(2026, 8, 26)
+DATA_MAX: _date = _data_max                          # date(2026, 8, 25)
+SNAP_END: str = (_end_excl + _td(days=1)).isoformat()  # "2026-08-27"
+PERIOD_LABEL: str = f"{START} to {END_INCL}"         # "2026-01-01 to 2026-08-25"
+
+# H1/H2 split (within-period deposit slope) = first day of the middle month of the window.
+_nmonths = (_data_max.year - _start.year) * 12 + (_data_max.month - _start.month) + 1  # Jan..Aug = 8
+_mid_idx = (_start.month - 1) + _nmonths // 2
+MID: str = _first_of_month(_start.year + _mid_idx // 12, _mid_idx % 12 + 1).isoformat()  # "2026-05-01"
+
+
+MONTHS: list[str] = []  # every "YYYY-MM" month the window spans (default Jan..Aug 2026)
+_mcur = _first_of_month(_start.year, _start.month)
+while _mcur <= _data_max:
+    MONTHS.append(f"{_mcur.year:04d}-{_mcur.month:02d}")
+    _mcur = _next_month(_mcur)
+
+
+def mature_before(days: int) -> str:
+    """Latest claim_date whose full `days`-day forward window still fits before AS_OF."""
+    return (_end_excl - _td(days=days - 1)).isoformat()  # mature_before(30) -> "2026-07-28"
+
+
+def snap_lo(days_back: int) -> str:
+    """Snapshot-scan lower bound: `days_back` days before the window start (generous over-fetch)."""
+    return (_start - _td(days=days_back)).isoformat()
+
+
+def snap_hi(days_fwd: int) -> str:
+    """Snapshot-scan upper bound: `days_fwd` days after the window end (for forward-NGR windows)."""
+    return (_end_excl + _td(days=days_fwd)).isoformat()
+
+
 def env_file_path() -> Path:
     return Path(os.getenv("CSIR_ENV_FILE", DEFAULT_ENV_FILE))
 

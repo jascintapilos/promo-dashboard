@@ -17,13 +17,13 @@ from datetime import date, timedelta
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, START, END_EXCL, AS_OF_DATE, snap_lo, snap_hi
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
-START, END1 = "2026-01-01", "2026-08-26"
-SNAP_LO, SNAP_HI = "2025-10-01", "2026-11-30"      # LO covers pre-90 of earliest claim; HI covers fwd-90 of last
-AS_OF = date(2026, 8, 26)                            # maturity reference (report data_as_of)
+END1 = END_EXCL                              # from csir_config date seam (START also imported)
+SNAP_LO, SNAP_HI = snap_lo(92), snap_hi(96)  # LO covers pre-90 of earliest claim; HI covers fwd-90 of last
+AS_OF = AS_OF_DATE                            # maturity reference (report data_as_of)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
 codes = json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8"))

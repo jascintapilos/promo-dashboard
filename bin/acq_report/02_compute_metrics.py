@@ -17,11 +17,11 @@ import sys, json, statistics as st
 from pathlib import Path
 from collections import defaultdict
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT))
-from csir_config import CURRENCY, SUF, SYMBOL, MARKET
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET, PERIOD_LABEL, AS_OF, MONTHS
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"
-MONTHS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"]
+# MONTHS imported from csir_config (every month the window spans; default Jan..Aug 2026)
 
 rows = json.load(open(ACQ / f"claim-outcomes-{SUF}.json", encoding="utf-8"))
 meta = {r["code"]: r for r in json.load(open(ACQ / f"acq-codes-{SUF}.json", encoding="utf-8"))}
@@ -117,7 +117,7 @@ trend = [{"month": m[5:], "ftd": tr.get(m, 0)} for m in MONTHS]
 
 facts = {
     "market": MARKET, "currency": CURRENCY,
-    "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
+    "period": PERIOD_LABEL, "data_as_of": AS_OF,
     "basis": "TL-approved Pillar=Acquisition; redeemed/active claims; FTD=first-ever deposit within 7 days of claim; 30-day stick on matured claims (<=2026-07-28); claims after ~20 Aug have partial 7-day windows",
     "kpis": kpis, "by_mechanic": by_mech, "trend": trend, "trend_partial_month": "08", "codes": codes,
 }

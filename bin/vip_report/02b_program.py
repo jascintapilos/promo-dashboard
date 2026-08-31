@@ -16,7 +16,7 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE, START, END_EXCL, END_INCL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
@@ -54,10 +54,10 @@ c = get_client(send_receive_timeout=200)
 qr = f"""
 WITH act AS (
   SELECT DISTINCT MEMBER_ID FROM (
-    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND SnapshotDate>='2026-01-01' AND SnapshotDate<'2026-08-26'
-    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND SnapshotDate>='2026-01-01' AND SnapshotDate<'2026-08-26')
+    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
+    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}')
 ),
-mem AS (SELECT MEMBER_ID, toDateTime('2026-08-25 23:59:59') AS asof FROM act)
+mem AS (SELECT MEMBER_ID, toDateTime('{END_INCL} 23:59:59') AS asof FROM act)
 SELECT ifNull(t.tier,'Unknown') AS tier, count() AS active
 FROM mem
 ASOF LEFT JOIN (SELECT MEMBER_ID, (TIME + INTERVAL 8 HOUR) AS tdt, NewMembershipName AS tier

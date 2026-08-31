@@ -14,14 +14,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, START, END_INCL, snap_lo, snap_hi
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 OUT = SCR / "attribution"
 OUT.mkdir(exist_ok=True)
 LOGSITE = "WS1_MYS_MYR"
-END = "2026-08-25"
-SNAP_LO, SNAP_HI = "2025-07-01", "2026-11-20"
+END = END_INCL   # from csir_config date seam (START also imported)
+SNAP_LO, SNAP_HI = snap_lo(184), snap_hi(86)   # attribution pre-trend + forward window (generous over-fetch)
 ANCHORS = [f"2026-{m:02d}-15" for m in range(1, 9)]     # 15th of Jan..Aug 2026
 SAMPLE_MOD = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 

@@ -13,11 +13,11 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, START, END_EXCL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 RET = SCR / "ret"
-START, END1 = "2026-01-01", "2026-08-26"   # YTD claim window -> 2026-08-25 inclusive
+END1 = END_EXCL   # claim window [START, END1) — from csir_config date seam
 
 # Win-back is a FLAG (gates the "Hold — judged on VIP" decision), NOT a mechanic. Detect it on the
 # NAME *and* the CODE — win-back identity almost always lives in the code (CHURN/WCCHURNED/COMEBACK/

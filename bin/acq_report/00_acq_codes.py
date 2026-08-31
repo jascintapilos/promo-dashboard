@@ -14,11 +14,11 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, MARKET
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, MARKET, START, END_EXCL
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 ACQ = SCR / "acq"; ACQ.mkdir(parents=True, exist_ok=True)
-START, END1 = "2026-01-01", "2026-08-26"   # claim window [start, end) -> 2026-08-25 inclusive
+END1 = END_EXCL   # claim window [START, END1) — from the csir_config date seam (default 2026-01-01..2026-08-26)
 
 # --- classification: TL-approved assigned pillar = Acquisition (live All Codes tab) ---
 tl_list = json.load(open(ACQ / f"tl-acq-codes-{SUF}.json", encoding="utf-8"))

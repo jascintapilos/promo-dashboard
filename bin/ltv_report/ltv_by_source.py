@@ -13,7 +13,7 @@ ClickHouse — no member data saved.
 Out: scratchpad/ltv/ltv-by-source-{SUF}.json
 Run: python bin/ltv_report/ltv_by_source.py        (PROMO_MARKET=SG for Singapore)
 """
-import sys, json
+import sys, json, os
 from pathlib import Path
 from collections import defaultdict
 
@@ -23,7 +23,7 @@ from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, MARKET
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 OUT = SCR / "ltv"; OUT.mkdir(parents=True, exist_ok=True)
-AS_OF = "2026-08-30"
+AS_OF = os.environ.get("LTV_AS_OF", "2026-08-30")   # lifetime-tenure reference (data-availability date; override per rebuild)
 MIN_YEAR, MAX_MATURE = 2019, 2024   # cohorts old enough for a real LTV curve
 
 c = get_client(send_receive_timeout=480)

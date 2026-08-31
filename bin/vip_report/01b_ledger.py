@@ -17,12 +17,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE
+from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE, START, END_EXCL, MID
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
-START, END1 = "2026-01-01", "2026-08-26"     # [start, end) -> 2026-08-25 inclusive
-MID = "2026-05-01"                            # H1 (Jan-Apr) vs H2 (May-Aug) split for deposit slope
+END1 = END_EXCL   # [START, END1); START + MID (H1/H2 split) from csir_config date seam
 # LOGSITE comes from the market seam (csir_config)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 

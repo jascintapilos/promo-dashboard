@@ -17,7 +17,7 @@ import json, re
 from collections import defaultdict
 from pathlib import Path
 import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from csir_config import CURRENCY, SUF, SYMBOL, MARKET, money
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET, money, PERIOD_LABEL, AS_OF
 
 SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 VIP = SCR / "vip"
@@ -205,7 +205,7 @@ by_wagering = [{"wagering": k, "codes": v["n"], "spend": round(v["spend"]),
                 "ngr_lift_per_rm": round(v["ngr"] / v["spend"], 2) if v["spend"] else None} for k, v in wg.items()]
 by_wagering.sort(key=lambda x: -x["spend"])
 
-facts = {"market": MARKET, "currency": CURRENCY, "period": "2026-01-01 to 2026-08-25", "data_as_of": "2026-08-26",
+facts = {"market": MARKET, "currency": CURRENCY, "period": PERIOD_LABEL, "data_as_of": AS_OF,
          "basis": ("TL Pillar=VIP; 4 lanes. NGR Lift = 7-day window vs 14-day baseline, NET of bonus (break-even 0). "
                    "Lane A (Performance) judged on NGR/RM (tier x mechanic comparator); Lane B (CASHBACK — Weekly "
                    "Rescue is a tiered loss-cashback, confirmed by WY; 98% of claimers were losing) judged on "
