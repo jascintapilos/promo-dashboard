@@ -427,6 +427,7 @@
   <div class="panel" id="panel-summary" hidden>
     <div class="exec-note" id="s_banner"></div>
     <div class="card col12" style="margin-bottom:15px" id="s_thisMonthCard" hidden><div class="card-h"><h3>This month</h3><span class="hint">the latest month vs the one before</span></div><div id="s_thisMonth"></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_periodCard"><div class="card-h"><h3>Period lens</h3><span class="hint">year-to-date, or zoom to one quarter / month</span></div><div id="s_periodControls"></div><div id="s_periodBody"></div></div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">pillars analysed · year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys (each pillar on its own yardstick — no single overall score), and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
     <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
     <div class="grid">
@@ -2359,13 +2360,95 @@ function renderThisMonth(){
     `</div>`+
     `<p class="fine" style="margin-top:10px;color:var(--muted)">Green = a better month, red = worse (for cost, lower is better); spend is shown grey because more or less spend is not itself good or bad. Figures compare the latest full month with the one before — the complete month-by-month trajectory is in "Month by month" below.</p>`;
 }
+function renderPeriod(){
+  const card=document.getElementById('s_periodCard');
+  const ctl=document.getElementById('s_periodControls');
+  const box=document.getElementById('s_periodBody');
+  if(!card||!ctl||!box) return;
+  if(typeof TREND==='undefined'||!TREND||!TREND.months||!TREND.months.length){ card.hidden=true; return; }
+  const T=TREND, S=T.sym||'RM', M=T.months, L=T.labels, PART=T.partial||{};
+  const sp=T.spend_by_pillar||{acq:[],ret:[],vip:[]}, eff=T.efficiency||[], acq=T.acq||[], cb=T.cashback_spend||[];
+  const sm=v=>{if(v==null) return '—';const a=Math.abs(v);return S+(a>=1e6?(v/1e6).toFixed(2)+'M':a>=1e3?Math.round(v/1e3)+'k':Math.round(v));};
+  const per=v=>v==null?'—':(v>=0?'+':'')+S+v.toFixed(2);
+  const yr=i=>M[i].slice(0,4), mlab=i=>L[i]+' '+yr(i);
+  const ytdIdx=M.map((_,i)=>i);
+  function whalesShown(){const t=document.querySelector('[data-tab="whale"]');if(!t) return false;try{return getComputedStyle(t).display!=='none';}catch(e){return true;}}
+  // group month-indices into quarters (keyed year-Qn so it holds up across year boundaries)
+  const quarters={};
+  M.forEach((m,i)=>{const y=m.slice(0,4), mm=+m.slice(5,7), q=Math.floor((mm-1)/3)+1, k=y+'-Q'+q; (quarters[k]=quarters[k]||{idxs:[],y:y,q:q}).idxs.push(i);});
+  const qKeys=Object.keys(quarters).sort();
+  const qOpt=k=>{const o=quarters[k],lo=L[o.idxs[0]],hi=L[o.idxs[o.idxs.length-1]];const inProg=o.idxs.length<3||o.idxs.some(i=>PART[M[i]]);return {label:'Q'+o.q+' '+o.y+' ('+lo+(o.idxs.length>1?'–'+hi:'')+(inProg?' · in progress':'')+')',rlabel:'Q'+o.q+' '+o.y+' ('+lo+(o.idxs.length>1?'–'+hi:'')+')',inProg:inProg,idxs:o.idxs};};
+  ctl.innerHTML='<label style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);margin-bottom:10px">'
+    +'<span style="font-weight:600;color:var(--ink)">Show:</span>'
+    +'<select id="s_periodSel" aria-label="Choose a period" style="font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-width:240px">'
+    +'<optgroup label="Overview"><option value="ytd">Year to date — full report</option></optgroup>'
+    +'<optgroup label="Quarters">'+qKeys.map(k=>{const o=qOpt(k);return '<option value="'+k+'">'+o.label+'</option>';}).join('')+'</optgroup>'
+    +'<optgroup label="Months">'+M.map((m,i)=>'<option value="m'+i+'">'+mlab(i)+(PART[m]?' · in progress':'')+'</option>').join('')+'</optgroup>'
+    +'</select></label>';
+  const row=(l,v,extra)=>'<div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)"><span style="color:var(--muted)">'+l+(extra?' <span style="font-size:11.5px">'+extra+'</span>':'')+'</span><span style="font-weight:700;font-variant-numeric:tabular-nums">'+v+'</span></div>';
+  const colBox=(h,rows)=>'<div><div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:2px">'+h+'</div>'+rows+'</div>';
+  function renderRange(idxs,label,inProg){
+    const sumBy=f=>idxs.reduce((a,i)=>{const v=f(i);return a+(v==null?0:v);},0);
+    const acqS=sumBy(i=>sp.acq[i]), retS=sumBy(i=>sp.ret[i]), vipS=sumBy(i=>sp.vip[i]), tot=acqS+retS+vipS;
+    const ytdTot=ytdIdx.reduce((a,i)=>a+(sp.acq[i]||0)+(sp.ret[i]||0)+(sp.vip[i]||0),0);
+    const share=ytdTot?Math.round(100*tot/ytdTot):null;
+    // per-$1 return: reconstruct numerator and denominator from the matured-window components, guarded symmetrically
+    const okR=i=>eff[i]&&eff[i].per_rm_ret!=null&&eff[i].ret_spend!=null;
+    const okV=i=>eff[i]&&eff[i].per_rm_vip!=null&&eff[i].vip_spend!=null;
+    const retNum=sumBy(i=>okR(i)?eff[i].per_rm_ret*eff[i].ret_spend:0), retDen=sumBy(i=>okR(i)?eff[i].ret_spend:0);
+    const vipNum=sumBy(i=>okV(i)?eff[i].per_rm_vip*eff[i].vip_spend:0), vipDen=sumBy(i=>okV(i)?eff[i].vip_spend:0);
+    const ovNum=sumBy(i=>eff[i]?eff[i].ngr_m7:0), ovDen=sumBy(i=>eff[i]?eff[i].spend_m7:0);
+    const retE=retDen?retNum/retDen:null, vipE=vipDen?vipNum/vipDen:null, ovE=ovDen?ovNum/ovDen:null;
+    // cost per new depositor: single month uses the builder's own value (so it agrees with the This-month card); ranges pool it
+    const spendNew=sumBy(i=>acq[i]?acq[i].spend_new:0), ftd=sumBy(i=>acq[i]?acq[i].ftd:0);
+    const cpf=idxs.length===1?(acq[idxs[0]]?acq[idxs[0]].cost_per_ftd:null):(ftd?Math.round(spendNew/ftd):null);
+    const cbS=sumBy(i=>cb[i]);
+    // keep the "stays full year" note honest — only name sections that actually render (SG hides whales)
+    const feats=['per-code Scale / Maintain / Reduce calls']; if(whalesShown()) feats.push('whales'); feats.push('lifetime value');
+    const flist=feats.length>2?feats.slice(0,-1).join(', ')+' and '+feats[feats.length-1]:feats.join(' and ');
+    const stayNote=flist.charAt(0).toUpperCase()+flist.slice(1)+' are judged on the <b>full year</b> — a single period is too thin to grade an individual code — so those stay year-to-date below.';
+    box.innerHTML='<p class="sub2"><b>'+label+'</b>'+(inProg?' <span class="cflag">in progress</span>':'')+' — the money for just this period. <span style="color:var(--muted)">Year-to-date totals and every per-code decision are unchanged below.</span></p>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:6px">'
+      +colBox('Spend this period', row('Acquisition',sm(acqS))+row('Retention',sm(retS))+row('VIP',sm(vipS))+row('Total',sm(tot),share!=null?share+'% of year to date':''))
+      +colBox('Net revenue kept · per '+S+'1 of bonus', row('Retention',per(retE))+row('VIP performance',per(vipE))+row('Overall',per(ovE)))
+      +'</div>'
+      +'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">'+(cpf!=null?S+cpf:'—')+'</b></span><span style="color:var(--muted)">Money handed back as cashback <b style="color:var(--ink)">'+sm(cbS)+'</b></span></div>'
+      +'<p class="fine" style="margin-top:10px;color:var(--muted)">0 = the bonus paid for itself. The net-rev-per-'+S+'1 figures are measured only on bonus spend whose 7-day result window has closed, so they will not tie exactly to the spend shown above'+(inProg?', and this period includes a still-in-progress month, so its return is not yet final':'')+'. '+stayNote+'</p>';
+  }
+  function showYtd(){ const y0=yr(0),y1=yr(M.length-1); const span=y0===y1?(L[0]+'–'+L[M.length-1]+' '+y1):(L[0]+' '+y0+'–'+L[M.length-1]+' '+y1); box.innerHTML='<p class="sub2">Showing the <b>full year to date</b> ('+span+'). Pick a quarter or month above to see just that slice of the money — per-code decisions stay on the full year.</p>'; }
+  const sel=document.getElementById('s_periodSel');
+  sel.addEventListener('change',function(){
+    const v=sel.value;
+    if(v==='ytd'){ showYtd(); return; }
+    if(v[0]==='m'){ const i=+v.slice(1); renderRange([i], mlab(i), !!PART[M[i]]); return; }
+    const o=qOpt(v); renderRange(o.idxs, o.rlabel, o.inProg);
+  });
+  showYtd();
+}
 function renderTrend(){
   if(!TREND)return;
   const T=TREND,L=T.labels,TS=T.sym||'RM',n=L.length; document.getElementById('s_trendCard').hidden=false;
   let pf=n; for(let i=0;i<n;i++){if(T.partial[T.months[i]]){pf=i;break;}}
   const money=v=>{const a=Math.abs(v);return TS+(a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?Math.round(v/1e3)+'K':Math.round(v));};
   const rd=T.read;
-  document.getElementById('s_trendRead').innerHTML=`Two opposite stories when we judge by money kept: <b style="color:var(--scale)">Retention stays profitable</b> every month (${TS}${rd.ret_late} for every RM1 lately) while <b style="color:var(--reduce)">VIP big-ticket performance rewards run net-negative and are worsening</b> (${TS}${rd.vip_early}→${TS}${rd.vip_late} for every RM1). The overall promo return per RM1 is held up by retention. (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in January</b> (Chinese New Year). Cost to win a new depositor holds steady around <b>${TS}68–81</b> to win each new depositor. <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate. <b>Aug is still partial</b> (*) AND a genuine wind-down (the World Cup engagement campaign ended) — not a delay in the numbers that will "catch up."</span>`;
+  let readHTML;
+  if(T.market==='MY'){
+    readHTML=`Two opposite stories when we judge by money kept: <b style="color:var(--scale)">Retention stays profitable</b> every month (${TS}${rd.ret_late} for every ${TS}1 lately) while <b style="color:var(--reduce)">VIP big-ticket performance rewards run net-negative and are worsening</b> (${TS}${rd.vip_early}→${TS}${rd.vip_late} for every ${TS}1). The overall promo return per ${TS}1 is held up by retention. (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in January</b> (Chinese New Year). Cost to win a new depositor holds steady around <b>${TS}68–81</b> to win each new depositor. <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate. <b>Aug is still partial</b> (*) AND a genuine wind-down (the World Cup engagement campaign ended) — not a delay in the numbers that will "catch up."</span>`;
+  } else {
+    // data-driven, truthful for any market (retention is NOT necessarily profitable outside MY)
+    const rl=rd.ret_late, ve=rd.vip_early, vl=rd.vip_late;
+    const retClause = rl>=0
+      ? `<b style="color:var(--scale)">retention stays profitable</b> (${TS}${rl} kept for every ${TS}1 lately)`
+      : `<b style="color:var(--reduce)">retention runs at a loss on this 7-day read</b> (${TS}${rl} for every ${TS}1 lately)`;
+    const vipClause = `<b style="color:var(--reduce)">VIP big-ticket performance rewards run net-negative${vl<ve?' and are worsening':''}</b> (${TS}${ve}→${TS}${vl} for every ${TS}1)`;
+    const heldUp = (rl>=0 && vl<0) ? ` The overall promo return per ${TS}1 is held up by retention.` : '';
+    let best=-Infinity,bi=0; for(let i=0;i<n;i++){const tt=(T.spend_by_pillar.acq[i]||0)+(T.spend_by_pillar.ret[i]||0)+(T.spend_by_pillar.vip[i]||0); if(tt>best){best=tt;bi=i;}}
+    const cvals=T.acq.filter((a,i)=>!T.partial[T.months[i]]&&a.cost_per_ftd!=null).map(a=>a.cost_per_ftd);
+    const band=cvals.length?(TS+Math.min.apply(null,cvals)+'–'+TS+Math.max.apply(null,cvals)):null;
+    const lastL=L[n-1], lastPartial=T.partial[T.months[n-1]];
+    readHTML=`When we judge by money kept, ${retClause} while ${vipClause}.${heldUp} (Lucky-Wheel/Scratch-Card mini-games &amp; check-ins are judged separately as Engagement.) Spend and the money-back bill both <b>peaked in ${L[bi]}</b>.${band?` Cost to win a new depositor ranges <b>${band}</b> across the months so far.`:''} <span class="warn" style="display:block;margin-top:7px">The fix is <b>moving the money</b> (the chart below) — VIP performance rewards are the prime candidate.${lastPartial?` <b>${lastL} is still partial</b> (*) — its 7-day windows have not fully matured.`:''}</span>`;
+  }
+  document.getElementById('s_trendRead').innerHTML=readHTML;
   tStack('s_trendSpend',L,[
     {name:'VIP',color:CV('--referral'),data:T.spend_by_pillar.vip},
     {name:'Retention',color:CV('--maintain'),data:T.spend_by_pillar.ret},
@@ -2380,6 +2463,7 @@ function renderTrend(){
 }
 renderTrend();
 renderThisMonth();
+renderPeriod();
 
 // tab switching
 (function(){
@@ -2711,6 +2795,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
     leadSec('Main findings',[byId('s_banner')]),
     cardSec(byId('s_thisMonthCard')),
+    cardSec(byId('s_periodCard')),
     cardSec(cardById('s_portfolio')),
     cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
     cardSec(byId('s_trendCard')),
