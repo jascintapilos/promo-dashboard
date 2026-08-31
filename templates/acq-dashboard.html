@@ -2426,7 +2426,7 @@ function renderPeriod(){
       +colBox('Spend this period', row('Acquisition',sm(acqS))+row('Retention',sm(retS))+row('VIP',sm(vipS))+row('Total',sm(tot),share!=null?share+'% of year to date':''))
       +colBox('Net revenue kept · per '+S+'1 of bonus', row('Retention',per(retE))+row('VIP performance',per(vipE))+row('Overall',per(ovE)))
       +'</div>'
-      +'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">'+(cpf!=null?S+cpf:'—')+'</b></span><span style="color:var(--muted)">Money handed back as cashback <b style="color:var(--ink)">'+sm(cbS)+'</b></span></div>'
+      +'<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">'+(cpf!=null?S+cpf:'—')+'</b></span></div>'
       +'<p class="fine" style="margin-top:10px;color:var(--muted)">0 = the bonus paid for itself. The net-rev-per-'+S+'1 figures are measured only on bonus spend whose 7-day result window has closed, so they will not tie exactly to the spend shown above'+(inProg?', and this period includes a still-in-progress month, so its return is not yet final':'')+'. '+stayNote+'</p>';
   }
   function showYtd(){
@@ -2437,7 +2437,7 @@ function renderPeriod(){
       +colBox('Spend this period', row('Acquisition','—')+row('Retention','—')+row('VIP','—')+row('Total','—'))
       +colBox('Net revenue kept · per '+S+'1 of bonus', row('Retention','—')+row('VIP performance','—')+row('Overall','—'))
       +'</div>'
-      +'<div style="opacity:.4;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">—</b></span><span style="color:var(--muted)">Money handed back as cashback <b style="color:var(--ink)">—</b></span></div>'
+      +'<div style="opacity:.4;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:28px;flex-wrap:wrap;font-size:13px"><span style="color:var(--muted)">Cost to win a new depositor <b style="color:var(--ink)">—</b></span></div>'
       +'</div>';
   }
   const sel=document.getElementById('s_periodSel');
@@ -2465,8 +2465,7 @@ function renderCompare(){
     {k:'Total spend', f:i=>sm((sp.acq[i]||0)+(sp.ret[i]||0)+(sp.vip[i]||0)), bold:true},
     {k:'Retention · net rev per '+S+'1', f:i=>per(eff[i]?eff[i].per_rm_ret:null)},
     {k:'VIP performance · per '+S+'1', f:i=>per(eff[i]?eff[i].per_rm_vip:null)},
-    {k:'Cost / new depositor', f:i=>(acq[i]&&acq[i].cost_per_ftd!=null)?S+acq[i].cost_per_ftd:'—'},
-    {k:'Cashback', f:i=>sm(cb[i])}
+    {k:'Cost / new depositor', f:i=>(acq[i]&&acq[i].cost_per_ftd!=null)?S+acq[i].cost_per_ftd:'—'}
   ];
   const stickyL='position:sticky;left:0;background:var(--surface);z-index:1';
   const thead='<tr><th style="text-align:left;padding:6px 12px 6px 0;'+stickyL+'"></th>'+M.map((m,i)=>'<th style="text-align:right;padding:6px 10px;white-space:nowrap;font-weight:700'+(i===last?';color:var(--accent)':'')+'">'+L[i]+(PART[m]?' *':'')+'</th>').join('')+'</tr>';
@@ -2503,8 +2502,7 @@ function renderCompare(){
       +rowC('Retention · per '+S+'1', per(ga.retE), per(gb.retE), chip(ga.retE,gb.retE,function(v){return S+v.toFixed(2);},'up'))
       +rowC('VIP performance · per '+S+'1', per(ga.vipE), per(gb.vipE), chip(ga.vipE,gb.vipE,function(v){return S+v.toFixed(2);},'up'))
       +rowC('Cost / new depositor', ga.cpf!=null?S+ga.cpf:'—', gb.cpf!=null?S+gb.cpf:'—', chip(ga.cpf,gb.cpf,function(v){return S+Math.round(v);},'down'))
-      +rowC('Cashback', sm(ga.cbS), sm(gb.cbS), chip(ga.cbS,gb.cbS,sm,'neutral'))
-      +'<p class="fine" style="margin-top:8px;color:var(--muted)">Green = the second period is the better one (spend &amp; cashback are grey — more or less is not itself good or bad). Cost is better when lower. Net-rev-per-'+S+'1: 0 = the bonus paid for itself.</p>';
+      +'<p class="fine" style="margin-top:8px;color:var(--muted)">Green = the second period is the better one (spend rows are grey — more or less is not itself good or bad). Cost is better when lower. Net-rev-per-'+S+'1: 0 = the bonus paid for itself.</p>';
   }
   A.addEventListener('change',draw); B.addEventListener('change',draw); draw();
 }
