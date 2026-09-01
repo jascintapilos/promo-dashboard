@@ -2422,7 +2422,7 @@ function renderGlanceTables(){
   // ---- VIP — by lane ----
   if(HAS_VIP&&VIP.lane_summary){
     const sM=mk(VSYM), LS=VIP.lane_summary, tb=VIP.program.total_bonus||1;
-    const NAMES={'A-performance':'Performance (free credit)','B-cashback':'Weekly Rescue (money-back)','C-entitlement':'Entitlements (gifts)','D-engagement':'Engagement (mini-games)'};
+    const NAMES={'A-performance':'Performance (free credit + reloads)','B-cashback':'Weekly Rescue (money-back)','C-entitlement':'Entitlements (gifts)','D-engagement':'Engagement (mini-games)'};
     const scored=k=>k==='A-performance'||k==='D-engagement';
     const lanes=Object.keys(LS).map(k=>Object.assign({key:k,name:NAMES[k]||cap(k)},LS[k])).sort((a,b)=>b.spend-a.spend);
     const per=r=>r==null?'—':`${r<0?'-':'+'}${VSYM}${Math.abs(r).toFixed(2)}`;
@@ -2442,11 +2442,23 @@ function renderGlanceTables(){
     const take=(D?`<li><b>Engagement mini-games</b> are the cheap win — +${VSYM}${(D.ngr_lift_per_rm||0).toFixed(2)} of extra net revenue per ${VSYM}1.</li>`:'')+
       (A?`<li><b>Performance free-credit</b> is the big spend and ${A.ngr_lift_per_rm<0?'loses money in the first week':'pays back'}${(A.fwd_incr_per_rm_90!=null?`, but returns +${VSYM}${A.fwd_incr_per_rm_90.toFixed(2)} per ${VSYM}1 over 90 days — fix, don't kill`:'')}.</li>`:'')+
       `<li><b>Weekly Rescue</b> money-back only goes to players who were already losing — it's a loyalty perk, so judge it on players kept, not 7-day return.</li>`;
+    // Performance lane isn't only free credit — split it by mechanic (computed, so MY/SG each show their own)
+    let perfNote='';
+    if(Array.isArray(VIP.codes)){
+      const la=VIP.codes.filter(c=>c.lane==='A-performance'), totSp=la.reduce((a,c)=>a+(c.spend||0),0)||1, bm={};
+      la.forEach(c=>{const m=c.mechanic||'other', o=bm[m]||(bm[m]={sp:0,ng:0}); o.sp+=c.spend||0; o.ng+=c.ngr_lift||0;});
+      const keys=Object.keys(bm).filter(m=>bm[m].sp/totSp>=0.03).sort((a,b)=>bm[b].sp-bm[a].sp);
+      if(keys.length>1){
+        const list=keys.map(m=>`<b>${cap(m)}</b> ${sM(bm[m].sp)} (${(bm[m].ng/bm[m].sp)<0?'-':'+'}${VSYM}${Math.abs(bm[m].ng/bm[m].sp).toFixed(2)}/${VSYM}1)`).join(' + ');
+        const worst=keys.slice().sort((a,b)=>(bm[a].ng/bm[a].sp)-(bm[b].ng/bm[b].sp))[0];
+        perfNote=`The <b>Performance</b> lane isn't only free credit — it's ${list} (free spins aren't a material part). The loss concentrates in <b>${cap(worst)}</b>, so the fix targets that mechanic, not the whole lane.`;
+      }
+    }
     put('s_vipGlance',
       `<th class="l">Lane</th><th>Codes</th><th>Spend</th><th>Share</th><th>Extra per ${VSYM}1 <span style="font-weight:400;color:var(--muted)">7-day</span></th><th>Over<br>90 days</th><th class="l">Read</th>`,
       rows,
       `<tr class="ptot"><td class="l"><b>All VIP</b></td><td><b>${VIP.codes.length}</b></td><td><b>${sM(tb)}</b></td><td>100%</td><td colspan="3" class="l sub-muted">two lanes scored on return; money-back &amp; gifts are perks</td></tr>`,
-      take);
+      take, perfNote);
   }
 }
 renderGlanceTables();
