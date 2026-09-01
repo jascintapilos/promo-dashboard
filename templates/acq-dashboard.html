@@ -2294,15 +2294,17 @@ function renderSummary(){
     if(pc) pc.hidden=false;
     const M=v=>(v<0?'−':'')+SY+(Math.abs(v)>=1e6?(Math.abs(v)/1e6).toFixed(2)+'M':Math.round(Math.abs(v)/1000)+'k');
     const sl=P0.stops_losing, ri=P0.reinvest_into_winners, dc=P0.dont_cut;
+    const bp=P0.by_pillar||{}, retF=(bp.Retention||{}).freed, vipF=(bp.VIP||{}).freed;
+    const freeSub=(retF!=null&&vipF!=null)?`from cutting losers · VIP ${M(vipF)} + Retention ${M(retF)}`:'budget from cutting the losers · near-certain';
     const strip=(lbl,val,sub,col)=>`<div><span class="nl">${lbl}</span><span class="nv" style="color:${col||'var(--ink)'}">${val}</span><span class="ns">${sub}</span></div>`;
     const eb=document.getElementById('s_plan');
     if(eb) eb.innerHTML=
-      `<p class="sub2">The same moves, now in money. The first figure is budget you can free up <b>almost for sure</b>; the rest are <b>best estimates</b> — treat them as ranges, not exact numbers.</p>`+
+      `<p class="sub2">The same moves, now in money — all from cutting the losing promos in <b>VIP</b> and <b>Retention</b> and moving the budget to winners. The first figure is budget you can free up <b>almost for sure</b>; the rest are <b>best estimates</b> — treat them as ranges, not exact numbers.</p>`+
       `<div class="ngrstrip">`+
-        strip('Free up now', M(P0.free_up), 'budget from cutting the losers · near-certain', 'var(--scale)')+
-        strip('Stop the bleeding', M(sl.exp), `net revenue you stop losing · ${M(sl.lo)}–${M(sl.hi)}`, 'var(--scale)')+
-        strip('Reinvest in winners', '+'+M(ri.exp), `extra if you move it to what works · ${M(ri.lo)}–${M(ri.hi)}`, 'var(--scale)')+
-        strip('Total swing', M(P0.total_swing_exp), 'best estimate if you do both — a range', 'var(--gold)')+
+        strip('Free up now', M(P0.free_up), freeSub, 'var(--scale)')+
+        strip('Stop the bleeding', M(sl.exp), `net revenue you stop losing · mainly VIP · ${M(sl.lo)}–${M(sl.hi)}`, 'var(--scale)')+
+        strip('Reinvest in winners', '+'+M(ri.exp), `moved into winners — Retention + Acquisition · ${M(ri.lo)}–${M(ri.hi)}`, 'var(--scale)')+
+        strip('Total swing', M(P0.total_swing_exp), 'VIP + Retention cuts → winners · a range', 'var(--gold)')+
       `</div>`+
       `<div class="ngrstrip" style="margin-top:10px">`+
         Object.entries(P0.by_pillar).map(([p,v])=>strip(p+' budget', M(v.current_spend)+' → '+M(v.proposed_after_cuts), 'frees '+M(v.freed))).join('')+
