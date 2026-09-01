@@ -456,6 +456,19 @@
     <div class="card col12" id="s_attribCard" style="margin-top:15px" hidden><div class="card-h"><h3>Are these promo grades right? — a fair-comparison check</h3><span class="hint">fair-comparison · a read, not proof</span></div><div id="s_attrib"></div></div>
     <div class="card col12" id="s_nextCard" style="margin-top:15px" hidden><div class="card-h"><h3>What to do next</h3><span class="hint">the moves out of this analysis</span></div><div id="s_next"></div></div>
     <div class="card col12" id="s_planCard" style="margin-top:15px" hidden><div class="card-h"><h3>Forward plan — what acting on this is worth</h3><span class="hint">the money · an estimate, not a promise</span></div><div id="s_plan"></div></div>
+    <div class="card col12" id="holdoutCard" style="margin-top:15px" hidden>
+      <div class="card-h"><h3>The proof — one live holdout test</h3><span class="hint">turns a strong reading into proof · recommendation #3</span></div>
+      <p class="sub2">Every grade here is <b>directional</b> — it compares a bonus to a player's own past or to look-alike players, which <b>regression-to-the-mean, seasonality and would-deposit-anyway habit</b> all inflate. The one clean separator is a <b>randomised withhold</b>. <span id="holdoutMeta"></span></p>
+      <div id="holdoutBody" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 26px;margin-top:6px">
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">What the test is</h4><p style="margin:0;font-size:12.5px;line-height:1.5">Pick one promo. <b>Withhold it from a random half</b> of eligible players (Control); <b>offer it as normal</b> to the other half (Full). Everything else stays identical. After <b>60–90 days</b>, compare the two halves.</p></div>
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">How it reads — KEEP or STOP</h4><p style="margin:0;font-size:12.5px;line-height:1.5"><b>KEEP</b> if the offered half earns <b>more net revenue</b> than the withheld half — it covered its own bonus cost (break-even is <b>zero</b>; our numbers are already after the bonus). <b>STOP</b> if the offered half is <b>no better</b>. A wide result is <b>inconclusive</b>, not a default cut.</p></div>
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">The design, in plain terms</h4><p style="margin:0;font-size:12.5px;line-height:1.5">Randomise <b>per player</b>, and keep <b>every other promo live</b> in both halves — so it answers "this offer <b>vs not</b>, in the real world where substitutes exist". A clean per-code effect that <b>cancels the rebound-anyway noise</b>.</p></div>
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">The bigger prize</h4><p style="margin:0;font-size:12.5px;line-height:1.5">Test a <b>ladder of ~12–15 promos</b> across the range and check whether the <b>cheap directional number can be trusted</b> to grade the <b>~150 we never test</b>. If it can, a handful of tests <b>governs the whole book</b>.</p></div>
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">Guardrails</h4><p style="margin:0;font-size:12.5px;line-height:1.5"><b>Screen out at-risk / high-value players before</b> randomising — never withhold from someone we're trying to save. A <b>hard block</b> stops anyone handing the withheld offer to a Control player. <b>One code at a time</b> — the results don't add up, so don't batch-cut.</p></div>
+        <div><h4 style="font-size:12px;margin:0 0 3px;letter-spacing:.02em">Honest limits</h4><p style="margin:0;font-size:12.5px;line-height:1.5">It proves <b>KEEP vs STOP</b> for the tested promo — not how big to make it, and it can't split the <b>bonus money from the reminder</b> (a later, separate test). Runs as <b>two cycles</b> under one pre-agreed plan.</p></div>
+      </div>
+      <div class="varbox" style="border-color:var(--scale);margin-top:12px"><span class="ico">◆</span><div><b>The ask (recommendation #3):</b> run <b>one Lane A matched holdout first</b>, and hold a <b>NO-GO on the remaining big cuts until the read-out</b>. That's what turns "a strong reading" into a number you can bank.</div></div>
+    </div>
     <div class="card col12" id="s_ltvCard" style="margin-top:15px" hidden><div class="card-h"><h3>What a player is worth over time — lifetime value</h3><span class="hint">player value over years</span></div><div id="s_ltv"></div></div>
     <div class="card col12" id="s_limitsCard" style="margin-top:15px" hidden><div class="card-h"><h3>What this report doesn't yet cover</h3><span class="hint">read before over-trusting it</span></div><div id="s_limits"></div></div>
     <div class="card col12" id="s_dataCard" style="margin-top:15px"><div class="card-h"><h3>Data &amp; method</h3><span class="hint">where the numbers come from</span></div><div id="s_data"></div></div>
@@ -2722,6 +2735,21 @@ function renderBonusFamily(pillar, family, ids){
  ['vip','give-back',{card:'vipGiveBackCard',stay:'vipGbStay',size:'vipGbSize',note:'vipGbNote'}],
  ['vip','deposit',{card:'vipDepositCard',stay:'vipDepStay',size:'vipDepSize',note:'vipDepNote'}]
 ].forEach(a=>renderBonusFamily(a[0],a[1],a[2]));
+
+// ===== Holdout test — the design that turns directional reads into proof (rec #3) =====
+function renderHoldout(){
+  const card=document.getElementById('holdoutCard'); if(!card) return;
+  card.hidden=false;
+  const meta=document.getElementById('holdoutMeta'); if(!meta) return;
+  const A=(typeof ATTR!=='undefined'&&ATTR&&ATTR.coverage)?ATTR:null;
+  const isMY=!(typeof PAYLOAD!=='undefined'&&PAYLOAD&&PAYLOAD.market&&PAYLOAD.market!=='MY');
+  if(A&&A.coverage.n_need_holdout){
+    meta.innerHTML=`Right now <b>${A.coverage.n_need_holdout}</b> promos have <b>no look-alike group</b> and can only be settled this way — and it's the only thing that lifts any grade from <b>directional</b> to <b>proven</b>.`;
+  } else {
+    meta.innerHTML=`It's the only thing that lifts a grade from <b>directional</b> to <b>proven</b>`+(isMY?`.`:` — more so here, where the base is thin and everything stays directional by design.`);
+  }
+}
+renderHoldout();
 renderLTV();
 campaignView();
 
@@ -3424,6 +3452,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(cardById('s_confidence')),
     cardSec(byId('s_nextCard')),
     cardSec(byId('s_planCard')),
+    cardSec(byId('holdoutCard')),       // #9 — the holdout test design (proof for rec #3)
     cardSec(byId('s_ltvCard')),
     cardSec(byId('s_limitsCard')),
     cardSec(byId('s_campaignCard')),
@@ -3600,7 +3629,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   // buildPanel dissolves the .card wrapper (the card id is gone; the inner id survives inside the .sec).
   // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
   var OPEN_DEF={
-    'panel-summary':['s_banner','s_portfolio','s_attrib','s_ledger','s_plan','s_ltv'],
+    'panel-summary':['s_banner','s_portfolio','s_attrib','s_ledger','s_plan','holdoutBody','s_ltv'],
     'panel-acquisition':['meta','s_acqGlance'],
     'panel-retention':['r_meta','s_retGlance'],
     'panel-vip':['v_meta','v_rules','s_vipGlance'],
