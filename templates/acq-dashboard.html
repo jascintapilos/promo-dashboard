@@ -3137,10 +3137,10 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     });
   })();
   buildPanel('panel-summary',[
+    cardSec(cardById('s_portfolio')),   // summary table pinned to the very top (per request)
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
     leadSec('Main findings',[byId('s_banner')]),
     cardSec(byId('s_monthlyCard')),
-    cardSec(cardById('s_portfolio')),
     cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
     cardSec(byId('s_trendCard')),
     cardSec(cardById('s_frontier')),
