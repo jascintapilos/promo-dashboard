@@ -447,7 +447,7 @@
       <div data-mvpane="compare" hidden><div id="s_mbmTable"></div><div id="s_comparePick"></div></div>
     </div>
     <div class="card col12" style="margin-bottom:15px"><div class="card-h"><h3>Promo portfolio</h3><span class="hint">year to date</span></div><p class="sub2">What we spend by objective, what it honestly buys, and whether any of it sits in the wrong place.</p><div id="s_portfolio"></div></div>
-    <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div><div class="tchart"><h4>Money-back spend <span>VIP money-back</span></h4><div id="s_trendCb"></div></div></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="s_trendCard" hidden><div class="card-h"><h3>Month by month — is it improving?</h3><span class="hint">Jan–Aug 2026 · Aug provisional</span></div><div id="s_trendRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>Spend by month <span>by pillar</span></h4><div id="s_trendSpend"></div></div><div class="tchart"><h4>Efficiency <span>net revenue back for every RM1 · money is the test</span></h4><div id="s_trendEff"></div></div><div class="tchart"><h4>Cost to win a new depositor <span>RM per new depositor</span></h4><div id="s_trendCpa"></div></div></div></div>
     <div class="grid">
       <div class="card col6"><div class="card-h"><h3>Retention &amp; VIP-performance promos, ranked</h3><span class="hint">where the movable money is</span></div><p class="sub2" style="color:var(--muted);font-size:13px">Scope: Retention and VIP-performance promos only — Acquisition and VIP perks/entitlements aren't on this curve.</p><div id="s_frontier"></div></div>
       <div class="card col6"><div class="card-h"><h3>How firm is each call?</h3><span class="hint">coverage &amp; evidence strength</span></div><div id="s_confidence"></div></div>
@@ -637,7 +637,7 @@
     <div class="soon" id="r_soon"></div>
   </div>
   <div class="panel" id="panel-vip" hidden>
-    <div class="card col12" style="margin-bottom:15px" id="vipMonthlyCard" hidden><div class="card-h"><h3>Month by month — VIP</h3><span class="hint">this pillar, across the year</span></div><div id="vipMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>VIP spend <span>by month</span></h4><div id="vipMonthlySpend"></div></div><div class="tchart"><h4>VIP performance per RM1 <span>0 = paid for itself</span></h4><div id="vipMonthlyReturn"></div></div></div></div>
+    <div class="card col12" style="margin-bottom:15px" id="vipMonthlyCard" hidden><div class="card-h"><h3>Month by month — VIP</h3><span class="hint">this pillar, across the year</span></div><div id="vipMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>VIP spend <span>by month</span></h4><div id="vipMonthlySpend"></div></div><div class="tchart"><h4>VIP performance per RM1 <span>0 = paid for itself</span></h4><div id="vipMonthlyReturn"></div></div><div class="tchart"><h4>Money-back spend <span>the Weekly Rescue rebate</span></h4><div id="vipMonthlyCb"></div></div></div></div>
     <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">the call · Cut / Hold / Test</span></div><div id="v_decisionBox"></div></div>
     <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Why protect, not cut</h3><span class="hint">how few defections wipe a saving</span></div><div id="v_costWrong"></div></div>
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
@@ -2719,7 +2719,6 @@ function renderTrend(){
     {name:'VIP performance',color:CV('--reduce'),vals:T.efficiency.map(e=>e.per_rm_vip)}
   ],{pf,ref:0,refLabel:'paid for itself',fmt:v=>TS+v.toFixed(1)});
   tLine('s_trendCpa',L,T.acq.map(a=>a.cost_per_ftd),{pf,color:CV('--reduce'),fmt:v=>TS+Math.round(v)});
-  tLine('s_trendCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
 }
 // per-pillar month-by-month (spend + that pillar's return metric) — one card per pillar tab
 function renderPillarMonthly(){
@@ -2744,6 +2743,7 @@ function renderPillarMonthly(){
     sp.ret,'--maintain', eff.map(e=>e.per_rm_ret),'--scale', v=>S+v.toFixed(1), 0);
   show('vip','In <b>'+curL+'</b>: <b>'+per(eC.per_rm_vip)+'</b> performance net revenue per '+S+'1'+arrow(eC.per_rm_vip,eP.per_rm_vip,false)+' vs '+prevL+' · spend '+money(sp.vip[cur])+'.',
     sp.vip,'--referral', eff.map(e=>e.per_rm_vip),'--reduce', v=>S+v.toFixed(1), 0);
+  if(T.cashback_spend) tLine('vipMonthlyCb',L,T.cashback_spend,{pf,color:CV('--gold'),area:true,fmt:money});
 }
 renderTrend();
 renderPillarMonthly();
