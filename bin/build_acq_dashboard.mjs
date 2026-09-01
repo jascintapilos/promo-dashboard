@@ -64,6 +64,24 @@ if (out.includes(vipLifeMarker) && fs.existsSync(vipLifePath)) {
   out = out.replace(vipLifeMarker, JSON.stringify(vl));
 }
 
+// BONUS value-over-tenure payloads (give-back/deposit families + lifetime NGR + ripple cuts)
+let bonusNote = 'no BONUS payload';
+for (const [marker, rel] of [
+  ['/*__BONUS_PAYLOAD__*/ null', `bonus-${MK}.json`],
+  ['/*__BONUSLIFE_PAYLOAD__*/ null', `ltv/lifetime-by-bonus-${MK}.json`],
+  ['/*__BONUSRIPPLE_PAYLOAD__*/ null', `bonus-ripple-${MK}.json`],
+]) {
+  const p = path.join(SCR, rel);
+  if (out.includes(marker) && fs.existsSync(p)) {
+    out = out.replace(marker, JSON.stringify(JSON.parse(fs.readFileSync(p, 'utf8'))));
+    if (rel.startsWith('bonus-' + MK)) {
+      const b = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const rg = b.pillars?.retention?.families?.['give-back'];
+      bonusNote = `BONUS RET give-back ${rg?.per_rm}/RM flip ${rg?.flip_band}`;
+    }
+  }
+}
+
 // TREND payload (optional — month-over-month, injected when the file exists)
 const trendMarker = '/*__TREND_PAYLOAD__*/ null';
 let trendNote = 'no TREND payload';
@@ -118,4 +136,4 @@ if (MK !== 'MY') out = sgMarketPass(out, metrics.sym);
 fs.mkdirSync(path.join(ROOT, 'outputs'), { recursive: true });
 const dest = path.join(ROOT, DEST);
 fs.writeFileSync(dest, out, 'utf8');
-console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote} | ${attrNote} | ${ltvNote}`);
+console.log(`built ${DEST} (${(out.length / 1024).toFixed(0)} KB) — ACQ ${metrics.codes.length} codes RM${metrics.kpis.cost_per_ftd}/FTD | ${retNote} | ${vipNote} | ${trendNote} | ${attrNote} | ${ltvNote} | ${bonusNote}`);

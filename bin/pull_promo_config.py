@@ -13,15 +13,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, SUF
 
 S = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
 
-# all codes the report grades, across pillars
+# The 260722_ws1_* Promotion tables are brand-wide (WS1), not per-currency — one row per
+# PromotionCode regardless of market — so the same table serves every market's codes. Only the
+# input metrics + output filename move with PROMO_MARKET (SUF). Deposit_required is structural
+# (currency-independent); min_deposit is stored in MYR and is NOT used as a money threshold.
+# all codes the report grades, across pillars (skip a pillar whose metrics file is absent)
 codes = set()
-for p in ["acq/acq-metrics-MY.json", "ret/ret-metrics-MY.json", "vip/vip-metrics-MY.json"]:
-    m = json.load(open(S / p, encoding="utf-8"))
-    codes |= {c["code"] for c in m["codes"]}
+for p in [f"acq/acq-metrics-{SUF}.json", f"ret/ret-metrics-{SUF}.json", f"vip/vip-metrics-{SUF}.json"]:
+    fp = S / p
+    if fp.exists():
+        codes |= {c["code"] for c in json.load(open(fp, encoding="utf-8"))["codes"]}
 
 c = get_client(send_receive_timeout=120)
 inlist = ",".join("'" + x.replace("'", "''") + "'" for x in codes)
@@ -49,7 +54,7 @@ for code, dep_req, req_dep, min_action, bonus_pct, rollover, winover, nrw in c.q
                  "wagering": round(max(float(rollover), float(winover)), 1),
                  "bonus_pct": round(float(bonus_pct), 1), "n_rewards": int(nrw)}
 
-json.dump(cfg, open(S / "promo-config-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+json.dump(cfg, open(S / f"promo-config-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 matched = len(cfg); total = len(codes)
 dr = sum(1 for v in cfg.values() if v["deposit_required"])
@@ -61,4 +66,4 @@ for k in [k for k, v in cfg.items() if not v["deposit_required"]][:6]:
 print("  DEPOSIT-REQUIRED examples:")
 for k in [k for k, v in cfg.items() if v["deposit_required"]][:6]:
     v = cfg[k]; print(f"    {k[:36]:36s} min_dep {v['min_deposit']:>6} · wager {v['wagering']}x · pct {v['bonus_pct']}")
-print("Saved scratchpad/promo-config-MY.json")
+print(f"Saved scratchpad/promo-config-{SUF}.json")

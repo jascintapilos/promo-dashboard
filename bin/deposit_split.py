@@ -8,11 +8,15 @@ no-deposit, plus a wagering-band cut over the no-deposit codes (the recover-the-
 lever). Config only. Run after pull_promo_config.py.
 Usage: python bin/deposit_split.py
 """
-import json
+import json, sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from csir_config import SUF
+
 S = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
-cfg = json.load(open(S / "promo-config-MY.json", encoding="utf-8"))
+cfg = json.load(open(S / f"promo-config-{SUF}.json", encoding="utf-8"))
 
 def wband(w):
     if w is None: return "?"
@@ -66,11 +70,14 @@ def build(path, metric_fn, lane_filter=None):
     return m["deposit_split"]
 
 specs = [
-    ("acq/acq-metrics-MY.json", acq_metric, None, "ACQUISITION (cost per new depositor, lower better)"),
-    ("ret/ret-metrics-MY.json", money_metric, None, "RETENTION (net rev per RM1, higher better)"),
-    ("vip/vip-metrics-MY.json", money_metric, (lambda c: c.get("lane") in ("A-performance", "D-engagement")), "VIP money-judged (net rev per RM1)"),
+    (f"acq/acq-metrics-{SUF}.json", acq_metric, None, "ACQUISITION (cost per new depositor, lower better)"),
+    (f"ret/ret-metrics-{SUF}.json", money_metric, None, "RETENTION (net rev per RM1, higher better)"),
+    (f"vip/vip-metrics-{SUF}.json", money_metric, (lambda c: c.get("lane") in ("A-performance", "D-engagement")), "VIP money-judged (net rev per RM1)"),
 ]
 for path, fn, lf, label in specs:
+    if not (S / path).exists():
+        print(f"skip {path} — metrics file absent")
+        continue
     ds = build(path, fn, lf)
     g = ds["groups"]
     print(f"\n{label} — matched {ds['matched']}/{ds['total']}")

@@ -583,6 +583,24 @@
       </div>
       <div id="retLcNote" class="fine" style="margin-top:10px"></div>
     </div>
+    <div class="card col12" id="retGiveBackCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>No-deposit give-backs — do the deposits justify the time they stay?</h3><span class="hint">free credit + no-deposit free spins</span></div>
+      <p class="sub2">A giveaway — no deposit needed to claim, so the whole cost is at risk up front. Its job is to <b>reactivate</b> and pull players back into play. We judge it on the real question: <b>do they stay and deposit enough over the time they stay to be worth it</b> — not just "did they deposit once".</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Do they stay? <span>still depositing at 30 / 60 / 90 days</span></h4><div id="retGbStay"></div></div>
+        <div class="tchart"><h4>The size guardrail <span>net revenue back per <i data-sym></i>1 by size · 0 = paid for itself</span></h4><div id="retGbSize"></div></div>
+      </div>
+      <div id="retGbNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="retDepositCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>Deposit bonuses — is the top-up worth the time they stay?</h3><span class="hint">reload + deposit free spins</span></div>
+      <p class="sub2">Here the player already <b>deposited to claim</b>, so there is no "hunter" — the question is whether the <b>top-up we added earns its keep</b> over the time they stay, and whether we are paying for deposits that would have happened anyway.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Do they stay? <span>still depositing at 30 / 60 / 90 days</span></h4><div id="retDepStay"></div></div>
+        <div class="tchart"><h4>The size guardrail <span>net revenue back per <i data-sym></i>1 by size · 0 = paid for itself</span></h4><div id="retDepSize"></div></div>
+      </div>
+      <div id="retDepNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div class="card col12" id="retIncrCard" style="margin-bottom:15px">
       <div class="card-h"><h3>Extra net revenue after the bonus — vs. the player's own baseline</h3><span class="hint">a read, not a controlled test</span></div>
       <p class="sub2">For each code, the net revenue its players produced in the <b>90 days after</b> claiming, minus what those same players produced in the <b>90 days before</b> (their own baseline) — the extra the bonus appears to add, and the return per RM1.</p>
@@ -730,6 +748,24 @@
       <div id="vipDepoSplit"></div>
       <div id="vipDepoDeep"></div>
     </div>
+    <div class="card col12" id="vipGiveBackCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>No-deposit give-backs — do the deposits justify the time they stay?</h3><span class="hint">performance free credit + no-deposit free spins · excludes engagement mini-games</span></div>
+      <p class="sub2">The no-deposit giveaway for VIPs — its whole cost is at risk up front. Judged on whether players <b>stay and deposit enough over the time they stay</b> to be worth it. <i>Excludes the engagement mini-games (they're judged as a program, not on money.)</i></p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Do they stay? <span>still depositing at 30 / 60 / 90 days</span></h4><div id="vipGbStay"></div></div>
+        <div class="tchart"><h4>The size guardrail <span>net revenue back per <i data-sym></i>1 by size · 0 = paid for itself</span></h4><div id="vipGbSize"></div></div>
+      </div>
+      <div id="vipGbNote" class="fine" style="margin-top:10px"></div>
+    </div>
+    <div class="card col12" id="vipDepositCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>Deposit bonuses — is the top-up worth the time they stay?</h3><span class="hint">reload + deposit free credit + deposit free spins</span></div>
+      <p class="sub2">The VIP already <b>deposited to claim</b>, so the question is whether the <b>top-up earns its keep</b> over the time they stay — and whether we're subsidising deposits that would have happened anyway.</p>
+      <div class="tgrid">
+        <div class="tchart"><h4>Do they stay? <span>still depositing at 30 / 60 / 90 days</span></h4><div id="vipDepStay"></div></div>
+        <div class="tchart"><h4>The size guardrail <span>net revenue back per <i data-sym></i>1 by size · 0 = paid for itself</span></h4><div id="vipDepSize"></div></div>
+      </div>
+      <div id="vipDepNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div id="v_lanes"></div>
     <div class="notes" id="v_notes"></div>
     <div class="soon" id="v_soon"></div>
@@ -765,6 +801,9 @@ const PAYLOAD = /*__ACQ_PAYLOAD__*/ null;
 const RET = /*__RET_PAYLOAD__*/ null;
 const VIP = /*__VIP_PAYLOAD__*/ null;
 const VIPLIFE = /*__VIPLIFE_PAYLOAD__*/ null;
+const BONUS = /*__BONUS_PAYLOAD__*/ null;
+const BONUSLIFE = /*__BONUSLIFE_PAYLOAD__*/ null;
+const BONUSRIP = /*__BONUSRIPPLE_PAYLOAD__*/ null;
 const TREND = /*__TREND_PAYLOAD__*/ null;
 const ATTR = /*__ATTR_PAYLOAD__*/ null;
 const LTV = /*__LTV_PAYLOAD__*/ null;
@@ -2512,6 +2551,80 @@ if(typeof VIPLIFE!=='undefined'&&VIPLIFE){
   renderLifecycle(VIPLIFE.vip, {spend:'vipLcSpend',pay:'vipLcPay',note:'vipLcNote'}, _vs, lcNote(VIPLIFE.vip,'VIP','The 7-day return is negative at every stage because VIP is judged on the <b>90-day</b> for performance — so read this as the <b>budget concentration</b>, not a per-stage verdict.'));
   renderLifecycle(VIPLIFE.whale, {spend:'whaleLcSpend',pay:'whaleLcPay',note:'whaleLcNote'}, _vs, lcNote(VIPLIFE.whale,'whale','Same pattern as retention — the money follows the already-active, not the at-risk.'));
 }
+
+// ===== Bonus value-over-tenure: give-back vs deposit families (30/60/90 + LTV, per pillar) =====
+function bfPctBars(boxId, rows){
+  const box=document.getElementById(boxId); if(!box) return; box.innerHTML=''; if(!rows.length) return;
+  const W=460,H=16+rows.length*36,left=58,right=132,top=6,bot=10,rh=(H-top-bot)/rows.length,bh=Math.min(20,rh-12);
+  const sx=v=>left+(Math.max(0,Math.min(100,v))/100)*(W-left-right);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  rows.forEach((r,i)=>{const y=top+i*rh+(rh-bh)/2;
+    s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:r.label}));
+    s.append(el('rect',{x:left,y,width:Math.max(2,sx(r.pct)-left),height:bh,rx:3,fill:CV('--accent')}));
+    s.append(Object.assign(el('text',{x:sx(r.pct)+6,y:y+bh/2+4,'text-anchor':'start',style:'font-size:10.5px'}),{textContent:(r.pct==null?'—':r.pct+'%')+(r.sub?' · '+r.sub:'')}));});
+  box.append(s);
+}
+function bfSignedBars(boxId, rows, sym){
+  const box=document.getElementById(boxId); if(!box) return; box.innerHTML=''; if(!rows.length) return;
+  const W=460,H=18+rows.length*30,left=104,right=60,top=8,bot=12,rh=(H-top-bot)/rows.length,bh=Math.min(20,rh-8);
+  const vals=rows.map(r=>r.v==null?0:r.v), x0=Math.min(-0.5,...vals), x1=Math.max(0.5,...vals), sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right), zx=sx(0);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+  rows.forEach((r,i)=>{const y=top+i*rh+(rh-bh)/2,v=r.v==null?0:r.v,bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce');
+    s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:r.label}));
+    s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
+    s.append(Object.assign(el('text',{x:pos?bx+5:bx-5,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:11px;font-weight:700;fill:'+c}),{textContent:(v<0?'-':'+')+sym+Math.abs(v).toFixed(2)}));});
+  box.append(s);
+}
+function bfMoney(sym,n){ if(n==null) return '—'; const a=Math.abs(n);
+  if(a>=1e6) return sym+(n/1e6).toFixed(a>=1e7?0:1).replace(/\.0$/,'')+'M';
+  return sym+(a>=1000?(n/1000).toFixed(a>=10000?0:1).replace(/\.0$/,'')+'k':Math.round(n)); }
+function bfSigned(sym,n){ return (n==null?'—':(n<0?'-':'+')+sym+Math.abs(n).toFixed(2)); }
+function renderBonusFamily(pillar, family, ids){
+  if(typeof BONUS==='undefined'||!BONUS||!BONUS.pillars) return;
+  const P=BONUS.pillars[pillar]; if(!P||!P.families) return;
+  const F=P.families[family]; if(!F) return;
+  const sym=BONUS.sym||'RM';
+  const card=document.getElementById(ids.card); if(card)card.hidden=false;
+  document.querySelectorAll('#'+ids.card+' [data-sym]').forEach(e=>e.textContent=sym);
+  const st=F.stay||{};
+  bfPctBars(ids.stay, [30,60,90].map(w=>{const s=st['d'+w]||{}; return {label:w+' days', pct:s.still_pct, sub:'~'+(s.avg_dep_days==null?'—':s.avg_dep_days)+' deposit-days'};}));
+  bfSignedBars(ids.size, (F.size_bands||[]).map(b=>({label:b.band, v:b.per_rm})), sym);
+  const L=(BONUSLIFE&&BONUSLIFE.pillars&&BONUSLIFE.pillars[pillar]&&BONUSLIFE.pillars[pillar][family])||{};
+  const R=(typeof BONUSRIP!=='undefined'&&BONUSRIP)||{};
+  const note=document.getElementById(ids.note); if(!note) return;
+  const stat=(lab,val)=>`<span style="display:inline-block;margin:0 18px 6px 0"><b style="font-size:15px">${val}</b><br><span style="opacity:.7">${lab}</span></span>`;
+  let html=`<div style="margin-bottom:8px">`+
+    stat(`90-day net rev / ${sym}1`, bfSigned(sym,F.per_rm))+
+    stat(`lifetime reached / ${sym}1`, L.life_per_rm==null?'—':sym+Math.round(L.life_per_rm))+
+    stat('avg lifetime / player', bfMoney(sym,L.avg_life))+
+    stat('net this year / player', bfMoney(sym,L.avg_ytd))+`</div>`;
+  if(family==='give-back'){
+    const kh=F.keeper_hunter||{}, hk=R.hunter_vs_keeper||{}, keep=hk.keeper||{}, hunt=hk.hunter||{};
+    const mult=(hunt.avg_life&&keep.avg_life)?(keep.avg_life/hunt.avg_life).toFixed(1):null;
+    const sl=R.size_x_lifetime||[], mc=R.matched_cohort||{}, gw=R.gateway||{};
+    html+=`<p style="margin:6px 0"><b>The paradox:</b> over 90 days these give-backs run at <b>${bfSigned(sym,F.per_rm)}</b> per ${sym}1 (a loss), yet the players who take them are <b>net-positive this year</b> (${bfMoney(sym,L.avg_ytd)} each) and carry <b>${bfMoney(sym,L.avg_life)}</b> of lifetime value. Give-backs <b>reach the most valuable players</b> — they just don't pay back inside the window.</p>`;
+    if(kh.hunter_pct!=null) html+=`<p style="margin:6px 0"><b>Keeper vs hunter:</b> ${kh.hunter_pct}% never deposit within 30 days`+(mult?` — but even they carry ${bfMoney(sym,hunt.avg_life)} lifetime, while keepers are worth <b>${mult}× more</b> (${bfMoney(sym,keep.avg_life)})`:'')+`. The lever is <b>converting claimers into keepers</b>, not cutting the giveaway.</p>`;
+    if(sl.length>1) html+=`<p style="margin:6px 0"><b>Bigger bonus → bigger player:</b> size tracks value — ${sl[0].band} recipients ~${bfMoney(sym,sl[0].avg_life)} lifetime vs ${sl[sl.length-1].band} ~${bfMoney(sym,sl[sl.length-1].avg_life)}. That's <b>who we choose to give it to</b> (targeting), not value the bonus created.</p>`;
+    if(mc.gb_adj_life!=null) html+=`<p style="margin:6px 0"><b>Tenure-matched:</b> even within the same joining-year, give-back players out-value deposit players (${bfMoney(sym,mc.gb_adj_life)} vs ${bfMoney(sym,mc.dp_adj_life)}) — so the lifetime signal <b>isn't just older accounts</b>.</p>`;
+    if(gw.gateway_rate_pct!=null) html+=`<p style="margin:6px 0"><b>Reactivation, not a gateway:</b> only ${gw.gateway_rate_pct}% later take a deposit bonus — give-backs <b>re-wake existing depositors</b> rather than feed new ones.</p>`;
+  } else {
+    const cn=(R.cannibalization||{}).deposit||{};
+    html+=`<p style="margin:6px 0"><b>The read:</b> over 90 days these pay <b>${bfSigned(sym,F.per_rm)}</b> per ${sym}1, and recipients carry <b>${bfMoney(sym,L.avg_life)}</b> lifetime (${bfMoney(sym,L.avg_ytd)} net this year).</p>`;
+    if(cn.active_within_7d_pct!=null) html+=`<p style="margin:6px 0"><b>Watch cannibalization:</b> <b>${cn.active_within_7d_pct}%</b> claimed within <b>7 days</b> of a deposit (median gap ${cn.median_days}d) — so much of the payback is <b>subsidising deposits that would likely have happened anyway</b>. Give-backs, by contrast, reach lapsed players.</p>`;
+  }
+  html+=`<p style="margin:6px 0;opacity:.75"><b>Directional</b> — lifetime figures show <b>who the bonus reaches</b>, not proof it caused the value. The holdout test is the causal proof.</p>`;
+  const uc=(BONUS.unclassified||{})[pillar], exc=P.excluded, disc=[];
+  if(uc&&uc.codes) disc.push(`${uc.codes} codes (${bfMoney(sym,uc.spend)}) had no deposit flag in BO config and are excluded`);
+  if(family==='give-back'&&exc&&exc.codes) disc.push(`the ${exc.codes} engagement mini-games (${bfMoney(sym,exc.spend)}) are judged as a program, not here`);
+  if(disc.length) html+=`<p style="margin:6px 0;opacity:.55;font-size:11px">Disclosed: ${disc.join('; ')}.</p>`;
+  note.innerHTML=html;
+}
+[['retention','give-back',{card:'retGiveBackCard',stay:'retGbStay',size:'retGbSize',note:'retGbNote'}],
+ ['retention','deposit',{card:'retDepositCard',stay:'retDepStay',size:'retDepSize',note:'retDepNote'}],
+ ['vip','give-back',{card:'vipGiveBackCard',stay:'vipGbStay',size:'vipGbSize',note:'vipGbNote'}],
+ ['vip','deposit',{card:'vipDepositCard',stay:'vipDepStay',size:'vipDepSize',note:'vipDepNote'}]
+].forEach(a=>renderBonusFamily(a[0],a[1],a[2]));
 renderLTV();
 campaignView();
 
@@ -3339,6 +3452,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     leadSec('Key numbers',[byId('r_kpis')]),
     cardSec(byId('retMonthlyCard')),         // pillar-scoped month-by-month
     cardSec(byId('retDepoCard')),            // deposit-split (concept, up front)
+    cardSec(byId('retGiveBackCard')),        // give-back family: value over tenure + LTV
+    cardSec(byId('retDepositCard')),         // deposit family: top-up worth it + cannibalization
     cardSec(cardById('r_ruleLines')),        // rules before results
     cardSec(byId('retLifecycleCard')),       // who the money reaches (lifecycle)
     cardSec(byId('retSurvivalCard')),        // does the value last? (60/90)
@@ -3361,6 +3476,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('vipMonthlyCard')),       // pillar-scoped month-by-month
     cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
     cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
+    cardSec(byId('vipGiveBackCard')),      // give-back family: value over tenure + LTV
+    cardSec(byId('vipDepositCard')),       // deposit family: top-up worth it + cannibalization
     cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
     cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
     cardSec(byId('vipLifecycleCard')),     // who the money reaches — by lifecycle stage
