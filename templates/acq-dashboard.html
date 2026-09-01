@@ -2435,7 +2435,7 @@ function renderGlanceTables(){
     };
     const rows=lanes.map(l=>{
       const p7=scored(l.key)?`<span style="color:${l.ngr_lift_per_rm<0?RED:GREEN};font-weight:700">${per(l.ngr_lift_per_rm)}</span>`:'<span class="sub-muted">n/a — perk</span>';
-      const p90=(l.key==='A-performance'&&l.fwd_incr_per_rm_90!=null)?`<span style="color:${l.fwd_incr_per_rm_90<0?RED:GREEN};font-weight:700">${per(l.fwd_incr_per_rm_90)}</span>`:'—';
+      const p90=(l.key==='A-performance'&&l.fwd_incr_per_rm_90!=null)?`<span style="color:${l.fwd_incr_per_rm_90<0?RED:GREEN};font-weight:700">${per(l.fwd_incr_per_rm_90)}</span>`:((l.key==='B-cashback'||l.key==='C-entitlement')?'<span class="sub-muted">n/a — perk</span>':'<span class="sub-muted">not run</span>');
       return `<tr><td class="l"><b>${l.name}</b></td><td>${l.codes}</td><td>${sM(l.spend)}</td><td>${Math.round(l.spend/tb*100)}%</td><td>${p7}</td><td>${p90}</td><td class="l">${laneRead(l)}</td></tr>`;
     }).join('');
     const A=LS['A-performance'], D=LS['D-engagement'];
@@ -2444,6 +2444,8 @@ function renderGlanceTables(){
       `<li><b>Weekly Rescue</b> money-back only goes to players who were already losing — it's a loyalty perk, so judge it on players kept, not 7-day return.</li>`;
     // Performance lane isn't only free credit — split it by mechanic (computed, so MY/SG each show their own)
     let perfNote='';
+    const _hasFwd=LS['A-performance']&&LS['A-performance'].fwd_incr_per_rm_90!=null;
+    const ninetyNote=_hasFwd?`The "over 90 days" forward test was run only for the <b>Performance</b> lane — where the 7-day loss recovers to a positive return, which is what changes the call. The perks aren't scored on return, and Engagement is already positive on the 7-day read.`:`The "over 90 days" forward test isn't run for this market yet — the 7-day read is the current basis.`;
     if(Array.isArray(VIP.codes)){
       const la=VIP.codes.filter(c=>c.lane==='A-performance'), totSp=la.reduce((a,c)=>a+(c.spend||0),0)||1, bm={};
       la.forEach(c=>{const m=c.mechanic||'other', o=bm[m]||(bm[m]={sp:0,ng:0}); o.sp+=c.spend||0; o.ng+=c.ngr_lift||0;});
@@ -2458,7 +2460,7 @@ function renderGlanceTables(){
       `<th class="l">Lane</th><th>Codes</th><th>Spend</th><th>Share</th><th>Extra per ${VSYM}1 <span style="font-weight:400;color:var(--muted)">7-day</span></th><th>Over<br>90 days</th><th class="l">Read</th>`,
       rows,
       `<tr class="ptot"><td class="l"><b>All VIP</b></td><td><b>${VIP.codes.length}</b></td><td><b>${sM(tb)}</b></td><td>100%</td><td colspan="3" class="l sub-muted">two lanes scored on return; money-back &amp; gifts are perks</td></tr>`,
-      take, perfNote);
+      take, [perfNote, ninetyNote].filter(Boolean).join(' '));
   }
 }
 renderGlanceTables();
