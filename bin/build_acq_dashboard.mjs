@@ -82,6 +82,13 @@ for (const [marker, rel] of [
   }
 }
 
+// VIP performance recovery payload (optional — #7 forward-window lift curve)
+const vipRecMarker = '/*__VIPREC_PAYLOAD__*/ null';
+const vipRecPath = path.join(SCR, `vip-recovery-${MK}.json`);
+if (out.includes(vipRecMarker) && fs.existsSync(vipRecPath)) {
+  out = out.replace(vipRecMarker, JSON.stringify(JSON.parse(fs.readFileSync(vipRecPath, 'utf8'))));
+}
+
 // TREND payload (optional — month-over-month, injected when the file exists)
 const trendMarker = '/*__TREND_PAYLOAD__*/ null';
 let trendNote = 'no TREND payload';

@@ -679,6 +679,12 @@
   <div class="panel" id="panel-vip" hidden>
     <div class="card col12" style="margin-bottom:15px" id="vipMonthlyCard" hidden><div class="card-h"><h3>Month by month — VIP</h3><span class="hint">this pillar, across the year</span></div><div id="vipMonthlyRead" class="sub2"></div><div class="tgrid"><div class="tchart"><h4>VIP spend <span>by month</span></h4><div id="vipMonthlySpend"></div></div><div class="tchart"><h4>VIP performance per S$1 <span>0 = paid for itself</span></h4><div id="vipMonthlyReturn"></div></div><div class="tchart"><h4>Money-back spend <span>the Weekly Rescue rebate</span></h4><div id="vipMonthlyCb"></div></div></div></div>
     <div class="card col12" id="vipDecisionBox"><div class="card-h"><h3>The decision</h3><span class="hint">the call · Cut / Hold / Test</span></div><div id="v_decisionBox"></div></div>
+    <div class="card col12" id="vipDecisionTableCard" style="margin-top:15px" hidden>
+      <div class="card-h"><h3>Every VIP promo — the call, per code</h3><span class="hint">keep · reduce · trim · stop · watch</span></div>
+      <p class="sub2">The full VIP book, one row per promo, biggest spend first — its net revenue kept per <i data-sym></i>1, the <b>call</b>, and <b>what to do</b>. This is the per-code reference behind the verdict above.</p>
+      <div id="vipDecSummary" class="fine" style="margin-bottom:8px"></div>
+      <div id="v_decTable" style="overflow:auto;max-height:540px"></div>
+    </div>
     <div class="card col12" id="vipCostWrongCard"><div class="card-h"><h3>Why protect, not cut</h3><span class="hint">how few defections wipe a saving</span></div><div id="v_costWrong"></div></div>
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
     <div class="card col12" id="vipTrendDecompCard"><div class="card-h"><h3>Why VIP performance is sliding</h3><span class="hint">what's dragging it · cost of inaction</span></div><div id="v_trendDecomp"></div></div>
@@ -786,6 +792,12 @@
       </div>
       <div id="vipDepNote" class="fine" style="margin-top:10px"></div>
     </div>
+    <div class="card col12" id="vipRecoveryCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>VIP performance — the return over longer windows</h3><span class="hint">why we say "fix, don't kill"</span></div>
+      <p class="sub2">The 'performance' free credit looks like a <b>loss at week one</b> — but VIP money keeps coming. Here's the <b>extra net revenue per <i data-sym></i>1</b> as the window lengthens (each player measured against their <b>own</b> level just before). Judged short, it's a loss; judged over <b>90 days</b>, it recovers.</p>
+      <div class="tchart" style="max-width:560px"><h4>Extra net revenue back per <i data-sym></i>1 <span>by how long after the bonus · 0 = paid for itself</span></h4><div id="vipRecBars"></div></div>
+      <div id="vipRecNote" class="fine" style="margin-top:10px"></div>
+    </div>
     <div id="v_lanes"></div>
     <div class="notes" id="v_notes"></div>
     <div class="soon" id="v_soon"></div>
@@ -824,6 +836,7 @@ const VIPLIFE = {"market":"SG","currency":"SGD","sym":"S$","whale_count":0,"vip"
 const BONUS = {"market":"SG","sym":"S$","pillars":{"retention":{"families":{"deposit":{"codes":111,"spend":127238,"ngr_lift":168133,"per_rm":1.32,"mechanics":[{"mechanic":"Reload","codes":68,"spend":110427,"per_rm":1.34},{"mechanic":"Free spins","codes":43,"spend":16811,"per_rm":1.2}],"size_bands":[{"band":"under S$15","codes":17,"spend":2782,"per_rm":6.09},{"band":"S$15-30","codes":22,"spend":27384,"per_rm":2.04},{"band":"S$30-90","codes":37,"spend":20118,"per_rm":0.97},{"band":"S$90-210","codes":26,"spend":38670,"per_rm":1.93},{"band":"S$210+","codes":9,"spend":38284,"per_rm":0.03}],"flip_band":null,"profitable_bands":["under S$15","S$15-30","S$30-90","S$90-210","S$210+"],"stay":{"d30":{"matured":1123,"still_pct":97,"avg_dep_days":8.8},"d60":{"matured":977,"still_pct":97.4,"avg_dep_days":14.8},"d90":{"matured":824,"still_pct":99.9,"avg_dep_days":21.5}}},"give-back":{"codes":58,"spend":24680,"ngr_lift":-16143,"per_rm":-0.65,"mechanics":[{"mechanic":"Free credit","codes":34,"spend":23118,"per_rm":-1.08},{"mechanic":"Free spins","codes":24,"spend":1562,"per_rm":5.67}],"size_bands":[{"band":"under S$15","codes":17,"spend":662,"per_rm":-3.81},{"band":"S$15-30","codes":16,"spend":2768,"per_rm":-2.17},{"band":"S$30-90","codes":15,"spend":11368,"per_rm":0.63},{"band":"S$90-210","codes":5,"spend":6204,"per_rm":-0.48},{"band":"S$210+","codes":5,"spend":3678,"per_rm":-3.21}],"flip_band":"under S$15","profitable_bands":["S$30-90"],"stay":{"d30":{"matured":505,"still_pct":56,"avg_dep_days":4.2},"d60":{"matured":484,"still_pct":63,"avg_dep_days":8},"d90":{"matured":424,"still_pct":63.7,"avg_dep_days":11}},"keeper_hunter":{"matured":505,"hunter_pct":44,"keeper_pct":56}}},"excluded":null},"vip":{"families":{"give-back":{"codes":25,"spend":191039,"ngr_lift":-210246,"per_rm":-1.1,"mechanics":[{"mechanic":"Free credit","codes":25,"spend":191039,"per_rm":-1.1}],"size_bands":[{"band":"S$30-90","codes":2,"spend":2904,"per_rm":-0.67},{"band":"S$90-210","codes":4,"spend":12267,"per_rm":-0.15},{"band":"S$210+","codes":19,"spend":175868,"per_rm":-1.17}],"flip_band":"S$30-90","profitable_bands":[],"stay":{"d30":{"matured":325,"still_pct":56.6,"avg_dep_days":4},"d60":{"matured":291,"still_pct":68.4,"avg_dep_days":8.5},"d90":{"matured":179,"still_pct":70.9,"avg_dep_days":10.9}},"keeper_hunter":{"matured":325,"hunter_pct":43.4,"keeper_pct":56.6}},"deposit":{"codes":26,"spend":184278,"ngr_lift":-16790,"per_rm":-0.09,"mechanics":[{"mechanic":"Reload","codes":20,"spend":151300,"per_rm":-0.22},{"mechanic":"Free credit","codes":4,"spend":32348,"per_rm":0.45},{"mechanic":"Free spins","codes":2,"spend":630,"per_rm":2.22}],"size_bands":[{"band":"S$30-90","codes":1,"spend":500,"per_rm":7.6},{"band":"S$90-210","codes":7,"spend":25938,"per_rm":-0.56},{"band":"S$210+","codes":18,"spend":157840,"per_rm":-0.04}],"flip_band":"S$90-210","profitable_bands":["S$30-90"],"stay":{"d30":{"matured":241,"still_pct":98.3,"avg_dep_days":9.3},"d60":{"matured":201,"still_pct":99,"avg_dep_days":17.5},"d90":{"matured":170,"still_pct":99.4,"avg_dep_days":26.7}}}},"excluded":{"lane":"D-engagement","codes":256,"spend":75834}}},"unclassified":{"retention":{"codes":42,"spend":53258},"vip":{"codes":8,"spend":91054}}};
 const BONUSLIFE = {"market":"SG","currency":"SGD","symbol":"S$","as_of":"2026-01-01","basis":"Lifetime + YTD net revenue (all history, whole-book) of every member who ever received each give-back/deposit family, joined by BonusCode. DIRECTIONAL — shows whether a bonus reaches high- or low-lifetime players, NOT that it caused the value (holdout is the proof). VIP excludes lane D-engagement.","pillars":{"retention":{"deposit":{"recipients":2024,"spend":127238,"life_per_rm":165.32,"ytd_per_rm":19.32,"avg_life":10393,"avg_ytd":1215,"mechanics":[{"mechanic":"Reload","recipients":1732,"spend":110427,"avg_life":8197,"med_life":499,"avg_ytd":852,"life_per_rm":128.56,"ytd_per_rm":13.36},{"mechanic":"Free spins","recipients":292,"spend":16811,"avg_life":23419,"med_life":2519,"avg_ytd":3368,"life_per_rm":406.78,"ytd_per_rm":58.49}]},"give-back":{"recipients":1438,"spend":24680,"life_per_rm":590.46,"ytd_per_rm":64.57,"avg_life":10134,"avg_ytd":1108,"mechanics":[{"mechanic":"Free credit","recipients":1394,"spend":23118,"avg_life":10232,"med_life":363,"avg_ytd":1123,"life_per_rm":616.96,"ytd_per_rm":67.71},{"mechanic":"Free spins","recipients":44,"spend":1562,"avg_life":7040,"med_life":1080,"avg_ytd":639,"life_per_rm":198.3,"ytd_per_rm":18.01}]}},"vip":{"give-back":{"recipients":454,"spend":191039,"life_per_rm":81.09,"ytd_per_rm":8.16,"avg_life":34124,"avg_ytd":3433,"mechanics":[{"mechanic":"Free credit","recipients":454,"spend":191039,"avg_life":34124,"med_life":13957,"avg_ytd":3433,"life_per_rm":81.09,"ytd_per_rm":8.16}]},"deposit":{"recipients":312,"spend":184278,"life_per_rm":100.55,"ytd_per_rm":12.1,"avg_life":59389,"avg_ytd":7147,"mechanics":[{"mechanic":"Reload","recipients":97,"spend":151300,"avg_life":74912,"med_life":24452,"avg_ytd":9353,"life_per_rm":48.03,"ytd_per_rm":6},{"mechanic":"Free credit","recipients":202,"spend":32348,"avg_life":55652,"med_life":20208,"avg_ytd":6516,"life_per_rm":347.52,"ytd_per_rm":40.69},{"mechanic":"Free spins","recipients":13,"spend":630,"avg_life":1632,"med_life":748,"avg_ytd":498,"life_per_rm":33.67,"ytd_per_rm":10.27}]}}}};
 const BONUSRIP = {"market":"SG","symbol":"S$","basis":"Directional ripple cuts over the give-back/deposit families. Reach, not causal (holdout = proof).","hunter_vs_keeper":{"hunter":{"members":167,"avg_life":8711,"med_life":734,"tot_life":1454710},"keeper":{"members":237,"avg_life":42108,"med_life":11642,"tot_life":9979622},"n_hunters":172,"n_keepers":237},"tier_reach":{"give-back":{"Bronze":478,"Classic":5,"Diamond":2,"Diamond (Trial)":8,"Gold":5,"Gold (Trial)":130,"Platinum":3,"Platinum (Trial)":24,"Silver":21,"Silver (Trial)":22,"Unknown":152},"deposit":{"Bronze":670,"Classic":14,"Diamond":8,"Diamond (Trial)":79,"Gold":15,"Gold (Trial)":235,"Platinum":6,"Platinum (Trial)":81,"Silver":12,"Silver (Trial)":42,"Unknown":264}},"reconciliation":[{"pillar":"retention","family":"give-back","short_per_rm":-0.65,"life_per_rm":590.46,"avg_life":10134,"avg_ytd":1108,"hunter_pct":44},{"pillar":"retention","family":"deposit","short_per_rm":1.32,"life_per_rm":165.32,"avg_life":10393,"avg_ytd":1215,"hunter_pct":null},{"pillar":"vip","family":"give-back","short_per_rm":-1.1,"life_per_rm":81.09,"avg_life":34124,"avg_ytd":3433,"hunter_pct":43.4},{"pillar":"vip","family":"deposit","short_per_rm":-0.09,"life_per_rm":100.55,"avg_life":59389,"avg_ytd":7147,"hunter_pct":null}],"gateway":{"gb_members":2370,"migrated_after":84,"ever_deposit_bonus":686,"gateway_rate_pct":3.5,"overlap_pct":28.9},"cannibalization":{"deposit":{"n":1340,"median_days":2.5,"active_within_7d_pct":67.2,"lapsed_30d_plus_pct":7.2},"give-back":{"n":566,"median_days":15,"active_within_7d_pct":41.3,"lapsed_30d_plus_pct":32.7}},"size_x_lifetime":[{"band":"under S$15","members":22,"avg_life":3152},{"band":"S$15-30","members":74,"avg_life":802},{"band":"S$30-90","members":111,"avg_life":13749},{"band":"S$90-210","members":62,"avg_life":28858},{"band":"S$210+","members":146,"avg_life":55164}],"matched_cohort":{"by_cohort":[{"cohort":2020,"gb_n":10,"gb_life":29364,"dp_n":30,"dp_life":2258},{"cohort":2021,"gb_n":174,"gb_life":24327,"dp_n":501,"dp_life":9572},{"cohort":2022,"gb_n":254,"gb_life":23480,"dp_n":488,"dp_life":11686},{"cohort":2023,"gb_n":154,"gb_life":23177,"dp_n":355,"dp_life":9401},{"cohort":2024,"gb_n":427,"gb_life":4822,"dp_n":318,"dp_life":5357},{"cohort":2025,"gb_n":227,"gb_life":1820,"dp_n":74,"dp_life":4417},{"cohort":2026,"gb_n":161,"gb_life":664,"dp_n":101,"dp_life":1376}],"gb_adj_life":15617,"dp_adj_life":7846,"raw_gb_life":10134,"basis":"Give-back vs deposit recipients scored on a common first-deposit-year mix (tenure-matched)."}};
+const VIPREC = /*__VIPREC_PAYLOAD__*/ null;
 const TREND = {"market":"SG","currency":"SGD","data_as_of":"2026-08-26","months":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"],"labels":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"],"partial":{"2026-08":true},"spend_by_pillar":{"acq":[2072,2439,6159,5509,2298,1159,1022,884],"ret":[33073,17072,29748,14783,8919,12124,28191,56804],"vip":[138427,56051,43762,93347,40998,71458,78716,19446]},"cashback_spend":[37085,10922,17454,8962,8616,2690,3428,1889],"claims":{"acq":[31,53,143,147,50,25,24,16],"ret":[801,466,526,277,189,233,356,479],"vip":[630,430,415,580,360,2710,975,92]},"efficiency":[{"month":"2026-01","spend_m7":118324,"ngr_m7":-23632,"per_rm":-0.2,"per_rm_ret":2.92,"ret_spend":33073,"per_rm_vip":-1.41,"vip_spend":85251},{"month":"2026-02","spend_m7":56545,"ngr_m7":53063,"per_rm":0.94,"per_rm_ret":1.75,"ret_spend":17072,"per_rm_vip":0.59,"vip_spend":39473},{"month":"2026-03","spend_m7":53058,"ngr_m7":-4628,"per_rm":-0.09,"per_rm_ret":0.24,"ret_spend":29748,"per_rm_vip":-0.5,"vip_spend":23310},{"month":"2026-04","spend_m7":91622,"ngr_m7":-41337,"per_rm":-0.45,"per_rm_ret":0.23,"ret_spend":14783,"per_rm_vip":-0.58,"vip_spend":76839},{"month":"2026-05","spend_m7":34721,"ngr_m7":-20749,"per_rm":-0.6,"per_rm_ret":0.16,"ret_spend":8919,"per_rm_vip":-0.86,"vip_spend":25802},{"month":"2026-06","spend_m7":57088,"ngr_m7":-54901,"per_rm":-0.96,"per_rm_ret":-1.93,"ret_spend":12124,"per_rm_vip":-0.7,"vip_spend":44964},{"month":"2026-07","spend_m7":64057,"ngr_m7":-32853,"per_rm":-0.51,"per_rm_ret":-0.08,"ret_spend":28191,"per_rm_vip":-0.85,"vip_spend":35866},{"month":"2026-08","spend_m7":64219,"ngr_m7":-29240,"per_rm":-0.46,"per_rm_ret":-0.44,"ret_spend":53165,"per_rm_vip":-0.52,"vip_spend":11054}],"acq":[{"month":"2026-01","spend_new":815,"ftd":11,"cost_per_ftd":74},{"month":"2026-02","spend_new":1448,"ftd":20,"cost_per_ftd":72},{"month":"2026-03","spend_new":4580,"ftd":63,"cost_per_ftd":73},{"month":"2026-04","spend_new":3716,"ftd":82,"cost_per_ftd":45},{"month":"2026-05","spend_new":1196,"ftd":21,"cost_per_ftd":57},{"month":"2026-06","spend_new":715,"ftd":6,"cost_per_ftd":119},{"month":"2026-07","spend_new":446,"ftd":4,"cost_per_ftd":112},{"month":"2026-08","spend_new":315,"ftd":2,"cost_per_ftd":158}],"read":{"ret_early":1.64,"ret_late":-0.62,"ret_dir":"degrading","vip_early":-0.44,"vip_late":-0.8,"vip_dir":"degrading"},"sym":"S$"};
 const ATTR = /*__ATTR_PAYLOAD__*/ null;
 const LTV = {"market":"SG","currency":"SGD","symbol":"S$","as_of":"2026-08-30","basis":"Whole-book player value (not promo-attributed): every member's first-ever deposit dates the cohort; cumulative net revenue per member follows the FULL snapshot history back to 2018 — the real lifetime curve, not the YTD window the promo-cut analysis uses.","cohorts":[{"year":2020,"n":89,"max_offset":6,"cum_per_member":{"0":337,"1":-179,"2":-262,"3":84,"4":887,"5":941,"6":1236}},{"year":2021,"n":2990,"max_offset":5,"cum_per_member":{"0":827,"1":1708,"2":2235,"3":2807,"4":3289,"5":3477}},{"year":2022,"n":4636,"max_offset":4,"cum_per_member":{"0":867,"1":1649,"2":2150,"3":2511,"4":2721}},{"year":2023,"n":3935,"max_offset":3,"cum_per_member":{"0":705,"1":1316,"2":1606,"3":1768}},{"year":2024,"n":6279,"max_offset":2,"cum_per_member":{"0":715,"1":1019,"2":1189}},{"year":2025,"n":4662,"max_offset":1,"cum_per_member":{"0":621,"1":1118}},{"year":2026,"n":2636,"max_offset":0,"cum_per_member":{"0":404}}],"blended_cum_per_member":{"0":703,"1":1307,"2":1696,"3":2317,"4":2920,"5":3404,"6":1236},"summary":{"mature_year":2020,"mature_offset":6,"mature_yr0":337,"mature_final":1236,"blended_yr0":703,"blended_yr1":1307,"blended_yr3":2317,"yr1_multiple":1.9,"cohorts_negative_yr0":[]}};
@@ -2734,6 +2747,59 @@ function renderHoldout(){
   }
 }
 renderHoldout();
+
+// ===== #3 VIP per-code decision table (scale/keep/reduce/stop, per code) =====
+function renderVipDecisionTable(){
+  if(typeof VIP==='undefined'||!VIP||!Array.isArray(VIP.codes)) return;
+  const sym=VIP.sym||'RM', box=document.getElementById('v_decTable'); if(!box) return;
+  const DEC_COL={Keep:'scale',Maintain:'maintain',Optimise:'optimise',Reduce:'reduce',Trim:'reduce',Stop:'stop',Entitlement:'referral','Watch-money':'lowvol',Review:'lowvol',Monitor:'lowvol'};
+  const codes=VIP.codes.slice().sort((a,b)=>(b.spend||0)-(a.spend||0));
+  const card=document.getElementById('vipDecisionTableCard'); if(card)card.hidden=false;
+  const cnt={}; codes.forEach(c=>{const d=c.decision||'—'; cnt[d]=(cnt[d]||0)+1;});
+  const order=['Stop','Trim','Reduce','Review','Optimise','Watch-money','Monitor','Maintain','Entitlement','Keep'];
+  const sum=document.getElementById('vipDecSummary');
+  if(sum) sum.innerHTML='<b>'+codes.length+'</b> promos · '+order.filter(d=>cnt[d]).map(d=>`<b style="color:var(--${DEC_COL[d]||'lowvol'})">${cnt[d]}</b> ${d}`).join(' · ');
+  const badge=d=>{const c=DEC_COL[d]||'lowvol'; return `<span style="font-size:10.5px;font-weight:700;color:var(--${c});background:var(--${c}-bg);border-radius:5px;padding:1px 7px;white-space:nowrap">${d||'—'}</span>`;};
+  const money=n=>n==null?'—':sym+Math.round(n).toLocaleString();
+  const perrm=n=>n==null?'—':(n<0?'-':'+')+sym+Math.abs(n).toFixed(2);
+  const doTxt=c=>((c.do||c.reason||'').replace(/^[^—]*—\s*/,'')||'—');
+  let h=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;border-bottom:1px solid var(--line-2)">`+
+    `<th style="padding:5px 8px">Promo</th><th style="padding:5px 8px">Lane</th><th style="padding:5px 8px;text-align:right">Spend</th><th style="padding:5px 8px;text-align:right">Net rev / ${sym}1</th><th style="padding:5px 8px">Call</th><th style="padding:5px 8px">What to do</th></tr></thead><tbody>`;
+  codes.forEach(c=>{
+    const pr=c.ngr_lift_per_rm, prc=pr==null?'inherit':(pr<0?'var(--reduce)':'var(--scale)');
+    h+=`<tr style="border-bottom:1px solid var(--line-1)"><td style="padding:5px 8px">${(c.name||c.code||'').slice(0,44)}</td>`+
+       `<td style="padding:5px 8px;opacity:.75">${(c.lane||'').replace(/^[A-D]-/,'')}</td>`+
+       `<td style="padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums">${money(c.spend)}</td>`+
+       `<td style="padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums;color:${prc}">${perrm(pr)}</td>`+
+       `<td style="padding:5px 8px">${badge(c.decision)}</td>`+
+       `<td style="padding:5px 8px;opacity:.85">${doTxt(c)}</td></tr>`;
+  });
+  box.innerHTML=h+`</tbody></table>`;
+}
+renderVipDecisionTable();
+
+// ===== #7 VIP performance — the return over longer windows (surface the 90-day) =====
+function renderVipRecovery(){
+  if(typeof VIPREC==='undefined'||!VIPREC||!Array.isArray(VIPREC.windows)) return;
+  const sym=VIPREC.sym||'RM', W=VIPREC.windows, card=document.getElementById('vipRecoveryCard'); if(card)card.hidden=false;
+  const box=document.getElementById('vipRecBars');
+  if(box){box.innerHTML='';
+    const width=520,H=22+W.length*34,left=66,right=66,top=8,bot=14,rh=(H-top-bot)/W.length,bh=Math.min(22,rh-8);
+    const vals=W.map(w=>w.per_rm==null?0:w.per_rm), x0=Math.min(-0.5,...vals), x1=Math.max(0.5,...vals), sx=v=>left+((v-x0)/((x1-x0)||1))*(width-left-right), zx=sx(0);
+    const s=el('svg',{viewBox:`0 0 ${width} ${H}`,role:'img'});
+    s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+    W.forEach((w,i)=>{const y=top+i*rh+(rh-bh)/2,v=w.per_rm==null?0:w.per_rm,bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce');
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:w.days+' days'}));
+      s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
+      s.append(Object.assign(el('text',{x:pos?bx+5:bx-5,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:11px;font-weight:700;fill:'+c}),{textContent:(v<0?'-':'+')+sym+Math.abs(v).toFixed(2)}));});
+    box.append(s);
+  }
+  const note=document.getElementById('vipRecNote'), be=VIPREC.breakeven_day, fin=VIPREC.final;
+  if(note) note.innerHTML=`Read top to bottom: at <b>7 days</b> the performance free credit runs at a <b>loss</b>, `+
+    (be?`but it <b>crosses into profit by day ${be}</b> and reaches <b>${fin>=0?'+':''}${sym}${Math.abs(fin).toFixed(2)} per ${sym}1 at 90 days</b>. `:`and by 90 days it is <b>${fin==null?'—':(fin>=0?'+':'')+sym+Math.abs(fin).toFixed(2)+' per '+sym+'1'}</b>. `)+
+    `That recovery is why the call is <b>fix, don't kill</b> — move budget from the codes that never recover, not the whole lane. <b>Directional</b> (own-baseline), not proof — the holdout settles it.`;
+}
+renderVipRecovery();
 renderLTV();
 campaignView();
 
@@ -3588,11 +3654,13 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
     cardSec(byId('vipGiveBackCard')),      // give-back family: value over tenure + LTV
     cardSec(byId('vipDepositCard')),       // deposit family: top-up worth it + cannibalization
+    cardSec(byId('vipRecoveryCard')),      // #7 — performance return over longer windows (surface 90-day)
     cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
     cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
     cardSec(byId('vipLifecycleCard')),     // who the money reaches — by lifecycle stage
     cardSec(byId('vipWhaleSummaryCard')),  // whales — the big players (concept, before cross-subsidy)
     cardSec(byId('vipDecisionBox')),       // the decision — verdict + Cut/Hold/Test (after the evidence)
+    cardSec(byId('vipDecisionTableCard')), // #3 — the call per code (scale/keep/reduce/stop)
     cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when
     // ── DEEPER ANALYSES & REFERENCE ──
     htmlSec('Need to know — supporting detail', '<p class="lead">Above is the core story and the call. Below: the four lanes in full, the deeper program-wide analyses, monitoring and reference.</p>'),
