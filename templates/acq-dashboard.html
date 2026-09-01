@@ -643,6 +643,7 @@
     <div class="card col12" id="vipReallocCard"><div class="card-h"><h3>What the reinvestment is worth</h3><span class="hint">return on moving the money</span></div><div id="v_realloc"></div></div>
     <div class="card col12" id="vipTrendDecompCard"><div class="card-h"><h3>Why VIP performance is sliding</h3><span class="hint">what's dragging it · cost of inaction</span></div><div id="v_trendDecomp"></div></div>
     <div class="card col12" id="vipOperatingCard"><div class="card-h"><h3>Running it monthly</h3><span class="hint">baseline · watchlist · tracker</span></div><div id="v_operating"></div></div>
+    <div class="card col12" id="vipLifecycleCard" style="margin-bottom:15px" hidden><div class="card-h"><h3>Who the money reaches — by lifecycle stage</h3><span class="hint">is VIP budget reaching the at-risk?</span></div><p class="sub2">Every VIP bonus sorted by how recently the player last deposited. Is VIP spend reaching players at risk of cooling, or subsidising VIPs who were going to deposit anyway?</p><div class="tgrid"><div class="tchart"><h4>Where the budget goes <span>spend by lifecycle stage</span></h4><div id="vipLcSpend"></div></div><div class="tchart"><h4>Return per RM1 <span>7-day read · VIP is judged on the 90-day for performance</span></h4><div id="vipLcPay"></div></div></div><div id="vipLcNote" class="fine" style="margin-top:10px"></div></div>
     <div class="card col12" id="vipScopeCard"><div class="card-h"><h3>Scope &amp; things to watch</h3><span class="hint">flags, not scored analysis</span></div>
       <div class="scopenote"><b>Scope — Malaysia only (settled).</b> This report is scoped to the MY VIP book by decision; <b>Singapore VIP is a separate workstream, not a gap here</b>. Any policy set here applies to MY only until SG is pulled and measured on its own (SG whales may respond differently to a cap).</div>
       <div class="scopenote"><b>Responsible gaming.</b> The Weekly Rescue rebates losses (98% of its claimers were losing) and Lane A's worst cell is bonuses fired right after a deposit — exactly the loss-chasing mechanisms regulators scrutinise. Keep responsible-gaming guardrails in view when changing either; this is a compliance flag, not a scored metric.</div>
@@ -663,6 +664,7 @@
       <div id="vipWhaleTbl"></div>
       <div id="vipWhaleNote" class="fine" style="margin-top:10px"></div>
     </div>
+    <div class="card col12" id="whaleLifecycleCard" style="margin-top:15px" hidden><div class="card-h"><h3>Who the money reaches — whales by lifecycle stage</h3><span class="hint">are we reaching the cooling whales?</span></div><p class="sub2">Every whale bonus sorted by how recently that whale last deposited. Is the spend reaching the cooling whales we're trying to save, or the whales already depositing anyway?</p><div class="tgrid"><div class="tchart"><h4>Where the budget goes <span>spend by lifecycle stage</span></h4><div id="whaleLcSpend"></div></div><div class="tchart"><h4>Return per RM1 <span>7-day read</span></h4><div id="whaleLcPay"></div></div></div><div id="whaleLcNote" class="fine" style="margin-top:10px"></div></div>
     <div class="card col12" id="vipWhaleSummaryCard" style="margin-top:15px"><div class="card-h"><h3>Whales — the big players</h3><span class="hint">summary · full analysis in the Big-player detection tab</span></div><div id="v_whaleSummary"></div></div>
     <div class="card col12" style="margin-top:15px"><div class="card-h"><h3>Decision register</h3><span class="hint">who · how · when · RM</span></div><div id="v_moves"></div></div>
     <div class="card col12" style="margin-top:15px" id="v_sweetCard" hidden><div class="card-h"><h3>The sweet spot — where a VIP ringgit makes money</h3><span class="hint">by tier</span></div><p class="sub2">The simple rule: VIP bonus money <b>makes money as a cheap game reward</b> (mini-game or check-in) and <b>gives money away as big no-deposit free-credit</b> — a giveaway meant to pull deposits in, judged on deposits attracted, not net revenue. In the table below, each bonus is filed by the <b>actual amount paid out</b> — so a promo that can pay "up to RM15,500" shows its big payouts, not just its average. Cheap rewards make money at every size; big free-credit runs negative on net revenue by design — and the higher the player's tier, the more the cheap rewards pay.</p><div id="v_sweetRule"></div><div class="tgrid" style="margin-top:12px"><div class="tchart"><h4>Return by tier <span>small cheap-form vs big free-credit</span></h4><div id="v_sweetBars"></div></div><div class="tchart"><h4>Where the money sits <span>sweet vs dead zone</span></h4><div id="v_sweetZones"></div></div></div><div style="margin-top:16px"><h4 style="margin:0 0 6px">By deposit type × amount paid out <span style="font-weight:400;color:var(--muted);font-size:12px">profit for every RM1 given · each payout in its real size · green makes money, red loses</span></h4><div class="tbl-wrap"><div id="v_sweetGrid"></div></div></div><div id="v_sweetCaveat" class="fine" style="margin-top:12px"></div></div>
@@ -762,6 +764,7 @@
 const PAYLOAD = /*__ACQ_PAYLOAD__*/ null;
 const RET = /*__RET_PAYLOAD__*/ null;
 const VIP = /*__VIP_PAYLOAD__*/ null;
+const VIPLIFE = /*__VIPLIFE_PAYLOAD__*/ null;
 const TREND = /*__TREND_PAYLOAD__*/ null;
 const ATTR = /*__ATTR_PAYLOAD__*/ null;
 const LTV = /*__LTV_PAYLOAD__*/ null;
@@ -2464,6 +2467,51 @@ function renderGlanceTables(){
   }
 }
 renderGlanceTables();
+
+// ===== Lifecycle-stage breakdown (who the money reaches) — VIP + whale, mirrors the Retention card =====
+function renderLifecycle(B, ids, sym, noteHtml){
+  if(!Array.isArray(B)||!B.length) return;
+  const c0=document.getElementById(ids.spend); if(c0){const cc=c0.closest('.card'); if(cc)cc.hidden=false;}
+  const LAB={'active 0-14d':'Active (0–14d)','cooling 15-30d':'Cooling (15–30d)','dormant 31-60d':'Dormant (31–60d)','lapsed 60-120d':'Lapsed (60–120d)','no recent deposit (120d+)':'Inactive (120d+)'};
+  const lab=b=>LAB[b.bucket]||b.bucket, totSp=B.reduce((a,b)=>a+b.spend,0)||1;
+  (function(){
+    const box=document.getElementById(ids.spend); if(!box) return; box.innerHTML='';
+    const W=440,H=210,left=118,right=64,top=8,bot=30,rh=(H-top-bot)/B.length,bh=Math.min(22,rh-8);
+    const maxSp=Math.max(...B.map(b=>b.spend))||1, sx=v=>left+(v/maxSp)*(W-left-right);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    B.forEach((b,i)=>{const y=top+i*rh+(rh-bh)/2;
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:lab(b)}));
+      s.append(el('rect',{x:left,y,width:Math.max(2,sx(b.spend)-left),height:bh,rx:3,fill:CV('--accent')}));
+      s.append(Object.assign(el('text',{x:sx(b.spend)+6,y:y+bh/2+4,'text-anchor':'start',class:'vlab',style:'font-size:11px'}),{textContent:Math.round(b.spend/totSp*100)+'%'}));});
+    axTitle(s,(left+W-right)/2,H-6,'Bonus spend — share of budget');
+    box.append(s);
+  })();
+  (function(){
+    const box=document.getElementById(ids.pay); if(!box) return; box.innerHTML='';
+    const W=440,H=210,left=118,right=52,top=8,bot=30,rh=(H-top-bot)/B.length,bh=Math.min(22,rh-8);
+    const vals=B.map(b=>b.ngr_lift_per_rm==null?0:b.ngr_lift_per_rm), x0=Math.min(-0.5,...vals), x1=Math.max(0.5,...vals), sx=v=>left+((v-x0)/((x1-x0)||1))*(W-left-right), zx=sx(0);
+    const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+    s.append(el('line',{x1:zx,y1:top,x2:zx,y2:H-bot,stroke:CV('--line-2')}));
+    B.forEach((b,i)=>{const y=top+i*rh+(rh-bh)/2,v=b.ngr_lift_per_rm==null?0:b.ngr_lift_per_rm,bx=sx(v),pos=v>=0,c=pos?CV('--scale'):CV('--reduce');
+      s.append(Object.assign(el('text',{x:left-8,y:y+bh/2+4,'text-anchor':'end',class:'barlab',style:'font-size:11.5px'}),{textContent:lab(b)}));
+      s.append(el('rect',{x:Math.min(zx,bx),y,width:Math.max(2,Math.abs(bx-zx)),height:bh,rx:3,fill:c}));
+      s.append(Object.assign(el('text',{x:pos?bx+5:bx-5,y:y+bh/2+4,'text-anchor':pos?'start':'end',style:'font-size:11px;font-weight:700;fill:'+c}),{textContent:(v<0?'-':'+')+sym+Math.abs(v).toFixed(2)}));});
+    axTitle(s,(left+W-right)/2,H-6,`Net revenue back per ${sym}1 — ${sym}0 = paid for itself`);
+    box.append(s);
+  })();
+  const n=ids.note&&document.getElementById(ids.note); if(n) n.innerHTML=noteHtml;
+}
+if(typeof VIPLIFE!=='undefined'&&VIPLIFE){
+  const _vs=(typeof VSYM!=='undefined'&&VSYM)||'RM';
+  const lcNote=(B,who,extra)=>{
+    if(!B||!B.length) return '';
+    const tot=B.reduce((a,b)=>a+b.spend,0)||1, a=B[0], cool=B.find(b=>/cooling/.test(b.bucket))||{};
+    const actShare=Math.round(a.spend/tot*100), coolShare=Math.round((cool.spend||0)/tot*100);
+    return `<b>${actShare}%</b> of ${who==='whale'?'whale':'VIP'} bonus goes to <b>Active</b> players who deposit again <b>${a.redeposit_rate}%</b> of the time anyway — much of that reaches ${who==='whale'?'whales':'VIPs'} who'd deposit regardless${cool.spend?`, while only <b>${coolShare}%</b> reaches the <b>cooling</b> ones we're trying to keep`:''}. ${extra} <b>The move:</b> shift budget toward the cooling / at-risk stages before they lapse.`;
+  };
+  renderLifecycle(VIPLIFE.vip, {spend:'vipLcSpend',pay:'vipLcPay',note:'vipLcNote'}, _vs, lcNote(VIPLIFE.vip,'VIP','The 7-day return is negative at every stage because VIP is judged on the <b>90-day</b> for performance — so read this as the <b>budget concentration</b>, not a per-stage verdict.'));
+  renderLifecycle(VIPLIFE.whale, {spend:'whaleLcSpend',pay:'whaleLcPay',note:'whaleLcNote'}, _vs, lcNote(VIPLIFE.whale,'whale','Same pattern as retention — the money follows the already-active, not the at-risk.'));
+}
 renderLTV();
 campaignView();
 
@@ -3256,6 +3304,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('w_rosterCard')),          // The 74 whales
     cardSec(byId('w_ltvCard')),             // whale lifetime value
     cardSec(byId('vipWhaleCard')),          // At-risk ledger (the who's-at-risk evidence)
+    cardSec(byId('whaleLifecycleCard')),    // who the money reaches — whales by lifecycle stage
     cardSec(byId('w_decisionCard')),        // The whale call (the decision, after concept + evidence)
     cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
     cardSec(byId('w_saveListCard')),        // Save-list (the tactic that executes 'retain the cooling')
@@ -3314,6 +3363,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
     cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
     cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
+    cardSec(byId('vipLifecycleCard')),     // who the money reaches — by lifecycle stage
     cardSec(byId('vipWhaleSummaryCard')),  // whales — the big players (concept, before cross-subsidy)
     cardSec(byId('vipDecisionBox')),       // the decision — verdict + Cut/Hold/Test (after the evidence)
     cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when

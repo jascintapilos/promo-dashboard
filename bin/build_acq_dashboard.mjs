@@ -56,6 +56,14 @@ if (out.includes(vipMarker) && fs.existsSync(vipPath)) {
   vipNote = `VIP ${vip.codes.length} codes / 4 lanes / net-neg subsidy RM${(vip.program?.subsidy_rm || 0).toLocaleString()}`;
 }
 
+// VIP LIFECYCLE payload (optional — by-recency stage breakdown for VIP + whale)
+const vipLifeMarker = '/*__VIPLIFE_PAYLOAD__*/ null';
+const vipLifePath = path.join(SCR, `vip/lifecycle-${MK}.json`);
+if (out.includes(vipLifeMarker) && fs.existsSync(vipLifePath)) {
+  const vl = JSON.parse(fs.readFileSync(vipLifePath, 'utf8'));
+  out = out.replace(vipLifeMarker, JSON.stringify(vl));
+}
+
 // TREND payload (optional — month-over-month, injected when the file exists)
 const trendMarker = '/*__TREND_PAYLOAD__*/ null';
 let trendNote = 'no TREND payload';
