@@ -89,6 +89,20 @@ if (out.includes(vipRecMarker) && fs.existsSync(vipRecPath)) {
   out = out.replace(vipRecMarker, JSON.stringify(JSON.parse(fs.readFileSync(vipRecPath, 'utf8'))));
 }
 
+// GUARDRAIL grid payload (optional — lifecycle x tier x mechanic setup rules)
+const guardMarker = '/*__GUARDRAIL_PAYLOAD__*/ null';
+const guardPath = path.join(SCR, `guardrails-${MK}.json`);
+if (out.includes(guardMarker) && fs.existsSync(guardPath)) {
+  out = out.replace(guardMarker, JSON.stringify(JSON.parse(fs.readFileSync(guardPath, 'utf8'))));
+}
+
+// EXEC overview roll-up payload (redesign §1 — decision counts + pillar spend + top actions)
+const execMarker = '/*__EXEC_PAYLOAD__*/ null';
+const execPath = path.join(SCR, `exec-${MK}.json`);
+if (out.includes(execMarker) && fs.existsSync(execPath)) {
+  out = out.replace(execMarker, JSON.stringify(JSON.parse(fs.readFileSync(execPath, 'utf8'))));
+}
+
 // TREND payload (optional — month-over-month, injected when the file exists)
 const trendMarker = '/*__TREND_PAYLOAD__*/ null';
 let trendNote = 'no TREND payload';

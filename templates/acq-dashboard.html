@@ -435,6 +435,13 @@
   </nav>
 
   <div class="panel" id="panel-summary" hidden>
+    <div class="card col12" id="execOverviewCard" style="margin-bottom:15px" hidden>
+      <div class="card-h"><h3>Executive overview — where the money works, and where to act</h3><span class="hint">the entry point · drill deeper below</span></div>
+      <p class="sub2">Where our promo money goes, how the book is doing overall, and the promos flagged for action — the headline before the evidence underneath.</p>
+      <div id="execSpend"></div>
+      <div style="margin-top:16px"><h4 style="margin:0 0 8px;font-size:14px">Management actions <span style="font-weight:400;color:var(--muted);font-size:12px">promo codes by decision</span></h4><div id="execActions"></div></div>
+      <div style="margin-top:16px"><h4 style="margin:0 0 8px;font-size:14px">Top moves <span style="font-weight:400;color:var(--muted);font-size:12px">ranked by money at stake</span></h4><div id="execTop"></div></div>
+    </div>
     <div class="exec-note" id="s_banner"></div>
     <div class="card col12" style="margin-bottom:15px" id="s_monthlyCard"><div class="card-h"><h3>Monthly view</h3><span class="hint">this month · a single period · or compare</span></div>
       <div id="s_mvSeg" role="tablist" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
@@ -839,6 +846,7 @@ const BONUSLIFE = /*__BONUSLIFE_PAYLOAD__*/ null;
 const BONUSRIP = /*__BONUSRIPPLE_PAYLOAD__*/ null;
 const VIPREC = /*__VIPREC_PAYLOAD__*/ null;
 const BONUSGUARD = /*__GUARDRAIL_PAYLOAD__*/ null;
+const EXEC = /*__EXEC_PAYLOAD__*/ null;
 const TREND = /*__TREND_PAYLOAD__*/ null;
 const ATTR = /*__ATTR_PAYLOAD__*/ null;
 const LTV = /*__LTV_PAYLOAD__*/ null;
@@ -2791,6 +2799,40 @@ function renderGuardrails(){
   draw();
 }
 renderGuardrails();
+
+// ===== Executive overview (redesign §1) — pillar spend + management-actions + top moves =====
+function renderExecOverview(){
+  if(typeof EXEC==='undefined'||!EXEC||!EXEC.counts) return;
+  const sym=EXEC.sym||'RM', card=document.getElementById('execOverviewCard'); if(card)card.hidden=false;
+  const kfmt=n=>{const a=Math.abs(n||0); return sym+(a>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,'')+'M':a>=1e3?Math.round(n/1e3)+'k':Math.round(n));};
+  const CSS={SCALE:'scale',MAINTAIN:'maintain',OPTIMIZE:'optimise',REDUCE:'reduce',STOP:'stop'};
+  // spend strip
+  const sp=document.getElementById('execSpend');
+  if(sp){
+    const P=[['Acquisition',EXEC.pillar_share.Acquisition,'--maintain'],['Retention',EXEC.pillar_share.Retention,'--scale'],['VIP',EXEC.pillar_share.VIP,'--optimise']];
+    const wb=EXEC.wholebook_per_rm;
+    sp.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;margin-bottom:8px">`+
+      `<span>Total promo spend <b style="font-size:16px">${kfmt(EXEC.total_spend)}</b></span>`+
+      `<span style="opacity:.8">whole-book return <b style="color:${(wb||0)<0?'var(--reduce)':'var(--scale)'}">${wb==null?'—':(wb<0?'-':'+')+sym+Math.abs(wb).toFixed(2)}/${sym}1</b> <span style="opacity:.6;font-size:11px">(Retention + VIP, money-judged · directional)</span></span></div>`+
+      `<div style="display:flex;height:16px;border-radius:4px;overflow:hidden">`+P.map(p=>`<div title="${p[0]} ${p[1]}%" style="width:${p[1]}%;background:var(${p[2]})"></div>`).join('')+`</div>`+
+      `<div style="display:flex;gap:18px;margin-top:5px;font-size:11.5px">`+P.map(p=>`<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(${p[2]});margin-right:4px"></span>${p[0]} ${p[1]}%</span>`).join('')+`</div>`;
+  }
+  // management-actions chips
+  const ab=document.getElementById('execActions');
+  if(ab){
+    const chip=(cat,lbl)=>{const c=CSS[cat]; return `<span style="display:inline-flex;align-items:baseline;gap:6px;padding:5px 12px;border-radius:8px;background:var(--${c}-bg);margin:0 8px 8px 0"><b style="font-size:17px;color:var(--${c})">${EXEC.counts[cat]}</b><span style="font-size:12px;font-weight:600;color:var(--${c})">${lbl}</span></span>`;};
+    ab.innerHTML=chip('SCALE','Scale')+chip('MAINTAIN','Maintain')+chip('OPTIMIZE','Optimize')+chip('REDUCE','Reduce')+chip('STOP','Stop')+
+      `<span style="display:inline-block;font-size:11.5px;color:var(--muted);padding:6px 0">+ ${EXEC.counts.WATCH} watch (too new/thin) · ${EXEC.counts.OTHER} perk/referral</span>`;
+  }
+  // top moves
+  const tb=document.getElementById('execTop');
+  if(tb){
+    const VC={Stop:'stop','Right-size':'reduce',Scale:'scale'};
+    tb.innerHTML=`<ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.7">`+
+      (EXEC.top_actions||[]).map(a=>`<li><span style="font-weight:700;color:var(--${VC[a.verb]||'maintain'})">${a.verb}</span> — ${a.text.replace(a.verb,'').replace(/^ — /,'')}</li>`).join('')+`</ol>`;
+  }
+}
+renderExecOverview();
 renderLTV();
 campaignView();
 
@@ -3483,6 +3525,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     });
   })();
   buildPanel('panel-summary',[
+    cardSec(byId('execOverviewCard')),  // §1 executive overview — the presentation entry point
     cardSec(cardById('s_portfolio')),   // summary table pinned to the very top (per request)
     htmlSec("What this report is — and how it's judged", ABOUT.summary),
     leadSec('Main findings',[byId('s_banner')]),
@@ -3674,7 +3717,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   // buildPanel dissolves the .card wrapper (the card id is gone; the inner id survives inside the .sec).
   // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
   var OPEN_DEF={
-    'panel-summary':['s_banner','s_portfolio','s_attrib','s_ledger','s_plan','holdoutBody','s_ltv'],
+    'panel-summary':['execSpend','s_banner','s_portfolio','s_attrib','s_ledger','s_plan','holdoutBody','s_ltv'],
     'panel-acquisition':['meta','s_acqGlance'],
     'panel-retention':['r_meta','s_retGlance'],
     'panel-vip':['v_meta','v_rules','s_vipGlance'],
