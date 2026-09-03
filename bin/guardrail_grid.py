@@ -150,8 +150,33 @@ def analyse(mk):
             "graded": cell["n"] >= MIN_N,
         })
     grid.sort(key=lambda g: (-g["spend"]))
+
+    # cross-cutting lead rules (computed here so the card headline is data-driven + market-safe)
+    from collections import Counter
+    fc = [c for c in grid if c["mechanic"] == "Free credit" and c["graded"]]
+    fc_loses = sum(1 for c in fc if (c["per_rm"] or 0) < 0)
+    bandc = Counter(c["best_size_band"] for c in fc if c["best_size_band"])
+    size_cap = bandc.most_common(1)[0][0] if bandc else None
+    order = ["Active (0-14d)", "Cooling (15-30d)", "Dormant (31-60d)", "Lapsed (61-120d)"]
+    tl = {}
+    for c in grid:
+        if not c["graded"]:
+            continue
+        d = tl.setdefault(c["lifecycle"], {"days": [], "r30": [], "n": 0})
+        if c["median_days_to_redep"] is not None:
+            d["days"].append((c["median_days_to_redep"], c["n"]))
+        d["r30"].append((c["redeposit_30d_pct"], c["n"])); d["n"] += c["n"]
+    timing = []
+    for life in order:
+        if life in tl:
+            d = tl[life]
+            wd = round(sum(x * n for x, n in d["days"]) / sum(n for _, n in d["days"])) if d["days"] else None
+            wr = round(sum(x * n for x, n in d["r30"]) / sum(n for _, n in d["r30"]), 1) if d["r30"] else None
+            timing.append({"lifecycle": life, "median_days": wd, "redep30": wr, "n": d["n"]})
+    lead = {"size_cap_band": size_cap, "fc_cells": len(fc), "fc_loses": fc_loses, "timing": timing}
+
     return {"market": mk, "sym": "RM" if mk == "MY" else "S$", "min_n": MIN_N,
-            "cells": grid,
+            "cells": grid, "lead": lead,
             "basis": ("lifecycle (recency at claim) x tier x mechanic. per_rm = sum(ngr_lift)/sum(bonus_cost) "
                       "(7-day attributed, directional). redeposit_30d = share of claims whose member deposited "
                       "again within 30 days; median_days_to_redep from bin/redep_timing.py. Observed sweet spot "
