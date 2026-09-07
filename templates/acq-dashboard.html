@@ -3638,46 +3638,57 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     plainSec(byId('w_notes'),'Notes'),
   ]);
   buildPanel('panel-acquisition',[
-    htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
+    // FINDING (L1)
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
     cardSec(cardById('acqGlanceCard')),      // at-a-glance: by mechanic
     leadSec('Key numbers',[byId('kpis')]),
-    cardSec(byId('acqMonthlyCard')),         // pillar-scoped month-by-month
-    cardSec(cardById('ruleLines')),          // rules before results
-    cardSec(cardById('chartTrend')),         // new depositors by month (simplest single-axis on-ramp)
+    // MECHANIC performance
     cardSec(cardById('chartBars')),          // cost per FTD
-    cardSec(cardById('chartScatter')),       // cost vs coming back
     cardSec(cardById('chartMech')),          // by bonus type
-    cardSec(byId('acqDepoCard')),            // deposit-split (concept, before sweet spot)
-    cardSec(byId('acqSweetCard')),           // sweet spot
+    cardSec(byId('acqDepoCard')),            // deposit-required vs no-deposit
+    // SUPPORTING analysis
+    cardSec(cardById('chartScatter')),       // cost vs coming back
+    cardSec(byId('acqSweetCard')),           // sweet spot (size & type)
     cardSec(byId('acqLtvCard')),             // LTV by welcome source
     cardSec(byId('acqFunnelCard')),          // claim→deposit leakage
-    cardSec(byId('acqParetoCard')),          // is the headline real? (robustness capstone, late)
-    cardSec(cardById('tbl')),                // decision table (reference)
+    cardSec(cardById('chartTrend')),         // new depositors by month
+    // ROBUSTNESS capstone
+    cardSec(byId('acqParetoCard')),          // is the headline real?
+    // ACTION — decision table + monthly drill-down
+    cardSec(cardById('tbl')),                // code-level decision table
+    cardSec(byId('acqMonthlyCard')),         // month-by-month (drill-down)
+    // METHODOLOGY / rules (relocate to §5/§6 in Phase 3)
+    cardSec(cardById('ruleLines')),          // decision rules → §5
+    htmlSec("What Acquisition is — and how it's judged", ABOUT.acquisition),
     plainSec(qP('panel-acquisition','.notes'),'Notes'),
   ]);
   buildPanel('panel-retention',[
-    htmlSec("What Retention is — and how it's judged", ABOUT.retention),
+    // FINDING (L1) — the economics headline
     leadSec('Main findings',[byId('r_meta'),byId('retSweetSummary'),qP('panel-retention','.call')]),
     cardSec(cardById('retGlanceCard')),      // at-a-glance: by mechanic
     leadSec('Key numbers',[byId('r_kpis')]),
-    cardSec(byId('retMonthlyCard')),         // pillar-scoped month-by-month
-    cardSec(byId('retDepoCard')),            // deposit-split (concept, up front)
+    // MECHANIC — the deposit-flag split + value-over-tenure
+    cardSec(byId('retDepoCard')),            // deposit-required vs no-deposit (concept, up front)
     cardSec(byId('retGiveBackCard')),        // give-back family: value over tenure + LTV
     cardSec(byId('retDepositCard')),         // deposit family: top-up worth it + cannibalization
-    cardSec(cardById('r_ruleLines')),        // rules before results
+    // PLAYER BEHAVIOUR — segment + durability
     cardSec(byId('retLifecycleCard')),       // who the money reaches (lifecycle)
-    cardSec(byId('retSurvivalCard')),        // does the value last? (60/90)
-    cardSec(cardById('r_chartNgr')),         // net rev per RM by promo (simple single-axis)
-    cardSec(cardById('r_chartQuad')),        // money × retention
-    cardSec(cardById('r_chartGrid')),        // bonus type × tier GRID (before the tier card that refs it)
-    cardSec(cardById('r_chartTier')),        // by player tier
+    cardSec(byId('retSurvivalCard')),        // does the value last? (60/90 by mechanic)
+    // ECONOMICS — money charts
+    cardSec(cardById('r_chartNgr')),         // net rev per RM by promo
+    cardSec(cardById('r_chartQuad')),        // money × retention quadrant
+    cardSec(cardById('r_chartGrid')),        // bonus type × tier map (r_chartTier dropped — a 1-D projection of this)
     cardSec(byId('retSweetTierCard')),       // sweet spot by tier
-    cardSec(byId('guardrailCard')),          // promo guardrails — how to set up a code (lifecycle x tier x mechanic)
-    cardSec(byId('retIncrCard')),            // extra returns / incrementality (caveated capstone, late)
-    cardSec(cardById('r_tbl')),              // decision table (reference)
+    // GUARDRAILS (relocates to §5 Playbook in Phase 3)
+    cardSec(byId('guardrailCard')),
+    // ACTION — incrementality capstone + decision table
+    cardSec(byId('retIncrCard')),            // extra returns / incrementality (caveated capstone)
+    cardSec(cardById('r_tbl')),              // code-level decision table
+    cardSec(byId('retMonthlyCard')),         // month-by-month (drill-down)
+    // METHODOLOGY (relocates to §6 in Phase 3)
+    htmlSec("What Retention is — and how it's judged", ABOUT.retention),
+    cardSec(cardById('r_ruleLines')),        // decision rules
     plainSec(byId('r_notes'),'Notes'),
-    plainSec(byId('r_soon'),null),
   ]);
   buildPanel('panel-vip',[
     // ── ORIENT → CORE CONCEPTS → EVIDENCE → THE CALL (basics-first) ──
@@ -3718,8 +3729,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
   var OPEN_DEF={
     'panel-summary':['execSpend','s_portfolio','s_ledger','s_plan','s_frontier'],
-    'panel-acquisition':['meta','s_acqGlance'],
-    'panel-retention':['r_meta','s_retGlance'],
+    'panel-acquisition':['meta','s_acqGlance','kpis'],
+    'panel-retention':['r_meta','s_retGlance','r_kpis'],
     'panel-vip':['v_meta','v_rules','s_vipGlance'],
     'panel-whale':['w_meta']
   };
