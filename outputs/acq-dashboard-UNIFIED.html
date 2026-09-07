@@ -484,8 +484,6 @@
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Big-player detection</button>
-    <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
   <div class="panel" id="panel-summary" hidden>
@@ -3111,7 +3109,7 @@ function renderPeriod(){
   const per=v=>v==null?'—':(v>=0?'+':'')+S+v.toFixed(2);
   const yr=i=>M[i].slice(0,4), mlab=i=>L[i]+' '+yr(i);
   const ytdIdx=M.map((_,i)=>i);
-  function whalesShown(){const t=document.querySelector('[data-tab="whale"]');if(!t) return false;try{return getComputedStyle(t).display!=='none';}catch(e){return true;}}
+  function whalesShown(){return true;}  // big-player content is folded into the VIP tab (§4 player concentration)
   // group month-indices into quarters (keyed year-Qn so it holds up across year boundaries)
   const quarters={};
   M.forEach((m,i)=>{const y=m.slice(0,4), mm=+m.slice(5,7), q=Math.floor((mm-1)/3)+1, k=y+'-Q'+q; (quarters[k]=quarters[k]||{idxs:[],y:y,q:q}).idxs.push(i);});
@@ -3771,23 +3769,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     }
   })();
   renderWhaleLTV();
-  buildPanel('panel-whale',[
-    htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
-    leadSec('Main findings',[byId('w_meta')]),
-    leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
-    cardSec(cardById('v_whale')),           // Where value concentrates (concept, before the call)
-    cardSec(byId('w_rosterCard')),          // The 74 whales
-    cardSec(byId('w_ltvCard')),             // whale lifetime value
-    cardSec(byId('vipWhaleCard')),          // At-risk ledger (the who's-at-risk evidence)
-    cardSec(byId('whaleLifecycleCard')),    // who the money reaches — whales by lifecycle stage
-    cardSec(byId('w_decisionCard')),        // The whale call (the decision, after concept + evidence)
-    cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
-    cardSec(byId('w_saveListCard')),        // Save-list (the tactic that executes 'retain the cooling')
-    cardSec(byId('w_risingCard')),          // Rising
-    cardSec(byId('w_reinvestCard')),        // Does the bonus keep them?
-    cardSec(byId('w_effCard')),             // Is the bonus spend working?
-    plainSec(byId('w_notes'),'Notes'),
-  ]);
+  // Big-player detection FOLDED into VIP §4 (player concentration) — no separate whale panel/tab.
+  // Its cards are pulled into buildPanel('panel-vip') below (they stay raw here for that to find them by id).
   buildPanel('panel-acquisition',[
     // FINDING (L1)
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
@@ -3842,37 +3825,53 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     plainSec(byId('r_notes'),'Notes'),
   ]);
   buildPanel('panel-vip',[
-    // ── ORIENT → CORE CONCEPTS → EVIDENCE → THE CALL (basics-first) ──
-    htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // orient first (a decision needs an object)
+    // FINDING (L1) — the four-lane story
     leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
-    cardSec(cardById('vipGlanceCard')),      // at-a-glance: by lane
-    leadSec('Key numbers',[byId('v_kpis')]),                                 // lifted up — the KPI baseline
-    cardSec(byId('vipMonthlyCard')),       // pillar-scoped month-by-month
-    cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
-    cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
-    cardSec(byId('vipGiveBackCard')),      // give-back family: value over tenure + LTV
-    cardSec(byId('vipDepositCard')),       // deposit family: top-up worth it + cannibalization
-    cardSec(byId('vipRecoveryCard')),      // #7 — performance return over longer windows (surface 90-day)
-    cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
-    cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
-    cardSec(byId('vipLifecycleCard')),     // who the money reaches — by lifecycle stage
-    cardSec(byId('vipWhaleSummaryCard')),  // whales — the big players (concept, before cross-subsidy)
-    cardSec(byId('vipDecisionBox')),       // the decision — verdict + Cut/Hold/Test (after the evidence)
-    cardSec(byId('vipDecisionTableCard')), // #3 — the call per code (scale/keep/reduce/stop)
-    cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when
-    // ── DEEPER ANALYSES & REFERENCE ──
-    htmlSec('Need to know — supporting detail', '<p class="lead">Above is the core story and the call. Below: the four lanes in full, the deeper program-wide analyses, monitoring and reference.</p>'),
-    ...laneSecs(),                          // the four lanes A/B/D/C (the four-groups detail)
-    cardSec(byId('vipCoverageCard')),      // who carries whom — cross-subsidy (needs the whales concept above)
-    cardSec(byId('vipReallocCard')),       // what the reinvestment is worth
-    cardSec(byId('vipTrendDecompCard')),   // why VIP performance is sliding
-    cardSec(byId('vipGgrCard')),           // where the bonus eats the margin
-    cardSec(byId('vipTierCard')),          // are we growing players up the tiers?
-    cardSec(byId('vipOperatingCard')),     // running it monthly — baseline, watchlist, tracker
-    cardSec(byId('vipFarmCard')),          // bonus-farming watch
-    cardSec(byId('vipScopeCard')),         // scope & compliance flags (MY-only, RG, VM incentive)
+    cardSec(cardById('vipGlanceCard')),      // at-a-glance: the four lanes
+    leadSec('Key numbers',[byId('v_kpis')]),
+    cardSec(cardById('v_rules')),            // the four groups + scorecard (the mental model)
+    // MECHANIC / MONEY split + time horizon
+    cardSec(byId('vipDepoCard')),            // deposit-required vs no-deposit (foundational split)
+    cardSec(byId('vipGiveBackCard')),        // give-back family: value over tenure + LTV
+    cardSec(byId('vipDepositCard')),         // deposit family: top-up worth it + cannibalization
+    cardSec(byId('vipRecoveryCard')),        // performance return over 7-90d (surface the 90-day)
+    cardSec(cardById('v_fund')),             // funding balance by tier
+    cardSec(byId('vipLifecycleCard')),       // who the money reaches — by lifecycle stage
+    // §4 PLAYER CONCENTRATION — the big players (folded in from Big-player detection)
+    htmlSec('Player concentration — the big players', '<p class="lead"><span id="vipConcentrationHead"></span>A small group of top players carries most of the value — who they are, who is cooling, and the money at stake.</p>'),
+    leadSec('Big-player key numbers',[byId('w_kpis'),byId('w_counts')]),
+    cardSec(cardById('v_whale')),            // where value concentrates
+    cardSec(byId('w_rosterCard')),           // the top players (roster)
+    cardSec(byId('w_ltvCard')),              // what a whale is worth over its life
+    cardSec(byId('whaleLifecycleCard')),     // whales by lifecycle stage
+    cardSec(byId('vipCostWrongCard')),       // why protect, not cut
+    cardSec(byId('w_saveListCard')),         // save-list — who to act on this week
+    cardSec(byId('w_decisionCard')),         // the whale call
+    cardSec(byId('w_risingCard')),           // rising toward whale
+    cardSec(byId('w_reinvestCard')),         // does the bonus keep them?
+    cardSec(byId('w_effCard')),              // is the bonus spend working?
+    // THE CALL — VIP decision
+    cardSec(byId('vipDecisionBox')),         // verdict + Cut/Hold/Test
+    cardSec(byId('vipDecisionTableCard')),   // the call per code (scale/keep/reduce/stop)
+    cardSec(cardById('v_moves')),            // decision register — what to do, who, how, when
+    // DEEPER ANALYSES & REFERENCE
+    htmlSec('Deeper analyses & reference', '<p class="lead">The four lanes in full, the program-wide analyses, monitoring and reference.</p>'),
+    ...laneSecs(),                           // the four lanes A/B/D/C
+    cardSec(byId('vipCoverageCard')),        // who carries whom — cross-subsidy
+    cardSec(byId('vipReallocCard')),         // what the reinvestment is worth
+    cardSec(byId('vipTrendDecompCard')),     // why VIP performance is sliding
+    cardSec(byId('vipMonthlyCard')),         // month-by-month (drill-down)
+    cardSec(byId('vipGgrCard')),             // where the bonus eats the margin
+    cardSec(byId('vipTierCard')),            // are we growing players up the tiers?
+    cardSec(byId('vipSweetTierCard')),       // sweet spot by tier (relocates to §5 Playbook)
+    cardSec(byId('vipOperatingCard')),       // running it monthly (relocates to §5)
+    cardSec(byId('vipFarmCard')),            // bonus-farming watch (relocates to §5)
+    // METHODOLOGY (relocates to §6 in a later step)
+    htmlSec("What VIP is — and how it's judged", ABOUT.vip),
+    htmlSec("Big-player detection — how it's judged", ABOUT.whale),
+    cardSec(byId('vipScopeCard')),           // scope & compliance flags
     plainSec(byId('v_notes'),'Notes'),
-    plainSec(byId('v_soon'),null),
+    plainSec(byId('w_notes'),'Big-player notes'),
   ]);
   // Open the cards the presentation walks through, by default, per tab — the flow is pre-opened while the
   // detail cards stay collapsed (not overwhelming). Sections are matched by an INNER content id because
@@ -3882,8 +3881,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     'panel-summary':['execSpend','s_portfolio','s_ledger','s_plan','s_frontier'],
     'panel-acquisition':['meta','s_acqGlance','kpis'],
     'panel-retention':['r_meta','s_retGlance','r_kpis'],
-    'panel-vip':['v_meta','v_rules','s_vipGlance'],
-    'panel-whale':['w_meta']
+    'panel-vip':['v_meta','v_rules','s_vipGlance']
   };
   Object.keys(OPEN_DEF).forEach(function(pid){
     var panel=byId(pid); if(!panel) return;
@@ -4336,8 +4334,10 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   .sec:has(#v_decisionBox),.sec:has(#v_costWrong),.sec:has(#v_realloc),.sec:has(#v_moves),
   .sec:has(#v_whaleSummary),.sec:has(#v_trendDecomp),.sec:has(#v_operating),.sec:has(#v_sweet),
   .sec:has(#vipCoverageNote),.sec:has(#vipRetainTest),.sec:has(#s_campaignThemes){display:none}
-  /* SG: no whale (big-player) analysis on the thin base — hide the tab + its panel */
-  [data-tab="whale"],#panel-whale{display:none}
+  /* SG: no whale (big-player) analysis on the thin base — hide the folded §4 player-concentration subsection */
+  .sec:has(#vipConcentrationHead),.sec:has(#w_kpis),.sec:has(#w_counts),.sec:has(#v_whale),
+  .sec:has(#w_roster),.sec:has(#w_ltv),.sec:has(#whaleLcSpend),.sec:has(#w_saveList),
+  .sec:has(#w_decision),.sec:has(#w_rising),.sec:has(#w_reinvest),.sec:has(#w_eff),#panel-whale{display:none}
 
   /* embedded in the unified shell — the shell supplies the header + country switcher */
   header{display:none!important} #ctabs{display:none!important} body{padding-top:6px!important}
@@ -4365,8 +4365,6 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     <button class="tab active" data-tab="acquisition">Acquisition</button>
     <button class="tab" data-tab="retention">Retention</button>
     <button class="tab" data-tab="vip">VIP</button>
-    <button class="tab" data-tab="whale">Big-player detection</button>
-    <button class="tab" data-tab="branding">Branding <span class="badge">soon</span></button>
   </nav>
 
   <div class="panel" id="panel-summary" hidden>
@@ -6967,7 +6965,7 @@ function renderPeriod(){
   const per=v=>v==null?'—':(v>=0?'+':'')+S+v.toFixed(2);
   const yr=i=>M[i].slice(0,4), mlab=i=>L[i]+' '+yr(i);
   const ytdIdx=M.map((_,i)=>i);
-  function whalesShown(){const t=document.querySelector('[data-tab="whale"]');if(!t) return false;try{return getComputedStyle(t).display!=='none';}catch(e){return true;}}
+  function whalesShown(){return true;}  // big-player content is folded into the VIP tab (§4 player concentration)
   // group month-indices into quarters (keyed year-Qn so it holds up across year boundaries)
   const quarters={};
   M.forEach((m,i)=>{const y=m.slice(0,4), mm=+m.slice(5,7), q=Math.floor((mm-1)/3)+1, k=y+'-Q'+q; (quarters[k]=quarters[k]||{idxs:[],y:y,q:q}).idxs.push(i);});
@@ -7627,23 +7625,8 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     }
   })();
   renderWhaleLTV();
-  buildPanel('panel-whale',[
-    htmlSec("What Big-player detection is — and how it's judged", ABOUT.whale),
-    leadSec('Main findings',[byId('w_meta')]),
-    leadSec('Key numbers',[byId('w_kpis'),byId('w_counts')]),
-    cardSec(cardById('v_whale')),           // Where value concentrates (concept, before the call)
-    cardSec(byId('w_rosterCard')),          // The 74 whales
-    cardSec(byId('w_ltvCard')),             // whale lifetime value
-    cardSec(byId('vipWhaleCard')),          // At-risk ledger (the who's-at-risk evidence)
-    cardSec(byId('whaleLifecycleCard')),    // who the money reaches — whales by lifecycle stage
-    cardSec(byId('w_decisionCard')),        // The whale call (the decision, after concept + evidence)
-    cardSec(byId('vipCostWrongCard')),      // Why protect, not cut (rationale, right after the call)
-    cardSec(byId('w_saveListCard')),        // Save-list (the tactic that executes 'retain the cooling')
-    cardSec(byId('w_risingCard')),          // Rising
-    cardSec(byId('w_reinvestCard')),        // Does the bonus keep them?
-    cardSec(byId('w_effCard')),             // Is the bonus spend working?
-    plainSec(byId('w_notes'),'Notes'),
-  ]);
+  // Big-player detection FOLDED into VIP §4 (player concentration) — no separate whale panel/tab.
+  // Its cards are pulled into buildPanel('panel-vip') below (they stay raw here for that to find them by id).
   buildPanel('panel-acquisition',[
     // FINDING (L1)
     leadSec('Main findings',[byId('meta'),byId('acqSweetSummary'),qP('panel-acquisition','.call')]),
@@ -7698,37 +7681,53 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     plainSec(byId('r_notes'),'Notes'),
   ]);
   buildPanel('panel-vip',[
-    // ── ORIENT → CORE CONCEPTS → EVIDENCE → THE CALL (basics-first) ──
-    htmlSec("What VIP is — and how it's judged", ABOUT.vip),                 // orient first (a decision needs an object)
+    // FINDING (L1) — the four-lane story
     leadSec('Main findings',[byId('v_meta'),byId('vipSweetSummary'),byId('v_exec')]),
-    cardSec(cardById('vipGlanceCard')),      // at-a-glance: by lane
-    leadSec('Key numbers',[byId('v_kpis')]),                                 // lifted up — the KPI baseline
-    cardSec(byId('vipMonthlyCard')),       // pillar-scoped month-by-month
-    cardSec(cardById('v_rules')),          // the four groups + scorecard (the mental model)
-    cardSec(byId('vipDepoCard')),          // deposit-required vs no-deposit (foundational split)
-    cardSec(byId('vipGiveBackCard')),      // give-back family: value over tenure + LTV
-    cardSec(byId('vipDepositCard')),       // deposit family: top-up worth it + cannibalization
-    cardSec(byId('vipRecoveryCard')),      // #7 — performance return over longer windows (surface 90-day)
-    cardSec(byId('vipSweetTierCard')),     // the bonus sweet spot by tier (key evidence)
-    cardSec(cardById('v_fund')),           // funding balance by tier (key evidence)
-    cardSec(byId('vipLifecycleCard')),     // who the money reaches — by lifecycle stage
-    cardSec(byId('vipWhaleSummaryCard')),  // whales — the big players (concept, before cross-subsidy)
-    cardSec(byId('vipDecisionBox')),       // the decision — verdict + Cut/Hold/Test (after the evidence)
-    cardSec(byId('vipDecisionTableCard')), // #3 — the call per code (scale/keep/reduce/stop)
-    cardSec(cardById('v_moves')),          // decision register — what to do, who, how, when
-    // ── DEEPER ANALYSES & REFERENCE ──
-    htmlSec('Need to know — supporting detail', '<p class="lead">Above is the core story and the call. Below: the four lanes in full, the deeper program-wide analyses, monitoring and reference.</p>'),
-    ...laneSecs(),                          // the four lanes A/B/D/C (the four-groups detail)
-    cardSec(byId('vipCoverageCard')),      // who carries whom — cross-subsidy (needs the whales concept above)
-    cardSec(byId('vipReallocCard')),       // what the reinvestment is worth
-    cardSec(byId('vipTrendDecompCard')),   // why VIP performance is sliding
-    cardSec(byId('vipGgrCard')),           // where the bonus eats the margin
-    cardSec(byId('vipTierCard')),          // are we growing players up the tiers?
-    cardSec(byId('vipOperatingCard')),     // running it monthly — baseline, watchlist, tracker
-    cardSec(byId('vipFarmCard')),          // bonus-farming watch
-    cardSec(byId('vipScopeCard')),         // scope & compliance flags (MY-only, RG, VM incentive)
+    cardSec(cardById('vipGlanceCard')),      // at-a-glance: the four lanes
+    leadSec('Key numbers',[byId('v_kpis')]),
+    cardSec(cardById('v_rules')),            // the four groups + scorecard (the mental model)
+    // MECHANIC / MONEY split + time horizon
+    cardSec(byId('vipDepoCard')),            // deposit-required vs no-deposit (foundational split)
+    cardSec(byId('vipGiveBackCard')),        // give-back family: value over tenure + LTV
+    cardSec(byId('vipDepositCard')),         // deposit family: top-up worth it + cannibalization
+    cardSec(byId('vipRecoveryCard')),        // performance return over 7-90d (surface the 90-day)
+    cardSec(cardById('v_fund')),             // funding balance by tier
+    cardSec(byId('vipLifecycleCard')),       // who the money reaches — by lifecycle stage
+    // §4 PLAYER CONCENTRATION — the big players (folded in from Big-player detection)
+    htmlSec('Player concentration — the big players', '<p class="lead"><span id="vipConcentrationHead"></span>A small group of top players carries most of the value — who they are, who is cooling, and the money at stake.</p>'),
+    leadSec('Big-player key numbers',[byId('w_kpis'),byId('w_counts')]),
+    cardSec(cardById('v_whale')),            // where value concentrates
+    cardSec(byId('w_rosterCard')),           // the top players (roster)
+    cardSec(byId('w_ltvCard')),              // what a whale is worth over its life
+    cardSec(byId('whaleLifecycleCard')),     // whales by lifecycle stage
+    cardSec(byId('vipCostWrongCard')),       // why protect, not cut
+    cardSec(byId('w_saveListCard')),         // save-list — who to act on this week
+    cardSec(byId('w_decisionCard')),         // the whale call
+    cardSec(byId('w_risingCard')),           // rising toward whale
+    cardSec(byId('w_reinvestCard')),         // does the bonus keep them?
+    cardSec(byId('w_effCard')),              // is the bonus spend working?
+    // THE CALL — VIP decision
+    cardSec(byId('vipDecisionBox')),         // verdict + Cut/Hold/Test
+    cardSec(byId('vipDecisionTableCard')),   // the call per code (scale/keep/reduce/stop)
+    cardSec(cardById('v_moves')),            // decision register — what to do, who, how, when
+    // DEEPER ANALYSES & REFERENCE
+    htmlSec('Deeper analyses & reference', '<p class="lead">The four lanes in full, the program-wide analyses, monitoring and reference.</p>'),
+    ...laneSecs(),                           // the four lanes A/B/D/C
+    cardSec(byId('vipCoverageCard')),        // who carries whom — cross-subsidy
+    cardSec(byId('vipReallocCard')),         // what the reinvestment is worth
+    cardSec(byId('vipTrendDecompCard')),     // why VIP performance is sliding
+    cardSec(byId('vipMonthlyCard')),         // month-by-month (drill-down)
+    cardSec(byId('vipGgrCard')),             // where the bonus eats the margin
+    cardSec(byId('vipTierCard')),            // are we growing players up the tiers?
+    cardSec(byId('vipSweetTierCard')),       // sweet spot by tier (relocates to §5 Playbook)
+    cardSec(byId('vipOperatingCard')),       // running it monthly (relocates to §5)
+    cardSec(byId('vipFarmCard')),            // bonus-farming watch (relocates to §5)
+    // METHODOLOGY (relocates to §6 in a later step)
+    htmlSec("What VIP is — and how it's judged", ABOUT.vip),
+    htmlSec("Big-player detection — how it's judged", ABOUT.whale),
+    cardSec(byId('vipScopeCard')),           // scope & compliance flags
     plainSec(byId('v_notes'),'Notes'),
-    plainSec(byId('v_soon'),null),
+    plainSec(byId('w_notes'),'Big-player notes'),
   ]);
   // Open the cards the presentation walks through, by default, per tab — the flow is pre-opened while the
   // detail cards stay collapsed (not overwhelming). Sections are matched by an INNER content id because
@@ -7738,8 +7737,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     'panel-summary':['execSpend','s_portfolio','s_ledger','s_plan','s_frontier'],
     'panel-acquisition':['meta','s_acqGlance','kpis'],
     'panel-retention':['r_meta','s_retGlance','r_kpis'],
-    'panel-vip':['v_meta','v_rules','s_vipGlance'],
-    'panel-whale':['w_meta']
+    'panel-vip':['v_meta','v_rules','s_vipGlance']
   };
   Object.keys(OPEN_DEF).forEach(function(pid){
     var panel=byId(pid); if(!panel) return;

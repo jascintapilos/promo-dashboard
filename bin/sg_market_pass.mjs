@@ -156,8 +156,10 @@ export function sgMarketPass(out, SYMBOL) {
     + '  .sec:has(#v_decisionBox),.sec:has(#v_costWrong),.sec:has(#v_realloc),.sec:has(#v_moves),\n'
     + '  .sec:has(#v_whaleSummary),.sec:has(#v_trendDecomp),.sec:has(#v_operating),.sec:has(#v_sweet),\n'
     + '  .sec:has(#vipCoverageNote),.sec:has(#vipRetainTest),.sec:has(#s_campaignThemes){display:none}\n'
-    + '  /* SG: no whale (big-player) analysis on the thin base — hide the tab + its panel */\n'
-    + '  [data-tab="whale"],#panel-whale{display:none}\n'
+    + '  /* SG: no whale (big-player) analysis on the thin base — hide the folded §4 player-concentration subsection */\n'
+    + '  .sec:has(#vipConcentrationHead),.sec:has(#w_kpis),.sec:has(#w_counts),.sec:has(#v_whale),\n'
+    + '  .sec:has(#w_roster),.sec:has(#w_ltv),.sec:has(#whaleLcSpend),.sec:has(#w_saveList),\n'
+    + '  .sec:has(#w_decision),.sec:has(#w_rising),.sec:has(#w_reinvest),.sec:has(#w_eff),#panel-whale{display:none}\n'
     + '</style>',
     'sg hide-cards style');
 
