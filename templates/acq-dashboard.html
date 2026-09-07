@@ -3525,24 +3525,24 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
     });
   })();
   buildPanel('panel-summary',[
-    cardSec(byId('execOverviewCard')),  // §1 executive overview — the presentation entry point
-    cardSec(cardById('s_portfolio')),   // summary table pinned to the very top (per request)
-    htmlSec("What this report is — and how it's judged", ABOUT.summary),
-    leadSec('Main findings',[byId('s_banner')]),
-    cardSec(byId('s_monthlyCard')),
-    cardSec(byId('s_attribCard')),      // fair-comparison correction — introduced BEFORE the frontier/ledger that rank on its number
-    cardSec(byId('s_trendCard')),
-    cardSec(cardById('s_frontier')),
-    cardSec(cardById('s_ledger')),
-    cardSec(cardById('s_confidence')),
-    cardSec(byId('s_nextCard')),
-    cardSec(byId('s_planCard')),
-    cardSec(byId('holdoutCard')),       // #9 — the holdout test design (proof for rec #3)
-    cardSec(byId('s_ltvCard')),
-    cardSec(byId('s_limitsCard')),
-    cardSec(byId('s_campaignCard')),
-    cardSec(byId('s_dataCard')),
-    cardSec(cardById('summaryGrid')),
+    // §1 EXECUTIVE OVERVIEW — the L1 story (WHAT + DO), open by default
+    cardSec(byId('execOverviewCard')),  // the presentation entry point (subsumes old s_banner + s_next)
+    cardSec(cardById('s_portfolio')),   // spend by pillar — what we spend
+    cardSec(cardById('s_ledger')),      // top decisions — the master DO list
+    cardSec(byId('s_planCard')),        // forward plan — what acting on it is worth
+    // supporting evidence (L2) — collapsed but present
+    cardSec(cardById('s_frontier')),    // efficiency frontier — where the movable money peaks
+    cardSec(byId('s_trendCard')),       // month by month — is it improving (the visual read)
+    cardSec(byId('s_monthlyCard')),     // interactive this-month / period / compare (drill-down)
+    // correction + methodology layers (formally move to §6 in Phase 3; kept at the end for now)
+    cardSec(byId('s_attribCard')),      // fair-comparison check — how the grades were re-checked
+    cardSec(cardById('s_confidence')),  // how firm is each call
+    cardSec(byId('holdoutCard')),       // the holdout test design (the proof)
+    cardSec(byId('s_ltvCard')),         // lifetime-value context
+    cardSec(byId('s_limitsCard')),      // what this report doesn't yet cover
+    cardSec(byId('s_campaignCard')),    // by-campaign discovery draft
+    cardSec(byId('s_dataCard')),        // data & method
+    htmlSec("What this report is — and how it's judged", ABOUT.summary),  // glossary → §6
   ]);
   // ===== Big-player detection (whale) tab — standard pillar template =====
   (function(){
@@ -3717,7 +3717,7 @@ sweetSummaryAcq('acqSweetSummary', (typeof PAYLOAD!=='undefined'&&PAYLOAD)?PAYLO
   // buildPanel dissolves the .card wrapper (the card id is gone; the inner id survives inside the .sec).
   // Gated cards on SG (e.g. #s_attrib) simply have no .sec, so they skip.
   var OPEN_DEF={
-    'panel-summary':['execSpend','s_banner','s_portfolio','s_attrib','s_ledger','s_plan','holdoutBody','s_ltv'],
+    'panel-summary':['execSpend','s_portfolio','s_ledger','s_plan','s_frontier'],
     'panel-acquisition':['meta','s_acqGlance'],
     'panel-retention':['r_meta','s_retGlance'],
     'panel-vip':['v_meta','v_rules','s_vipGlance'],
