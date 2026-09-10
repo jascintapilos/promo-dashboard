@@ -45,3 +45,6 @@ outputs/csir_connection_qc/
 *.class
 *.jar
 TEST*.xml
+
+# Backup copies (e.g. *.bak, *.bak-DATE) — never commit; may mirror ignored secret files
+*.bak*
