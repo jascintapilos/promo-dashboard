@@ -13,7 +13,7 @@ import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashb
 import { applyLeave, listLeave, decideLeave } from '../src/qc-dashboard/leave-store.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES } from '../src/qc-dashboard/auth.js';
-import { promoBrandFromHost, handlePromo } from '../src/qc-dashboard/promo.js';
+import { isPromoPath, handlePromo } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { runComparison } from '../src/qc-dashboard/compare-flow.js';
 import { recordRun } from '../src/qc-dashboard/run-store.js';
@@ -666,13 +666,11 @@ async function handle(req, res) {
     if (req.method === 'POST' && url.pathname === '/auth/logout') {
       return send(res, 200, { ok: true }, { 'set-cookie': 'qc_hub_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
     }
-    // Walled promo host (`*.promo.zoom66.xyz`): serves ONLY the promo report + its
-    // Players API. QC Hub / Ops / QC APIs are 404 here. Dispatched after the
-    // host-agnostic /api/config + /auth/* above (so sign-in works), and before all
-    // qc-host routing below (so nothing qc-host leaks onto this host).
-    {
-      const promoBrand = promoBrandFromHost(req);
-      if (promoBrand) return await handlePromo(req, res, url, promoBrand, { root: ROOT, send, htmlHeaders: HTML_HEADERS });
+    // Walled promo report, served as a PATH (/promo/<brand> + /api/promo/<brand>/...).
+    // Dispatched after host-agnostic /api/config + /auth/* (so sign-in works) and BEFORE
+    // the qc-host `/api/` role-gate below (so a report-only account can reach /api/promo/*).
+    if (isPromoPath(url.pathname)) {
+      return await handlePromo(req, res, url, { root: ROOT, send, htmlHeaders: HTML_HEADERS });
     }
     // Relay endpoints authenticate via HMAC on raw request bytes — must be
     // dispatched BEFORE the session gate. Session-holding humans never call
