@@ -39,3 +39,6 @@ Banner/
 
 # FastTrack browser relay temp files
 tmp-ft-browser-pull*.json
+
+# Promo report — per-brand player PII, served only by the authed promo host
+data/promo/*/players/
