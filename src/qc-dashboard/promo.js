@@ -62,6 +62,29 @@ function sessionControls(user) {
   return `<span style="display:inline-flex;align-items:center;gap:8px;margin-right:8px">${who}${manage}<button type="button" id="pSessOut" style="${btn}">Log out</button></span>`;
 }
 
+/** Brand switcher — the top row of the report header. One pill per brand the
+ *  viewer may access (active = current brand; others link to /promo/<id>, a PATH
+ *  on this same host, NOT a subdomain), plus a couple of disabled placeholder
+ *  slots so the multi-brand structure is visible. admin/promo-team see every
+ *  brand; a report-only viewer sees only the brands their email is scoped to. */
+function brandSwitcher(root, current, user) {
+  const reg = loadBrandRegistry(root);
+  const viewable = Object.keys(reg).filter((id) => canView(user, reg[id]));
+  if (!viewable.includes(current)) viewable.unshift(current);
+  const base = "border:1px solid var(--line);border-radius:999px;font:600 12px 'IBM Plex Sans',system-ui,sans-serif;padding:6px 13px;text-decoration:none;white-space:nowrap;line-height:1.1";
+  const pills = viewable.map((id) => {
+    const name = (reg[id] && reg[id].name) || id.toUpperCase();
+    return id === current
+      ? `<span style="${base};background:var(--accent);color:#fff;border-color:var(--accent)">${escapeHtml(name)}</span>`
+      : `<a href="/promo/${encodeURIComponent(id)}" style="${base};background:var(--surface);color:var(--ink)">${escapeHtml(name)}</a>`;
+  });
+  const ph = [viewable.length + 1, viewable.length + 2].map((n) =>
+    `<span title="Placeholder — additional brands appear here" style="${base};background:transparent;color:var(--muted);border-style:dashed;opacity:.6;cursor:default">Brand ${n}</span>`);
+  return `<div class="wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 18px 3px">`
+    + `<span style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-right:2px">Brand</span>`
+    + `${pills.join('')}${ph.join('')}</div>`;
+}
+
 function serveReport(res, root, brand, user, htmlHeaders, send) {
   const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
   const dataPath = path.join(brandDir(root, brand), 'report.json');
@@ -70,8 +93,10 @@ function serveReport(res, root, brand, user, htmlHeaders, send) {
   const payload = readFileSync(dataPath, 'utf8');
   const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
   const wire = 'var _po=document.getElementById("pSessOut");if(_po)_po.onclick=function(){fetch("/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload();});};';
-  // Inject the session controls into the header (before the theme toggle).
+  // Inject the session controls (before the theme toggle) + the brand switcher
+  // (as the top row of the sticky header).
   let html = tpl.replace('<button class="tgl" id="tgl"', `${sessionControls(user)}<button class="tgl" id="tgl"`);
+  html = html.replace('<header class="top"><div class="hbar">', `<header class="top">${brandSwitcher(root, brand, user)}<div class="hbar">`);
   if (html.includes('const DATA=/*__DATA__*/;')) {
     html = html.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};${wire}`);
   } else {
