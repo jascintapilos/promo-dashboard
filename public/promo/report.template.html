@@ -680,6 +680,12 @@ function trialBandCard(){
    </tbody></table></div><div style="font-size:10.5px;color:var(--muted);margin:6px 0 2px">${lg}</div>
    <div class="foot"><b>The Low band is ${t.lowClassicPct}% established Classic players</b> (no VIP tier), not ramping trials — so servicing Low cheaply holds; there's no hidden new-player pipeline there. <b>The VIP program is almost all on trial:</b> ${t.vip.map(v=>`${v.tier} ${v.trialPct}%`).join(" · ")} — only <b>${t.fullVipTotal} members</b> are full VIPs across every band. And <b>${t.whaleClassicPct}% of whales are “Classic”</b> (untiered) — the tier badge doesn't track who actually spends, which is why this report ranks players by <b>deposit band, not tier</b>. Observed base composition; tier from the membership table.</div></div></div>`;
 }
+function basisNote(kind){
+ const m=kind==="year"
+  ?["Full-year value",`bands here are <b>Top value</b>/High/Mid/Low by <b>year-to-date</b> deposits (Top value ≥${sym()}100k) — who is <b>valuable overall</b>, for spotting who is slipping away.`]
+  :["Last-90-day deposits",`bands here are <b>Whale</b>/High/Mid/Low by deposits in the <b>last 90 days</b> (Whale ≥${sym()}50k) — who is depositing big <b>right now</b>, for setting each offer.`];
+ return `<div style="display:flex;gap:9px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px;padding:9px 12px;margin:0 0 11px;font-size:12px;line-height:1.5;color:var(--muted)"><span style="flex:none;font-weight:700;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);padding-top:2px">Measures</span><span><b style="color:var(--ink)">${m[0]}.</b> ${m[1]}</span></div>`;
+}
 function tValueBands(){
  const sc=segCellMap(),HM=["Whale","High","Mid"];
  const slip=["Whale","High"].reduce((a,b)=>a+nz(sc,b,'Cooling','m')+nz(sc,b,'Lapsed','m'),0);
@@ -698,7 +704,7 @@ function tValueBands(){
          `Value bands here = YTD deposit. The heat grid is a snapshot; the <b>measured 90-day flow</b> (fall-rates + win-back) is now shown below it. Observed, not causal.`];
    body=segHeatHTML()+trialBandCard()+cascadeLadderHTML()+churnCard()+protectSplitHTML()+erosionHTML();
  }else{take=worthTakeaways();body=worthHTML();}
- g("panel").innerHTML=takeBox(take)+sw+body;
+ g("panel").innerHTML=(VB==="risk"?basisNote("year"):"")+takeBox(take)+sw+body;
  document.querySelectorAll('#vbsw button').forEach(b=>b.onclick=()=>{VB=b.dataset.v;tValueBands();});
 }
 function tConfig(){
@@ -738,7 +744,7 @@ function tConfig(){
  const curT=tabs.find(t=>t.id===CT)||tabs[0];
  const sw=`<div class="winsw" id="cfgsw" style="flex-wrap:wrap;margin:12px 0 4px">${tabs.map(t=>`<button data-c="${t.id}" class="${t.id===CT?'on':''}">${esc(t.short)}</button>`).join("")}</div>`;
  const secCard=curT?`<div class="card"><div class="ct" style="font-size:13px;font-weight:700;color:var(--ink)">${esc(curT.title)}</div><div class="tblwrap"><table class="d cfg"><tbody>${curT.rows.map(rowHTML).join("")}</tbody></table></div></div>`:"";
- g("panel").innerHTML=takeBox([`Deposit-match NGR-return climbs with band (+0.8 → +2.4 per ${sym()}1); giveaways show the highest deposits-per-${sym()}1 at Mid (1.08 dep/${sym()}1, vs the claimer's own baseline — a holdout is needed to confirm true lift); VIP money pays on whales — cashback is a pilot to test, not a measured result.${R==='SG'?' Figures are the MY read — SG validation required.':''}`,`Quick reference &amp; deposit-band ladders below — switch pillars inside the ladders card; Budget &amp; eligible games in the tabs.`,`Directional own-baseline — confirm a new config with a holdout. ${R==="SG"?"On SG the money &amp; codes tabs are the SG book, but these quick-reference returns, band ladders and cashback figures are the MY read — SG validation required.":""}`])+qref+depCard+sw+secCard;
+ g("panel").innerHTML=basisNote("90d")+takeBox([`Deposit-match NGR-return climbs with band (+0.8 → +2.4 per ${sym()}1); giveaways show the highest deposits-per-${sym()}1 at Mid (1.08 dep/${sym()}1, vs the claimer's own baseline — a holdout is needed to confirm true lift); VIP money pays on whales — cashback is a pilot to test, not a measured result.${R==='SG'?' Figures are the MY read — SG validation required.':''}`,`Quick reference &amp; deposit-band ladders below — switch pillars inside the ladders card; Budget &amp; eligible games in the tabs.`,`Directional own-baseline — confirm a new config with a holdout. ${R==="SG"?"On SG the money &amp; codes tabs are the SG book, but these quick-reference returns, band ladders and cashback figures are the MY read — SG validation required.":""}`])+qref+depCard+sw+secCard;
  document.querySelectorAll('#cfgsw button').forEach(b=>b.onclick=()=>{CT=b.dataset.c;tConfig();});
  document.querySelectorAll('#depsw button').forEach(b=>b.onclick=()=>{DP=b.dataset.dp;tConfig();});
 }
