@@ -1409,7 +1409,8 @@ function bind() {
   const mpModal = $('manualPassModal');
   if (mpModal) mpModal.addEventListener('click', (e) => { if (e.target === mpModal) closeManualPassModal(); });
   $('settingsBtn').addEventListener('click', () => {
-    openUsersModal().catch((e) => alert(`Could not load admitted users: ${e.message}`));
+    // Self-service Manage Users screen (adds/removes save immediately, survive deploys).
+    window.location.href = '/admin/users';
   });
   // R18-lite: site configs modal
   const siteConfigsBtn = document.getElementById('siteConfigsBtn');

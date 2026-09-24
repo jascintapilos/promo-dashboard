@@ -2,7 +2,13 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 const COOKIE = 'qc_hub_session';
-const ALLOWLIST = 'admitted-users.json';
+const ALLOWLIST = process.env.ADMITTED_USERS_PATH || 'admitted-users.json';
+// Server-side overlay written by the Manage Users screen. Kept SEPARATE from the
+// git-tracked base allowlist so UI edits survive deploys (the deploy rewrites the
+// base from git; it must NOT touch this file — it is gitignored). Point it at a
+// path outside the deploy checkout via ADMITTED_OVERLAY_PATH if the deploy wipes
+// untracked files. Shape: { upserts: [{email, role}], removed: ["email", ...] }.
+const OVERLAY_FILE = process.env.ADMITTED_OVERLAY_PATH || 'admitted-users.overlay.json';
 const SECRET_FILE = 'qc-dashboard-session-secret.local.json';
 const CONFIG_FILE = 'qc-hub-config.json';
 const VALID_ROLES = new Set(['admin', 'promo-team', 'hod-view', 'guest', 'promo-report']);
@@ -48,7 +54,7 @@ function normalizeRole(role, email = '') {
   return 'promo-team';
 }
 
-export function loadAdmittedUsers() {
+function parseBaseAllowlist() {
   if (!existsSync(ALLOWLIST)) throw new Error(`${ALLOWLIST} is required outside AUTH_MODE=dev`);
   const parsed = JSON.parse(readFileSync(ALLOWLIST, 'utf8'));
   const usersByEmail = new Map();
@@ -68,11 +74,102 @@ export function loadAdmittedUsers() {
   } else {
     throw new Error(`${ALLOWLIST} must contain an "emails" array or "users" array.`);
   }
+  return usersByEmail;
+}
+
+// Read the Manage Users overlay. DEFENSIVE by contract: any problem (missing,
+// malformed, wrong shape) yields an empty overlay and NEVER throws — a broken
+// overlay must never take down auth / 502 the whole server.
+export function loadOverlay() {
+  try {
+    if (!existsSync(OVERLAY_FILE)) return { upserts: [], removed: [] };
+    const parsed = JSON.parse(readFileSync(OVERLAY_FILE, 'utf8'));
+    return {
+      upserts: Array.isArray(parsed.upserts) ? parsed.upserts : [],
+      removed: Array.isArray(parsed.removed) ? parsed.removed : [],
+    };
+  } catch (e) {
+    console.warn(`admitted-users overlay ignored (${e.message})`);
+    return { upserts: [], removed: [] };
+  }
+}
+
+function saveOverlay(overlay) {
+  const clean = {
+    upserts: (overlay.upserts || [])
+      .filter((u) => u && String(u.email || '').trim())
+      .map((u) => ({ email: String(u.email).trim().toLowerCase(), role: normalizeRole(u.role, u.email) })),
+    removed: (overlay.removed || []).map((e) => String(e).trim().toLowerCase()).filter(Boolean),
+  };
+  writeFileSync(OVERLAY_FILE, JSON.stringify(clean, null, 2));
+  return clean;
+}
+
+function applyOverlay(usersByEmail) {
+  const ov = loadOverlay();
+  for (const raw of ov.upserts) {
+    if (!raw || typeof raw !== 'object') continue;
+    const email = String(raw.email || '').trim().toLowerCase();
+    if (!email) continue;
+    usersByEmail.set(email, { email, role: normalizeRole(raw.role, email) });
+  }
+  for (const rawEmail of ov.removed) {
+    const email = String(rawEmail).trim().toLowerCase();
+    if (email) usersByEmail.delete(email);
+  }
+  return usersByEmail;
+}
+
+export function loadAdmittedUsers() {
+  const usersByEmail = applyOverlay(parseBaseAllowlist());
   const users = [...usersByEmail.values()];
   if (users.length === 0) {
     throw new Error(`${ALLOWLIST} has an empty admitted users list — server refusing to start.`);
   }
   return users;
+}
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** Effective admitted-users list (base + overlay), or the dev user in AUTH_MODE=dev. */
+export function listAdmittedUsers() {
+  return [...admittedUsersByEmail().values()];
+}
+
+/** Add a user or change a user's role. Writes ONLY to the overlay. Guardrails:
+ *  valid email + role; an admin cannot demote their own account (self-lockout). */
+export function upsertAdmittedUser({ email, role, actingEmail } = {}) {
+  const e = String(email || '').trim().toLowerCase();
+  const acting = String(actingEmail || '').trim().toLowerCase();
+  if (!EMAIL_RE.test(e)) throw authErr(400, 'Enter a valid email address.');
+  const r = String(role || '').trim().toLowerCase();
+  if (!VALID_ROLES.has(r)) throw authErr(400, `Invalid role. Allowed: ${[...VALID_ROLES].join(', ')}.`);
+  if (e === acting && r !== 'admin') {
+    const current = new Map(listAdmittedUsers().map((u) => [u.email, u.role]));
+    if (current.get(e) === 'admin') throw authErr(400, 'You cannot change your own admin role (avoids locking yourself out).');
+  }
+  const ov = loadOverlay();
+  ov.upserts = ov.upserts.filter((u) => String(u?.email || '').trim().toLowerCase() !== e);
+  ov.upserts.push({ email: e, role: r });
+  ov.removed = ov.removed.filter((x) => String(x).trim().toLowerCase() !== e);
+  saveOverlay(ov);
+  return listAdmittedUsers();
+}
+
+/** Remove a user. Writes ONLY to the overlay (base users get a removal tombstone).
+ *  Guardrails: cannot remove your own account; cannot remove the last admin. */
+export function removeAdmittedUser({ email, actingEmail } = {}) {
+  const e = String(email || '').trim().toLowerCase();
+  const acting = String(actingEmail || '').trim().toLowerCase();
+  if (!e) throw authErr(400, 'Missing email.');
+  if (e === acting) throw authErr(400, 'You cannot remove your own account.');
+  const admins = listAdmittedUsers().filter((u) => u.role === 'admin').map((u) => u.email);
+  if (admins.length <= 1 && admins.includes(e)) throw authErr(400, 'Cannot remove the last admin.');
+  const ov = loadOverlay();
+  ov.upserts = ov.upserts.filter((u) => String(u?.email || '').trim().toLowerCase() !== e);
+  if (!ov.removed.map((x) => String(x).trim().toLowerCase()).includes(e)) ov.removed.push(e);
+  saveOverlay(ov);
+  return listAdmittedUsers();
 }
 
 function admittedUsersByEmail() {

@@ -11,7 +11,7 @@ import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engi
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
-import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES } from '../src/qc-dashboard/auth.js';
+import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
 import { isPromoPath, handlePromo } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { runComparison } from '../src/qc-dashboard/compare-flow.js';
@@ -329,6 +329,28 @@ async function handleApi(req, res, user) {
   }
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
+  // Manage Users — admin-only, self-service. Writes go to the server-side overlay
+  // (auth.js), so they persist across deploys that rewrite the git-tracked base.
+  if (req.method === 'POST' && url.pathname === '/api/admin/users') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    let body;
+    try { body = await readJsonBounded(req, 8192); }
+    catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
+    try {
+      const users = upsertAdmittedUser({ email: body.email, role: body.role, actingEmail: user.email });
+      return send(res, 200, { ok: true, users });
+    } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
+  }
+  if (req.method === 'POST' && url.pathname === '/api/admin/users/remove') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    let body;
+    try { body = await readJsonBounded(req, 8192); }
+    catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
+    try {
+      const users = removeAdmittedUser({ email: body.email, actingEmail: user.email });
+      return send(res, 200, { ok: true, users });
+    } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
+  }
   if (req.method === 'POST' && url.pathname === '/api/admin/site-configs') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     let body;
@@ -679,6 +701,19 @@ async function handle(req, res) {
       }
       if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
       return await sendHtml(res, path.join(ROOT, 'public', 'dashboard.html'));
+    }
+    // Manage Users — admin-only screen (linked from the QC Hub and Ops Dashboard).
+    // Served from public/ (NOT public/qc-hub/), so serveStatic can't expose it ungated.
+    if (url.pathname === '/admin/users') {
+      const s = readSession(req);
+      if (!s) { res.writeHead(302, { location: `/?return=${encodeURIComponent(url.pathname)}` }); res.end(); return; }
+      if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
+      if (s.role !== 'admin') {
+        res.writeHead(403, HTML_HEADERS);
+        res.end('<!doctype html><meta charset=utf-8><title>Admins only</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">Admins only</h2><p>Managing users requires an admin account. Your role can’t change the allowlist.</p><p><a href="/">← Back to QC Hub</a></p></body>');
+        return;
+      }
+      return await sendHtml(res, path.join(ROOT, 'public', 'admin-users.html'));
     }
     // Report-only accounts can't open the QC Hub entry HTML either (assets are harmless).
     if (url.pathname === '/' || url.pathname === '/index.html') {

@@ -7,6 +7,9 @@ data/relay-secret.local.json.tmp-*
 google-credentials.local.json
 # admitted-users.json is NOT a secret — it's a list of allow-listed Google
 # emails managed via git so allowlist edits auto-deploy through Bitbucket.
+# admitted-users.overlay.json IS server-local — the Manage Users screen writes it
+# so in-UI edits persist across deploys (the deploy rewrites the git base). Never commit.
+admitted-users.overlay.json
 
 # ─── Runtime artifacts ────────────────────────────────────────────────────────
 .session/
