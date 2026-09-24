@@ -726,7 +726,7 @@ function tConfig(){
  groups.forEach(gr=>{
    if(pillars.includes(gr.id)){
      const idx=gr.rows.findIndex(r=>r.filter(x=>x).length<=1&&DEPBAND.test(r.find(x=>x)||""));
-     if(idx>=0){tabs.push({id:gr.id,short:gr.short,title:gr.title,rows:gr.rows.slice(0,idx)});dep.push({pillar:gr.short,rows:gr.rows.slice(idx)});}
+     if(idx>=0)dep.push({pillar:gr.short,rows:gr.rows.slice(idx)});/*by-membership tier sub-tabs dropped; deposit-band ladders kept*/
      else tabs.push({id:gr.id,short:gr.short,title:gr.title,rows:gr.rows});
    }else tabs.push({id:gr.id,short:gr.short,title:gr.title,rows:gr.rows});});
  const qref=`<div class="card"><div class="ct">Quick reference — lead lever &amp; expected return by band ${R==="SG"?'<span class="basis">MY read — SG validation required</span>':''}</div><div class="tblwrap"><table class="d"><thead><tr><th class="stick">Band</th><th>Lead lever</th><th>Also</th><th class="n">Return / ${sym()}1 <span style="font-weight:400;text-transform:none">(NGR; giveaways = dep)</span></th></tr></thead><tbody>${c.map(r=>`<tr><td class="stick"><span class="dot" style="background:var(--band-${r[0].toLowerCase()})"></span>${r[0]}</td><td style="white-space:normal">${esc(r[1])}</td><td class="mut" style="white-space:normal">${esc(r[2])}</td><td class="n">${esc(r[3])}</td></tr>`).join("")}</tbody></table></div></div>`;
