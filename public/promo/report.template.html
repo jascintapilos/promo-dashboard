@@ -176,10 +176,10 @@ const LEAN=[
  {id:"conv",label:"Claimed→dep",kind:"cat",pillars:["Acquisition"],get:c=>cellD(c,"COSTS / EARNS · Claimed → deposited")},
  {id:"stick30",label:"Stick 30d",kind:"cat",pillars:["Acquisition"],get:c=>cellD(c,"STICKINESS · New players came back (30d)")},
  {id:"costret",label:"Cost/retained",n:1,kind:"num",pillars:["Retention"],get:c=>cnum(c,"COSTS / EARNS · Cost / retained"),disp:c=>cellD(c,"COSTS / EARNS · Cost / retained")},
- {id:"roi30",label:"ROI 30d",n:1,kind:"num",pillars:["Retention","VIP"],get:c=>cnum(c,"BONUS ROI over time · 30d"),disp:c=>cellD(c,"BONUS ROI over time · 30d")},
+ {id:"roi30",label:"Bonus ROI · 30d",n:1,kind:"num",pillars:["Retention","VIP"],get:c=>cnum(c,"BONUS ROI over time · 30d"),disp:c=>cellD(c,"BONUS ROI over time · 30d")},
  {id:"redup",label:"Redeposits vs baseline",kind:"cat",pillars:["Retention","VIP"],get:c=>cellD(c,"KEEPS PLAYERS · Extra redeposits vs typical")},
  {id:"lifeval",label:"Lifetime NGR/player",n:1,kind:"num",pillars:["VIP"],get:c=>cnum(c,"LOYALTY · Lifetime NGR / player"),disp:c=>cellD(c,"LOYALTY · Lifetime NGR / player")},
- {id:"perrm",label:"NGR / bonus",n:1,kind:"num",get:c=>c._perrm},
+ {id:"perrm",label:"Bonus ROI · 7d",n:1,kind:"num",get:c=>c._perrm},
  {id:"dep90",label:"Deposits back 90d",n:1,kind:"num",get:c=>cnum(c,"DEPOSITS BACK · 90d"),disp:c=>cellD(c,"DEPOSITS BACK · 90d")},
  {id:"band",label:"Band",kind:"cat",get:c=>c._band},
 ];
@@ -357,7 +357,7 @@ function takeCodes(rows){
  const perrm=med(rows.map(c=>c._perrm)),noMat=rows.filter(c=>c._perrm==null).length;
  return takeBox([`Showing <b>${rows.length}</b> of ${d().codes.length} codes${CS.pillar!=="All"?` · ${CS.pillar}`:""} · total bonus <b>${money(spend)}</b>.`,
   `Calls in view: ${Object.entries(bycall).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${v} ${k}`).join(" · ")||"—"}.`,
-  `Median NGR-per-${sym()} <b>${perrm==null?"—":perrm.toFixed(2)}</b>${noMat?` · ${noMat} code(s) not yet matured (shown as —, not 0)`:""}.`,
+  `Median Bonus ROI · 7d <b>${perrm==null?"—":perrm.toFixed(2)}</b>${noMat?` · ${noMat} code(s) not yet matured (shown as —, not 0)`:""}.`,
   ...(CS.pillar==="VIP"?[`<b>Scope:</b> VIP here = the <b>performance lane</b> only (deposit / free-credit rewards scored on Bonus ROI). VIP <b>cashback</b> (weekly rescue), <b>engagement</b> (lucky-wheel / check-in / scratch) and <b>entitlement</b> (birthday / loyalty gifts) are judged on their own bases and are not shown in this report.`]:[])]);
 }
 /* ============ generic table (money by-code) ============ */
@@ -604,7 +604,7 @@ const VBANDS=["Whale","High","Mid","Low"],VSTATES=["Active","Cooling","Lapsed","
 function segCellMap(){const sc={};(d().segGrid||[]).forEach(r=>{sc[r[0]+"|"+r[1]]={m:r[2]||0,ngr:r[3]||0,med:(r.length>4&&r[4]!=null?r[4]:null)};});return sc;}
 const MM=n=>{const s=n<0?"-":"",a=Math.abs(n);return s+sym()+(a>=1e7?(a/1e6).toFixed(0)+"M":a>=1e6?(a/1e6).toFixed(1)+"M":a>=1e3?Math.round(a).toLocaleString():Math.round(a));};
 const nz=(sc,b,st,k)=>{const c=sc[b+"|"+st];return c?(c[k]||0):0;};
-// state→colour ramp shared with the heat grid & protect table: green Active · amber Cooling/Lapsing · red Dormant
+// state→colour ramp shared with the heat grid & protect table: green Active · amber Cooling/Lapsed · red Dormant
 const STCLS={Active:"he-keep",Cooling:"he-act",Lapsed:"he-act",Dormant:"he-lost"};
 function segHeatHTML(){
  const sc=segCellMap(),st=VSTATES,order=VBANDS,ngr={};
@@ -743,7 +743,7 @@ function tConfig(){
  document.querySelectorAll('#cfgsw button').forEach(b=>b.onclick=()=>{CT=b.dataset.c;tConfig();});
 }
 function tRef(){
- const forms=d().formulas||[],calls=d().callsLevers||[];
+ const forms=d().formulas||[],calls=(d().callsLevers||[]).filter(r=>String(r[0]).toLowerCase()!=="trim");
  const HDR=/^(Metric|The call|Call|Formula|What it means|Worked example|Action|Specific lever)/;
  const rowHTML=(r,nc)=>{const filled=r.filter(x=>x).length;
    if(filled<=1)return `<tr><td colspan="${nc}" class="cfgband">${esc(r.find(x=>x)||"")}</td></tr>`;
@@ -751,7 +751,7 @@ function tRef(){
    return `<tr class="${ish?'cfghd':''}">${r.map((x,i)=>`<td${i===0?' class="cfgk"':''} style="white-space:normal">${x?esc(x):''}</td>`).join("")}</tr>`;};
  const callsTbl=calls.length?`<div class="card"><div class="ct">Calls &amp; levers — what each verdict means and its action</div><div class="tblwrap"><table class="d cfg"><tbody>${calls.map(r=>rowHTML(r,4)).join("")}</tbody></table></div></div>`:"";
  const formTbl=forms.length?`<div class="card"><div class="ct">Formulas — how every metric is worked out (facts → economics → costs → behaviour)</div><div class="tblwrap"><table class="d cfg"><tbody>${forms.map(r=>rowHTML(r,4)).join("")}</tbody></table></div></div>`:"";
- const terms=[["Value & segments",[["Deposit band",`Players grouped by deposit value — beats membership tier on stability. Two bases, never combined in one grid: the at-risk / lifecycle view bands on YTD deposit (Whale ≥100k / High ≥20k / Mid ≥2k) and counts distinct YTD-estate members; the config and 'what each band is worth' view bands on 90-day pre-claim deposit (Whale ≥50k / High ≥5k / Mid ≥500) and counts claimers. Same band names, different populations — not directly comparable.`],["Recency state","Active · Cooling 31–60d · Lapsing 61–90d · Dormant 90d+. Cooling + lapsing = pre-churn."],["VIP scope (lanes)","VIP codes sit in 4 lanes; this report shows only the <b>Performance</b> lane (deposit / free-credit rewards scored on Bonus ROI). The other lanes — <b>Cashback</b> (weekly rescue), <b>Engagement</b> (lucky-wheel / check-in / scratch) and <b>Entitlement</b> (birthday / loyalty gifts) — are judged on their own bases (retention-after-loss, house-margin cover, downstream NGR) and are not surfaced here."]]],
+ const terms=[["Value & segments",[["Deposit band",`Players grouped by deposit value — beats membership tier on stability. Two bases, never combined in one grid: the at-risk / lifecycle view bands on YTD deposit (Whale ≥100k / High ≥20k / Mid ≥2k) and counts distinct YTD-estate members; the config and 'what each band is worth' view bands on 90-day pre-claim deposit (Whale ≥50k / High ≥5k / Mid ≥500) and counts claimers. Same band names, different populations — not directly comparable.`],["Recency state","Active · Cooling 31–60d · Lapsed 61–90d · Dormant 90d+. Cooling + lapsing = pre-churn."],["VIP scope (lanes)","VIP codes sit in 4 lanes; this report shows only the <b>Performance</b> lane (deposit / free-credit rewards scored on Bonus ROI). The other lanes — <b>Cashback</b> (weekly rescue), <b>Engagement</b> (lucky-wheel / check-in / scratch) and <b>Entitlement</b> (birthday / loyalty gifts) — are judged on their own bases (retention-after-loss, house-margin cover, downstream NGR) and are not surfaced here."]]],
    ["Decisions",[["The call",`Scale · Maintain · Optimise · Reduce · Stop — a first-week Bonus-ROI trigger on matured cohorts, NOT a final cut order. Bonus ROI = the LIFT in net NGR versus the player's own 14-day pre-claim daily-average baseline, divided by bonus spend — credit-split across any bonuses running at once and weighted toward the earlier days of the window (see Formulas). It measures IMPROVEMENT versus the player's own baseline run-rate, per unit of bonus — NOT absolute profit: 0 = no change vs baseline, positive = better than baseline, negative = worse. (The pipeline treats NGR as already net of the bonus cost; that data definition has not been independently re-verified against the warehouse.) Scale = strongly positive → size up; Maintain = positive and stable → keep; Optimise = marginal → adjust size/terms; Reduce/Stop = negative → route to the 'Pays back later?' review + a holdout before any cut. Cut only if it does NOT recover by 30/60/90d AND reaches no high-lifetime players — otherwise test, don't cut.`],["Pays back later?","Review flag for losing calls — does the lift recover at 30/60/90d? Green = test before cutting."],["Holdout","A matched untreated control group; the proof step — the ROI here is an estimated change vs baseline, an association, not a proven causal effect."]]],
    ["Levers",[["Cashback",`A loss-rebate; the VIP loyalty lever — here a lever to PILOT, not yet ROI-scored. Where a “+3.0/+3.1” figure appears near cashback it is the observed no-deposit give-back proxy, not a measured cashback result.`],["Deposit-match / reload","Deposit-required bonus; judged on Bonus ROI (net-NGR lift vs baseline, per unit bonus)."],["No-deposit giveaway",`Free credit / spins — a no-deposit cost, so it typically reads negative on Bonus ROI (its short-window net-NGR lift rarely recoups the bonus). That is the wrong lens: judge it on its purpose — reactivation and gross deposits pulled per ${sym()}1 given, measured against the claimer's own pre-claim baseline (true incremental pull needs a holdout), plus the lifetime value of the players it reaches. Short-run ROI and long-run value can point opposite ways.`]]]];
  const termsTbl=`<div class="card"><div class="ct">Key terms — by category</div><div class="tblwrap"><table class="d cfg"><tbody>${terms.map(([cat,items])=>`<tr><td colspan="2" class="cfgband">${esc(cat)}</td></tr>`+items.map(([k,v])=>`<tr><td class="cfgk" style="white-space:normal;width:190px">${esc(k)}</td><td style="white-space:normal">${esc(v)}</td></tr>`).join("")).join("")}</tbody></table></div></div>`;
