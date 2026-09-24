@@ -12,7 +12,7 @@ import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
-import { isPromoPath, handlePromo } from '../src/qc-dashboard/promo.js';
+import { isPromoPath, handlePromo, ingestPromoPlayers } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { runComparison } from '../src/qc-dashboard/compare-flow.js';
 import { recordRun } from '../src/qc-dashboard/run-store.js';
@@ -735,9 +735,13 @@ async function handle(req, res) {
 async function handleRelayApi(req, res, url) {
   const relaySecret = getRelaySecret();
   if (!relaySecret) return send(res, 503, { error: 'relay unavailable' });
+  // Promo player-data pushes (bulk PII, gzipped ~1.4MB) get a higher read cap on
+  // their one path; every other relay message stays at the 64KB DoS guard.
+  const PROMO_INGEST_MAX = 24 * 1024 * 1024;
+  const isPromoIngest = req.method === 'POST' && /^\/api\/relay\/promo\/[a-z0-9-]{1,40}\/players$/.test(url.pathname);
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -753,6 +757,21 @@ async function handleRelayApi(req, res, url) {
     return send(res, verify.status || 401, { error: 'unauthorized' });
   }
   const workerId = String(req.headers['x-relay-worker'] || 'unknown').slice(0, 64);
+
+  // POST /api/relay/promo/<project>/players — bulk player-data push from the build
+  // VDI. Writes the gzipped bundle into the gitignored (deploy-surviving) players
+  // dir; PII travels server-to-server, never through git. See ingestPromoPlayers.
+  {
+    const pm = url.pathname.match(/^\/api\/relay\/promo\/([a-z0-9-]{1,40})\/players$/);
+    if (pm && req.method === 'POST') {
+      try {
+        const result = ingestPromoPlayers(ROOT, pm[1], rawBody);
+        return send(res, 200, { ok: true, ...result });
+      } catch (e) {
+        return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message });
+      }
+    }
+  }
 
   // POST /api/relay/jobs/lease
   if (req.method === 'POST' && url.pathname === '/api/relay/jobs/lease') {

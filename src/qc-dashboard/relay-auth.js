@@ -219,12 +219,15 @@ export function readRawBodyBounded(req, limit = MAX_BODY_BYTES) {
 // ── Signed-request helper for the VDI worker ─────────────────────────────
 //
 // Returns { headers, bodyBuffer } — caller does the fetch. Never returns the
-// secret and never accepts a bodyBuffer larger than MAX_BODY_BYTES.
+// secret. Caps the body at MAX_BODY_BYTES unless the caller explicitly opts into
+// a higher `maxBytes` (bulk server-to-server pushes, e.g. promo player data — the
+// signing is size-agnostic; the cap is only a client-side sanity guard, and the
+// receiving endpoint bounds its own read independently).
 
-export function buildSignedHeaders({ method, path, bodyBuffer, secret, workerId, now = Date.now() }) {
+export function buildSignedHeaders({ method, path, bodyBuffer, secret, workerId, now = Date.now(), maxBytes = MAX_BODY_BYTES }) {
   if (!secret) throw new Error('buildSignedHeaders: secret required');
   const buf = Buffer.isBuffer(bodyBuffer) ? bodyBuffer : Buffer.from(bodyBuffer || '', 'utf8');
-  if (buf.length > MAX_BODY_BYTES) throw new Error(`buildSignedHeaders: body exceeds ${MAX_BODY_BYTES}`);
+  if (buf.length > maxBytes) throw new Error(`buildSignedHeaders: body exceeds ${maxBytes}`);
   const timestamp = now;
   const nonce = crypto.randomBytes(16).toString('hex');
   const signature = sign({ secret, method, path, timestamp, nonce, bodyBuffer: buf });

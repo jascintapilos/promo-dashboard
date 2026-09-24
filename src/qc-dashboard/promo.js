@@ -7,7 +7,8 @@
 // only /promo. Per-brand data lives under data/promo/<brand>/ (report.json committed;
 // players/ is gitignored PII; usernames present only on this authed server, never in git).
 // See docs/plans/promo-gate.md.
-import { existsSync, readFileSync, createReadStream } from 'node:fs';
+import { existsSync, readFileSync, createReadStream, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { readSession } from './auth.js';
 
@@ -145,6 +146,49 @@ function servePlayers(req, res, url, root, send) {
   if (!file.startsWith(base + path.sep) || !existsSync(file)) { res.writeHead(200, headers); res.end('[]'); return; }
   res.writeHead(200, headers);
   createReadStream(file).pipe(res);
+}
+
+/** Ingest a gzipped bundle of per-code player files pushed from the build VDI over
+ *  the relay (HMAC-authenticated, server-to-server — see handleRelayApi). The bundle
+ *  is a gzipped JSON object mapping "<market>/<filename>.json" -> file text. Writes
+ *  each file into data/promo/<project>/players/<market>/ (the gitignored PII dir that
+ *  survives deploys), then PRUNES stale files not in this push (clean replace — so a
+ *  code dropped from the latest pull does not linger). Never runs git; PII stays off
+ *  the repo. Path-sanitised: only "<market>/<file>.json" entries, no traversal. */
+export function ingestPromoPlayers(root, project, gzBuffer) {
+  const bad = (msg, status = 400) => { const e = new Error(msg); e.status = status; return e; };
+  if (!/^[a-z0-9-]{1,40}$/.test(project)) throw bad('invalid project id');
+  if (!loadBrandRegistry(root)[project]) throw bad('unknown project', 404);
+  let bundle;
+  try { bundle = JSON.parse(gunzipSync(gzBuffer).toString('utf8')); }
+  catch { throw bad('bundle is not valid gzip/JSON'); }
+  if (!bundle || typeof bundle !== 'object' || Array.isArray(bundle)) throw bad('bundle must be an object');
+  const base = path.join(root, 'data', 'promo', project, 'players');
+  const REL = /^([A-Za-z0-9_-]{1,12})\/([A-Za-z0-9_.%()!~*'-]{1,220}\.json)$/;
+  const keep = new Map(); // market -> Set(filename) written this push
+  let written = 0;
+  for (const [rel, content] of Object.entries(bundle)) {
+    const m = String(rel).match(REL);
+    if (!m || rel.includes('..')) continue;
+    const [, market, filename] = m;
+    const dir = path.join(base, market);
+    const file = path.join(dir, filename);
+    if (!file.startsWith(base + path.sep)) continue; // defence-in-depth against path escape
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content));
+    written += 1;
+    if (!keep.has(market)) keep.set(market, new Set());
+    keep.get(market).add(filename);
+  }
+  if (!written) throw bad('bundle contained no valid <market>/<file>.json entries');
+  let pruned = 0; // remove stale files in the markets this push touched
+  for (const [market, names] of keep) {
+    const dir = path.join(base, market);
+    for (const f of readdirSync(dir)) {
+      if (f.endsWith('.json') && !names.has(f)) { rmSync(path.join(dir, f)); pruned += 1; }
+    }
+  }
+  return { project, markets: [...keep.keys()], written, pruned };
 }
 
 /** Handle every promo path. `send` + `htmlHeaders` come from the server so responses
