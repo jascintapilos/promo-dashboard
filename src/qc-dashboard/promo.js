@@ -86,12 +86,35 @@ function brandSwitcher(root, current, user) {
     + `${pills.join('')}${ph.join('')}</div>`;
 }
 
+// Trim data the report never renders, so viewers never download it: dead analysis
+// blocks (verification, ripple, moneycols, calls, meta, depositBehaviour) and the
+// internal reviewer columns (group "CHECK" — "Wai Yip: agree?" etc.). Runs at serve
+// time, so it stays clean regardless of what the build pipeline emits.
+const DEAD_KEYS = ['verification', 'moneycols', 'calls', 'meta', 'ripple', 'depositBehaviour'];
+function stripDeadData(payloadStr) {
+  let obj;
+  try { obj = JSON.parse(payloadStr); } catch { return payloadStr; }
+  for (const mk of Object.keys(obj)) {
+    const m = obj[mk];
+    if (!m || typeof m !== 'object') continue;
+    for (const k of DEAD_KEYS) delete m[k];
+    if (Array.isArray(m.columns)) {
+      const checkKeys = m.columns.filter((c) => c && c.group === 'CHECK').map((c) => c.key);
+      if (checkKeys.length) {
+        m.columns = m.columns.filter((c) => !c || c.group !== 'CHECK');
+        if (Array.isArray(m.codes)) for (const code of m.codes) { if (code && code.cells) for (const ck of checkKeys) delete code.cells[ck]; }
+      }
+    }
+  }
+  return JSON.stringify(obj);
+}
+
 function serveReport(res, root, brand, user, htmlHeaders, send) {
   const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
   const dataPath = path.join(brandDir(root, brand), 'report.json');
   if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
   const tpl = readFileSync(tplPath, 'utf8');
-  const payload = readFileSync(dataPath, 'utf8');
+  const payload = stripDeadData(readFileSync(dataPath, 'utf8'));
   const reg = loadBrandRegistry(root);
   const brandName = (reg[brand] && reg[brand].name) || String(brand || '').toUpperCase();
   const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
