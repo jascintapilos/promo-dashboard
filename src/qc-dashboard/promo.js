@@ -105,6 +105,18 @@ function stripDeadData(payloadStr) {
         if (Array.isArray(m.codes)) for (const code of m.codes) { if (code && code.cells) for (const ck of checkKeys) delete code.cells[ck]; }
       }
     }
+    // Strip the "Game details by segment" config from Tab 5 — the by-membership
+    // (tier x game-category) table. Remove its banner row through the next "Budget"
+    // section banner, so its whole sub-tab disappears.
+    if (Array.isArray(m.configFull)) {
+      const first = (r) => (Array.isArray(r) ? String(r.find((x) => x) || '') : '');
+      const start = m.configFull.findIndex((r) => /^Game details by segment/.test(first(r)));
+      if (start >= 0) {
+        let end = m.configFull.findIndex((r, i) => i > start && /^Budget/.test(first(r)));
+        if (end < 0) end = m.configFull.length;
+        m.configFull = m.configFull.slice(0, start).concat(m.configFull.slice(end));
+      }
+    }
   }
   return JSON.stringify(obj);
 }
