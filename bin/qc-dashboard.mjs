@@ -11,7 +11,8 @@ import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engi
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
-import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig } from '../src/qc-dashboard/auth.js';
+import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES } from '../src/qc-dashboard/auth.js';
+import { isPromoPath, handlePromo } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { runComparison } from '../src/qc-dashboard/compare-flow.js';
 import { recordRun } from '../src/qc-dashboard/run-store.js';
@@ -131,6 +132,13 @@ function send(res, status, data, headers = {}) {
     ...headers,
   });
   res.end(body);
+}
+
+// A report-only (`promo-report`) account that lands on the QC Hub / Ops Dashboard
+// host is refused here and pointed at its promo site — it can reach neither app.
+function sendReportOnly(res) {
+  res.writeHead(403, HTML_HEADERS);
+  res.end('<!doctype html><meta charset=utf-8><title>Report-only access</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">Report-only account</h2><p>This account can view the Promo Effectiveness report only — the QC Hub and Ops Dashboard are not available to it.</p><p>Open your promo report from the link you were given (a <code>*.promo.zoom66.xyz</code> address).</p></body>');
 }
 
 
@@ -630,6 +638,12 @@ async function handle(req, res) {
     if (req.method === 'POST' && url.pathname === '/auth/logout') {
       return send(res, 200, { ok: true }, { 'set-cookie': 'qc_hub_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
     }
+    // Walled promo report, served as a PATH (/promo/<brand> + /api/promo/<brand>/...).
+    // Dispatched after host-agnostic /api/config + /auth/* (so sign-in works) and BEFORE
+    // the qc-host `/api/` role-gate below (so a report-only account can reach /api/promo/*).
+    if (isPromoPath(url.pathname)) {
+      return await handlePromo(req, res, url, { root: ROOT, send, htmlHeaders: HTML_HEADERS });
+    }
     // Relay endpoints authenticate via HMAC on raw request bytes — must be
     // dispatched BEFORE the session gate. Session-holding humans never call
     // these; only the VDI worker with the shared RELAY_SECRET does.
@@ -639,6 +653,10 @@ async function handle(req, res) {
     if (url.pathname.startsWith('/api/')) {
       const user = requireSession(req, res);
       if (!user) return;
+      // Report-only accounts (promo-report) never reach the QC/BO APIs on this host.
+      if (url.pathname !== '/api/me' && REPORT_ONLY_ROLES.has(user.role)) {
+        return send(res, 403, { error: 'report-only account — no access to the QC Hub' });
+      }
       return await handleApi(req, res, user);
     }
     if (url.pathname === '/dashboard-switcher.css') {
@@ -653,12 +671,19 @@ async function handle(req, res) {
       return;
     }
     if (url.pathname === '/dashboard') {
-      if (!readSession(req)) {
+      const s = readSession(req);
+      if (!s) {
         res.writeHead(302, { location: `/?return=${encodeURIComponent(url.pathname)}` });
         res.end();
         return;
       }
+      if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
       return await sendHtml(res, path.join(ROOT, 'public', 'dashboard.html'));
+    }
+    // Report-only accounts can't open the QC Hub entry HTML either (assets are harmless).
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      const s = readSession(req);
+      if (s && REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
     }
     if (await serveStatic(req, res)) return;
     return await sendHtml(res, path.join(PUBLIC, 'index.html'));

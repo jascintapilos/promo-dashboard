@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__BRAND_NAME__ · Promo Effectiveness — sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{--ink:#141F2C;--muted:#57697B;--surface:#fff;--line:#DBE3EB;--bg:#EEF2F6;--accent:#116FA6;--good:#1B7A46;--bad:#B23A2E}
+@media (prefers-color-scheme:dark){:root{--ink:#E6EDF4;--muted:#93A5B6;--surface:#151F2C;--line:#26333F;--bg:#0D1520;--accent:#3BB3A3}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;padding:24px}
+.card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(20,31,44,.05),0 10px 34px rgba(20,31,44,.10);padding:28px 26px}
+/* ─ PLACEHOLDER brand mark — swap for the real logo/image ─ */
+.logo{height:56px;width:56px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#0d5983);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Fraunces",serif;font-weight:600;font-size:26px;margin:0 auto 14px}
+.ph{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;opacity:.7;margin-bottom:16px}
+h1{font-family:"Fraunces",serif;font-weight:600;font-size:22px;text-align:center;margin:0 0 3px;letter-spacing:-.01em}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 20px}
+.sub b{color:var(--ink)}
+/* ─ PLACEHOLDER "tab switcher" scaffold (decorative — swap for brand tabs/graphic) ─ */
+.tabsw{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:22px}
+.tabsw button{flex:1;border:0;background:transparent;color:var(--muted);font:600 12px "IBM Plex Sans";padding:7px 6px;border-radius:7px;cursor:default}
+.tabsw button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(20,31,44,.08)}
+.signin{display:flex;flex-direction:column;align-items:center;gap:12px;min-height:44px}
+#gbtn{min-height:40px}
+.devbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 14px;font:600 13px "IBM Plex Sans";cursor:pointer}
+.devbtn:hover{border-color:var(--accent);color:var(--accent)}
+.err{color:var(--bad);font-size:12.5px;text-align:center;min-height:16px;margin-top:6px}
+.foot{margin-top:20px;text-align:center;font-size:11px;color:var(--muted);line-height:1.5}
+.foot b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo" aria-hidden="true">__BRAND_ID__</div>
+  <div class="ph">placeholder logo — swap</div>
+  <h1>Promo Effectiveness</h1>
+  <p class="sub"><b>__BRAND_NAME__</b> · sign in to view the report</p>
+
+  <!-- PLACEHOLDER tab switcher (decorative scaffold to replace) -->
+  <div class="tabsw" aria-hidden="true">
+    <button class="on">Overview</button>
+    <button>Codes</button>
+    <button>Players</button>
+  </div>
+
+  <div class="signin">
+    <div id="gbtn"></div>
+    <button id="dev" class="devbtn" style="display:none">Dev sign-in (localhost)</button>
+  </div>
+  <div class="err" id="err"></div>
+
+  <div class="foot"><b>Report only.</b> This site shows the Promo Effectiveness report — no access to the QC Hub or Ops Dashboard.</div>
+</div>
+
+<script>
+const err = (m) => { document.getElementById('err').textContent = m || ''; };
+function login(body){
+  return fetch('/auth/login', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body||{})})
+    .then(r => r.ok ? location.reload() : r.json().then(e => err(e.error || 'Sign-in failed')))
+    .catch(() => err('Sign-in failed — try again'));
+}
+fetch('/api/config').then(r=>r.json()).then(cfg=>{
+  if (cfg.devMode) {
+    const d = document.getElementById('dev'); d.style.display=''; d.onclick=()=>login({});
+    return;
+  }
+  const start = () => {
+    if (!window.google || !google.accounts) return setTimeout(start, 150);
+    google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: (resp)=>login({credential: resp.credential}) });
+    google.accounts.id.renderButton(document.getElementById('gbtn'), { theme:'outline', size:'large', shape:'pill', text:'signin_with' });
+  };
+  start();
+}).catch(()=>err('Could not reach the sign-in service'));
+</script>
+</body>
+</html>

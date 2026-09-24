@@ -1,0 +1,124 @@
+// Promo Effectiveness report — walled, multi-brand, served as a PATH on the existing
+// qc-dashboard host (no separate subdomain / DNS):
+//   GET /promo/<brand>                         -> branded login (unauth) or the report
+//   GET /api/promo/<brand>/<market>/<code>.json -> that code's players (session-gated)
+// Isolation is the ROLE-GATE in bin/qc-dashboard.mjs: a report-only `promo-report`
+// account is refused the QC Hub (`/`) and Ops Dashboard (`/dashboard`), so it can reach
+// only /promo. Per-brand data lives under data/promo/<brand>/ (report.json committed;
+// players/ is gitignored PII; usernames present only on this authed server, never in git).
+// See docs/plans/promo-gate.md.
+import { existsSync, readFileSync, createReadStream } from 'node:fs';
+import path from 'node:path';
+import { readSession } from './auth.js';
+
+export function loadBrandRegistry(root) {
+  const f = path.join(root, 'data', 'promo', 'promo-brands.json');
+  if (!existsSync(f)) return {};
+  try { return JSON.parse(readFileSync(f, 'utf8')).brands || {}; } catch { return {}; }
+}
+
+const brandDir = (root, brand) => path.join(root, 'data', 'promo', brand);
+
+/** Brand id from /promo/<brand> or /api/promo/<brand>/..., or null. */
+export function promoBrandFromPath(pathname) {
+  let m = pathname.match(/^\/promo\/([a-z0-9-]{1,40})(?:\/.*)?$/);
+  if (m) return m[1];
+  m = pathname.match(/^\/api\/promo\/([a-z0-9-]{1,40})\//);
+  return m ? m[1] : null;
+}
+
+/** True if this path belongs to the promo app (dispatched before the qc-host routing). */
+export function isPromoPath(pathname) {
+  return pathname === '/promo' || pathname.startsWith('/promo/') ||
+    pathname.startsWith('/promo-assets/') || pathname.startsWith('/api/promo/');
+}
+
+/** admin/promo-team see every brand; a report-only `promo-report` viewer sees ONLY
+ *  brands whose registry entry lists their email (per-brand scoping, no cross-brand bleed). */
+function canView(user, entry) {
+  if (!user || !entry) return false;
+  const role = user.role || '';
+  if (role === 'admin' || role === 'promo-team') return true;
+  if (role === 'promo-report') {
+    const emails = Array.isArray(entry.emails) ? entry.emails.map((e) => String(e).toLowerCase()) : [];
+    return emails.includes(String(user.email || '').toLowerCase());
+  }
+  return false;
+}
+
+function serveReport(res, root, brand, htmlHeaders, send) {
+  const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
+  const dataPath = path.join(brandDir(root, brand), 'report.json');
+  if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
+  const tpl = readFileSync(tplPath, 'utf8');
+  const payload = readFileSync(dataPath, 'utf8');
+  const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
+  let html;
+  if (tpl.includes('const DATA=/*__DATA__*/;')) {
+    html = tpl.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};`);
+  } else {
+    html = tpl.replace('/*__DATA__*/', payload).replace('</head>', `<script>${apiGlobal}</script></head>`);
+  }
+  res.writeHead(200, htmlHeaders);
+  res.end(html);
+}
+
+function serveLogin(res, root, brand, entry, htmlHeaders) {
+  const f = path.join(root, 'public', 'promo', 'login.html');
+  const name = (entry && entry.name) || (brand ? brand.toUpperCase() : 'Promo');
+  if (!existsSync(f)) { res.writeHead(200, htmlHeaders); res.end(`<h1>${name} — sign in</h1>`); return; }
+  const html = readFileSync(f, 'utf8').replace(/__BRAND_ID__/g, brand || '').replace(/__BRAND_NAME__/g, name);
+  res.writeHead(200, htmlHeaders);
+  res.end(html);
+}
+
+function serveAsset(res, root, rel) {
+  const base = path.join(root, 'public', 'promo');
+  const file = path.join(base, rel);
+  if (!file.startsWith(base + path.sep) || rel.includes('..') || !existsSync(file)) { res.writeHead(404); res.end(); return; }
+  const ext = path.extname(file).toLowerCase();
+  const ct = { '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.ico': 'image/x-icon' }[ext] || 'application/octet-stream';
+  res.writeHead(200, { 'content-type': `${ct}; charset=utf-8`, 'cache-control': 'no-cache' });
+  createReadStream(file).pipe(res);
+}
+
+function servePlayers(req, res, url, root, send) {
+  const user = readSession(req);
+  if (!user) return send(res, 401, { error: 'sign in required' });
+  const m = url.pathname.match(/^\/api\/promo\/([a-z0-9-]{1,40})\/([A-Za-z0-9_-]{1,12})\/([^/]{1,220})\.json$/);
+  if (!m) return send(res, 404, { error: 'not found' });
+  const [, brand, market, codeseg] = m;
+  const entry = loadBrandRegistry(root)[brand] || null;
+  if (!canView(user, entry)) return send(res, 403, { error: 'no access to this brand' });
+  if (codeseg.includes('..')) return send(res, 404, { error: 'not found' });
+  const base = path.join(brandDir(root, brand), 'players', market);
+  const file = path.join(base, `${codeseg}.json`);
+  const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'private, no-store' };
+  if (!file.startsWith(base + path.sep) || !existsSync(file)) { res.writeHead(200, headers); res.end('[]'); return; }
+  res.writeHead(200, headers);
+  createReadStream(file).pipe(res);
+}
+
+/** Handle every promo path. `send` + `htmlHeaders` come from the server so responses
+ *  match its conventions. Dispatched BEFORE the qc-host `/api/` gate (so promo-report
+ *  can reach /api/promo/*) and before the qc-host page routing. */
+export async function handlePromo(req, res, url, ctx) {
+  const { root, send, htmlHeaders } = ctx;
+  if (url.pathname.startsWith('/api/promo/')) return servePlayers(req, res, url, root, send);
+  if (url.pathname.startsWith('/promo-assets/')) return serveAsset(res, root, url.pathname.slice('/promo-assets/'.length));
+  if (url.pathname === '/promo' || url.pathname === '/promo/') {
+    const brands = Object.keys(loadBrandRegistry(root));
+    res.writeHead(302, { location: `/promo/${brands[0] || 'ws1'}` });
+    res.end();
+    return;
+  }
+  const m = url.pathname.match(/^\/promo\/([a-z0-9-]{1,40})\/?$/);
+  if (m) {
+    const brand = m[1];
+    const entry = loadBrandRegistry(root)[brand] || null;
+    const user = readSession(req);
+    if (user && entry && canView(user, entry)) return serveReport(res, root, brand, htmlHeaders, send);
+    return serveLogin(res, root, brand, entry, htmlHeaders);
+  }
+  return send(res, 404, { error: 'not found' });
+}
