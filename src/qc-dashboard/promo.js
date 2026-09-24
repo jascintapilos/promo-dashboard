@@ -91,11 +91,16 @@ function serveReport(res, root, brand, user, htmlHeaders, send) {
   if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
   const tpl = readFileSync(tplPath, 'utf8');
   const payload = readFileSync(dataPath, 'utf8');
+  const reg = loadBrandRegistry(root);
+  const brandName = (reg[brand] && reg[brand].name) || String(brand || '').toUpperCase();
   const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
   const wire = 'var _po=document.getElementById("pSessOut");if(_po)_po.onclick=function(){fetch("/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload();});};';
-  // Inject the session controls (before the theme toggle) + the brand switcher
-  // (as the top row of the sticky header).
-  let html = tpl.replace('<button class="tgl" id="tgl"', `${sessionControls(user)}<button class="tgl" id="tgl"`);
+  // Brand-aware: the shared template's identity spots (title, header, footer) all
+  // read "WS1" (the raw template has exactly those 3 identity occurrences).
+  // Substitute the CURRENT brand's name FIRST — before injecting the switcher and
+  // the per-brand DATA — so the switcher's own WS1 pill and the data are untouched.
+  let html = tpl.replace(/WS1/g, () => brandName)
+    .replace('<button class="tgl" id="tgl"', `${sessionControls(user)}<button class="tgl" id="tgl"`);
   html = html.replace('<header class="top"><div class="hbar">', `<header class="top">${brandSwitcher(root, brand, user)}<div class="hbar">`);
   if (html.includes('const DATA=/*__DATA__*/;')) {
     html = html.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};${wire}`);
