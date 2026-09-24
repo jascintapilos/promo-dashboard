@@ -46,18 +46,36 @@ function canView(user, entry) {
   return false;
 }
 
-function serveReport(res, root, brand, htmlHeaders, send) {
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Session controls injected into the report header: signed-in email, a Manage
+ *  Users link for admins (report-only/promo-team viewers omit it — they would be
+ *  403'd), and a Log out button. Static HTML (themed via the report CSS vars);
+ *  the logout handler is wired in the injected report script. */
+function sessionControls(user) {
+  const role = (user && user.role) || '';
+  const email = String((user && user.email) || '');
+  const btn = 'border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:600 11.5px \'IBM Plex Sans\',system-ui,sans-serif;padding:6px 9px;text-decoration:none;cursor:pointer;white-space:nowrap';
+  const who = email ? `<span title="${escapeHtml(email)}" style="color:var(--muted);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(email)}</span>` : '';
+  const manage = role === 'admin' ? `<a href="/admin/users" style="${btn}">Manage users</a>` : '';
+  return `<span style="display:inline-flex;align-items:center;gap:8px;margin-right:8px">${who}${manage}<button type="button" id="pSessOut" style="${btn}">Log out</button></span>`;
+}
+
+function serveReport(res, root, brand, user, htmlHeaders, send) {
   const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
   const dataPath = path.join(brandDir(root, brand), 'report.json');
   if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
   const tpl = readFileSync(tplPath, 'utf8');
   const payload = readFileSync(dataPath, 'utf8');
   const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
-  let html;
-  if (tpl.includes('const DATA=/*__DATA__*/;')) {
-    html = tpl.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};`);
+  const wire = 'var _po=document.getElementById("pSessOut");if(_po)_po.onclick=function(){fetch("/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload();});};';
+  // Inject the session controls into the header (before the theme toggle).
+  let html = tpl.replace('<button class="tgl" id="tgl"', `${sessionControls(user)}<button class="tgl" id="tgl"`);
+  if (html.includes('const DATA=/*__DATA__*/;')) {
+    html = html.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};${wire}`);
   } else {
-    html = tpl.replace('/*__DATA__*/', payload).replace('</head>', `<script>${apiGlobal}</script></head>`);
+    html = html.replace('/*__DATA__*/', payload).replace('</head>', `<script>${apiGlobal}</script></head>`);
   }
   res.writeHead(200, htmlHeaders);
   res.end(html);
@@ -117,7 +135,7 @@ export async function handlePromo(req, res, url, ctx) {
     const brand = m[1];
     const entry = loadBrandRegistry(root)[brand] || null;
     const user = readSession(req);
-    if (user && entry && canView(user, entry)) return serveReport(res, root, brand, htmlHeaders, send);
+    if (user && entry && canView(user, entry)) return serveReport(res, root, brand, user, htmlHeaders, send);
     return serveLogin(res, root, brand, entry, htmlHeaders);
   }
   return send(res, 404, { error: 'not found' });
