@@ -79,9 +79,9 @@ function brandSwitcher(root, current, user) {
       : `<a href="/promo/${encodeURIComponent(id)}" style="${base};background:var(--surface);color:var(--ink)">${escapeHtml(name)}</a>`;
   });
   const ph = [viewable.length + 1, viewable.length + 2].map((n) =>
-    `<span title="Placeholder — additional brands appear here" style="${base};background:transparent;color:var(--muted);border-style:dashed;opacity:.6;cursor:default">Brand ${n}</span>`);
+    `<span title="Placeholder — additional projects appear here" style="${base};background:transparent;color:var(--muted);border-style:dashed;opacity:.6;cursor:default">Project ${n}</span>`);
   return `<div class="wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 18px 3px">`
-    + `<span style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-right:2px">Brand</span>`
+    + `<span style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-right:2px">Project</span>`
     + `${pills.join('')}${ph.join('')}</div>`;
 }
 
