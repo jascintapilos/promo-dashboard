@@ -45,3 +45,5 @@ tmp-ft-browser-pull*.json
 
 # Promo report — per-brand player PII, served only by the authed promo host
 data/promo/*/players/
+# Runtime brand-viewer grants added via Manage Users (self-service; survives deploys)
+data/promo/promo-brands.overlay.json

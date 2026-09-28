@@ -93,8 +93,8 @@
       <tbody id="rows"><tr><td colspan="3" class="loading">Loading…</td></tr></tbody>
     </table>
     <p class="hint">
-      A <code>promo-report</code> viewer can open only the promo report and is blocked from the QC Hub / Ops Dashboard.
-      They also need their email listed under the brand in <code>promo-brands.json</code> to see that brand.
+      A <b>Report only</b> viewer can open just the promo report and is blocked from the QC Hub / Ops Dashboard.
+      Adding or setting someone to <b>Report only</b> grants the report automatically — no extra step, effective immediately.
     </p>
   </div>
 </div>
@@ -102,11 +102,11 @@
 
 <script>
 const ROLES = [
-  ["admin", "Admin — full access + manage users"],
+  ["promo-report", "Report only — promo report, nothing else"],
   ["promo-team", "Promo Team — QC Hub + Ops"],
+  ["admin", "Admin — full access + manage users"],
   ["hod-view", "HOD View"],
   ["guest", "Guest"],
-  ["promo-report", "Promo Report — report only"],
 ];
 const ROLE_SHORT = {admin:"Admin","promo-team":"Promo Team","hod-view":"HOD View",guest:"Guest","promo-report":"Promo Report"};
 let ME = "";
@@ -191,7 +191,7 @@ async function addUser(){
   finally { btn.disabled = false; }
 }
 async function init(){
-  document.getElementById("addRole").innerHTML = optionsHTML("promo-team");
+  document.getElementById("addRole").innerHTML = optionsHTML("promo-report");
   document.getElementById("addBtn").addEventListener("click", addUser);
   document.getElementById("addEmail").addEventListener("keydown", (e) => { if (e.key==="Enter") addUser(); });
   try { const me = await api("/api/me"); ME = (me.user && me.user.email) || ""; } catch (e){}

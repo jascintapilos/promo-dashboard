@@ -12,10 +12,77 @@ import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { readSession } from './auth.js';
 
-export function loadBrandRegistry(root) {
+const BRAND_OVERLAY_FILE = (root) => path.join(root, 'data', 'promo', 'promo-brands.overlay.json');
+
+/** Base brand entries straight from the git-tracked registry (no overlay). */
+function baseBrands(root) {
   const f = path.join(root, 'data', 'promo', 'promo-brands.json');
   if (!existsSync(f)) return {};
   try { return JSON.parse(readFileSync(f, 'utf8')).brands || {}; } catch { return {}; }
+}
+
+/** Runtime-writable, gitignored overlay of extra per-brand report viewers, added via
+ *  the Manage Users screen. Shape: { "emails": { "<brandId>": ["a@x", ...] } }. Lives
+ *  outside the git-tracked base so grants survive deploys (same pattern as auth overlay). */
+function loadBrandEmailOverlay(root) {
+  try {
+    const f = BRAND_OVERLAY_FILE(root);
+    if (!existsSync(f)) return { emails: {} };
+    const j = JSON.parse(readFileSync(f, 'utf8'));
+    return { emails: (j && typeof j.emails === 'object' && j.emails) || {} };
+  } catch { return { emails: {} }; }
+}
+function saveBrandEmailOverlay(root, ov) {
+  writeFileSync(BRAND_OVERLAY_FILE(root), JSON.stringify({ emails: ov.emails || {} }, null, 2));
+}
+
+export function loadBrandRegistry(root) {
+  const brands = baseBrands(root);
+  const ov = loadBrandEmailOverlay(root);
+  for (const [id, entry] of Object.entries(brands)) {
+    const extra = Array.isArray(ov.emails[id]) ? ov.emails[id] : [];
+    if (!extra.length) continue;
+    const base = Array.isArray(entry.emails) ? entry.emails : [];
+    const seen = new Set(base.map((e) => String(e).toLowerCase()));
+    entry.emails = [...base];
+    for (const e of extra) {
+      const l = String(e).toLowerCase();
+      if (!seen.has(l)) { seen.add(l); entry.emails.push(e); }
+    }
+  }
+  return brands;
+}
+
+/** Grant a report-only viewer access to brand(s) — default every current brand — by
+ *  writing into the gitignored overlay. Idempotent. Returns the brand ids granted. */
+export function grantBrandAccess(root, email, brandIds) {
+  const em = String(email || '').trim().toLowerCase();
+  if (!em) return [];
+  const ids = (Array.isArray(brandIds) && brandIds.length) ? brandIds : Object.keys(baseBrands(root));
+  const ov = loadBrandEmailOverlay(root);
+  for (const id of ids) {
+    const list = Array.isArray(ov.emails[id]) ? ov.emails[id] : [];
+    if (!list.some((e) => String(e).toLowerCase() === em)) list.push(em);
+    ov.emails[id] = list;
+  }
+  saveBrandEmailOverlay(root, ov);
+  return ids;
+}
+
+/** Remove a viewer from every brand's overlay list (on removal / role change away from
+ *  report-only). Does NOT touch the git-tracked base emails. */
+export function revokeBrandAccess(root, email) {
+  const em = String(email || '').trim().toLowerCase();
+  if (!em) return;
+  const ov = loadBrandEmailOverlay(root);
+  let changed = false;
+  for (const id of Object.keys(ov.emails)) {
+    const cur = Array.isArray(ov.emails[id]) ? ov.emails[id] : [];
+    const next = cur.filter((e) => String(e).toLowerCase() !== em);
+    if (next.length !== cur.length) changed = true;
+    if (next.length) ov.emails[id] = next; else delete ov.emails[id];
+  }
+  if (changed) saveBrandEmailOverlay(root, ov);
 }
 
 const brandDir = (root, brand) => path.join(root, 'data', 'promo', brand);

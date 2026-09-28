@@ -12,7 +12,7 @@ import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
-import { isPromoPath, handlePromo, ingestPromoPlayers } from '../src/qc-dashboard/promo.js';
+import { isPromoPath, handlePromo, ingestPromoPlayers, grantBrandAccess, revokeBrandAccess } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
 import { runComparison } from '../src/qc-dashboard/compare-flow.js';
 import { recordRun } from '../src/qc-dashboard/run-store.js';
@@ -338,6 +338,16 @@ async function handleApi(req, res, user) {
     catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
     try {
       const users = upsertAdmittedUser({ email: body.email, role: body.role, actingEmail: user.email });
+      // Keep brand access in step with the role so the grant is complete in ONE action:
+      // a report-only viewer is granted the brand(s) here (default: every current brand),
+      // so they can actually SEE the report — no separate promo-brands.json edit. Any
+      // other role already sees all brands, so clear any stale overlay grant.
+      const em = String(body.email || '').trim().toLowerCase();
+      if (String(body.role) === 'promo-report') {
+        grantBrandAccess(ROOT, em, Array.isArray(body.brands) ? body.brands : null);
+      } else {
+        revokeBrandAccess(ROOT, em);
+      }
       return send(res, 200, { ok: true, users });
     } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
   }
@@ -348,6 +358,7 @@ async function handleApi(req, res, user) {
     catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
     try {
       const users = removeAdmittedUser({ email: body.email, actingEmail: user.email });
+      revokeBrandAccess(ROOT, String(body.email || '').trim().toLowerCase());
       return send(res, 200, { ok: true, users });
     } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
   }
