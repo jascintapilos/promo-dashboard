@@ -171,6 +171,7 @@ const LEAN=[
  {id:"pillar",label:"Pillar",kind:"cat",get:c=>c._pillar},
  {id:"type",label:"Type",kind:"cat",get:c=>c._type},
  {id:"spend",label:"Bonus",n:1,kind:"num",get:c=>c._spend},
+ {id:"players",label:"Players",n:1,kind:"num",get:c=>c._players,disp:c=>c._players!=null?c._players.toLocaleString():"—"},
  // pillar-specific KEY judging metrics (shown only when that pillar is filtered)
  {id:"costftd",label:"Cost/FTD",n:1,kind:"num",pillars:["Acquisition"],get:c=>cnum(c,"COSTS / EARNS · Cost / new depositor"),disp:c=>cellD(c,"COSTS / EARNS · Cost / new depositor")},
  {id:"conv",label:"Claimed→dep",kind:"cat",pillars:["Acquisition"],get:c=>cellD(c,"COSTS / EARNS · Claimed → deposited")},
@@ -606,7 +607,7 @@ function segHeatHTML(){
  const sc=segCellMap(),st=VSTATES,order=VBANDS,ngr={};
  order.forEach(b=>ngr[b]=st.reduce((a,s)=>a+nz(sc,b,s,'ngr'),0));
  const tot=Object.values(ngr).reduce((a,x)=>a+x,0)||1,cls=(bi,si)=>bi===3?"he-low":si===0?"he-keep":si<3?"he-act":"he-lost";
- return `<div class="card"><div class="ct">Members by band × state <span class="basis">bands = Top value ≥${sym()}100k · High ≥${sym()}20k · Mid ≥${sym()}2k</span></div><div style="padding:12px 14px;overflow-x:auto"><table class="heat"><thead><tr><th class="rh">Band</th>${st.map(s=>`<th>${s}</th>`).join("")}<th class="rh">NGR (share)</th></tr></thead><tbody>${order.map((b,bi)=>`<tr><td class="rh"><span class="dot" style="background:var(--band-${b.toLowerCase()})"></span>${vlbl(b)}</td>${st.map((s,si)=>`<td class="${cls(bi,si)}">${nz(sc,b,s,'m').toLocaleString()}</td>`).join("")}<td class="rh mut num">${MM(ngr[b])} · ${Math.round(100*ngr[b]/tot)}%</td></tr>`).join("")}</tbody></table></div><div class="foot">🟩 valuable &amp; active (keep) · 🟨 valuable but cooling/lapsing (reactivate) · 🟥 valuable but dormant (win-back candidate) · ⬜ low value — low-cost servicing / selective testing (new &amp; immature may still ramp)</div></div>`;
+ return `<div class="card"><div class="ct">Members by band × state <span class="basis">bands = Top value ≥${sym()}100k · High ≥${sym()}20k · Mid ≥${sym()}2k</span></div><div style="padding:12px 14px;overflow-x:auto"><table class="heat"><thead><tr><th class="rh">Band</th>${st.map(s=>`<th>${s}</th>`).join("")}<th class="rh">NGR (share)</th></tr></thead><tbody>${order.map((b,bi)=>`<tr><td class="rh"><span class="dot" style="background:var(--band-${b.toLowerCase()})"></span>${vlbl(b)}</td>${st.map((s,si)=>`<td class="${cls(bi,si)}">${nz(sc,b,s,'m').toLocaleString()}</td>`).join("")}<td class="rh mut num">${MM(ngr[b])} · ${Math.round(100*ngr[b]/tot)}%</td></tr>`).join("")}</tbody></table></div><div class="foot"><b>States track how recently each player last deposited:</b> <b>Active</b> (still depositing) → <b>Cooling</b> (starting to go quiet) → <b>Lapsed</b> (gone quiet a while) → <b>Dormant</b> (inactive a long time). <br>🟩 valuable &amp; active (keep) · 🟨 valuable but cooling/lapsing (reactivate) · 🟥 valuable but dormant (win-back candidate) · ⬜ low value — low-cost servicing / selective testing (new &amp; immature may still ramp)</div></div>`;
 }
 function cascadeLadderHTML(){
  const sc=segCellMap(),st=VSTATES,order=VBANDS;
