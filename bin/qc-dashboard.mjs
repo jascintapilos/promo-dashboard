@@ -10,6 +10,7 @@ import { runAutoChecks } from '../src/qc-dashboard/auto-checks.js';
 import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engine.js';
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
+import { listEntries, addEntry, updateEntry, deleteEntry } from '../src/qc-dashboard/leave-board-store.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
 import { isPromoPath, handlePromo, ingestPromoPlayers, grantBrandAccess, revokeBrandAccess } from '../src/qc-dashboard/promo.js';
@@ -329,6 +330,28 @@ async function handleApi(req, res, user) {
   }
   if (req.method === 'GET' && url.pathname === '/api/brands') return send(res, 200, { brands: buildBrandList() });
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
+  // Leave Board — casual team leave tracker (any logged-in team member; no approval).
+  if (req.method === 'GET' && url.pathname === '/api/leave') {
+    return send(res, 200, { entries: await listEntries() });
+  }
+  if (req.method === 'POST' && url.pathname === '/api/leave') {
+    const body = await readJsonBounded(req);
+    await addEntry(body, user);
+    return send(res, 200, { entries: await listEntries() });
+  }
+  {
+    const md = url.pathname.match(/^\/api\/leave\/([A-Za-z0-9_-]{6,64})\/delete$/);
+    if (md && req.method === 'POST') {
+      await deleteEntry(md[1], user);
+      return send(res, 200, { entries: await listEntries() });
+    }
+    const mu = url.pathname.match(/^\/api\/leave\/([A-Za-z0-9_-]{6,64})$/);
+    if (mu && req.method === 'POST') {
+      const body = await readJsonBounded(req);
+      await updateEntry(mu[1], body, user);
+      return send(res, 200, { entries: await listEntries() });
+    }
+  }
   // Manage Users — admin-only, self-service. Writes go to the server-side overlay
   // (auth.js), so they persist across deploys that rewrite the git-tracked base.
   if (req.method === 'POST' && url.pathname === '/api/admin/users') {
@@ -712,6 +735,16 @@ async function handle(req, res) {
       }
       if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
       return await sendHtml(res, path.join(ROOT, 'public', 'dashboard.html'));
+    }
+    if (url.pathname === '/leave-board.html') {
+      const s = readSession(req);
+      if (!s) {
+        res.writeHead(302, { location: `/?return=${encodeURIComponent('/dashboard')}` });
+        res.end();
+        return;
+      }
+      if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
+      return await sendHtml(res, path.join(ROOT, 'public', 'leave-board.html'));
     }
     // Manage Users — admin-only screen (linked from the QC Hub and Ops Dashboard).
     // Served from public/ (NOT public/qc-hub/), so serveStatic can't expose it ungated.
