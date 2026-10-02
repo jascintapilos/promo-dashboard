@@ -788,13 +788,14 @@ function tMacro(){
   </div></div>`;
  const subs=`<div class="winsw" style="margin:2px 0 12px">${regs.map((r,i)=>`<button data-mr="${i}" class="${i===MR?'on':''}">${esc(r.region)}</button>`).join("")}</div>`;
  const r=regs[Math.min(MR,regs.length-1)]||{brands:[]}, s=(r.sym||"");
+ const frank=b=>/^WS/i.test(b)?0:/^QPRO/i.test(b)?1:/^QP2/i.test(b)?2:3, brs=(r.brands||[]).slice().sort((a,b)=>frank(a.b)-frank(b.b)||b.d-a.d);
  const ty="background:#FCFAF6;color:#57697B";
  const brow=x=>`<tr><td class="stick">${esc(x.b)}</td><td class="n">${mm(x.d,s)}</td><td class="n" style="${ty}">${mm(x.db,s)}</td><td class="n" style="${ty}">${mm(x.fc,s)}</td><td class="n" style="${ty}">${mm(x.fs,s)}</td><td class="n">${mm(x.rb,s)}</td><td class="n" style="font-weight:700;color:${bcol(x.bon_pct)}${x.bon_pct>8?';background:#FBEDEC':''}">${x.bon_pct}%</td><td class="n" style="font-weight:700;color:#B9791F">${x.br_pct}%</td><td class="n">${mm(x.ngr,s)}</td><td class="n" style="font-weight:700;color:${mcol(x.mg)}">${x.mg}%</td></tr>`;
  const tot=`<tr style="font-weight:700;background:var(--surface-2)"><td class="stick">${esc(r.region||"")} total</td><td class="n">${mm(r.d,s)}</td><td class="n">${mm(r.db,s)}</td><td class="n">${mm(r.fc,s)}</td><td class="n">${mm(r.fs,s)}</td><td class="n">${mm(r.rb,s)}</td><td class="n" style="font-weight:700;color:${bcol(r.bon_pct)}">${r.bon_pct}%</td><td class="n" style="color:#B9791F">${r.br_pct}%</td><td class="n">${mm(r.ngr,s)}</td><td class="n" style="color:${mcol(r.mg)}">${r.mg}%</td></tr>`;
  const table=`<div class="tblwrap"><table class="d"><thead>
   <tr><th class="stick" rowspan="2">Brand</th><th class="n" rowspan="2">Deposits</th><th class="n" colspan="3" style="text-align:center;color:#B9791F">Bonus by type</th><th class="n" rowspan="2">Rebate</th><th class="n" rowspan="2">Bonus %</th><th class="n" rowspan="2">Bonus+<br>Rebate %</th><th class="n" rowspan="2">NGR</th><th class="n" rowspan="2">NGR margin<br><span style="font-size:9px;color:var(--muted);font-weight:400">bench 20%</span></th></tr>
   <tr><th class="n">Dep bonus</th><th class="n">Free credit</th><th class="n">Free spins</th></tr></thead>
-  <tbody>${(r.brands||[]).map(brow).join("")}${tot}</tbody></table></div>`;
+  <tbody>${brs.map(brow).join("")}${tot}</tbody></table></div>`;
  const foot=`<div class="foot"><b>Bonus %</b>: <span style="color:#1B7A46">green ≤5% (efficient)</span> · <span style="color:#B9791F">amber 5–8%</span> · <span style="color:#B23A2E">red &gt;8% (check for leakage)</span>. <b>NGR margin</b> against the <b>20% benchmark</b> (lever: trim bonus cost to lift margin); a big-winner outlier swings NGR, not Bonus %. Whole-company revenue · ${esc(M.asOf||"")} · cost view (observational).</div>`;
  g("panel").innerHTML=hero+`<div class="card">${subs}${table}${foot}</div>`;
  g("panel").querySelectorAll('.winsw button[data-mr]').forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;tMacro();});
