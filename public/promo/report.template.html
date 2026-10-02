@@ -786,7 +786,6 @@ function tMacro(){
    <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600">${C.br_pct}%</div><div style="font-size:11px;color:#9DB4C7">Bonus + Rebate %</div></div>
    <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600;color:${C.mg<20?"#F4A259":"#7FD1A6"}">${C.mg}%</div><div style="font-size:11px;color:#9DB4C7">NGR margin · bench 20%${C.mg<20?" — below":""}</div></div>
   </div></div>`;
- const subs=`<div class="winsw" style="margin:2px 0 12px">${regs.map((r,i)=>`<button data-mr="${i}" class="${i===MR?'on':''}">${esc(r.region)}</button>`).join("")}</div>`;
  const r=regs[Math.min(MR,regs.length-1)]||{brands:[]}, s=(r.sym||"");
  const frank=b=>/^WS/i.test(b)?0:/^QPRO/i.test(b)?1:/^QP2/i.test(b)?2:3, brs=(r.brands||[]).slice().sort((a,b)=>frank(a.b)-frank(b.b)||b.d-a.d);
  const ty="background:#FCFAF6;color:#57697B";
@@ -797,8 +796,7 @@ function tMacro(){
   <tr><th class="n">Dep bonus</th><th class="n">Free credit</th><th class="n">Free spins</th></tr></thead>
   <tbody>${brs.map(brow).join("")}${tot}</tbody></table></div>`;
  const foot=`<div class="foot"><b>Bonus %</b>: <span style="color:#1B7A46">green ≤5% (efficient)</span> · <span style="color:#B9791F">amber 5–8%</span> · <span style="color:#B23A2E">red &gt;8% (check for leakage)</span>. <b>NGR margin</b> against the <b>20% benchmark</b> (lever: trim bonus cost to lift margin); a big-winner outlier swings NGR, not Bonus %. Whole-company revenue · ${esc(M.asOf||"")} · cost view (observational).</div>`;
- g("panel").innerHTML=hero+`<div class="card">${subs}${table}${foot}</div>`;
- g("panel").querySelectorAll('.winsw button[data-mr]').forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;tMacro();});
+ g("panel").innerHTML=hero+`<div class="card">${table}${foot}</div>`;
 }
 const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
 const CAP={macro:"",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
@@ -817,11 +815,19 @@ function renderShell(){
  {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():HDRASOF;}
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
  g("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderShell();});
+ {const rg=g("region"),mr=(DATA.macro&&DATA.macro.regions)||[];
+  if(TAB==="macro"&&mr.length){
+   rg.innerHTML=mr.map((r,k)=>`<button data-mr="${k}" class="${k===MR?'on':''}">${esc((r.cur||"").slice(0,2))} · ${esc(r.sym||"")}</button>`).join("");
+   rg.querySelectorAll("button").forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;renderShell();});
+  }else{
+   rg.innerHTML=`<button data-r="MY" class="${R==="MY"?"on":""}">MY · RM</button><button data-r="SG" class="${R==="SG"?"on":""}">SG · S$</button>`;
+   rg.querySelectorAll("button").forEach(b=>b.onclick=()=>{R=b.dataset.r;Object.assign(CS,{open:null,cf:{}});renderShell();});
+  }}
  const t=TABS.find(x=>x.id===TAB),i=TABS.indexOf(t)+1;
  g("main").innerHTML=`<div class="phead"><h1>${i}. ${t.label}</h1><span class="cap">${CAP[TAB]}${TAB==='macro'?'':` · ${R} · ${sym()==='RM'?'Malaysia':'Singapore'}`}</span></div><div id="panel"></div>`;
  RENDER[TAB]();
 }
-g("region").querySelectorAll("button").forEach(b=>b.onclick=()=>{R=b.dataset.r;g("region").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));Object.assign(CS,{open:null,cf:{}});renderShell();});
+/* #region switcher is (re)rendered + wired inside renderShell (context-aware: MY/ID/SG on Brands overview, MY/SG elsewhere) */
 (function(){const b=g("tgl"),cur=()=>document.documentElement.getAttribute("data-theme");function set(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("pt",t)}catch(e){}}try{const s=localStorage.getItem("pt");if(s)set(s)}catch(e){}b.onclick=()=>{const dk=cur()==="dark"||(!cur()&&matchMedia("(prefers-color-scheme:dark)").matches);set(dk?"light":"dark");};})();
 renderShell();
 </script>
