@@ -801,7 +801,7 @@ function tMacro(){
  g("panel").querySelectorAll('.winsw button[data-mr]').forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;tMacro();});
 }
 const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
-const CAP={macro:"whole-company promo cost at a glance — reinvestment by brand & region (CK-cleared)",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
+const CAP={macro:"",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
 function renderShell(){
  closePop();
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
