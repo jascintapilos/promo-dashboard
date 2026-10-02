@@ -801,18 +801,19 @@ function tMacro(){
 const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
 const CAP={macro:"",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
 const HDRASOF=((typeof document!=="undefined"&&document.querySelector(".asof"))||{}).textContent||"· data through 25 Aug 2026";
-function macroRange(){
- const w=(DATA.macro&&DATA.macro.window)||"";const p=w.split(" .. ");
- if(p.length<2)return (DATA.macro&&DATA.macro.asOf)||"";
+function fmtRange(w){
+ const p=(w||"").split(" .. ");
+ if(p.length<2)return "";
  const a=p[0].split("-").map(Number),b=p[1].split("-").map(Number);
  const e=new Date(Date.UTC(b[0],b[1]-1,b[2]));e.setUTCDate(e.getUTCDate()-1);
  const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
  const sY=a[0],eY=e.getUTCFullYear();
  return a[2]+" "+M[a[1]-1]+(sY===eY?"":" "+sY)+" – "+e.getUTCDate()+" "+M[e.getUTCMonth()]+" "+eY;
 }
+function macroRange(){return fmtRange((DATA.macro&&DATA.macro.window))||((DATA.macro&&DATA.macro.asOf)||"");}
 function renderShell(){
  closePop();
- {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():HDRASOF;}
+ {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():(DATA.period?"· "+fmtRange(DATA.period):HDRASOF);}
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
  g("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderShell();});
  {const rg=g("region"),mr=(DATA.macro&&DATA.macro.regions)||[];
