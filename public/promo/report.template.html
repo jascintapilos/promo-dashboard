@@ -152,11 +152,11 @@ footer{padding:24px 0 50px;color:var(--muted);font-size:11.5px;text-align:center
 <footer class="wrap">WS1 Promo Effectiveness · Jan–Aug 2026 · figures mirror the working sheet · directional own-baseline, confirm with a holdout · cashback = lever to pilot (not measured).</footer>
 <script>
 const DATA=/*__DATA__*/;
-const TABS=[{id:"exec",label:"Executive overview"},{id:"money",label:"Bonus vs Deposits"},{id:"codes",label:"Codes"},{id:"bands",label:"Value bands"},{id:"config",label:"Recommended config"},{id:"ref",label:"Reference"}];
+const TABS=[{id:"macro",label:"Macro overview"},{id:"exec",label:"Executive overview"},{id:"money",label:"Bonus vs Deposits"},{id:"codes",label:"Codes"},{id:"bands",label:"Value bands"},{id:"config",label:"Recommended config"},{id:"ref",label:"Reference"}];
 const GORDER=["Identity","COSTS / EARNS","DEPOSITS BACK","BONUS ROI over time","KEEPS PLAYERS","STICKINESS","LOYALTY","REVIEW","WHAT TO DO","CHECK"];
 const GLABEL={"DEPOSITS BACK":"DEPOSITS BACK (gross · not profit)","KEEPS PLAYERS":"CAME BACK (share who redeposited)"};
 const FUN=`<svg width="10" height="10" viewBox="0 0 10 10"><path d="M0.6 1.4h8.8L6 5.2V8L4 9V5.2z" fill="currentColor"/></svg>`;
-let R="MY",TAB="exec",MW="30d",CT="Retention",VB="risk",DP="";const WINS=["7d","30d","90d"];
+let R="MY",TAB="macro",MW="30d",CT="Retention",VB="risk",DP="",MR=0;const WINS=["7d","30d","90d"];
 const winSwitch=()=>`<span class="winsw">${WINS.map(w=>`<button data-w="${w}" class="${w===MW?'on':''}">${w}</button>`).join("")}</span>`;
 const g=id=>document.getElementById(id),d=()=>DATA[R],sym=()=>d().sym;
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
@@ -773,14 +773,40 @@ function tRef(){
  g("panel").innerHTML=takeBox([`Every metric, call and term used across the tabs — defined here.`,`What each number is made of, with a worked example — grouped facts → economics → costs → behaviour.`,`Directional own-baseline — a matched holdout is the causal proof step.`])+callsTbl+formTbl+termsTbl;
 }
 /* ================= shell ================= */
-const RENDER={exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
-const CAP={exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
+function tMacro(){
+ const M=DATA.macro; if(!M||!M.company){g("panel").innerHTML='<div class="card">Macro overview data not available in this build.</div>';return;}
+ const C=M.company, regs=M.regions||[];
+ const mm=(v,s)=>{if(v==null)return"—";const n=Math.abs(v),sg=v<0?"-":"";return sg+s+(n>=1e6?(n/1e6).toFixed(2)+"m":n>=1e3?Math.round(n/1e3)+"k":Math.round(n));};
+ const bcol=p=>p<=5?"#1B7A46":(p<=8?"#B9791F":"#B23A2E"), mcol=m=>m<20?"#B23A2E":"#1B7A46";
+ const hero=`<div style="background:#152A3A;color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:18px">
+  <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9DB4C7;margin-bottom:10px">Company-wide · all brands · ${esc(M.asOf||"")} · USD-normalised</div>
+  <div style="display:flex;gap:28px;flex-wrap:wrap">
+   <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600">US$${(C.dep_usd/1e6).toFixed(1)}m</div><div style="font-size:11px;color:#9DB4C7">Total deposits</div></div>
+   <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600">${C.bon_pct}%</div><div style="font-size:11px;color:#9DB4C7">Bonus %</div></div>
+   <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600">${C.br_pct}%</div><div style="font-size:11px;color:#9DB4C7">Bonus + Rebate %</div></div>
+   <div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600;color:${C.mg<20?"#F4A259":"#7FD1A6"}">${C.mg}%</div><div style="font-size:11px;color:#9DB4C7">NGR margin · bench 20%${C.mg<20?" — below":""}</div></div>
+  </div></div>`;
+ const subs=`<div class="winsw" style="margin:2px 0 12px">${regs.map((r,i)=>`<button data-mr="${i}" class="${i===MR?'on':''}">${esc(r.region)}</button>`).join("")}</div>`;
+ const r=regs[Math.min(MR,regs.length-1)]||{brands:[]}, s=(r.sym||"");
+ const ty="background:#FCFAF6;color:#57697B";
+ const brow=x=>`<tr><td class="stick">${esc(x.b)}</td><td class="n">${mm(x.d,s)}</td><td class="n" style="${ty}">${mm(x.db,s)}</td><td class="n" style="${ty}">${mm(x.fc,s)}</td><td class="n" style="${ty}">${mm(x.fs,s)}</td><td class="n">${mm(x.rb,s)}</td><td class="n" style="font-weight:700;color:${bcol(x.bon_pct)}${x.bon_pct>8?';background:#FBEDEC':''}">${x.bon_pct}%</td><td class="n" style="font-weight:700;color:#B9791F">${x.br_pct}%</td><td class="n">${mm(x.ngr,s)}</td><td class="n" style="font-weight:700;color:${mcol(x.mg)}">${x.mg}%</td></tr>`;
+ const tot=`<tr style="font-weight:700;background:var(--surface-2)"><td class="stick">${esc(r.region||"")} total</td><td class="n">${mm(r.d,s)}</td><td class="n">${mm(r.db,s)}</td><td class="n">${mm(r.fc,s)}</td><td class="n">${mm(r.fs,s)}</td><td class="n">${mm(r.rb,s)}</td><td class="n" style="font-weight:700;color:${bcol(r.bon_pct)}">${r.bon_pct}%</td><td class="n" style="color:#B9791F">${r.br_pct}%</td><td class="n">${mm(r.ngr,s)}</td><td class="n" style="color:${mcol(r.mg)}">${r.mg}%</td></tr>`;
+ const table=`<div class="tblwrap"><table class="d"><thead>
+  <tr><th class="stick" rowspan="2">Brand</th><th class="n" rowspan="2">Deposits</th><th class="n" colspan="3" style="text-align:center;color:#B9791F">Bonus by type</th><th class="n" rowspan="2">Rebate</th><th class="n" rowspan="2">Bonus %</th><th class="n" rowspan="2">Bonus+<br>Rebate %</th><th class="n" rowspan="2">NGR</th><th class="n" rowspan="2">NGR margin<br><span style="font-size:9px;color:var(--muted);font-weight:400">bench 20%</span></th></tr>
+  <tr><th class="n">Dep bonus</th><th class="n">Free credit</th><th class="n">Free spins</th></tr></thead>
+  <tbody>${(r.brands||[]).map(brow).join("")}${tot}</tbody></table></div>`;
+ const foot=`<div class="foot"><b>Bonus %</b>: <span style="color:#1B7A46">green ≤5% (efficient)</span> · <span style="color:#B9791F">amber 5–8%</span> · <span style="color:#B23A2E">red &gt;8% (check for leakage)</span>. <b>NGR margin</b> against the <b>20% benchmark</b> (lever: trim bonus cost to lift margin); a big-winner outlier swings NGR, not Bonus %. Whole-company revenue · ${esc(M.asOf||"")} · cost view (observational).</div>`;
+ g("panel").innerHTML=hero+`<div class="card">${subs}${table}${foot}</div>`;
+ g("panel").querySelectorAll('.winsw button[data-mr]').forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;tMacro();});
+}
+const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
+const CAP={macro:"whole-company promo cost at a glance — reinvestment by brand & region (CK-cleared)",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};
 function renderShell(){
  closePop();
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
  g("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderShell();});
  const t=TABS.find(x=>x.id===TAB),i=TABS.indexOf(t)+1;
- g("main").innerHTML=`<div class="phead"><h1>${i}. ${t.label}</h1><span class="cap">${CAP[TAB]} · ${R} · ${sym()==='RM'?'Malaysia':'Singapore'}</span></div><div id="panel"></div>`;
+ g("main").innerHTML=`<div class="phead"><h1>${i}. ${t.label}</h1><span class="cap">${CAP[TAB]}${TAB==='macro'?'':` · ${R} · ${sym()==='RM'?'Malaysia':'Singapore'}`}</span></div><div id="panel"></div>`;
  RENDER[TAB]();
 }
 g("region").querySelectorAll("button").forEach(b=>b.onclick=()=>{R=b.dataset.r;g("region").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));Object.assign(CS,{open:null,cf:{}});renderShell();});
