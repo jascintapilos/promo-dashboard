@@ -32,6 +32,10 @@ export const NONCE_TTL_MS = 5 * 60_000;
 export const NONCE_LRU_SIZE = 10_000;
 export const MIN_SECRET_BYTES = 32;
 export const MAX_BODY_BYTES = 64 * 1024;
+// Raised cap for the ONE promo report-build route (a rebuilt report.json is ~1.4MB
+// today; 8MB gives headroom). Chosen per-path by the server; every other relay
+// message stays on the 64KB DoS guard above.
+export const MAX_REPORT_BUILD_BYTES = 8 * 1024 * 1024;
 
 // ── Secret readers (never log the value) ─────────────────────────────────
 

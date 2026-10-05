@@ -11,6 +11,7 @@ import { existsSync, readFileSync, createReadStream, writeFileSync, mkdirSync, r
 import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { readSession } from './auth.js';
+import { promoRefreshStore } from './promo-refresh-store.js';
 
 const BRAND_OVERLAY_FILE = (root) => path.join(root, 'data', 'promo', 'promo-brands.overlay.json');
 
@@ -188,12 +189,38 @@ function stripDeadData(payloadStr) {
   return JSON.stringify(obj);
 }
 
+// Refresh staleness gate: a report-only viewer may only trigger a re-pull when the
+// data is older than this (admin/promo-team bypass it). 24h.
+const STALE_MS = 24 * 60 * 60 * 1000;
+// Cheap read of the current report's build time (prefers the live overlay), via a
+// regex on the one-line JSON so we don't parse ~1.4MB just for one field. Returns
+// epoch ms, or null (unknown -> caller treats as stale, i.e. allows a refresh).
+function reportBuiltAtMs(root, brand) {
+  const dir = brandDir(root, brand);
+  for (const f of ['report.live.json', 'report.json']) {
+    const p = path.join(dir, f);
+    if (!existsSync(p)) continue;
+    try {
+      const m = readFileSync(p, 'utf8').match(/"builtAt"\s*:\s*"([^"]+)"/);
+      if (m) { const t = Date.parse(m[1]); if (!Number.isNaN(t)) return t; }
+    } catch { /* unreadable -> treat as unknown */ }
+  }
+  return null;
+}
+
 function serveReport(res, root, brand, user, htmlHeaders, send) {
   const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
   const dataPath = path.join(brandDir(root, brand), 'report.json');
   if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
   const tpl = readFileSync(tplPath, 'utf8');
-  const payload = stripDeadData(readFileSync(dataPath, 'utf8'));
+  // D2 (deploy-clobber fix): prefer the gitignored report.live.json overlay that a
+  // refresh writes — but ONLY if it parses. A corrupt/truncated overlay falls back
+  // to the committed report.json; never blank the page. stripDeadData fails open
+  // (returns raw text on a parse error), so it CANNOT be the validation guard here.
+  const livePath = path.join(brandDir(root, brand), 'report.live.json');
+  let raw = readFileSync(dataPath, 'utf8');
+  if (existsSync(livePath)) { try { const t = readFileSync(livePath, 'utf8'); JSON.parse(t); raw = t; } catch { /* keep committed */ } }
+  const payload = stripDeadData(raw);
   const reg = loadBrandRegistry(root);
   const brandName = (reg[brand] && reg[brand].name) || String(brand || '').toUpperCase();
   const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
@@ -298,6 +325,37 @@ export function ingestPromoPlayers(root, project, gzBuffer) {
  *  can reach /api/promo/*) and before the qc-host page routing. */
 export async function handlePromo(req, res, url, ctx) {
   const { root, send, htmlHeaders } = ctx;
+  // Promo report refresh (Phase 2) — MUST be matched before the generic /api/promo/
+  // -> servePlayers catch-all below, which would otherwise swallow these paths.
+  {
+    const rm = url.pathname.match(/^\/api\/promo\/([a-z0-9-]{1,40})\/refresh-(request|status)$/);
+    if (rm) {
+      const brand = rm[1], action = rm[2];
+      const user = readSession(req);
+      if (!user) return send(res, 401, { error: 'sign in required' });
+      const entry = loadBrandRegistry(root)[brand] || null;
+      if (!canView(user, entry)) return send(res, 403, { error: 'no access to this brand' });
+      const role = user.role || '';
+      if (action === 'status' && req.method === 'GET') {
+        return send(res, 200, promoRefreshStore.getForUser({ user: user.email }));
+      }
+      if (action === 'request' && req.method === 'POST') {
+        // Server-enforced staleness gate: admin/promo-team anytime; a report-only
+        // viewer only when data is > 24h old. The UI state is a convenience; THIS is
+        // the real guard.
+        if (role === 'promo-report') {
+          const built = reportBuiltAtMs(root, brand);
+          if (built != null && (Date.now() - built) <= STALE_MS) {
+            return send(res, 403, { error: 'already fresh', builtAt: new Date(built).toISOString() });
+          }
+        }
+        const market = url.searchParams.get('market') === 'SG' ? 'SG' : 'MY';
+        const out = promoRefreshStore.request({ market, requestedBy: user.email, requestedRole: role });
+        return send(res, 200, { jobId: out.job.jobId, status: out.job.status, created: out.created });
+      }
+      return send(res, 405, { error: 'method not allowed' });
+    }
+  }
   if (url.pathname.startsWith('/api/promo/')) return servePlayers(req, res, url, root, send);
   if (url.pathname.startsWith('/promo-assets/')) return serveAsset(res, root, url.pathname.slice('/promo-assets/'.length));
   if (url.pathname === '/promo' || url.pathname === '/promo/') {

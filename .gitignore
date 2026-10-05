@@ -1,5 +1,9 @@
 # ─── Secrets — NEVER commit ───────────────────────────────────────────────────
 *.local.json
+# atomic-write temps for any *.local.json (write-to-tmp-then-rename): the
+# `*.local.json` rule above does NOT match a `.local.json.tmp-<pid>-<ts>` suffix,
+# so cover every such temp here (relay-secret, promo-refresh-state, …).
+*.local.json.tmp-*
 bo-sites.json
 data/bo-sites-runtime.json
 data/relay-secret.local.json
@@ -47,3 +51,8 @@ tmp-ft-browser-pull*.json
 data/promo/*/players/
 # Runtime brand-viewer grants added via Manage Users (self-service; survives deploys)
 data/promo/promo-brands.overlay.json
+# Refresh button (D2): the worker-published live overlay + its atomic-write temps.
+# serveReport prefers it over the committed report.json; it carries live data and
+# must survive the in-place deploy git-pull without ever being committed.
+data/promo/*/report.live.json
+data/promo/*/report.live.json.tmp-*

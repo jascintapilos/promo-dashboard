@@ -18,6 +18,8 @@ header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--b
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
 .seg button{border:0;background:transparent;color:var(--muted);font:600 12px "IBM Plex Sans";padding:6px 12px;cursor:pointer}.seg button.on{background:var(--navy);color:#fff}
 .tgl{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;width:32px;height:30px;cursor:pointer}
+.rfbtn{border:1px solid var(--line);background:var(--surface);color:var(--accent);font:600 11.5px "IBM Plex Sans";padding:6px 11px;border-radius:8px;cursor:pointer}.rfbtn:hover{background:var(--surface-2)}.rfbtn:disabled{color:var(--muted);cursor:default}
+.rfmsg{font-size:11px;margin-left:6px}.rfmsg.busy{color:var(--muted)}.rfmsg.ok{color:var(--good)}.rfmsg.err{color:var(--bad)}
 .tabs{display:flex;gap:2px;overflow-x:auto;padding:6px 18px 0;max-width:var(--maxw);margin:0 auto}
 .tabs button{border:0;background:transparent;color:var(--muted);font:600 12.5px "IBM Plex Sans";padding:8px 12px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0}
 .tabs button:hover{color:var(--ink);background:var(--surface-2)}.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
@@ -153,7 +155,7 @@ footer{padding:24px 0 50px;color:var(--muted);font-size:11.5px;text-align:center
 <header class="top"><div class="hbar">
  <div class="brand"><span>Promo Effectiveness</span> <span class="asof">· data through 25 Aug 2026</span></div>
  <div class="ctrls"><div class="seg" id="region"><button data-r="MY" class="on">MY · RM</button><button data-r="SG">SG · S$</button></div>
- <button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
+ <button class="rfbtn" id="rfBtn" title="Rebuild the report from the latest warehouse data">↻ Refresh</button><span class="rfmsg" id="rfMsg"></span><button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
  <div class="tabs" id="tabs"></div></header>
 <main class="wrap" id="main"></main>
 <footer class="wrap">Promo Effectiveness · Jan–Aug 2026 · figures mirror the working sheet · directional own-baseline, confirm with a holdout · cashback = lever to pilot (not measured).</footer>
@@ -842,5 +844,6 @@ function renderShell(){
 }
 /* #region switcher is (re)rendered + wired inside renderShell (context-aware: MY/ID/SG on Brands overview, MY/SG elsewhere) */
 (function(){const b=g("tgl"),cur=()=>document.documentElement.getAttribute("data-theme");function set(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("pt",t)}catch(e){}}try{const s=localStorage.getItem("pt");if(s)set(s)}catch(e){}b.onclick=()=>{const dk=cur()==="dark"||(!cur()&&matchMedia("(prefers-color-scheme:dark)").matches);set(dk?"light":"dark");};})();
+(function(){var btn=g("rfBtn"),msg=g("rfMsg");if(!btn)return;var pollTimer=null;function setMsg(t,c){if(msg){msg.textContent=t||"";msg.className="rfmsg"+(c?" "+c:"");}}function poll(){fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(s){if(s.status==="COMPLETED"){clearInterval(pollTimer);pollTimer=null;setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}if(s.status==="FAILED"){clearInterval(pollTimer);pollTimer=null;btn.disabled=false;setMsg("Refresh failed — try later","err");return;}setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");}).catch(function(){});}btn.onclick=function(){btn.disabled=true;setMsg("Starting…","busy");fetch("/api/promo/ws1/refresh-request?market="+encodeURIComponent(R),{method:"POST",credentials:"same-origin"}).then(function(r){return r.json().then(function(j){return {st:r.status,j:j};});}).then(function(o){if(o.st===403){btn.disabled=false;setMsg("Data is already current","ok");return;}if(o.st===401){btn.disabled=false;setMsg("Please sign in again","err");return;}if(o.st!==200){btn.disabled=false;setMsg("Could not start refresh","err");return;}setMsg("Refreshing…","busy");if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(poll,4000);poll();}).catch(function(){btn.disabled=false;setMsg("Could not start refresh","err");});};})();
 renderShell();
 </script>

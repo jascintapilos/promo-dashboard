@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import http from 'node:http';
-import { createReadStream, existsSync } from 'node:fs';
+import { createReadStream, existsSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,8 +21,9 @@ import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
 import { loadConfig as loadSitesConfig, getSite as getSiteById, writeRuntimeOverlay, getRuntimeOverlaySnapshot } from '../src/sites.js';
 import { preflightBrand, preflightAllBrands, _clearPreflightCache } from '../src/qc-dashboard/preflight.js';
 import { runComparisonFromRelay } from '../src/qc-dashboard/compare-flow.js';
-import { readServerRelaySecret, verifySignedRequest, readRawBodyBounded, MAX_BODY_BYTES, _clearNonceCacheForTest as _clearRelayNonceCache } from '../src/qc-dashboard/relay-auth.js';
+import { readServerRelaySecret, verifySignedRequest, readRawBodyBounded, MAX_BODY_BYTES, MAX_REPORT_BUILD_BYTES, _clearNonceCacheForTest as _clearRelayNonceCache } from '../src/qc-dashboard/relay-auth.js';
 import { relayJobStore, safeJobForClient, JOB_STATUS } from '../src/qc-dashboard/relay-job-store.js';
+import { promoRefreshStore } from '../src/qc-dashboard/promo-refresh-store.js';
 import { sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
 import { readStatus as readRelayStatus, rotateSecret as rotateRelaySecret, registerRotationInvalidation } from '../src/qc-dashboard/relay-secret-store.js';
 
@@ -750,9 +751,10 @@ async function handleRelayApi(req, res, url) {
   // their one path; every other relay message stays at the 64KB DoS guard.
   const PROMO_INGEST_MAX = 24 * 1024 * 1024;
   const isPromoIngest = req.method === 'POST' && /^\/api\/relay\/promo\/[a-z0-9-]{1,40}\/players$/.test(url.pathname);
+  const isReportBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/report-build';
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : isReportBuild ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -873,6 +875,56 @@ async function handleRelayApi(req, res, url) {
       return send(res, 200, { ok: true });
     }
   }
+
+  // ── Promo report refresh (Phase 2) — pre-session relay routes, HMAC-verified above ──
+  // POST /api/relay/promo/ws1/refresh-lease — VDI worker claims the queued refresh.
+  if (req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/refresh-lease') {
+    _workerSeen(workerId);
+    return send(res, 200, promoRefreshStore.lease({ workerId }));
+  }
+  // POST /api/relay/promo/ws1/refresh-heartbeat — keep-alive {jobId, progress}; a
+  // body with {error} is the terminal fail channel (frees the single-flight slot).
+  if (req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/refresh-heartbeat') {
+    let body;
+    try { body = rawBody.length ? JSON.parse(rawBody.toString('utf8')) : {}; }
+    catch { return send(res, 400, { error: 'invalid json' }); }
+    const jobId = String(body.jobId || '').slice(0, 64);
+    const r = body.error
+      ? promoRefreshStore.fail({ jobId, error: body.error })
+      : promoRefreshStore.heartbeat({ jobId, progress: body.progress });
+    return send(res, r.ok ? 200 : 404, r.ok ? { ok: true } : { error: 'unknown job' });
+  }
+  // POST /api/relay/promo/ws1/report-build — body = rebuilt report.json bytes
+  // (jobId in x-refresh-job). Validate, then ATOMIC-swap to report.live.json (D2):
+  // the committed report.json is never touched, so a bad/truncated push leaves the
+  // live report intact (Constraint 5). serveReport prefers the valid overlay.
+  if (isReportBuild) {
+    const jobId = String(req.headers['x-refresh-job'] || '').slice(0, 64);
+    const text = rawBody.toString('utf8');
+    let obj;
+    try { obj = JSON.parse(text); }
+    catch { promoRefreshStore.fail({ jobId, error: 'rebuilt report is not valid JSON' }); return send(res, 400, { error: 'invalid report json' }); }
+    if (!obj || typeof obj !== 'object' || !obj.MY || !obj.SG || rawBody.length < 100 * 1024) {
+      promoRefreshStore.fail({ jobId, error: 'rebuilt report failed validation (missing MY/SG or too small)' });
+      return send(res, 422, { error: 'report failed validation' });
+    }
+    const builtAt = typeof obj.builtAt === 'string' ? obj.builtAt : new Date().toISOString();
+    const asOf = (obj.macro && obj.macro.asOf) || obj.period || null;
+    try {
+      const liveDir = path.join(ROOT, 'data', 'promo', 'ws1');
+      if (!existsSync(liveDir)) mkdirSync(liveDir, { recursive: true });
+      const live = path.join(liveDir, 'report.live.json');
+      const tmp = `${live}.tmp-${process.pid}-${Date.now()}`;
+      writeFileSync(tmp, text, 'utf8');
+      renameSync(tmp, live);   // atomic swap — last step; live report updates on next load, no restart
+    } catch {
+      promoRefreshStore.fail({ jobId, error: 'failed to publish rebuilt report' });
+      return send(res, 500, { error: 'publish failed' });
+    }
+    promoRefreshStore.complete({ jobId, asOf, builtAt });
+    return send(res, 200, { ok: true, builtAt });
+  }
+
   return send(res, 404, { error: 'not found' });
 }
 
