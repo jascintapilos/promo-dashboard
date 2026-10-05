@@ -814,7 +814,7 @@ function fmtRange(w){
 function macroRange(){return fmtRange((DATA.macro&&DATA.macro.window))||((DATA.macro&&DATA.macro.asOf)||"");}
 function renderShell(){
  closePop();
- {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():(DATA.period?"· "+fmtRange(DATA.period):HDRASOF);}
+ {const ae=document.querySelector(".asof");if(ae){const base=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():(DATA.period?"· "+fmtRange(DATA.period):HDRASOF);const bt=DATA.builtAt?Date.parse(DATA.builtAt):NaN;let suf="";if(!Number.isNaN(bt)){const BM=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],bd=new Date(bt);suf=" · built "+bd.getUTCDate()+" "+BM[bd.getUTCMonth()]+" "+bd.getUTCFullYear();}ae.textContent=base+suf;}}
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
  g("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderShell();});
  {const rg=g("region"),mr=(DATA.macro&&DATA.macro.regions)||[];
