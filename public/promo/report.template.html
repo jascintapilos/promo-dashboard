@@ -94,6 +94,12 @@ tr.detail td{background:var(--surface-2);padding:0}tr.detail .dwrap{padding:14px
 .dtab.on{color:var(--accent);border-bottom-color:var(--accent)}
 .dtab .cnt{font-family:"IBM Plex Mono";font-size:11px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:4px}
 .plock,.pload,.perr{padding:16px;font-size:12.5px;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:9px}.plock b{color:var(--ink)}
+.psum{display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 15px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;margin-bottom:9px}
+.psum-i{flex:0 0 auto;min-width:70px}
+.psum-v{font-family:"IBM Plex Mono";font-weight:600;font-size:16px;color:var(--ink);line-height:1.1}
+.psum-l{font:600 9.5px "IBM Plex Sans";letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.pltog{display:flex;align-items:center;gap:7px;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font:600 12px "IBM Plex Sans";padding:9px 13px;border-radius:9px;cursor:pointer;text-align:left;margin-bottom:9px}
+.pltog:hover{background:var(--surface-2)}.pltog .cnt{font-family:"IBM Plex Mono";color:var(--muted);font-weight:500}.pltog .tw{margin-left:auto;color:var(--muted);font-weight:500;font-size:11px}
 .ppane .pbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .ppane .pq{flex:1 1 160px;min-width:120px;padding:5px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px}
 .ppane .psrc{padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font-size:11.5px}
@@ -218,7 +224,7 @@ function detailBody(c){
  return `<div class="dgrid"><div class="dwhy"><b>${esc(c._call)}</b> — ${esc(why)}${lev?`<br><b>Lever:</b> ${esc(lev)}`:""}${who?`<br><b>Reached:</b> ${esc(who)}`:""}</div>${secs}</div>`;
 }
 /* ---- per-code Players drill-down (gated, server-backed; locked on the shared file) ---- */
-const PCACHE={},PMAP={},PMAPLOAD={},PVDEF={q:"",tier:"all",src:"all",sort:"bonus",dir:-1,page:1,open:null};
+const PCACHE={},PMAP={},PMAPLOAD={},PVDEF={q:"",tier:"all",src:"all",sort:"bonus",dir:-1,page:1,open:null,listOpen:false};
 let PV=Object.assign({},PVDEF);const PPP=25;
 const SRCLBL={deposit_match:"Deposit-match",fasttrack:"FastTrack",operator:"Operator",self:"Self"};
 const SRCCLS={deposit_match:"dm",fasttrack:"ft",operator:"op",self:"sf"};
@@ -271,7 +277,11 @@ function playersPane(c){
  if(s===undefined){loadPlayers(code);return `<div class="pload">Loading players…</div>`;}
  if(s==="loading")return `<div class="pload">Loading players…</div>`;
  if(s==="error")return `<div class="perr">Couldn't load the player list. <button class="pretry">Retry</button></div>`;
- return playersTable(s,code);
+ const n=s.length,sum=f=>s.reduce((t,x)=>t+(x[f]||0),0),vip=s.filter(x=>x.is_vip).length;
+ const st=(l,v)=>`<div class="psum-i"><div class="psum-v">${v}</div><div class="psum-l">${l}</div></div>`;
+ const summary=`<div class="psum">${st("Players",n.toLocaleString())}${st("VIP",vip.toLocaleString())}${st("Claims",sum("claims").toLocaleString())}${st("Bonus",money(sum("bonus")))}${st("To unlock",pfmt(sum("dep_to_unlock")))}${st("After claim",pfmt(sum("dep_after")))}${st("NGR",pfmt(sum("ngr")))}</div>`;
+ const tog=`<button class="pltog">${PV.listOpen?"▾":"▸"} <span>${PV.listOpen?"Hide":"Show"} player list</span> <span class="cnt">${n.toLocaleString()}</span>${PV.listOpen?"":`<span class="tw">tap to expand</span>`}</button>`;
+ return summary+tog+(PV.listOpen?playersTable(s,code):"");
 }
 function detailHTML(c){
  const code=c.cells["Promo code"].d,dt=CS.dtab||"detail",pc=pcount(code);
@@ -324,6 +334,7 @@ function wireCodes(){
  document.querySelectorAll(".ptbl th[data-psort]").forEach(h=>h.onclick=()=>{const k=h.dataset.psort;if(PV.sort===k)PV.dir*=-1;else{PV.sort=k;PV.dir=k==="user"?1:-1;}renderCodes();});
  document.querySelectorAll(".prow").forEach(tr=>tr.onclick=()=>{const m=tr.dataset.pm;PV.open=PV.open===m?null:m;renderCodes();});
  {const pp=document.querySelector(".pprev"),pn=document.querySelector(".pnext");if(pp)pp.onclick=()=>{if(PV.page>1){PV.page--;renderCodes();}};if(pn)pn.onclick=()=>{PV.page++;renderCodes();};}
+ const plt=document.querySelector(".pltog");if(plt)plt.onclick=()=>{PV.listOpen=!PV.listOpen;renderCodes();};
  const prt=document.querySelector(".pretry");if(prt)prt.onclick=()=>{delete PCACHE[pkey(CS.open)];renderCodes();};
 }
 /* filter popover */
