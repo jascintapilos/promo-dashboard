@@ -851,7 +851,8 @@ function renderShell(){
 (function(){
  var btn=g("rfBtn"),msg=g("rfMsg"),sel=g("rfWin"),cust=g("rfCustom"),cfrom=g("rfFrom"),cto=g("rfTo");
  if(!btn)return;
- var pollTimer=null;
+ var pollTimer=null,pollStart=0,pollFails=0,POLL_MAX_MS=15*60*1000;   // watchdog: a refresh can never spin forever
+ function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
  function setMsg(t,c){if(msg){msg.textContent=t||"";msg.className="rfmsg"+(c?" "+c:"");}}
  function pad(n){return String(n).length<2?"0"+n:""+n;}
  function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
@@ -870,7 +871,18 @@ function renderShell(){
  }
  function recentNote(end){var e=new Date(end+"T00:00:00"),t=new Date();t.setHours(0,0,0,0);return(Math.round((t-e)/86400000)<90)?" · recent window — forward cards reflect matured cohorts only":"";}
  if(sel)sel.onchange=function(){if(cust)cust.className="rfcustom"+(sel.value==="custom"?" on":"");setMsg("","");};
- function poll(){fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(s){if(s.status==="COMPLETED"){clearInterval(pollTimer);pollTimer=null;setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}if(s.status==="FAILED"){clearInterval(pollTimer);pollTimer=null;btn.disabled=false;setMsg("Refresh failed — try later","err");return;}setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");}).catch(function(){});}
+ function poll(){
+  if(pollStart&&(Date.now()-pollStart)>POLL_MAX_MS){stopPoll();btn.disabled=false;setMsg("Still working in the background — reload the page to check, or try again","err");return;}
+  fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){if(!r.ok)throw r.status;return r.json();}).then(function(s){
+   pollFails=0;
+   if(s.status==="COMPLETED"){stopPoll();setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}
+   if(s.status==="FAILED"){stopPoll();btn.disabled=false;setMsg("Refresh failed — try later","err");return;}
+   setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");
+  }).catch(function(e){
+   if(e===401){stopPoll();btn.disabled=false;setMsg("Please sign in again, then refresh","err");return;}
+   if(++pollFails>=4){stopPoll();btn.disabled=false;setMsg("Lost connection — reload the page to check","err");}
+  });
+ }
  btn.onclick=function(){
   var w=resolveWindow();if(w.err){setMsg(w.err,"err");return;}
   var spanDays=Math.round((new Date(w.end+"T00:00:00")-new Date(w.start+"T00:00:00"))/86400000)+1;
@@ -885,7 +897,7 @@ function renderShell(){
    if(o.st!==200){btn.disabled=false;setMsg("Could not start refresh","err");return;}
    var msg="Refreshing…"+recentNote(w.end);
    if(o.j&&o.j.created===false){var reqEnd=iso(addDays(new Date(w.end+"T00:00:00"),1)),inf=o.j.window,diff=!inf||inf.start!==w.start||inf.endExcl!==reqEnd;if(diff){var lbl=inf?(inf.label||(inf.start+" → "+inf.endExcl)):"the default period";msg="Another period ("+lbl+") is already rebuilding — showing that when done";}}
-   setMsg(msg,"busy");if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(poll,4000);poll();
+   setMsg(msg,"busy");stopPoll();pollStart=Date.now();pollFails=0;pollTimer=setInterval(poll,4000);poll();
   }).catch(function(){btn.disabled=false;setMsg("Could not start refresh","err");});
  };
 })();
