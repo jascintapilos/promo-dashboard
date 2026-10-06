@@ -11,15 +11,17 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 # Per-code report window (DATA.period) comes from csir_config (START .. END_EXCL). Import is
 # best-effort so the pure-local tail still runs if csir_config/clickhouse_connect is unavailable.
 try:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     import csir_config as _cfg
     PERIOD = f"{_cfg.START} .. {_cfg.END_EXCL}"
+    WIN_EXPLICIT = bool(getattr(_cfg, "WINDOW_EXPLICIT", False))   # True = a custom window was picked (not the default auto-YTD)
 except Exception:
     PERIOD = None
+    WIN_EXPLICIT = False
 def load(p):
     fp = SCR / p
     return json.load(open(fp, encoding="utf-8")) if fp.exists() else None
@@ -173,9 +175,19 @@ def build_macro():
     if not md:
         return None
     MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    sy, sm, _sd = md["window_start"].split("-")
-    _ey, em, _ed = md["window_end"].split("-")          # end exclusive -> last complete month = em-1
-    asof = f"YTD · {MON[int(sm)-1]}–{MON[int(em)-2]} {sy}"
+    # Build a month-granular range label from the actual window. window_end is exclusive, so the
+    # last COMPLETE month is the month before it (handles year rollover). The "YTD ·" prefix is only
+    # truthful for the default auto-YTD window — a custom window just names its own range.
+    sdt = datetime.fromisoformat(md["window_start"])
+    edt = datetime.fromisoformat(md["window_end"])
+    lm_year, lm_month = (edt.year, edt.month - 1) if edt.month > 1 else (edt.year - 1, 12)
+    if (sdt.year, sdt.month) == (lm_year, lm_month):
+        rng = f"{MON[sdt.month-1]} {lm_year}"                                   # single month
+    elif sdt.year == lm_year:
+        rng = f"{MON[sdt.month-1]}–{MON[lm_month-1]} {lm_year}"                 # within one year
+    else:
+        rng = f"{MON[sdt.month-1]} {sdt.year} – {MON[lm_month-1]} {lm_year}"    # spans years
+    asof = rng if WIN_EXPLICIT else f"YTD · {rng}"
     KEEP = {"MYR", "SGD", "IDR"}; ORDER = {"MYR": 0, "SGD": 1, "IDR": 2}
     tbk = ("b", "d", "db", "fc", "fs", "rb", "ngr", "bon_pct", "br_pct", "mg")
     regions = [{"region": r["region"], "cur": r["cur"], "sym": r["sym"], "d": r["d"], "db": r["db"],
