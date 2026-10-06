@@ -63,11 +63,17 @@ A window rebuild makes ~40 **remote** ClickHouse scans, each cross-joining a 180
 - [x] Server endpoint `/api/promo/:brand/macro?start=&end=` in `promo.js` — gated like refresh, reuses parseRefreshWindow bounds, reads `<brandDir>/store_a.json`, `macroServe` → `{ok,macro,builtAt,window}` or `{ok:false,reason}` (fallback). TZ bug fixed (UTC-safe date math).
 - [x] Template: overridable `MACRO` global; macro-tab reads repointed; `loadMacro()` fetches the endpoint and re-renders JUST the Brands-overview on a window change (full Refresh still rebuilds all tabs). "⚡ overview updated instantly" indicator.
 - [x] **LOCAL DEMO PASSED** (`scratchpad/demo-server.mjs`, real template + real macroServe + real report.json over HTTP): picked "Last month" → Brands-overview switched to Sep 2026 in ~3–14ms, numbers IDENTICAL to the full 3-min September build (US$28.8m, WS1 RM41.05m, 17.8% margin). Endpoint verified for Jan-May/Q1/Last-90d/default.
-- [ ] Remaining before deploy: (a) VDI publishes `store_a.json` to the server (alongside report.live.json) + nightly Store A build; (b) deploy server + template on owner go. The macro-tab reads fall back to DATA.macro if the endpoint returns ok:false, so missing store never breaks the page.
+- [x] **Relay publish** — `/api/relay/promo/ws1/store-build` (qc-dashboard.mjs) HMAC-validates + atomic-swaps a pushed `store_a.json`; `bin/publish-store-a.mjs` ships it (mirrors the report-build worker auth). `store_a.json` gitignored. Verified: local round-trip 200 + prod round-trip 200.
+- [x] **Nightly** — `~/.qc-relay/promo-store-a-nightly.bat` (build_store_a.py → publish-store-a.mjs) + hidden `.vbs` launcher + Windows scheduled task "Promo Store A nightly" DAILY 10:15 (no black window). Tested: build+publish in ~2s, exit 0.
+- [x] **DEPLOYED 2026-10-06** — `9c86a15` → bitbucket/main (Ansible + Node restart confirmed by the prod store-build 200). Verified LIVE on https://qc-dashboard.zoom66.xyz/promo/ws1: /macro ok:true (Sep matches full build exactly — US$28.8m, WS1 RM41.05m), button "↻ Generate", instant picker switch Jan–May→Sep with NO caption (silent). **Phase 1 COMPLETE + LIVE.**
 
-### Phase 2 — pre-render standard-window full reports nightly
-- [ ] YTD / MTD / last-30/60/90 / each calendar month → static `report.<window>.live.json`.
-- [ ] Serve matching static file instantly; custom falls through to today's safe remote path (nothing breaks).
+### Phase 2 — pre-render standard-window full reports nightly — DEPLOYED + LIVE 2026-10-06 (`8781570`+`99615cc`)
+- [x] report-build relay: `x-refresh-window` header → `report.<key>.live.json` (no jobId = pre-build); serveReport `?w=<key>` serves it (fallback report.live.json/report.json); injects `window.__PREBUILT__`.
+- [x] Template: pre-built preset navigates to `?w=<key>` (WHOLE report instant); picker reflects the loaded window; non-pre-built presets keep the Phase-1 money switch.
+- [x] `bin/prebuild-standard-windows.mjs` builds+publishes each window; folded into the nightly `.bat` (store-a + prebuild). Fixed `phase2_fatigue` thin-window crash (empty repeat-claim list on a 1-month window → empty result).
+- [x] **Activated + verified LIVE**: `__PREBUILT__=[ytd,lastmonth,last90]`; `?w=lastmonth` serves the whole Sep report instantly (period 2026-09-01..2026-10-01, all tabs). **Phase 2 COMPLETE.**
+- [x] **Default landing → YTD (deployed `7478dd4`)**: no `?w=` now serves `report.ytd.live.json` (the nightly YTD pre-build) instead of the last custom report; the last custom Generate is preserved at `?w=latest` (report.live.json), the Generate flow navigates there on completion, and the picker reflects it as "Custom" + the loaded dates. Verified locally (default→YTD, ?w=latest→custom with picker dates filled).
+- **Minor/deferred:** `code_players_pull` (gated per-player drill-down) hits a ClickHouse `IN` error on a thin recent window — OPTIONAL stage, build publishes anyway, drill-down just lacks data for recent windows.
 
 ### Phase 3 — Stores B, C, D → custom windows recompute locally in seconds
 - [ ] Materialize B/C/D nightly (re-mature trailing 90d).
