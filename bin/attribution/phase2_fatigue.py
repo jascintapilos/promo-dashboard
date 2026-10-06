@@ -75,6 +75,17 @@ c = get_client(send_receive_timeout=600)
 res = c.query(q, settings={"readonly": 1, "max_execution_time": 590, "max_memory_usage": 60000000000})
 rows = [dict(zip(res.column_names, r)) for r in res.result_rows]
 
+if not rows:
+    # thin/recent window: no claim has a matured 30d-forward cohort (needs END - 30d of claims) -> no
+    # repeat-claim panel to fit a fatigue curve. Emit an empty, valid result instead of crashing.
+    json.dump({"as_of": END_EXCL, "window": "forward 30d, net of bonus",
+               "method": "balanced within-member panel (ord-1 vs ord-n, same members)",
+               "ordinal_cap": "6+", "overall": {}, "by_pillar": {}, "cap_curve": {}, "cap_line": {},
+               "recoverable_bonus_at_cap": {}},
+              open(ATTR / "fatigue-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2, default=str)
+    print("BONUS FATIGUE — no repeat-claim cohort in this window; wrote empty result.")
+    raise SystemExit(0)
+
 # winsorize per-claim fwd30 (whale NGR tails)
 fv = sorted(float(r["fwd30"]) for r in rows)
 W_LO, W_HI = fv[int(len(fv)*0.01)], fv[int(len(fv)*0.99)]
