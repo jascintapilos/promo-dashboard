@@ -785,9 +785,10 @@ async function handleRelayApi(req, res, url) {
   const PROMO_INGEST_MAX = 24 * 1024 * 1024;
   const isPromoIngest = req.method === 'POST' && /^\/api\/relay\/promo\/[a-z0-9-]{1,40}\/players$/.test(url.pathname);
   const isReportBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/report-build';
+  const isStoreBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/store-build';
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : isReportBuild ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -956,6 +957,29 @@ async function handleRelayApi(req, res, url) {
     }
     promoRefreshStore.complete({ jobId, asOf, builtAt });
     return send(res, 200, { ok: true, builtAt });
+  }
+  // POST /api/relay/promo/ws1/store-build — body = store_a.json bytes (the nightly money rollup
+  // that powers the instant Brands-overview). Validate shape, then ATOMIC-swap to
+  // data/promo/ws1/store_a.json. Independent of the report; a bad push leaves the live store intact.
+  if (isStoreBuild) {
+    const text = rawBody.toString('utf8');
+    let obj;
+    try { obj = JSON.parse(text); }
+    catch { return send(res, 400, { error: 'invalid store json' }); }
+    if (!obj || !Array.isArray(obj.cols) || !Array.isArray(obj.rows) || !obj.date_min || !obj.date_max || rawBody.length < 10 * 1024) {
+      return send(res, 422, { error: 'store failed validation' });
+    }
+    try {
+      const dir = path.join(ROOT, 'data', 'promo', 'ws1');
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      const dst = path.join(dir, 'store_a.json');
+      const tmp = `${dst}.tmp-${process.pid}-${Date.now()}`;
+      writeFileSync(tmp, text, 'utf8');
+      renameSync(tmp, dst);   // atomic swap — live store updates on next request, no restart
+    } catch {
+      return send(res, 500, { error: 'store publish failed' });
+    }
+    return send(res, 200, { ok: true, date_max: obj.date_max, n_rows: obj.n_rows || obj.rows.length });
   }
 
   return send(res, 404, { error: 'not found' });

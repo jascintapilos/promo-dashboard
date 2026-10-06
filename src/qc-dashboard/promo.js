@@ -12,6 +12,7 @@ import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { readSession } from './auth.js';
 import { promoRefreshStore } from './promo-refresh-store.js';
+import { macroServe } from './store_a_macro.mjs';
 
 const BRAND_OVERLAY_FILE = (root) => path.join(root, 'data', 'promo', 'promo-brands.overlay.json');
 
@@ -439,6 +440,41 @@ export async function handlePromo(req, res, url, ctx) {
         return send(res, 200, { jobId: out.job.jobId, status: out.job.status, created: out.created, window: out.job.window || null });
       }
       return send(res, 405, { error: 'method not allowed' });
+    }
+  }
+  // Instant Brands-overview from the nightly local Store A (no warehouse) — any window in ~ms.
+  // Returns {ok:true, macro, builtAt, window} or {ok:false, reason} so the client falls back safely.
+  {
+    const mm = url.pathname.match(/^\/api\/promo\/([a-z0-9-]{1,40})\/macro$/);
+    if (mm && req.method === 'GET') {
+      const brand = mm[1];
+      const user = readSession(req);
+      if (!user) return send(res, 401, { error: 'sign in required' });
+      const entry = loadBrandRegistry(root)[brand] || null;
+      if (!canView(user, entry)) return send(res, 403, { error: 'no access to this brand' });
+      const parsed = parseRefreshWindow(url);                 // reuse the picker's bounds + validation
+      if (parsed.error) return send(res, 400, { error: parsed.error });
+      const storePath = path.join(brandDir(root, brand), 'store_a.json');
+      if (!existsSync(storePath)) return send(res, 200, { ok: false, reason: 'no local store' });
+      let store;
+      try { store = JSON.parse(readFileSync(storePath, 'utf8')); }
+      catch { return send(res, 200, { ok: false, reason: 'store unreadable' }); }
+      let start, endExcl, ytd;
+      if (parsed.window) { start = parsed.window.start; endExcl = parsed.window.endExcl; ytd = false; }
+      else {                                                  // default: YTD through the last complete month
+        const e = new Date(store.date_max + 'T00:00:00');
+        start = `${e.getFullYear()}-01-01`;
+        endExcl = `${e.getFullYear()}-${String(e.getMonth() + 1).padStart(2, '0')}-01`;
+        ytd = true;
+      }
+      const _ln = new Date(endExcl + 'T00:00:00Z'); _ln.setUTCDate(_ln.getUTCDate() - 1);   // UTC-safe (no TZ shift)
+      const lastNeeded = _ln.toISOString().slice(0, 10);
+      if (!(store.date_min <= start && store.date_max >= lastNeeded))
+        return send(res, 200, { ok: false, reason: 'window outside store range', storeRange: [store.date_min, store.date_max] });
+      try {
+        const macro = macroServe(store, start, endExcl, { ytd });
+        return send(res, 200, { ok: true, builtAt: store.built_at, window: { start, endExcl }, macro });
+      } catch { return send(res, 200, { ok: false, reason: 'compute failed' }); }
     }
   }
   if (url.pathname.startsWith('/api/promo/')) return servePlayers(req, res, url, root, send);

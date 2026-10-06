@@ -56,3 +56,6 @@ data/promo/promo-brands.overlay.json
 # must survive the in-place deploy git-pull without ever being committed.
 data/promo/*/report.live.json
 data/promo/*/report.live.json.tmp-*
+# Store A — the nightly money rollup for the instant Brands-overview; shipped via the relay, rebuilt nightly
+data/promo/*/store_a.json
+data/promo/*/store_a.json.tmp-*

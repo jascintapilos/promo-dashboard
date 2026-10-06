@@ -159,7 +159,7 @@ footer{padding:24px 0 50px;color:var(--muted);font-size:11.5px;text-align:center
 <header class="top"><div class="hbar">
  <div class="brand"><span>Promo Effectiveness</span> <span class="asof">· data through 25 Aug 2026</span></div>
  <div class="ctrls"><div class="seg" id="region"><button data-r="MY" class="on">MY · RM</button><button data-r="SG">SG · S$</button></div>
- <select class="rfwin" id="rfWin" title="Report period to rebuild from the warehouse"><option value="ytd">Year to date</option><option value="thismonth">This month</option><option value="lastmonth">Last month</option><option value="last90">Last 90 days</option><option value="custom">Custom…</option></select><span class="rfcustom" id="rfCustom"><input type="date" id="rfFrom" aria-label="from date"><span style="color:var(--muted)">→</span><input type="date" id="rfTo" aria-label="to date"></span><button class="rfbtn" id="rfBtn" title="Rebuild the report for the selected period from the latest warehouse data">↻ Refresh</button><span class="rfmsg" id="rfMsg"></span><button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
+ <select class="rfwin" id="rfWin" title="Report period to rebuild from the warehouse"><option value="ytd">Year to date</option><option value="thismonth">This month</option><option value="lastmonth">Last month</option><option value="last90">Last 90 days</option><option value="custom">Custom…</option></select><span class="rfcustom" id="rfCustom"><input type="date" id="rfFrom" aria-label="from date"><span style="color:var(--muted)">→</span><input type="date" id="rfTo" aria-label="to date"></span><button class="rfbtn" id="rfBtn" title="Rebuild the report for the selected period from the latest warehouse data">↻ Generate</button><span class="rfmsg" id="rfMsg"></span><button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
  <div class="tabs" id="tabs"></div></header>
 <main class="wrap" id="main"></main>
 <footer class="wrap">Promo Effectiveness · figures mirror the working sheet · directional own-baseline, confirm with a holdout · cashback = lever to pilot (not measured).</footer>
@@ -169,7 +169,7 @@ const TABS=[{id:"macro",label:"Brands overview"},{id:"exec",label:"Summary"},{id
 const GORDER=["Identity","COSTS / EARNS","DEPOSITS BACK","BONUS ROI over time","KEEPS PLAYERS","STICKINESS","LOYALTY","REVIEW","WHAT TO DO","CHECK"];
 const GLABEL={"DEPOSITS BACK":"DEPOSITS BACK (gross · not profit)","KEEPS PLAYERS":"CAME BACK (share who redeposited)"};
 const FUN=`<svg width="10" height="10" viewBox="0 0 10 10"><path d="M0.6 1.4h8.8L6 5.2V8L4 9V5.2z" fill="currentColor"/></svg>`;
-let R="MY",TAB="macro",MW="30d",CT="Retention",VB="risk",DP="",MR=0;const WINS=["7d","30d","90d"];
+let R="MY",TAB="macro",MW="30d",CT="Retention",VB="risk",DP="",MR=0,MACRO=DATA.macro;const WINS=["7d","30d","90d"];
 const winSwitch=()=>`<span class="winsw">${WINS.map(w=>`<button data-w="${w}" class="${w===MW?'on':''}">${w}</button>`).join("")}</span>`;
 const g=id=>document.getElementById(id),d=()=>DATA[R],sym=()=>d().sym;
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
@@ -791,7 +791,7 @@ function tRef(){
 }
 /* ================= shell ================= */
 function tMacro(){
- const M=DATA.macro; if(!M||!M.company){g("panel").innerHTML='<div class="card">Brands overview data not available in this build.</div>';return;}
+ const M=MACRO; if(!M||!M.company){g("panel").innerHTML='<div class="card">Brands overview data not available in this build.</div>';return;}
  const C=M.company, regs=M.regions||[];
  const mm=(v,s)=>{if(v==null)return"—";const n=Math.abs(v),sg=v<0?"-":"";return sg+s+(n>=1e6?(n/1e6).toFixed(2)+"m":n>=1e3?Math.round(n/1e3)+"k":Math.round(n));};
  const bcol=p=>p<=5?"#1B7A46":(p<=8?"#B9791F":"#B23A2E"), mcol=m=>m<20?"#B23A2E":"#1B7A46";
@@ -828,13 +828,13 @@ function fmtRange(w){
  const sY=a[0],eY=e.getUTCFullYear();
  return a[2]+" "+M[a[1]-1]+(sY===eY?"":" "+sY)+" – "+e.getUTCDate()+" "+M[e.getUTCMonth()]+" "+eY;
 }
-function macroRange(){return fmtRange((DATA.macro&&DATA.macro.window))||((DATA.macro&&DATA.macro.asOf)||"");}
+function macroRange(){return fmtRange((MACRO&&MACRO.window))||((MACRO&&MACRO.asOf)||"");}
 function renderShell(){
  closePop();
- {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&DATA.macro&&DATA.macro.window)?"· "+macroRange():(DATA.period?"· "+fmtRange(DATA.period):HDRASOF);}
+ {const ae=document.querySelector(".asof");if(ae)ae.textContent=(TAB==="macro"&&MACRO&&MACRO.window)?"· "+macroRange():(DATA.period?"· "+fmtRange(DATA.period):HDRASOF);}
  g("tabs").innerHTML=TABS.map((t,i)=>`<button data-t="${t.id}" class="${t.id===TAB?'on':''}"><b>${i+1}</b>${t.label}</button>`).join("");
  g("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderShell();});
- {const rg=g("region"),mr=(DATA.macro&&DATA.macro.regions)||[];
+ {const rg=g("region"),mr=(MACRO&&MACRO.regions)||[];
   if(TAB==="macro"&&mr.length){
    rg.innerHTML=mr.map((r,k)=>`<button data-mr="${k}" class="${k===MR?'on':''}">${esc((r.cur||"").slice(0,2))} · ${esc(r.sym||"")}</button>`).join("");
    rg.querySelectorAll("button").forEach(b=>b.onclick=()=>{MR=+b.dataset.mr;renderShell();});
@@ -870,14 +870,28 @@ function renderShell(){
   return(le2<jan)?{start:iso(jan),end:iso(today)}:{start:iso(jan),end:iso(le2)};
  }
  function recentNote(end){var e=new Date(end+"T00:00:00"),t=new Date();t.setHours(0,0,0,0);return(Math.round((t-e)/86400000)<90)?" · recent window — forward cards reflect matured cohorts only":"";}
- if(sel)sel.onchange=function(){if(cust)cust.className="rfcustom"+(sel.value==="custom"?" on":"");setMsg("","");};
+ // Instant Brands-overview: a window change re-renders JUST that tab from the local Store A (no 3-min build).
+ // The full "Generate" button still rebuilds every tab from the warehouse.
+ function loadMacro(){
+  if(TAB!=="macro")return;
+  var w=resolveWindow(); if(w.err)return;
+  var spanDays=Math.round((new Date(w.end+"T00:00:00")-new Date(w.start+"T00:00:00"))/86400000)+1;
+  if(spanDays<7){setMsg("Pick a longer range (≥7 days)","err");return;}
+  var qs="/api/promo/ws1/macro?market="+encodeURIComponent(R)+"&start="+encodeURIComponent(w.start)+"&end="+encodeURIComponent(w.end);
+  fetch(qs,{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(o){
+   if(o&&o.ok&&o.macro){MACRO=o.macro;renderShell();setMsg("","");}
+   else{setMsg(o&&o.reason?("Overview unavailable ("+o.reason+") — use Generate"):"","");}
+  }).catch(function(){setMsg("","");});
+ }
+ if(sel)sel.onchange=function(){if(cust)cust.className="rfcustom"+(sel.value==="custom"?" on":"");setMsg("","");if(sel.value!=="custom")loadMacro();};
+ if(cfrom)cfrom.onchange=loadMacro; if(cto)cto.onchange=loadMacro;
  function poll(){
   if(pollStart&&(Date.now()-pollStart)>POLL_MAX_MS){stopPoll();btn.disabled=false;setMsg("Still working in the background — reload the page to check, or try again","err");return;}
   fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){if(!r.ok)throw r.status;return r.json();}).then(function(s){
    pollFails=0;
    if(s.status==="COMPLETED"){stopPoll();setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}
-   if(s.status==="FAILED"){stopPoll();btn.disabled=false;setMsg("Refresh failed — try later","err");return;}
-   setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");
+   if(s.status==="FAILED"){stopPoll();btn.disabled=false;setMsg("Generate failed — try later","err");return;}
+   setMsg(s.progress?("Generating · "+s.progress):"Generating…","busy");
   }).catch(function(e){
    if(e===401){stopPoll();btn.disabled=false;setMsg("Please sign in again, then refresh","err");return;}
    if(++pollFails>=4){stopPoll();btn.disabled=false;setMsg("Lost connection — reload the page to check","err");}
@@ -895,7 +909,7 @@ function renderShell(){
    if(o.st===400){btn.disabled=false;setMsg((o.j&&o.j.error)?o.j.error:"Invalid date range","err");return;}
    if(o.st===401){btn.disabled=false;setMsg("Please sign in again","err");return;}
    if(o.st!==200){btn.disabled=false;setMsg("Could not start refresh","err");return;}
-   var msg="Refreshing…"+recentNote(w.end);
+   var msg="Generating…"+recentNote(w.end);
    if(o.j&&o.j.created===false){var reqEnd=iso(addDays(new Date(w.end+"T00:00:00"),1)),inf=o.j.window,diff=!inf||inf.start!==w.start||inf.endExcl!==reqEnd;if(diff){var lbl=inf?(inf.label||(inf.start+" → "+inf.endExcl)):"the default period";msg="Another period ("+lbl+") is already rebuilding — showing that when done";}}
    setMsg(msg,"busy");stopPoll();pollStart=Date.now();pollFails=0;pollTimer=setInterval(poll,4000);poll();
   }).catch(function(){btn.disabled=false;setMsg("Could not start refresh","err");});
