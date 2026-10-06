@@ -72,19 +72,23 @@ function safe(job) {
   return {
     jobId: job.jobId, status: job.status, progress: job.progress || null,
     builtAt: job.builtAt || null, error: job.error || null, market: job.market,
+    window: job.window || null,
   };
 }
 
 export function makeStore({ file = DEFAULT_FILE } = {}) {
   return {
     // Single-flight: return the live job if one exists, else create a QUEUED one.
-    request({ market, requestedBy, requestedRole, now = new Date() } = {}) {
+    request({ market, requestedBy, requestedRole, window = null, now = new Date() } = {}) {
       const nowMs = now.getTime();
       const cur = readState(file);
       if (isLive(cur, nowMs)) return { job: safe(cur), created: false };
       const job = {
         jobId: crypto.randomUUID(),
         brand: 'WS1', market: market || 'MY',
+        // null = the pipeline's frozen default window. Otherwise {start, endExcl, label}
+        // (ISO dates, endExcl EXCLUSIVE) → worker sets PROMO_START/PROMO_END for the build.
+        window: (window && window.start && window.endExcl) ? { start: window.start, endExcl: window.endExcl, label: window.label || null } : null,
         status: 'QUEUED',
         requestedBy: requestedBy || null,
         requestedRole: requestedRole || null,
@@ -113,7 +117,7 @@ export function makeStore({ file = DEFAULT_FILE } = {}) {
       cur.leasedAt = now.toISOString();
       cur.leaseExpiresAt = new Date(nowMs + LEASE_TTL_MS).toISOString();
       writeState(file, cur);
-      return { job: { jobId: cur.jobId, market: cur.market } };
+      return { job: { jobId: cur.jobId, market: cur.market, window: cur.window || null } };
     },
 
     heartbeat({ jobId, progress, now = new Date() } = {}) {

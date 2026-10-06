@@ -85,12 +85,12 @@ async function tick({ deps = defaultDeps, noSchedule = false } = {}) {
 }
 
 async function processJob(job, deps) {
-  const { jobId, market } = job;
-  log('info', 'job-start', { jobId, market, status: 'leased' });
+  const { jobId, market, window } = job;
+  log('info', 'job-start', { jobId, market, status: 'leased', phase: window && window.label ? window.label : 'default-window' });
   let stage = 'starting';
   const hb = setInterval(() => { deps.heartbeat({ jobId, progress: stage }).catch(() => {}); }, HEARTBEAT_MS);
   try {
-    const run = await deps.runPipeline({ jobId, market, onProgress: (s) => { stage = s; } });
+    const run = await deps.runPipeline({ jobId, market, window, onProgress: (s) => { stage = s; } });
     if (run.code !== 0) {
       await deps.fail({ jobId, error: `PIPELINE_FAILED: ${sanitizeError(run.stderrTail)}` });
       log('warn', 'job-failed', { jobId, reason: 'pipeline' });
@@ -139,12 +139,18 @@ const defaultDeps = {
       maxBytes: MAX_REPORT_BUILD_BYTES, extraHeaders: { 'x-refresh-job': jobId },
     });
   },
-  runPipeline: ({ jobId, market, onProgress }) => new Promise((resolve) => {
+  runPipeline: ({ jobId, market, window, onProgress }) => new Promise((resolve) => {
     const outFile = path.join(os.tmpdir(), `promo-refresh-${jobId}.json`);
-    const child = spawn(process.execPath, BUILD_ARGS, {
-      cwd: OUTER,
-      env: { ...process.env, PROMO_MARKET: market, PROMO_REFRESH_OUT: outFile },
-    });
+    // Start from our own env MINUS any inherited window vars, then set the job's window
+    // explicitly (or leave unset → the pipeline uses its frozen default window). This
+    // guarantees a default-window job never inherits a stale PROMO_START/PROMO_END/MONTH.
+    const env = { ...process.env, PROMO_MARKET: market, PROMO_REFRESH_OUT: outFile };
+    delete env.PROMO_START; delete env.PROMO_END; delete env.PROMO_MONTH;
+    if (window && window.start && window.endExcl) {
+      env.PROMO_START = window.start;   // ISO, inclusive
+      env.PROMO_END = window.endExcl;   // ISO, EXCLUSIVE (csir_config contract)
+    }
+    const child = spawn(process.execPath, BUILD_ARGS, { cwd: OUTER, env });
     let stderrTail = '';
     child.stdout.on('data', (c) => {
       const m = String(c).match(/STAGE:([\w .-]{1,60})/);

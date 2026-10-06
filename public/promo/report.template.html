@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Promo Effectiveness</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -20,6 +21,9 @@ header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--b
 .tgl{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;width:32px;height:30px;cursor:pointer}
 .rfbtn{border:1px solid var(--line);background:var(--surface);color:var(--accent);font:600 11.5px "IBM Plex Sans";padding:6px 11px;border-radius:8px;cursor:pointer}.rfbtn:hover{background:var(--surface-2)}.rfbtn:disabled{color:var(--muted);cursor:default}
 .rfmsg{font-size:11px;margin-left:6px}.rfmsg.busy{color:var(--muted)}.rfmsg.ok{color:var(--good)}.rfmsg.err{color:var(--bad)}
+.rfwin{font:600 11.5px "IBM Plex Sans";color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 8px;margin-right:6px;cursor:pointer}
+.rfcustom{display:none;gap:4px;align-items:center;margin-right:6px}.rfcustom.on{display:inline-flex}
+.rfcustom input[type=date]{font:600 11px "IBM Plex Sans";color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
 .tabs{display:flex;gap:2px;overflow-x:auto;padding:6px 18px 0;max-width:var(--maxw);margin:0 auto}
 .tabs button{border:0;background:transparent;color:var(--muted);font:600 12.5px "IBM Plex Sans";padding:8px 12px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0}
 .tabs button:hover{color:var(--ink);background:var(--surface-2)}.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
@@ -155,10 +159,10 @@ footer{padding:24px 0 50px;color:var(--muted);font-size:11.5px;text-align:center
 <header class="top"><div class="hbar">
  <div class="brand"><span>Promo Effectiveness</span> <span class="asof">· data through 25 Aug 2026</span></div>
  <div class="ctrls"><div class="seg" id="region"><button data-r="MY" class="on">MY · RM</button><button data-r="SG">SG · S$</button></div>
- <button class="rfbtn" id="rfBtn" title="Rebuild the report from the latest warehouse data">↻ Refresh</button><span class="rfmsg" id="rfMsg"></span><button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
+ <select class="rfwin" id="rfWin" title="Report period to rebuild from the warehouse"><option value="ytd">Year to date</option><option value="thismonth">This month</option><option value="lastmonth">Last month</option><option value="last90">Last 90 days</option><option value="custom">Custom…</option></select><span class="rfcustom" id="rfCustom"><input type="date" id="rfFrom" aria-label="from date"><span style="color:var(--muted)">→</span><input type="date" id="rfTo" aria-label="to date"></span><button class="rfbtn" id="rfBtn" title="Rebuild the report for the selected period from the latest warehouse data">↻ Refresh</button><span class="rfmsg" id="rfMsg"></span><button class="tgl" id="tgl" aria-label="theme">◑</button></div></div>
  <div class="tabs" id="tabs"></div></header>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Promo Effectiveness · Jan–Aug 2026 · figures mirror the working sheet · directional own-baseline, confirm with a holdout · cashback = lever to pilot (not measured).</footer>
+<footer class="wrap">Promo Effectiveness · figures mirror the working sheet · directional own-baseline, confirm with a holdout · cashback = lever to pilot (not measured).</footer>
 <script>
 const DATA=/*__DATA__*/;
 const TABS=[{id:"macro",label:"Brands overview"},{id:"exec",label:"Summary"},{id:"money",label:"Bonus vs Deposits"},{id:"codes",label:"Codes"},{id:"bands",label:"Value bands"},{id:"config",label:"Recommended config"},{id:"ref",label:"Reference"}];
@@ -408,7 +412,7 @@ function tExec(){
  const cf=(lvl,cls)=>`<span class="conf ${cls}">${lvl}</span>`, TC='<span class="tc">To confirm</span>';
  // ---- headline stat tiles ----
  const tiles=`<div class="tiles">
-   <div class="tile"><div class="tl">Bonus spend · ${mkt}</div><div class="tv">${money(tot)}</div><div class="ts">${codes.length} codes · Jan–Aug 2026 · reproduced from the working sheet</div></div>
+   <div class="tile"><div class="tl">Bonus spend · ${mkt}</div><div class="tv">${money(tot)}</div><div class="ts">${codes.length} codes · ${fmtRange(DATA.period)} · reproduced from the working sheet</div></div>
    <div class="tile"><div class="tl">On Reduce / Stop codes</div><div class="tv">${money(redstop)}</div><div class="ts"><b>${pct(redstop)}%</b> of spend · ${redstopN} codes · <b>spend to review</b>, not confirmed waste</div></div>
    <div class="tile"><div class="tl">On Scale / Maintain codes</div><div class="tv">${money(perform)}</div><div class="ts">${pct(perform)}% of spend · ${performN} codes · reproduced as working on their pillar metric</div></div>
    <div class="tile"><div class="tl">High-value base cooling / lapsing</div><div class="tv">${MM(inm)}</div><div class="ts">YTD NGR of ${slip.toLocaleString()} top-value + high players now cooling/lapsing — their past-period value, not a measured amount at risk · observed snapshot</div></div>
@@ -422,7 +426,7 @@ function tExec(){
  // ---- decision table ----
  const dec=[
    {pri:"1 · Review the Reduce / Stop book",act:`Run a code-by-code review of the ${redstopN} Reduce/Stop codes (${money(redstop)}); decide per code cut vs re-configure vs keep, and design a holdout before acting.`,
-    ev:`${money(redstop)} (${pct(redstop)}% of spend) on codes reproduced as weak/negative on their pillar metric (Jan–Aug 2026).`,
+    ev:`${money(redstop)} (${pct(redstop)}% of spend) on codes reproduced as weak/negative on their pillar metric (${fmtRange(DATA.period)}).`,
     conf:cf("Medium","he-act"),confr:"reproduced spend & code-level ROI; effect vs a holdout not tested",
     cur:`${money(redstop)} (${pct(redstop)}%)`,chg:TC+" — some “Reduce” means re-size, not cut",imp:TC+" — bounded by the reviewed spend; realised saving needs a holdout",own:TC,rev:TC,appr:"Management sign-off to run the review + holdout"},
    {pri:"2 · Protect the at-risk high-value base",act:`Scope a retention / win-back review for the top-value + high players now cooling or lapsing, before they go dormant.`,
@@ -442,7 +446,7 @@ function tExec(){
    <b>Who acts / by when / approval:</b> owners and review dates are <span class="tc">To confirm</span>; each of the three items needs <b>management sign-off</b> before any change. No action here is approved yet.</div></div>`;
  
  g("panel").innerHTML=takeBox([
-   `<b>${money(tot)}</b> of bonus spend across ${codes.length} codes (Jan–Aug 2026); <b>${money(redstop)} (${pct(redstop)}%)</b> is on codes graded Reduce/Stop — <b>spend to review</b>, not confirmed waste or guaranteed saving.`,
+   `<b>${money(tot)}</b> of bonus spend across ${codes.length} codes (${fmtRange(DATA.period)}); <b>${money(redstop)} (${pct(redstop)}%)</b> is on codes graded Reduce/Stop — <b>spend to review</b>, not confirmed waste or guaranteed saving.`,
    `Separately, <b>${MM(inm)}</b> of top-value + high NGR (${slip.toLocaleString()} players) is cooling/lapsing (observed snapshot) — a protect/win-back priority. Spend also looks tilted away from value (Low band ≈ ${low.spendPct}% of managed spend, pre-claim basis, vs ≈ ${low.ngrPct}% of estate NGR, YTD basis — indicative only, two different band bases).`,
    `Three decisions are proposed below for management sign-off. Every number is reproduced from the sheet; nothing is a controlled-test result, and all budgets/owners/dates are “To confirm”.`])
    +tiles+grade+decTbl+benefit;
@@ -844,6 +848,46 @@ function renderShell(){
 }
 /* #region switcher is (re)rendered + wired inside renderShell (context-aware: MY/ID/SG on Brands overview, MY/SG elsewhere) */
 (function(){const b=g("tgl"),cur=()=>document.documentElement.getAttribute("data-theme");function set(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("pt",t)}catch(e){}}try{const s=localStorage.getItem("pt");if(s)set(s)}catch(e){}b.onclick=()=>{const dk=cur()==="dark"||(!cur()&&matchMedia("(prefers-color-scheme:dark)").matches);set(dk?"light":"dark");};})();
-(function(){var btn=g("rfBtn"),msg=g("rfMsg");if(!btn)return;var pollTimer=null;function setMsg(t,c){if(msg){msg.textContent=t||"";msg.className="rfmsg"+(c?" "+c:"");}}function poll(){fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(s){if(s.status==="COMPLETED"){clearInterval(pollTimer);pollTimer=null;setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}if(s.status==="FAILED"){clearInterval(pollTimer);pollTimer=null;btn.disabled=false;setMsg("Refresh failed — try later","err");return;}setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");}).catch(function(){});}btn.onclick=function(){btn.disabled=true;setMsg("Starting…","busy");fetch("/api/promo/ws1/refresh-request?market="+encodeURIComponent(R),{method:"POST",credentials:"same-origin"}).then(function(r){return r.json().then(function(j){return {st:r.status,j:j};});}).then(function(o){if(o.st===403){btn.disabled=false;setMsg("Data is already current","ok");return;}if(o.st===401){btn.disabled=false;setMsg("Please sign in again","err");return;}if(o.st!==200){btn.disabled=false;setMsg("Could not start refresh","err");return;}setMsg("Refreshing…","busy");if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(poll,4000);poll();}).catch(function(){btn.disabled=false;setMsg("Could not start refresh","err");});};})();
+(function(){
+ var btn=g("rfBtn"),msg=g("rfMsg"),sel=g("rfWin"),cust=g("rfCustom"),cfrom=g("rfFrom"),cto=g("rfTo");
+ if(!btn)return;
+ var pollTimer=null;
+ function setMsg(t,c){if(msg){msg.textContent=t||"";msg.className="rfmsg"+(c?" "+c:"");}}
+ function pad(n){return String(n).length<2?"0"+n:""+n;}
+ function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+ function firstOfMonth(d){return new Date(d.getFullYear(),d.getMonth(),1);}
+ function addDays(d,n){var x=new Date(d.getTime());x.setDate(x.getDate()+n);return x;}
+ // Resolve the picked preset to {start,end} inclusive ISO, or {err}. (Server re-validates.)
+ function resolveWindow(){
+  var today=new Date();today.setHours(0,0,0,0);
+  var v=sel?sel.value:"ytd";
+  if(v==="custom"){var f=cfrom&&cfrom.value,t=cto&&cto.value;if(!f||!t)return{err:"Pick both dates"};if(t<f)return{err:"End date is before start"};return{start:f,end:t};}
+  if(v==="thismonth")return{start:iso(firstOfMonth(today)),end:iso(today)};
+  if(v==="lastmonth"){var le=addDays(firstOfMonth(today),-1);return{start:iso(firstOfMonth(le)),end:iso(le)};}
+  if(v==="last90")return{start:iso(addDays(today,-89)),end:iso(today)};
+  var le2=addDays(firstOfMonth(today),-1),jan=new Date(today.getFullYear(),0,1);   // ytd: Jan 1 .. last complete month
+  return(le2<jan)?{start:iso(jan),end:iso(today)}:{start:iso(jan),end:iso(le2)};
+ }
+ function recentNote(end){var e=new Date(end+"T00:00:00"),t=new Date();t.setHours(0,0,0,0);return(Math.round((t-e)/86400000)<90)?" · recent window — forward cards reflect matured cohorts only":"";}
+ if(sel)sel.onchange=function(){if(cust)cust.className="rfcustom"+(sel.value==="custom"?" on":"");setMsg("","");};
+ function poll(){fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(s){if(s.status==="COMPLETED"){clearInterval(pollTimer);pollTimer=null;setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}if(s.status==="FAILED"){clearInterval(pollTimer);pollTimer=null;btn.disabled=false;setMsg("Refresh failed — try later","err");return;}setMsg(s.progress?("Refreshing · "+s.progress):"Refreshing…","busy");}).catch(function(){});}
+ btn.onclick=function(){
+  var w=resolveWindow();if(w.err){setMsg(w.err,"err");return;}
+  var spanDays=Math.round((new Date(w.end+"T00:00:00")-new Date(w.start+"T00:00:00"))/86400000)+1;
+  if(spanDays<7){setMsg("That period is only "+spanDays+" day"+(spanDays===1?"":"s")+" so far — pick a longer range (e.g. Last 90 days)","err");return;}
+  btn.disabled=true;setMsg("Starting…","busy");
+  var qs="/api/promo/ws1/refresh-request?market="+encodeURIComponent(R)+"&start="+encodeURIComponent(w.start)+"&end="+encodeURIComponent(w.end);
+  fetch(qs,{method:"POST",credentials:"same-origin"}).then(function(r){return r.json().then(function(j){return {st:r.status,j:j};},function(){return {st:r.status,j:{}};});}).then(function(o){
+   if(o.st===403){btn.disabled=false;setMsg("Data is already current for this period","ok");return;}
+   if(o.st===429){btn.disabled=false;setMsg((o.j&&o.j.error)?o.j.error:"Please wait a few minutes before refreshing again","err");return;}
+   if(o.st===400){btn.disabled=false;setMsg((o.j&&o.j.error)?o.j.error:"Invalid date range","err");return;}
+   if(o.st===401){btn.disabled=false;setMsg("Please sign in again","err");return;}
+   if(o.st!==200){btn.disabled=false;setMsg("Could not start refresh","err");return;}
+   var msg="Refreshing…"+recentNote(w.end);
+   if(o.j&&o.j.created===false){var reqEnd=iso(addDays(new Date(w.end+"T00:00:00"),1)),inf=o.j.window,diff=!inf||inf.start!==w.start||inf.endExcl!==reqEnd;if(diff){var lbl=inf?(inf.label||(inf.start+" → "+inf.endExcl)):"the default period";msg="Another period ("+lbl+") is already rebuilding — showing that when done";}}
+   setMsg(msg,"busy");if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(poll,4000);poll();
+  }).catch(function(){btn.disabled=false;setMsg("Could not start refresh","err");});
+ };
+})();
 renderShell();
 </script>

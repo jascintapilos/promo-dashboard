@@ -192,6 +192,12 @@ function stripDeadData(payloadStr) {
 // Refresh staleness gate: a report-only viewer may only trigger a re-pull when the
 // data is older than this (admin/promo-team bypass it). 24h.
 const STALE_MS = 24 * 60 * 60 * 1000;
+// Rate limit: a report-only viewer may START at most one build per this window, so a
+// viewer walking distinct date ranges can't churn the expensive shared endpoint (single-
+// flight bounds concurrency, not serial frequency). admin/promo-team are unthrottled.
+// In-memory by design — a process restart simply resets cooldowns, which is harmless.
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+const refreshCooldown = new Map();   // email -> epoch ms of the last build they started
 // Cheap read of the current report's build time (prefers the live overlay), via a
 // regex on the one-line JSON so we don't parse ~1.4MB just for one field. Returns
 // epoch ms, or null (unknown -> caller treats as stale, i.e. allows a refresh).
@@ -206,6 +212,66 @@ function reportBuiltAtMs(root, brand) {
     } catch { /* unreadable -> treat as unknown */ }
   }
   return null;
+}
+
+// Current built report's per-code window as "START .. END_EXCL" (cheap regex, prefers
+// the live overlay), or null if unknown. Used by the window-aware staleness gate so a
+// request for a DIFFERENT window is never refused as "already fresh".
+function currentReportPeriod(root, brand) {
+  const dir = brandDir(root, brand);
+  for (const f of ['report.live.json', 'report.json']) {
+    const p = path.join(dir, f);
+    if (!existsSync(p)) continue;
+    try {
+      const mt = readFileSync(p, 'utf8').match(/"period"\s*:\s*"([^"]+)"/);
+      if (mt) return mt[1];
+    } catch { /* unreadable -> unknown */ }
+  }
+  return null;
+}
+
+// Refresh date-window bounds. The picker is open to every report viewer, so EVERY bound
+// is validated here on the server — the UI is only a convenience.
+const WINDOW_FLOOR = '2026-01-01';   // the report is tuned for 2026; no earlier starts
+const MIN_SPAN_DAYS = 7;             // shorter than the report's smallest forward horizon is meaningless
+const MAX_SPAN_DAYS = 400;           // sanity ceiling (a hair over a full year)
+function isIsoDate(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + 'T00:00:00Z')); }
+function addDaysIso(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+// Resolve the refresh window from the request query to {start, endExcl, label} (ISO,
+// endExcl EXCLUSIVE — the csir_config contract) or null for the pipeline's default
+// window. Accepts ?month=YYYY-MM, or ?start=YYYY-MM-DD&end=YYYY-MM-DD (end INCLUSIVE).
+// Returns { window } or { error } (400-worthy). No params -> { window: null } (default).
+function parseRefreshWindow(url) {
+  const qp = url.searchParams;
+  const month = (qp.get('month') || '').trim();
+  const startIn = (qp.get('start') || '').trim();
+  const endIn = (qp.get('end') || '').trim();        // INCLUSIVE end from the UI
+  if (!month && !startIn && !endIn) return { window: null };   // default (frozen) window
+  let start, endExcl, label;
+  if (month) {
+    const mm = month.match(/^(\d{4})-(\d{2})$/);
+    if (!mm) return { error: 'invalid month (expected YYYY-MM)' };
+    start = `${mm[1]}-${mm[2]}-01`;
+    if (!isIsoDate(start)) return { error: 'invalid month' };
+    endExcl = `${addDaysIso(start, 32).slice(0, 8)}01`;   // first of the next month
+    label = month;
+  } else {
+    if (!isIsoDate(startIn) || !isIsoDate(endIn)) return { error: 'invalid start/end date' };
+    if (endIn < startIn) return { error: 'end is before start' };
+    start = startIn; endExcl = addDaysIso(endIn, 1);     // inclusive end -> exclusive
+    label = `${startIn} to ${endIn}`;
+  }
+  if (start < WINDOW_FLOOR) return { error: `start must be on or after ${WINDOW_FLOOR}` };
+  // "today" in the warehouse timezone (GMT+8 / MYT) so the future bound matches the client's
+  // local-date presets regardless of the server's own timezone (otherwise a UTC server a day
+  // behind MYT rejects legitimate ends-today windows during local early morning).
+  const whToday = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  if (endExcl > addDaysIso(whToday, 1)) return { error: 'end cannot be in the future' };
+  const span = Math.round((Date.parse(endExcl + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86400000);
+  if (span < MIN_SPAN_DAYS) return { error: `window too short (min ${MIN_SPAN_DAYS} days)` };
+  if (span > MAX_SPAN_DAYS) return { error: `window too long (max ${MAX_SPAN_DAYS} days)` };
+  return { window: { start, endExcl, label } };
 }
 
 function serveReport(res, root, brand, user, htmlHeaders, send) {
@@ -340,18 +406,37 @@ export async function handlePromo(req, res, url, ctx) {
         return send(res, 200, promoRefreshStore.getForUser({ user: user.email }));
       }
       if (action === 'request' && req.method === 'POST') {
-        // Server-enforced staleness gate: admin/promo-team anytime; a report-only
-        // viewer only when data is > 24h old. The UI state is a convenience; THIS is
-        // the real guard.
+        const parsed = parseRefreshWindow(url);
+        if (parsed.error) return send(res, 400, { error: parsed.error });
+        const window = parsed.window;   // null = default window, or {start, endExcl, label}
+        // Window-aware staleness gate: admin/promo-team may rebuild any window anytime; a
+        // report-only viewer is refused ONLY when re-pulling the SAME window that is still
+        // fresh (<24h). A request for a DIFFERENT window is always allowed — that is the
+        // point of the date-range picker. (A default-window request with no live period to
+        // compare falls back to the plain freshness check, matching the pre-picker behavior.)
         if (role === 'promo-report') {
           const built = reportBuiltAtMs(root, brand);
-          if (built != null && (Date.now() - built) <= STALE_MS) {
-            return send(res, 403, { error: 'already fresh', builtAt: new Date(built).toISOString() });
+          const fresh = built != null && (Date.now() - built) <= STALE_MS;
+          if (fresh) {
+            const curPeriod = currentReportPeriod(root, brand);
+            const reqPeriod = window ? `${window.start} .. ${window.endExcl}` : null;
+            const sameWindow = (reqPeriod == null) || (curPeriod != null && reqPeriod === curPeriod);
+            if (sameWindow) {
+              return send(res, 403, { error: 'already fresh', builtAt: new Date(built).toISOString() });
+            }
           }
         }
+        // Rate limit: a report-only viewer may START at most one build per cooldown window
+        // (admin/promo-team unthrottled), so walking distinct windows can't churn the shared
+        // expensive endpoint. Recorded only when a NEW build is actually started.
+        if (role === 'promo-report') {
+          const waitMs = REFRESH_COOLDOWN_MS - (Date.now() - (refreshCooldown.get(user.email) || 0));
+          if (waitMs > 0) return send(res, 429, { error: 'please wait a few minutes before refreshing again', retryAfterSec: Math.ceil(waitMs / 1000) });
+        }
         const market = url.searchParams.get('market') === 'SG' ? 'SG' : 'MY';
-        const out = promoRefreshStore.request({ market, requestedBy: user.email, requestedRole: role });
-        return send(res, 200, { jobId: out.job.jobId, status: out.job.status, created: out.created });
+        const out = promoRefreshStore.request({ market, requestedBy: user.email, requestedRole: role, window });
+        if (role === 'promo-report' && out.created) refreshCooldown.set(user.email, Date.now());
+        return send(res, 200, { jobId: out.job.jobId, status: out.job.status, created: out.created, window: out.job.window || null });
       }
       return send(res, 405, { error: 'method not allowed' });
     }
