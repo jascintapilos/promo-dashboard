@@ -275,22 +275,29 @@ function parseRefreshWindow(url) {
   return { window: { start, endExcl, label } };
 }
 
-function serveReport(res, root, brand, user, htmlHeaders, send) {
+function serveReport(res, root, brand, user, htmlHeaders, send, windowKey = '') {
   const tplPath = path.join(root, 'public', 'promo', 'report.template.html');
   const dataPath = path.join(brandDir(root, brand), 'report.json');
   if (!existsSync(tplPath) || !existsSync(dataPath)) return send(res, 503, { error: 'report not built for this brand yet' });
   const tpl = readFileSync(tplPath, 'utf8');
-  // D2 (deploy-clobber fix): prefer the gitignored report.live.json overlay that a
-  // refresh writes — but ONLY if it parses. A corrupt/truncated overlay falls back
-  // to the committed report.json; never blank the page. stripDeadData fails open
-  // (returns raw text on a parse error), so it CANNOT be the validation guard here.
-  const livePath = path.join(brandDir(root, brand), 'report.live.json');
+  // Phase 2: a standard window (?w=) prefers its nightly pre-built file; otherwise the gitignored
+  // report.live.json overlay a refresh writes; otherwise the committed report.json. Each candidate is
+  // JSON-validated (a corrupt/truncated one falls through); never blank the page. stripDeadData fails
+  // open, so it CANNOT be the validation guard.
+  const STD = ['ytd', 'thismonth', 'lastmonth', 'last90'];
   let raw = readFileSync(dataPath, 'utf8');
-  if (existsSync(livePath)) { try { const t = readFileSync(livePath, 'utf8'); JSON.parse(t); raw = t; } catch { /* keep committed */ } }
+  const candidates = [];
+  if (windowKey && STD.includes(windowKey)) candidates.push(`report.${windowKey}.live.json`);
+  candidates.push('report.live.json');
+  for (const name of candidates) {
+    const p = path.join(brandDir(root, brand), name);
+    if (existsSync(p)) { try { const t = readFileSync(p, 'utf8'); JSON.parse(t); raw = t; break; } catch { /* try next */ } }
+  }
+  const PREBUILT = STD.filter(k => existsSync(path.join(brandDir(root, brand), `report.${k}.live.json`)));
   const payload = stripDeadData(raw);
   const reg = loadBrandRegistry(root);
   const brandName = (reg[brand] && reg[brand].name) || String(brand || '').toUpperCase();
-  const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};`;
+  const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};window.__PREBUILT__=${JSON.stringify(PREBUILT)};`;
   const wire = 'var _po=document.getElementById("pSessOut");if(_po)_po.onclick=function(){fetch("/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload();});};';
   // Brand-aware: the shared template's identity spots (title, header, footer) all
   // read "WS1" (the raw template has exactly those 3 identity occurrences).
@@ -490,7 +497,7 @@ export async function handlePromo(req, res, url, ctx) {
     const brand = m[1];
     const entry = loadBrandRegistry(root)[brand] || null;
     const user = readSession(req);
-    if (user && entry && canView(user, entry)) return serveReport(res, root, brand, user, htmlHeaders, send);
+    if (user && entry && canView(user, entry)) return serveReport(res, root, brand, user, htmlHeaders, send, (url.searchParams.get('w') || '').replace(/[^a-z0-9]/g, '').slice(0, 20));
     return serveLogin(res, root, brand, entry, htmlHeaders);
   }
   return send(res, 404, { error: 'not found' });

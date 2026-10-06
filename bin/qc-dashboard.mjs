@@ -934,12 +934,15 @@ async function handleRelayApi(req, res, url) {
   // live report intact (Constraint 5). serveReport prefers the valid overlay.
   if (isReportBuild) {
     const jobId = String(req.headers['x-refresh-job'] || '').slice(0, 64);
+    // Phase 2: a nightly pre-build names its standard window here -> report.<win>.live.json.
+    // '' (an interactive refresh) targets the live custom report.live.json as before. No jobId on pre-builds.
+    const win = String(req.headers['x-refresh-window'] || '').replace(/[^a-z0-9]/g, '').slice(0, 20);
     const text = rawBody.toString('utf8');
     let obj;
     try { obj = JSON.parse(text); }
-    catch { promoRefreshStore.fail({ jobId, error: 'rebuilt report is not valid JSON' }); return send(res, 400, { error: 'invalid report json' }); }
+    catch { if (jobId) promoRefreshStore.fail({ jobId, error: 'rebuilt report is not valid JSON' }); return send(res, 400, { error: 'invalid report json' }); }
     if (!obj || typeof obj !== 'object' || !obj.MY || !obj.SG || rawBody.length < 100 * 1024) {
-      promoRefreshStore.fail({ jobId, error: 'rebuilt report failed validation (missing MY/SG or too small)' });
+      if (jobId) promoRefreshStore.fail({ jobId, error: 'rebuilt report failed validation (missing MY/SG or too small)' });
       return send(res, 422, { error: 'report failed validation' });
     }
     const builtAt = typeof obj.builtAt === 'string' ? obj.builtAt : new Date().toISOString();
@@ -947,16 +950,16 @@ async function handleRelayApi(req, res, url) {
     try {
       const liveDir = path.join(ROOT, 'data', 'promo', 'ws1');
       if (!existsSync(liveDir)) mkdirSync(liveDir, { recursive: true });
-      const live = path.join(liveDir, 'report.live.json');
+      const live = path.join(liveDir, win ? `report.${win}.live.json` : 'report.live.json');
       const tmp = `${live}.tmp-${process.pid}-${Date.now()}`;
       writeFileSync(tmp, text, 'utf8');
       renameSync(tmp, live);   // atomic swap — last step; live report updates on next load, no restart
     } catch {
-      promoRefreshStore.fail({ jobId, error: 'failed to publish rebuilt report' });
+      if (jobId) promoRefreshStore.fail({ jobId, error: 'failed to publish rebuilt report' });
       return send(res, 500, { error: 'publish failed' });
     }
-    promoRefreshStore.complete({ jobId, asOf, builtAt });
-    return send(res, 200, { ok: true, builtAt });
+    if (jobId) promoRefreshStore.complete({ jobId, asOf, builtAt });
+    return send(res, 200, { ok: true, builtAt, window: win || null });
   }
   // POST /api/relay/promo/ws1/store-build — body = store_a.json bytes (the nightly money rollup
   // that powers the instant Brands-overview). Validate shape, then ATOMIC-swap to
