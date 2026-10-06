@@ -171,6 +171,12 @@ else:
 if _end_excl <= _start:
     raise SystemExit(f"promo window end ({_end_excl}) must be after start ({_start}).")
 
+# True when the window was set EXPLICITLY via env (PROMO_MONTH / PROMO_START / PROMO_END),
+# as opposed to running on the frozen default. macro_pull consults this to decide whether
+# to follow the chosen window (date-range refresh) or keep its own always-current auto-YTD
+# portfolio window. Scripts that always honour START/END_EXCL ignore this flag.
+WINDOW_EXPLICIT: bool = bool(_PROMO_MONTH or os.getenv("PROMO_START") or os.getenv("PROMO_END"))
+
 _data_max = _end_excl - _td(days=1)  # last day that has data (inclusive)
 
 START: str = _start.isoformat()                      # "2026-01-01"

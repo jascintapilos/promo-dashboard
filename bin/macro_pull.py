@@ -4,9 +4,16 @@ sys.path.insert(0, r"C:\Users\vdiuser\Downloads\promo-automation")
 import csir_config
 from datetime import date, timedelta
 def q(sql): return csir_config.get_client().query(sql).result_rows
-mx = q("SELECT max(SnapshotDate) FROM WORKSPACE.Daily_GMT8_Snapshot_A")[0][0]
-if isinstance(mx,str): mx=date.fromisoformat(mx[:10])
-end=mx.replace(day=1); start=end.replace(month=1, day=1)   # YTD: Jan 1 .. first of latest month (through last COMPLETE month)
+if getattr(csir_config, "WINDOW_EXPLICIT", False):
+    # Date-range refresh: follow the explicitly-chosen promo window so the macro
+    # portfolio view matches the per-code analysis tabs. END_EXCL is exclusive.
+    start = date.fromisoformat(csir_config.START)
+    end   = date.fromisoformat(csir_config.END_EXCL)
+else:
+    # Default: always-current auto-YTD through the last COMPLETE month.
+    mx = q("SELECT max(SnapshotDate) FROM WORKSPACE.Daily_GMT8_Snapshot_A")[0][0]
+    if isinstance(mx,str): mx=date.fromisoformat(mx[:10])
+    end=mx.replace(day=1); start=end.replace(month=1, day=1)   # YTD: Jan 1 .. first of latest month (through last COMPLETE month)
 
 sql = f"""
 WITH u AS (

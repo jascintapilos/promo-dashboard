@@ -36,7 +36,10 @@ for tier in ["Diamond", "Platinum", "Gold", "Silver", "Bronze"]:
         verdict = "CLEARS both" if (cross > 0 and within > 0) else "FAILS both" if (cross <= 0 and within <= 0) else "INCONCLUSIVE (sign flips by method)"
     else:
         verdict = "n/a"
-    print(f"  {tier:9s} | RM{per_claim:>6,} | cross RM{cross:>8,} | within RM{within:>7,} | {verdict}")
+    pc = f"{per_claim:>6,}" if per_claim is not None else "   n/a"   # thin/recent window -> None; keep the print alive
+    cx = f"{cross:>8,}" if cross is not None else "     n/a"
+    wn = f"{within:>7,}" if within is not None else "    n/a"
+    print(f"  {tier:9s} | RM{pc} | cross RM{cx} | within RM{wn} | {verdict}")
     be[tier] = {"cashback_cost": cost, "claims": claims, "cashback_per_claim": per_claim,
                 "incr_ngr_week_cross": cross, "incr_ngr_week_within": within, "verdict": verdict}
 
@@ -55,7 +58,8 @@ print(f"\n=== TOP-DIAMOND DOWNSIDE (the reason NOT to cut on observational evide
 print(f"  Diamond cashback 'saving' if cut: RM{DIAMOND_COST:,}")
 print(f"  Top Diamonds' YTD NGR (proxy annual value): {['RM'+format(v,',') for v in downside['top_diamond_ytd_ngr']]}")
 print(f"  -> churning just {n_wipe} top Diamond(s) wipes out the entire RM{DIAMOND_COST:,} 'saving'.")
-print(f"  (Cutting the cashback to save RM{DIAMOND_COST:,} while risking players worth RM{downside['top1_ytd_ngr']:,}+ each = a bad trade unless the holdout proves the cashback is truly dead-weight.)")
+_t1 = downside['top1_ytd_ngr']
+print(f"  (Cutting the cashback to save RM{DIAMOND_COST:,} while risking players worth RM{format(_t1, ',') if _t1 is not None else 'n/a'}+ each = a bad trade unless the holdout proves the cashback is truly dead-weight.)")
 
 out = {"break_even": be, "top_diamond_downside": downside,
        "read": ("Observational estimates bracket zero and flip sign by method for Diamond (cross-section vs within-member), "

@@ -129,6 +129,7 @@ for r in records:
 # ---- (B) intensive margin: matched (tier x loss-decile x prior-deposit-decile) ----
 def deciles(vals):
     s = sorted(vals); n = len(s)
+    if n == 0: return [0] * 9   # thin/recent window: no matured losing-week records -> flat cuts; every downstream aggregation is already None/0-guarded
     return [s[min(n - 1, int(k / 10 * n))] for k in range(1, 10)]
 def dec(v, cuts):
     for i, cc in enumerate(cuts):

@@ -18,7 +18,7 @@ import sys, json, statistics
 from pathlib import Path
 from collections import defaultdict
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 ATTR = SCR / "attribution"
 TOP_N = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 MIN_CONTROLS = 8
@@ -111,7 +111,10 @@ same = [r for r in valid if abs(r["rtm_gap_per_rm"]) <= 0.2]
 bshare = lambda g: round(100 * sum(x["bonus"] for x in g) / tb) if tb else 0
 print(f"=== Matched-DiD (Phase 1.1) across ALL codes ===")
 print(f"codes with >=20 matched treated: {len(results)} | pass parallel-trends (valid): {len(valid)} | RM{tb:,} bonus covered")
-print(f"AGG over valid codes: own {round(to/tb,2)}/RM vs matched-control {round(td/tb,2)}/RM | RTM gap {round((to-td)/tb,2)}/RM ({round(100*(to-td)/to) if to else 0}% of own-baseline)")
+if tb:
+    print(f"AGG over valid codes: own {round(to/tb,2)}/RM vs matched-control {round(td/tb,2)}/RM | RTM gap {round((to-td)/tb,2)}/RM ({round(100*(to-td)/to) if to else 0}% of own-baseline)")
+else:
+    print("AGG over valid codes: no valid codes in this window (thin/recent) -> no DiD aggregate")
 print(f"\nDirection of the correction (valid codes, count | % of valid bonus):")
 print(f"  report TOO PESSIMISTIC (matched > own): {len(pess):>3} codes | {bshare(pess)}% of bonus")
 print(f"  about right (|gap|<=0.2/RM):            {len(same):>3} codes | {bshare(same)}% of bonus")
