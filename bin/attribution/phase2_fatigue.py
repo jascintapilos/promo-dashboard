@@ -14,12 +14,14 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client
+from csir_config import get_client, START, END_EXCL, snap_lo, snap_hi
+from datetime import date as _dt, timedelta as _td
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 ATTR = SCR / "attribution"
-START, CLAIM_END = "2026-01-01", "2026-07-27"    # 30d-maturity cutoff (data to 2026-08-26)
-SNAP_LO, SNAP_HI = "2025-12-01", "2026-08-27"    # LO covers the -30d pre-window of the earliest claim
+# window-derived (was hardcoded Jan–Jul 2026): claims whose forward-30d NGR has matured by the data end
+CLAIM_END = (_dt.fromisoformat(END_EXCL) - _td(days=30)).isoformat()   # 30d-maturity cutoff
+SNAP_LO, SNAP_HI = snap_lo(31), snap_hi(1)       # LO covers the -30d pre-window of the earliest claim; START from the seam
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 
 ret = json.load(open(SCR / "ret/ret-codes-MY.json", encoding="utf-8"))
@@ -130,7 +132,7 @@ for sc in ("ALL", "RET", "VIP"):
     cl = cap_at[sc]
     recover[sc] = round(sum(v["bonus"] for o, v in cap[sc].items() if cl is not None and o >= cl)) if cl else 0
 
-out = {"as_of": "2026-08-30", "window": "forward 30d, net of bonus", "method": "balanced within-member panel (ord-1 vs ord-n, same members)",
+out = {"as_of": END_EXCL, "window": "forward 30d, net of bonus", "method": "balanced within-member panel (ord-1 vs ord-n, same members)",
        "ordinal_cap": "6+", "overall": overall, "by_pillar": by_pillar,
        "cap_curve": cap, "cap_line": cap_at, "recoverable_bonus_at_cap": recover}
 json.dump(out, open(ATTR / "fatigue-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2, default=str)

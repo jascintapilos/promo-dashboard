@@ -16,13 +16,19 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from csir_config import get_client, START, END_INCL, snap_lo, snap_hi
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 OUT = SCR / "attribution"
 OUT.mkdir(exist_ok=True)
 LOGSITE = "WS1_MYS_MYR"
 END = END_INCL   # from csir_config date seam (START also imported)
 SNAP_LO, SNAP_HI = snap_lo(184), snap_hi(86)   # attribution pre-trend + forward window (generous over-fetch)
-ANCHORS = [f"2026-{m:02d}-15" for m in range(1, 9)]     # 15th of Jan..Aug 2026
+# monthly anchors (15th of each month) spanning the window — derived from the date seam, not hardcoded Jan–Aug
+from datetime import date as _dt
+_as, _ae = _dt.fromisoformat(START), _dt.fromisoformat(END)
+ANCHORS, _ay, _am = [], _as.year, _as.month
+while (_ay, _am) <= (_ae.year, _ae.month):
+    ANCHORS.append(f"{_ay:04d}-{_am:02d}-15"); _am += 1
+    if _am > 12: _am, _ay = 1, _ay + 1
 SAMPLE_MOD = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 
 anchor_arr = "[" + ",".join("'" + a + "'" for a in ANCHORS) + "]"
