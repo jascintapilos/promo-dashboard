@@ -67,6 +67,6 @@ async function main() {
     if (p.status !== 200) failures++;
   }
   console.log(`[${new Date().toISOString()}] prebuild done — ${WINDOWS.length - failures}/${WINDOWS.length} published`);
-  process.exit(failures ? 1 : 0);
+  process.exitCode = failures ? 1 : 0;   // let node drain + exit cleanly (forced process.exit can trip a libuv assert on Windows)
 }
-main().catch(e => { console.error('prebuild failed:', e.message); process.exit(1); });
+main().catch(e => { console.error('prebuild failed:', e.message); process.exitCode = 1; });
