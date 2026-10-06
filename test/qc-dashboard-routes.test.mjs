@@ -164,6 +164,23 @@ test('unauthenticated /api/brands → 401', async () => {
   assert.equal(r.status, 401);
 });
 
+test('unauthenticated /api/leave returns 401', async () => {
+  const r = await fetchNoRedirect('/api/leave');
+  assert.equal(r.status, 401);
+});
+
+test('leave add rejects invalid input before any sheet write', async () => {
+  const cookie = await login();
+  const r = await fetchNoRedirect('/api/leave', {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Tester', type: 'BAD', start: '2026-09-04', end: '2026-09-04' }),
+  });
+  assert.equal(r.status, 400);
+  const body = await r.json();
+  assert.match(body.error, /type/i);
+});
+
 test('logout clears cookie + subsequent /dashboard blocked without cookie', async () => {
   const cookie = await login();
   const r = await fetchNoRedirect('/auth/logout', { method: 'POST', headers: { cookie } });

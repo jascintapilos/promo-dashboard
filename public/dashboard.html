@@ -555,12 +555,13 @@
         <div class="pg-group-label">Command</div>
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><span class="pg-num">1</span><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-util" onclick="switchView('util')"><span class="pg-num">2</span><i class="ti ti-chart-histogram" aria-hidden="true"></i> Utilization</button>
+        <button class="pg-tab" id="pg-leave" onclick="switchView('leave')"><span class="pg-num">3</span><i class="ti ti-calendar-heart" aria-hidden="true"></i> Leave</button>
         <div class="pg-group-label">Quality</div>
-        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">3</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
-        <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><span class="pg-num">4</span><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
+        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">4</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
+        <button class="pg-tab" id="pg-gr" onclick="switchView('gr')"><span class="pg-num">5</span><i class="ti ti-shield-check" aria-hidden="true"></i> Guardrails</button>
         <div class="pg-group-label">Resources</div>
-        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">5</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
-        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">6</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
+        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">6</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
+        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">7</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
       </div>
     </nav>
     <div class="app-main">
@@ -788,6 +789,9 @@
       <div id="focus-per-person" style="margin-top:14px;display:flex;flex-direction:column;gap:2px;"></div>
     </div>
     </div><!-- /view-util -->
+    <div id="view-leave" style="display:none;">
+    <iframe id="leave-frame" title="Leave board" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;background:#fff;"></iframe>
+    </div><!-- /view-leave -->
     <div id="view-sop" style="display:none;">
     <p class="section-label">Standard operating procedures</p>
     <div class="card" style="margin-bottom:28px;">
@@ -3134,8 +3138,15 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 })();
 
 /* ── PAGE VIEW SWITCHER ── */
+// Leave board (embedded; served same-origin at /leave-board.html)
+let _leaveFrameLoaded = false;
+function renderLeaveTab(){
+  if(_leaveFrameLoaded) return;
+  const f = document.getElementById('leave-frame');
+  if(f){ f.src = '/leave-board.html'; _leaveFrameLoaded = true; }
+}
 function switchView(v){
-  ['ops','sop','hk','gr','util','at'].forEach(n=>{
+  ['ops','sop','hk','gr','util','leave','at'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -3146,8 +3157,9 @@ function switchView(v){
   document.getElementById('date-btn').style.display = showCtrl ? '' : 'none';
   document.getElementById('refresh').style.display  = showCtrl ? '' : 'none';
   if(v==='hk') renderHousekeepingTab();
+  if(v==='leave') renderLeaveTab();
   if(v==='at') renderAutomationTab();
-  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='util'?'#utilization':v==='sop'?'#sop':v==='at'?'#automation':'#');}catch(e){}
+  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='gr'?'#guardrails':v==='util'?'#utilization':v==='leave'?'#leave':v==='sop'?'#sop':v==='at'?'#automation':'#');}catch(e){}
 }
 
 // ── Automation Tab ───────────────────────────────────────────────────────────
@@ -3236,6 +3248,7 @@ function filterAtPortfolio(){
   if(location.hash==='#housekeeping') switchView('hk');
   else if(location.hash==='#guardrails') switchView('gr');
   else if(location.hash==='#utilization') switchView('util');
+  else if(location.hash==='#leave') switchView('leave');
   else if(location.hash==='#sop') switchView('sop');
   else if(location.hash==='#automation') switchView('at');
 })();
