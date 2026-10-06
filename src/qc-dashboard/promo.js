@@ -286,9 +286,13 @@ function serveReport(res, root, brand, user, htmlHeaders, send, windowKey = '') 
   // open, so it CANNOT be the validation guard.
   const STD = ['ytd', 'thismonth', 'lastmonth', 'last90'];
   let raw = readFileSync(dataPath, 'utf8');
+  // Serving precedence: ?w=<standard> -> its nightly pre-built file; ?w=latest -> the last custom
+  // Generate (report.live.json); no ?w (default landing) -> the YTD pre-build. Each candidate is
+  // JSON-validated and falls through to report.live.json then the committed report.json.
   const candidates = [];
-  if (windowKey && STD.includes(windowKey)) candidates.push(`report.${windowKey}.live.json`);
-  candidates.push('report.live.json');
+  if (windowKey === 'latest') candidates.push('report.live.json');
+  else if (windowKey && STD.includes(windowKey)) candidates.push(`report.${windowKey}.live.json`, 'report.live.json');
+  else candidates.push('report.ytd.live.json', 'report.live.json');
   for (const name of candidates) {
     const p = path.join(brandDir(root, brand), name);
     if (existsSync(p)) { try { const t = readFileSync(p, 'utf8'); JSON.parse(t); raw = t; break; } catch { /* try next */ } }

@@ -889,14 +889,20 @@ function renderShell(){
   if(v!=="custom"&&pre.indexOf(v)>=0){location.href="?w="+encodeURIComponent(v);return;} // pre-built standard window → WHOLE report instant
   if(v!=="custom")loadMacro(); // not pre-built → instant money tab (Phase 1); Generate rebuilds the rest
  };
- // reflect the loaded pre-built window (?w=) in the picker so it isn't stuck on "Year to date"
- {var _w=(new URLSearchParams(location.search)).get("w");if(_w&&sel){for(var _i=0;_i<sel.options.length;_i++){if(sel.options[_i].value===_w){sel.value=_w;break;}}}}
+ // reflect the loaded window in the picker: a standard ?w=key -> that preset; ?w=latest (a custom
+ // Generate) -> "Custom" with the loaded dates; no ?w (default) -> the default "Year to date".
+ {var _w=(new URLSearchParams(location.search)).get("w");
+  if(_w==="latest"&&sel){
+   sel.value="custom"; if(cust)cust.className="rfcustom on";
+   if(typeof DATA!=="undefined"&&DATA.period&&cfrom&&cto){var _p=String(DATA.period).split(" .. ");
+    if(_p.length===2){cfrom.value=_p[0];var _e=new Date(_p[1]+"T00:00:00Z");_e.setUTCDate(_e.getUTCDate()-1);cto.value=_e.toISOString().slice(0,10);}}
+  }else if(_w&&sel){for(var _i=0;_i<sel.options.length;_i++){if(sel.options[_i].value===_w){sel.value=_w;break;}}}}
  if(cfrom)cfrom.onchange=loadMacro; if(cto)cto.onchange=loadMacro;
  function poll(){
   if(pollStart&&(Date.now()-pollStart)>POLL_MAX_MS){stopPoll();btn.disabled=false;setMsg("Still working in the background — reload the page to check, or try again","err");return;}
   fetch("/api/promo/ws1/refresh-status",{credentials:"same-origin"}).then(function(r){if(!r.ok)throw r.status;return r.json();}).then(function(s){
    pollFails=0;
-   if(s.status==="COMPLETED"){stopPoll();setMsg("Updated — reloading…","ok");setTimeout(function(){location.reload();},900);return;}
+   if(s.status==="COMPLETED"){stopPoll();setMsg("Updated — loading…","ok");setTimeout(function(){location.replace("?w=latest");},900);return;} // custom Generate -> the 'latest' slot (report.live.json)
    if(s.status==="FAILED"){stopPoll();btn.disabled=false;setMsg("Generate failed — try later","err");return;}
    setMsg(s.progress?("Generating · "+s.progress):"Generating…","busy");
   }).catch(function(e){
