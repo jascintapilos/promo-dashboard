@@ -430,7 +430,7 @@ textarea.copybox{width:100%;min-height:140px;font-family:var(--mono);font-size:1
   resetForm();
   renderAll();
 
-  // data: stored in a "Leave Board" tab on the ops sheet, via the QC Hub server.
+  // data: stored on the QC Hub server (data/leave-board.local.json), via its /api/leave routes.
   // Every call is same-origin, so the session cookie + Origin header satisfy the
   // server's auth + CSRF guards. Each mutation returns the fresh entries array.
   async function api(path, opts){
