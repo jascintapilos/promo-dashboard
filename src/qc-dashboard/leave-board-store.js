@@ -18,8 +18,10 @@ function httpError(status, message) {
   return Object.assign(new Error(message), { status });
 }
 
-// Validate + normalize a submitted entry. Ported from the Offline Board's offlineClean_,
-// including the leading =/+/-/@ formula-injection guard (values are written USER_ENTERED).
+// Validate + normalize a submitted entry. Ported from the Offline Board's offlineClean_.
+// Rows are written RAW, so Sheets stores every value as typed: dates stay YYYY-MM-DD text
+// (USER_ENTERED would turn them into locale-formatted date cells) and a leading =/+/-/@
+// can never run as a formula, so no apostrophe guard is needed.
 function cleanInput(input = {}) {
   const name = String(input.name || '').replace(/\s+/g, ' ').trim().slice(0, 60);
   const type = String(input.type || '').trim().toUpperCase();
@@ -30,8 +32,7 @@ function cleanInput(input = {}) {
   if (!ALLOWED_TYPES.has(type)) throw httpError(400, 'type must be one of AL, MC, EL, HALF');
   if (!DATE_RE.test(start) || !DATE_RE.test(end)) throw httpError(400, 'start and end must be YYYY-MM-DD');
   if (end < start) throw httpError(400, 'end must be on or after start');
-  const guard = (s) => (/^[=+\-@]/.test(s) ? `'${s}` : s);
-  return { name: guard(name), type, start, end, note: guard(note) };
+  return { name, type, start, end, note };
 }
 
 function rowFromRecord(r) {
@@ -99,7 +100,7 @@ export async function addEntry(input, user = {}) {
   await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `'${TAB}'!A:H`,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowFromRecord(record)] },
   });
@@ -122,7 +123,7 @@ export async function updateEntry(id, input, user = {}) {
   await sheets.spreadsheets.values.update({
     spreadsheetId,
     range: `'${TAB}'!A${rowNo}:H${rowNo}`,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: 'RAW',
     requestBody: { values: [rowFromRecord(record)] },
   });
   return { entry: record };

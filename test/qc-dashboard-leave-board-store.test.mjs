@@ -22,10 +22,10 @@ test('cleanInput rejects bad input with 400', () => {
     (e) => e.status === 400 && /on or after/.test(e.message));
 });
 
-test('cleanInput guards formula injection and caps length', () => {
+test('cleanInput keeps text verbatim (written RAW) and caps length', () => {
   const c = _test.cleanInput({ name: '=CMD()', type: 'MC', start: '2026-09-01', end: '2026-09-02', note: '@x' });
-  assert.equal(c.name, "'=CMD()");
-  assert.equal(c.note, "'@x");
+  assert.equal(c.name, '=CMD()');
+  assert.equal(c.note, '@x');
   const long = _test.cleanInput({ name: 'n'.repeat(80), type: 'EL', start: '2026-09-01', end: '2026-09-01', note: 'z'.repeat(200) });
   assert.equal(long.name.length, 60);
   assert.equal(long.note.length, 80);

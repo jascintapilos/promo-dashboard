@@ -25,7 +25,7 @@ A team leave board on the **Leave** tab: "off today" glance, Mon–Sun week stri
 Ports `OfflineBoard.gs`, reusing the proven infra from the old `leave-store.js` (`loadGoogleapis`/`getGoogleAuth`, `getOpsSheetId`, `ensureTab`, JSONL fallback).
 - **Tab:** `Leave Board` on the ops sheet (`getOpsSheetId()`, or `LEAVE_SHEET_ID` env for test runs). Auto-creates on first write. No new secret/provisioning.
 - **Schema (cols A–H):** `id, name, type, start, end, note, createdAt, updatedAt`.
-- **Validation (server-side, ported from `offlineClean_`):** name required (≤60), type ∈ set, dates `YYYY-MM-DD`, `end >= start`, note ≤80, and the leading-`=+-@` formula-injection guard.
+- **Validation (server-side, ported from `offlineClean_`):** name required (≤60), type ∈ set, dates `YYYY-MM-DD`, `end >= start`, note ≤80. Rows are written `RAW`, so dates stay `YYYY-MM-DD` text and a leading `=+-@` is stored as plain text, never run as a formula.
 - **Exports:** `listEntries()`, `addEntry(input, user)`, `updateEntry(id, input, user)`, `deleteEntry(id)`, `_test` (for unit tests). `name` free-text (prefilled with the caller's name) so you can log a teammate's leave — matches the Offline Board.
 
 ## 4. Server — endpoints in `bin/qc-dashboard.mjs` (inside `handleApi`, after the CSRF guard `:332`)
