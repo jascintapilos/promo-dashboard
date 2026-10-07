@@ -23,7 +23,7 @@ const LOOPBACK_PORT = 8765;
 const LOOPBACK_URI  = `http://127.0.0.1:${LOOPBACK_PORT}/`;
 
 // Run the interactive flow. Returns the path to the saved token file.
-export async function runOAuthFlow({ openUrl } = {}) {
+export async function runOAuthFlow({ openUrl, scopes = SCOPES, tokenPath = OAUTH_TOKEN_PATH } = {}) {
   const cfg = await readClientSecret();
   const { google } = await loadGoogleapis();
   // Force the loopback URI we'll listen on, even if the client_secret.json
@@ -32,7 +32,7 @@ export async function runOAuthFlow({ openUrl } = {}) {
   const authUrl = oauth2.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',  // always re-issue refresh_token (no-op if already granted)
-    scope: SCOPES,
+    scope: scopes,
   });
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('OAUTH ONE-TIME CONSENT');
@@ -58,10 +58,10 @@ export async function runOAuthFlow({ openUrl } = {}) {
     );
   }
 
-  await writeFile(OAUTH_TOKEN_PATH, JSON.stringify(tokens, null, 2), 'utf8');
-  console.log(`✓ Tokens saved to ${OAUTH_TOKEN_PATH}`);
+  await writeFile(tokenPath, JSON.stringify(tokens, null, 2), 'utf8');
+  console.log(`✓ Tokens saved to ${tokenPath}`);
   console.log('  This file is gitignored — never commit it.');
-  return OAUTH_TOKEN_PATH;
+  return tokenPath;
 }
 
 function listenForCode(port) {

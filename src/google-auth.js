@@ -26,6 +26,10 @@ import path from 'node:path';
 export const SA_CRED_PATH       = path.resolve('google-credentials.local.json');
 export const OAUTH_CLIENT_PATH  = path.resolve('google-oauth-client.local.json');
 export const OAUTH_TOKEN_PATH   = path.resolve('google-oauth-token.local.json');
+// Gmail-only token (gmail.readonly) for the FastTrack OTP reader — keeps the main
+// token narrow. Created by: node bin/gmail-oauth.mjs
+export const GMAIL_TOKEN_PATH   = path.resolve('google-oauth-gmail-token.local.json');
+export const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 
 export const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
@@ -128,4 +132,18 @@ function noAuthMessage() {
     `      2. Run: node bin/sheets-oauth.mjs    (one-time interactive consent)\n` +
     `  See docs/SHEETS-API-SETUP.md for the full walkthrough.`
   );
+}
+
+// Gmail client for the OTP reader: the dedicated Gmail-only token when present,
+// otherwise the main login (which then needs gmail.readonly itself).
+export async function getGmailAuth() {
+  if (existsSync(OAUTH_CLIENT_PATH) && existsSync(GMAIL_TOKEN_PATH)) {
+    const { google } = await loadGoogleapis();
+    const clientCfg = await readClientSecret(OAUTH_CLIENT_PATH);
+    const token = JSON.parse(await readFile(GMAIL_TOKEN_PATH, 'utf8'));
+    const oauth2 = new google.auth.OAuth2(clientCfg.client_id, clientCfg.client_secret, clientCfg.redirect_uri);
+    oauth2.setCredentials(token);
+    return { client: oauth2, mode: 'oauth-gmail' };
+  }
+  return getGoogleAuth();
 }

@@ -4,10 +4,11 @@
 // timestamp and contains a 6-digit code. Used by capture-ft-session.mjs so
 // the FT login can complete headlessly without human OTP entry.
 //
-// Requires the OAuth token to include gmail.readonly scope.
+// Uses the Gmail-only token from `node bin/gmail-oauth.mjs` when present, else
+// the main OAuth token (which then needs gmail.readonly).
 // Enable Gmail API in GCP: https://console.cloud.google.com/apis/library/gmail.googleapis.com
 
-import { getGoogleAuth, loadGoogleapis } from './google-auth.js';
+import { getGmailAuth, loadGoogleapis } from './google-auth.js';
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
@@ -25,7 +26,7 @@ const OTP_DROP_FILE = path.resolve('tmp/ft-otp-drop.txt');
  * @returns {Promise<string>}      - The 6-digit code
  */
 export async function waitForFtOtp({ afterMs = Date.now(), timeoutMs = 120_000 } = {}) {
-  const { client } = await getGoogleAuth();
+  const { client } = await getGmailAuth();
   const { google } = await loadGoogleapis();
   const gmail = google.gmail({ version: 'v1', auth: client });
 
