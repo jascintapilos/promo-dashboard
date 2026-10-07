@@ -62,3 +62,5 @@ data/promo/*/report.*.live.json.tmp-*
 # Store A — the nightly money rollup for the instant Brands-overview; shipped via the relay, rebuilt nightly
 data/promo/*/store_a.json
 data/promo/*/store_a.json.tmp-*
+# Ops Dashboard data — Ops sheet tabs pushed by the VDI nightly runner over the relay
+data/ops/

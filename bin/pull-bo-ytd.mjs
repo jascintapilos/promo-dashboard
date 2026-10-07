@@ -122,6 +122,7 @@ function toRow(r, brand) {
 
 const collected = [];
 const errors = [];
+const failedBrands = new Set(); // brands whose BO pull failed — their sheet rows are carried forward
 const creatorTally = {};
 
 console.log(`\nYTD backfill — team promos created since ${FROM}  (${WRITE ? 'WRITE' : 'DRY RUN'})\n`);
@@ -142,6 +143,7 @@ for (const { brand, siteId } of QPRO_BRANDS) {
     process.stdout.write(`→ ${all.length} total · ${kept} team YTD\n`);
   } catch (err) {
     errors.push(`${brand}: ${err.message}`);
+    failedBrands.add(brand);
     process.stdout.write(`→ ERROR ${err.message.slice(0, 60)}\n`);
   }
 }
@@ -165,6 +167,7 @@ try {
   process.stdout.write(`→ ${seen.size} team YTD (unique codes)\n`);
 } catch (err) {
   errors.push(`QP2: ${err.message}`);
+  for (const { brand } of QP2_MERCHANTS) failedBrands.add(brand);
   process.stdout.write(`→ ERROR ${err.message.slice(0, 60)}\n`);
 }
 
@@ -246,10 +249,13 @@ if (!SKIP_IGMP) {
 }
 
 // ── Carry-forward safeguard ──
-// The write REPLACES Promo Code Log. WS1/WS2 can fail independently (stale
-// IGMP session) — if it did (or was skipped), preserve the WS1/WS2 rows already
-// in the sheet so a bad-session run doesn't wipe them. QPRO/QP2 always refresh.
-if (SKIP_IGMP || !igmpAnySuccess) {
+// The write REPLACES Promo Code Log, so any platform that failed this run must
+// keep the rows already in the sheet — otherwise one expired session wipes that
+// platform's codes (2026-10-07: a QP2 "Session Expired" dropped all 1,135 QP2
+// rows). Covers WS1/WS2 (stale/skipped IGMP) and any failed QPRO brand or QP2.
+const carryBrands = new Set(failedBrands);
+if (SKIP_IGMP || !igmpAnySuccess) IGMP_BRANDS.forEach((b) => carryBrands.add(b));
+if (carryBrands.size) {
   try {
     const { sheets } = await getSheetsClient();
     const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `'${PROMO_TAB}'!A:G` });
@@ -259,7 +265,7 @@ if (SKIP_IGMP || !igmpAnySuccess) {
     const [cd, cc, cb, cr, ce, ct, cs] = ['date','code','brand','region','created by','type','status'].map(ci);
     let carried = 0;
     for (const r of rows.slice(1)) {
-      if (!IGMP_BRANDS.includes((r[cb] || '').trim())) continue;
+      if (!carryBrands.has((r[cb] || '').trim())) continue;
       collected.push({
         date: r[cd] || '', code: r[cc] || '', brand: (r[cb] || '').trim(), region: r[cr] || '',
         createdBy: r[ce] || '', type: r[ct] || '', status: 'Carried', _createdAt: '',
@@ -268,7 +274,7 @@ if (SKIP_IGMP || !igmpAnySuccess) {
     }
     if (carried) {
       const today = new Date().toISOString().slice(0, 10);
-      console.warn(`  ⚠️  Carried forward ${carried} existing WS1/WS2 rows — IGMP ${SKIP_IGMP ? 'skipped' : 'unavailable'} (${today}). Status set to "Carried".`);
+      console.warn(`  ⚠️  Carried forward ${carried} existing rows for ${[...carryBrands].join(', ')} — pull failed or skipped (${today}). Status set to "Carried".`);
     }
   } catch { /* sheet may be empty/new — nothing to carry */ }
 }
@@ -304,3 +310,7 @@ if (WRITE && finalRows.length) {
 } else if (!WRITE) {
   console.log(`\n(DRY RUN — nothing written. Re-run with --write to rewrite '${PROMO_TAB}' with ${finalRows.length} rows.)`);
 }
+
+// Non-zero exit when any platform failed, so the nightly runner marks this step
+// FAILED (the sheet still gets the carried-forward rows above).
+if (errors.length || (!SKIP_IGMP && !igmpAnySuccess)) process.exitCode = 2;

@@ -27,6 +27,8 @@ import { relayJobStore, safeJobForClient, JOB_STATUS } from '../src/qc-dashboard
 import { promoRefreshStore } from '../src/qc-dashboard/promo-refresh-store.js';
 import { sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
 import { readStatus as readRelayStatus, rotateSecret as rotateRelaySecret, registerRotationInvalidation } from '../src/qc-dashboard/relay-secret-store.js';
+import { OPS_DATASETS, opsDataDir, validateOpsPush, applyOpsPush, readOpsData } from '../src/qc-dashboard/ops-store.js';
+import { gzipSync, gunzipSync } from 'node:zlib';
 
 // BO Relay: the secret is read on demand each request. The admin can rotate
 // via POST /api/admin/relay-secret/rotate without restarting the server —
@@ -293,6 +295,18 @@ async function checkPlaywrightReadiness() {
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
+  // Ops Dashboard data — the server copy of the Ops sheet tabs, pushed by the VDI
+  // over the relay. ~2.6MB raw, so gzip it for clients that accept it.
+  if (req.method === 'GET' && url.pathname === '/api/ops/data') {
+    const body = Buffer.from(JSON.stringify(readOpsData(opsDataDir(ROOT))), 'utf8');
+    const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+    if (/\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) {
+      res.writeHead(200, { ...headers, 'content-encoding': 'gzip', vary: 'accept-encoding' });
+      return res.end(gzipSync(body));
+    }
+    res.writeHead(200, headers);
+    return res.end(body);
+  }
   if (req.method === 'GET' && url.pathname === '/api/admin/users') {
     if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
     return send(res, 200, { users: loadAdmittedUsers() });
@@ -786,9 +800,10 @@ async function handleRelayApi(req, res, url) {
   const isPromoIngest = req.method === 'POST' && /^\/api\/relay\/promo\/[a-z0-9-]{1,40}\/players$/.test(url.pathname);
   const isReportBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/report-build';
   const isStoreBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/store-build';
+  const opsPush = req.method === 'POST' ? url.pathname.match(/^\/api\/relay\/ops\/dataset\/([A-Za-z]{1,40})$/) : null;
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild || opsPush) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -804,6 +819,22 @@ async function handleRelayApi(req, res, url) {
     return send(res, verify.status || 401, { error: 'unauthorized' });
   }
   const workerId = String(req.headers['x-relay-worker'] || 'unknown').slice(0, 64);
+
+  // POST /api/relay/ops/dataset/<key> — one Ops sheet tab from the VDI nightly runner
+  // (gzip JSON). ok:false records a failed pull without touching the last good rows.
+  if (opsPush) {
+    const key = opsPush[1];
+    if (!Object.hasOwn(OPS_DATASETS, key)) return send(res, 400, { error: 'unknown dataset' });
+    let body;
+    try { body = JSON.parse(gunzipSync(rawBody, { maxOutputLength: 64 * 1024 * 1024 }).toString('utf8')); }
+    catch { return send(res, 400, { error: 'body is not valid gzip/JSON' }); }
+    try {
+      const status = applyOpsPush(opsDataDir(ROOT), validateOpsPush(key, body));
+      return send(res, 200, { ok: true, key, status });
+    } catch (e) {
+      return send(res, e.status && e.status < 500 ? e.status : 500, { error: e.status && e.status < 500 ? e.message : 'store failed' });
+    }
+  }
 
   // POST /api/relay/promo/<project>/players — bulk player-data push from the build
   // VDI. Writes the gzipped bundle into the gitignored (deploy-surviving) players
