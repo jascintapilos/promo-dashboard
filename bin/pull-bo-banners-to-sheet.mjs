@@ -50,7 +50,10 @@ function regionFromImages(images) {
 // ── Date window ──────────────────────────────────────────────────────────
 function ymd(d) { return d.toISOString().slice(0, 10); }
 const today   = new Date();
-const defFrom = new Date(today.getTime() - 6 * 864e5);
+// 60-day look-back: rows are de-duplicated against the log and every banner is
+// fetched anyway, so a wide window is free — and a pull outage longer than the
+// window no longer loses banners for good (Sep 2026: 6 days → 55 banners missed).
+const defFrom = new Date(today.getTime() - 60 * 864e5);
 const FROM    = String(flags.from || ymd(defFrom));
 const TO      = String(flags.to   || ymd(today));
 const FROM_MS = new Date(FROM + 'T00:00:00Z').getTime();

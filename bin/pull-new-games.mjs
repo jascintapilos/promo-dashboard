@@ -53,7 +53,9 @@ const srcRows = src.data.values || [];
 const hdr = srcRows[0] || [];
 const ci = (name) => hdr.findIndex((c) => String(c).trim().toLowerCase() === name.toLowerCase());
 
-const iDate = ci('Date'), iRegion = ci('Region'), iWallet = ci('Wallet');
+// Date is column A by layout. Its header has been blanked in the source before
+// (A1 = ' ' in Oct 2026), which made every game land with no date — fall back to A.
+const iDate = ci('Date') >= 0 ? ci('Date') : 0, iRegion = ci('Region'), iWallet = ci('Wallet');
 const iCat  = ci('Category'), iProv = ci('Provider'), iName = ci('Name'), iStatus = 10; // col K
 
 const games = [];

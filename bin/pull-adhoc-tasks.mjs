@@ -18,7 +18,7 @@
  * Pass --commit to write to the sheet.
  *
  * Usage:
- *   node bin/pull-adhoc-tasks.mjs                # 10-day lookback, dry run
+ *   node bin/pull-adhoc-tasks.mjs                # 45-day lookback, dry run
  *   node bin/pull-adhoc-tasks.mjs --days=14      # wider window
  *   node bin/pull-adhoc-tasks.mjs --commit       # write to sheet after review
  */
@@ -33,7 +33,9 @@ import { parseArgs } from './_args.js';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const COMMIT  = flags.commit === true;
-const DAYS    = Math.max(1, parseInt(flags.days || '10'));
+// 45-day default: rows are de-duplicated against the tab, so a wide look-back is
+// safe and survives pull outages (Sep 2026: 10 days → 11-26 Sep never collected).
+const DAYS    = Math.max(1, parseInt(flags.days || '45'));
 
 // ── Slack auth ────────────────────────────────────────────────────────────────
 let SLACK_TOKEN = process.env.SLACK_TOKEN;
