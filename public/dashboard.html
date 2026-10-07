@@ -572,33 +572,6 @@
   <div id="content" style="display:none;">
     <div id="view-ops">
 
-    <!-- 0. COMMAND BRIEF: Read This First / Suggested Actions -->
-    <div class="brief-row" id="brief-row">
-      <div class="card brief-card">
-        <div class="card-title">Read this first</div>
-        <div class="card-hint">Auto-computed from today's data</div>
-        <ul class="brief-list" id="brief-read"></ul>
-      </div>
-      <div class="card brief-card">
-        <div class="card-title">Suggested actions</div>
-        <div class="card-hint">Jump to the relevant tab</div>
-        <ul class="action-list" id="brief-actions">
-          <li><button class="action-item action-primary" onclick="switchView('hk')"><span><i class="ti ti-alert-triangle"></i> Review banner expiries</span><span class="action-chev">Housekeeping →</span></button></li>
-          <li><button class="action-item" onclick="switchView('util')"><span><i class="ti ti-users"></i> Check utilization outliers</span><span class="action-chev">Utilization →</span></button></li>
-          <li><button class="action-item" onclick="switchView('sop')"><span><i class="ti ti-book"></i> Open SOP index</span><span class="action-chev">SOP →</span></button></li>
-          <li><button class="action-item" onclick="switchView('at')"><span><i class="ti ti-robot"></i> See automation roadmap</span><span class="action-chev">Automation →</span></button></li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- 1. EXECUTIVE SUMMARY -->
-    <div class="exec-card" id="exec-card">
-      <div class="exec-badge"><i class="ti ti-chart-pie"></i>This period at a glance</div>
-      <div class="exec-text" id="exec-text"></div>
-      <div class="exec-mix" id="exec-mix"></div>
-      <div class="exec-range" id="exec-range"></div>
-    </div>
-
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
     <div class="kpis" id="kpis"></div>
@@ -687,6 +660,7 @@
             <select id="pf-b"><option value="all">All brands</option></select>
             <select id="pf-r"><option value="all">All regions</option></select>
             <select id="pf-t"><option value="all">All types</option></select>
+            <select id="pf-tm"><option value="all">All teams</option></select>
           </div>
           <table id="p-tbl" style="table-layout:fixed;"><thead id="p-th"></thead><tbody id="pt"></tbody></table>
           <button class="more" id="pm"></button>
@@ -1383,64 +1357,6 @@ function updateLastRefreshPill(){
 }
 setInterval(updateLastRefreshPill, 30000);
 
-function renderCommandBrief(totalRows, brandsSet, teamUtil, bannerRows){
-  const ul=document.getElementById('brief-read');
-  if(!ul) return;
-  ul.replaceChildren();
-
-  const items=[];
-
-  // 1. Team utilization
-  if(!isNaN(teamUtil)){
-    const state = teamUtil>=90 ? 'attention — near or over capacity' : teamUtil<60 ? 'under target — capacity available' : 'healthy';
-    items.push({label:'Team utilization', value:`${teamUtil.toFixed(0)}%`, hint:state});
-  } else {
-    items.push({label:'Team utilization', value:'—', hint:'no data this period'});
-  }
-
-  // 2. Banner health
-  const expiredCount=(bannerRows||[]).filter(b=>{
-    const s=String(b.Status||b.status||'').toLowerCase();
-    return s.includes('expired')||s.includes('missing');
-  }).length;
-  const expiringCount=(bannerRows||[]).filter(b=>{
-    const s=String(b.Status||b.status||'').toLowerCase();
-    return s.includes('expiring');
-  }).length;
-  if(expiredCount||expiringCount){
-    const parts=[];
-    if(expiredCount) parts.push(`${expiredCount} expired/missing`);
-    if(expiringCount) parts.push(`${expiringCount} expiring soon`);
-    items.push({label:'Banner health', value:parts.join(' · '), hint:'needs housekeeping'});
-  } else {
-    items.push({label:'Banner health', value:'all healthy', hint:'no issues detected'});
-  }
-
-  // 3. Promo workload
-  if(totalRows && totalRows.length){
-    items.push({label:'Promo code tasks this week', value:`${totalRows.length}`, hint:`across ${brandsSet.size} brand${brandsSet.size===1?'':'s'}`});
-  } else {
-    items.push({label:'Promo code tasks this week', value:'—', hint:'not available yet'});
-  }
-
-  for(const it of items){
-    const li=document.createElement('li');
-    const strong=document.createElement('strong');
-    strong.textContent=it.value;
-    li.appendChild(strong);
-    li.appendChild(document.createTextNode(' · '));
-    li.appendChild(document.createTextNode(it.label));
-    if(it.hint){
-      const em=document.createElement('span');
-      em.style.color='var(--ink3)';
-      em.style.marginLeft='6px';
-      em.textContent=`(${it.hint})`;
-      li.appendChild(em);
-    }
-    ul.appendChild(li);
-  }
-}
-
 /* ── DATE HELPERS (no ICU/Intl — safe in VDI/sandbox) ── */
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const _TZ='Asia/Kuala_Lumpur';
@@ -1593,13 +1509,10 @@ function render(data,_skipStore){
   document.getElementById('refresh-ts').textContent=`${tStr} · ${dStr}`;
   updateLastRefreshPill();
 
-  renderCommandBrief(total, brandsSet, teamUtil, (_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
-  renderExecSummary(total, brandsSet, regionsSet, platsSet, teamUtil);
   renderKpis(total, brandsSet, regionsSet, platsSet, teamUtil, tStr, dStr);
   renderDataSources(_fullData||data);
   renderPullHealth((_fullData&&_fullData.sysStatus)||data.sysStatus||[]);
   renderBannerHealth((_fullData&&_fullData.bannerHealth)||data.bannerHealth||[]);
-  renderWorkloadMix(total);
   renderTopBrands(total);
   renderRegionalDonut(regionList, total);
   renderCapacity();
@@ -1625,53 +1538,6 @@ function openRecordSection(id){
   setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),50);
 }
 
-/* ── AUTOMATION START DATE ── */
-function firstBotDate(){
-  const allP=(_fullData&&_fullData.promos)||[];
-  const botRows=allP.filter(p=>String(p['Created By']||'').toLowerCase().trim()==='promo_testbot');
-  if(!botRows.length) return null;
-  const dates=botRows.map(p=>{
-    const[dd,mm,yyyy]=String(p['Date']||'').split('/').map(Number);
-    return new Date(yyyy,mm-1,dd);
-  }).filter(d=>!isNaN(d.getTime()));
-  if(!dates.length) return null;
-  const earliest=new Date(Math.min(...dates.map(d=>d.getTime())));
-  return earliest.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-}
-
-/* ── EXECUTIVE SUMMARY ── */
-function renderExecSummary(total, brands, regions, platforms, teamUtil){
-  if(total===0){
-    document.getElementById('exec-text').innerHTML='No deliverables found for this period.';
-    document.getElementById('exec-range').textContent=rangeNote();
-    return;
-  }
-
-  const dominant=Object.entries({
-    'CRM':DELIV.filter(d=>d.type==='CRM').length,
-    'Banner Upload':DELIV.filter(d=>d.type==='Banner').length,
-    'Promo Code':DELIV.filter(d=>d.type==='Promo Code').length,
-    'Game Addition':DELIV.filter(d=>d.type==='Game').length,
-    'Adhoc Task':DELIV.filter(d=>d.type==='Adhoc').length,
-  }).sort((a,b)=>b[1]-a[1])[0];
-  const topBrand=Object.entries(countBy(DELIV.filter(d=>d.brand&&d.brand!=='ALLBRANDS'),d=>d.brand)).sort((a,b)=>b[1]-a[1])[0];
-  const botCount=DELIV.filter(d=>{
-    const cb=String(d.raw['Created By']||d.raw['created_by']||'').toLowerCase().trim();
-    return cb==='promo_testbot';
-  }).length;
-  const botPct=total>0?Math.round(botCount/total*100):0;
-
-  let text=`The team handled <strong>${total} deliverables</strong> across <strong>${brands.length} brand${brands.length!==1?'s':''}</strong> and <strong>${regions.length} region${regions.length!==1?'s':''}</strong>`;
-  if(dominant&&dominant[1]>0&&total>0) text+=`. <strong>${dominant[0]}</strong> led workload at <strong>${Math.round(dominant[1]/total*100)}%</strong>`;
-  if(topBrand) text+=`, with <strong>${topBrand[0]}</strong> as the top brand (<strong>${topBrand[1]}</strong> item${topBrand[1]!==1?'s':''})`;
-  if(!isNaN(teamUtil)) text+=`. Team utilisation is at <strong>${teamUtil.toFixed(0)}%</strong>`;
-  if(botCount>0){const bStart=firstBotDate();text+=`. <strong>${botPct}%</strong> of deliverables automated${bStart?` (since ${bStart})`:''}`;}
-  text+='.';
-
-  document.getElementById('exec-text').innerHTML=text;
-  document.getElementById('exec-range').textContent=rangeNote()==='all time'?'All-time data':'Period: '+rangeNote();
-}
-
 /* ── KPI CARDS ── */
 function renderKpis(total, brands, regions, platforms, teamUtil, tStr, dStr){
   const kpiDefs=[
@@ -1691,28 +1557,6 @@ function renderKpis(total, brands, regions, platforms, teamUtil, tStr, dStr){
       <div class="note">${k.note}</div>
     </div>`
   ).join('');
-}
-
-/* ── WORKLOAD MIX (inside exec card) ── */
-function renderWorkloadMix(total){
-  const recIds={'CRM':'rec-crm','Banner':'rec-banner','Promo Code':'rec-promo','Game':'rec-game','Adhoc':'rec-adhoc'};
-  const types=[
-    {key:'CRM',label:'CRM Assignments',icon:'ti-send'},
-    {key:'Banner',label:'Banner Uploads',icon:'ti-photo'},
-    {key:'Promo Code',label:'Promo Codes',icon:'ti-ticket'},
-    {key:'Game',label:'Game Additions',icon:'ti-device-gamepad-2'},
-    {key:'Adhoc',label:'Adhoc Tasks',icon:'ti-checkbox'},
-  ].map(t=>({...t,count:DELIV.filter(d=>d.type===t.key).length}));
-  document.getElementById('exec-mix').innerHTML=types.map(t=>{
-    const pct=total>0?Math.round(t.count/total*100):0;
-    const rid=recIds[t.key];
-    return `<div class="exec-mix-item" onclick="openRecordSection('${rid}')" role="button" tabindex="0" title="Jump to ${t.label}">
-      <div class="exec-mix-icon"><i class="ti ${t.icon}"></i></div>
-      <div class="exec-mix-val">${t.count}</div>
-      <div class="exec-mix-label">${t.label}</div>
-      <div class="exec-mix-pct">${pct}%</div>
-    </div>`;
-  }).join('');
 }
 
 /* ── TOP BRANDS ── */
@@ -2695,12 +2539,14 @@ function renderRecords(){
   renderBanner();
 
   // Promo filters
-  const pfb=document.getElementById('pf-b'),pfr=document.getElementById('pf-r'),pft=document.getElementById('pf-t');
+  const pfb=document.getElementById('pf-b'),pfr=document.getElementById('pf-r'),pft=document.getElementById('pf-t'),pftm=document.getElementById('pf-tm');
+  p.forEach(x=>{x.Team=promoTeam(x.Code);});
   pfb.innerHTML='<option value="all">All brands</option>'+uniq(p.map(x=>x.Brand).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   pfr.innerHTML='<option value="all">All regions</option>'+uniq(p.map(x=>x.Region).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   pft.innerHTML='<option value="all">All types</option>'+uniq(p.map(x=>x.Type).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('');
   document.getElementById('pf-q').oninput=()=>{pShowAll=false;renderPromo();};
-  pfb.onchange=pfr.onchange=pft.onchange=()=>{pShowAll=false;renderPromo();};
+  pftm.innerHTML='<option value="all">All teams</option>'+uniq(p.map(x=>x.Team).filter(Boolean)).map(x=>`<option value="${x}">${x}</option>`).join('')+'<option value="none">No team in code</option>';
+  pfb.onchange=pfr.onchange=pft.onchange=pftm.onchange=()=>{pShowAll=false;renderPromo();};
   document.getElementById('pm').onclick=()=>{pShowAll=!pShowAll;renderPromo();};
   renderPromo();
 
@@ -2750,24 +2596,39 @@ function renderBanner(){
   const m=document.getElementById('bm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
+// Owning team = the TEAM segment of [FT_]PILLAR_TEAM_OBJECTIVE_… codes; older
+// codes that lead with the team (VM_…, TSM_…) are read the same way.
+const PROMO_TEAMS=new Set(['CRM','VM','TSM','AM','AFF','CSE']);
+const PROMO_PILLARS=new Set(['ACQ','RET','VIP','WHALE','WHA','BRA']);
+function promoTeam(code){
+  let t=String(code||'').toUpperCase().split(/[_-]/);
+  if(t[0]==='FT'||t[0]==='TEST')t=t.slice(1);
+  if(PROMO_PILLARS.has(t[0])&&PROMO_TEAMS.has(t[1]))return t[1];
+  if(PROMO_TEAMS.has(t[0]))return t[0];
+  return t.slice(0,4).find(x=>PROMO_TEAMS.has(x))||'';
+}
+
 function renderPromo(){
   let rows=rawData.promos||[];
   const fq=(document.getElementById('pf-q').value||'').toLowerCase();
-  const fb=document.getElementById('pf-b').value,fr=document.getElementById('pf-r').value,ft=document.getElementById('pf-t').value;
+  const fb=document.getElementById('pf-b').value,fr=document.getElementById('pf-r').value,ft=document.getElementById('pf-t').value,ftm=document.getElementById('pf-tm').value;
   if(fq)rows=rows.filter(r=>String(r.Code||'').toLowerCase().includes(fq));
+  if(ftm==='none')rows=rows.filter(r=>!r.Team);
+  else if(ftm!=='all')rows=rows.filter(r=>r.Team===ftm);
   if(fb!=='all')rows=rows.filter(r=>r.Brand===fb);
   if(fr!=='all')rows=rows.filter(r=>r.Region===fr);
   if(ft!=='all')rows=rows.filter(r=>r.Type===ft);
   rows=applySort(rows,pSort);
   const shown=pShowAll?rows:rows.slice(0,PAGE);
   document.getElementById('p-th').innerHTML='<tr>'
-    +thHtml('Date','Date',pSort,'sortPromo','12%')
-    +thHtml('Code','Code',pSort,'sortPromo','32%')
+    +thHtml('Date','Date',pSort,'sortPromo','11%')
+    +thHtml('Code','Code',pSort,'sortPromo','31%')
+    +thHtml('Team','Team',pSort,'sortPromo','9%')
     +thHtml('Brand','Brand',pSort,'sortPromo','11%')
-    +thHtml('Region','Region',pSort,'sortPromo','13%')
-    +thHtml('Type','Type',pSort,'sortPromo','32%',true)+'</tr>';
+    +thHtml('Region','Region',pSort,'sortPromo','12%')
+    +thHtml('Type','Type',pSort,'sortPromo','26%',true)+'</tr>';
   document.getElementById('pt').innerHTML=shown.map(r=>
-    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
+    `<tr><td>${r.Date||''}</td><td class="mono">${r.Code||''}</td><td>${r.Team||'<span style="color:var(--ink3);">—</span>'}</td><td>${r.Brand||''}</td><td>${r.Region||''}</td><td style="text-align:right;color:var(--ink2);">${r.Type||''}</td></tr>`).join('');
   const m=document.getElementById('pm');m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=pShowAll?'Show fewer':`Show all ${rows.length}`;
 }
 
