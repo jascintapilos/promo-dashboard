@@ -12,14 +12,19 @@
 // Exit 0 when every push succeeded; 1 otherwise (message, never the secret).
 
 import { gzipSync } from 'node:zlib';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readWorkerRelaySecret, buildSignedHeaders, MAX_REPORT_BUILD_BYTES } from '../src/qc-dashboard/relay-auth.js';
+import { readWorkerRelaySecret, sign } from '../src/qc-dashboard/relay-auth.js';
 import { OPS_DATASETS } from '../src/qc-dashboard/ops-store.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 
 const HUB = (process.env.QC_HUB_URL || 'https://qc-dashboard.zoom66.xyz').replace(/\/+$/, '');
 const WORKER_ID = process.env.QC_RELAY_WORKER_ID || `ops-push-${process.pid}`;
+// Server-side cap for this route is 8MB (MAX_REPORT_BUILD_BYTES). Headers are
+// built here with sign() rather than buildSignedHeaders(), whose size guard is
+// 64KB on older checkouts of relay-auth.js (the VDI runtime copy).
+const MAX_PUSH_BYTES = 8 * 1024 * 1024;
 
 // Rows exactly as the page used to get them from values:batchGet (formatted
 // strings, A:Z). Returns { headers, rows } with rows padded/stringified.
@@ -34,11 +39,17 @@ async function readTab(sheets, spreadsheetId, tab) {
 async function postSigned(key, payload, secret) {
   const relPath = `/api/relay/ops/dataset/${key}`;
   const gz = gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
-  const { headers, bodyBuffer } = buildSignedHeaders({
-    method: 'POST', path: relPath, bodyBuffer: gz, secret, workerId: WORKER_ID, maxBytes: MAX_REPORT_BUILD_BYTES,
-  });
-  headers['content-type'] = 'application/gzip';
-  const resp = await fetch(`${HUB}${relPath}`, { method: 'POST', headers, body: bodyBuffer });
+  if (gz.length > MAX_PUSH_BYTES) throw new Error(`${key} too large (${(gz.length / 1048576).toFixed(1)}MB gzip)`);
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const headers = {
+    'content-type': 'application/gzip',
+    'x-relay-timestamp': String(timestamp),
+    'x-relay-nonce': nonce,
+    'x-relay-signature': sign({ secret, method: 'POST', path: relPath, timestamp, nonce, bodyBuffer: gz }),
+    'x-relay-worker': WORKER_ID.slice(0, 64),
+  };
+  const resp = await fetch(`${HUB}${relPath}`, { method: 'POST', headers, body: gz });
   const text = await resp.text();
   if (!resp.ok) throw new Error(`server rejected ${key} (${resp.status}): ${text.slice(0, 200)}`);
   return { key, bytes: gz.length, response: JSON.parse(text) };
@@ -75,7 +86,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const args = process.argv.slice(2);
   const failedArg = args.find((a) => a.startsWith('--failed'));
   const keys = args.includes('--all') ? Object.keys(OPS_DATASETS) : args.filter((a) => !a.startsWith('--'));
-  if (!keys.length) { console.error('usage: node bin/push-ops-dataset.mjs <key…> | --all [--failed="detail"]'); process.exit(2); }
-  const results = await pushOpsDatasets(keys, failedArg ? { ok: false, detail: failedArg.split('=').slice(1).join('=') } : {});
-  process.exit(results.every((r) => r.ok) ? 0 : 1);
+  // process.exitCode, not process.exit(): exiting with fetch sockets still open
+  // trips a libuv assert on Windows (exit 127).
+  if (!keys.length) { console.error('usage: node bin/push-ops-dataset.mjs <key…> | --all [--failed="detail"]'); process.exitCode = 2; }
+  else {
+    const results = await pushOpsDatasets(keys, failedArg ? { ok: false, detail: failedArg.split('=').slice(1).join('=') } : {});
+    process.exitCode = results.every((r) => r.ok) ? 0 : 1;
+  }
 }
