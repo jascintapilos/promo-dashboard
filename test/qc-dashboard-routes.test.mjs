@@ -206,7 +206,7 @@ test('root / renders QC Hub SPA shell', async () => {
   const r = await fetchNoRedirect('/');
   assert.equal(r.status, 200);
   const body = await r.text();
-  assert.match(body, /Promo QC Hub/);
+  assert.match(body, /id="loginOverlay"/);
 });
 
 test('unknown non-API path → falls through to SPA index (no leak)', async () => {
@@ -214,7 +214,7 @@ test('unknown non-API path → falls through to SPA index (no leak)', async () =
   assert.equal(r.status, 200);
   const body = await r.text();
   // Should be the SPA shell (falls through to catch-all at end of handle())
-  assert.match(body, /Promo QC Hub/);
+  assert.match(body, /id="loginOverlay"/);
 });
 
 // ── Runner ────────────────────────────────────────────────────────────────

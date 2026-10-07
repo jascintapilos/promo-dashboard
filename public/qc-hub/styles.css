@@ -40,8 +40,12 @@
 
 .login-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.6);
+  /* Opaque so the signed-out page reveals nothing about the app behind it. */
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, var(--accent-soft), transparent 70%),
+    var(--bg);
   display: flex; align-items: center; justify-content: center;
+  padding: 16px;
   z-index: 200;
 }
 .login-overlay.hidden { display: none; }
@@ -49,9 +53,29 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  border-top: 3px solid var(--accent);
+  box-shadow: var(--elev-2);
   padding: 32px 28px;
   text-align: center;
   min-width: 300px;
+  max-width: 100%;
+}
+.login-box #googleBtn { display: flex; justify-content: center; }
+.login-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.login-help {
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12px;
+  color: var(--muted);
 }
 .login-error { margin-top: 12px; font-size: 12px; color: var(--danger); }
 .login-error.hidden { display: none; }

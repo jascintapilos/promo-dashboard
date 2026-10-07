@@ -1552,6 +1552,7 @@ async function init() {
   setWorkflowStep('setup');
   renderEmptyStates();
   await ensureLogin();
+  document.title = 'Promo QC Hub';
   syncSettingsAccess();
   const returnTo = new URLSearchParams(location.search).get('return');
   if (ALLOWED_RETURN_PATHS.has(returnTo)) {
