@@ -148,8 +148,7 @@ function brandSwitcher(root, current, user) {
       ? `<span style="${base};background:var(--accent);color:#fff;border-color:var(--accent)">${escapeHtml(name)}</span>`
       : `<a href="/promo/${encodeURIComponent(id)}" style="${base};background:var(--surface);color:var(--ink)">${escapeHtml(name)}</a>`;
   });
-  const ph = [viewable.length + 1, viewable.length + 2].map((n) =>
-    `<span title="Placeholder — additional projects appear here" style="${base};background:transparent;color:var(--muted);border-style:dashed;opacity:.6;cursor:default">Project ${n}</span>`);
+  const ph = [];  // placeholder "Project 1 / Project 2" pills removed — they were shown to every viewer with no data behind them
   return `<div class="wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 18px 3px">`
     + `<span style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-right:2px">Project</span>`
     + `${pills.join('')}${ph.join('')}</div>`;
@@ -181,7 +180,7 @@ function stripDeadData(payloadStr) {
       const first = (r) => (Array.isArray(r) ? String(r.find((x) => x) || '') : '');
       const start = m.configFull.findIndex((r) => /^Game details by segment/.test(first(r)));
       if (start >= 0) {
-        let end = m.configFull.findIndex((r, i) => i > start && /^Budget/.test(first(r)));
+        let end = m.configFull.findIndex((r, i) => i > start && /^(Budget|Eligible|House margin|Reach|Sportsbook|Config basis)/.test(first(r)));
         if (end < 0) end = m.configFull.length;
         m.configFull = m.configFull.slice(0, start).concat(m.configFull.slice(end));
       }
