@@ -19,11 +19,13 @@ const WINDOWS = (process.env.PREBUILD_WINDOWS || 'ytd,lastmonth,last90').split('
 const pad = n => String(n).padStart(2, '0');
 const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;   // m is 1-based here
 // Windows relative to the VDI's local "today" (nightly runs mid-morning MYT, so the date is unambiguous).
-// ytd = null -> the pipeline's own auto-YTD (Jan 1 .. first of latest complete month).
+// ytd = Jan 1 .. first of THIS month (i.e. through the latest complete month) — computed explicitly,
+// NOT null: csir_config has no auto-YTD, it falls back to a FROZEN default window, so a null here built
+// the stale hardcoded window instead of the real YTD (the bug that made ?w=ytd lag the live Tab 1).
 function resolveWindow(key) {
   const t = new Date(), Y = t.getFullYear(), M = t.getMonth(), D = t.getDate();   // M 0-based
   const firstOfThis = ymd(Y, M + 1, 1);
-  if (key === 'ytd') return null;
+  if (key === 'ytd') return { start: ymd(Y, 1, 1), endExcl: firstOfThis };
   if (key === 'lastmonth') { const p = new Date(Y, M - 1, 1); return { start: ymd(p.getFullYear(), p.getMonth() + 1, 1), endExcl: firstOfThis }; }
   if (key === 'thismonth') { const e = new Date(Y, M, D + 1); return { start: firstOfThis, endExcl: ymd(e.getFullYear(), e.getMonth() + 1, e.getDate()) }; }
   if (key === 'last90') { const s = new Date(Y, M, D - 89), e = new Date(Y, M, D + 1); return { start: ymd(s.getFullYear(), s.getMonth() + 1, s.getDate()), endExcl: ymd(e.getFullYear(), e.getMonth() + 1, e.getDate()) }; }
