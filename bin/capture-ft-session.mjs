@@ -360,6 +360,10 @@ async function autoLogin(page, ctx, loginUrl) {
   // Wait for redirect back to FT app — allow extra time for /v3/login/ chained redirect
   console.log('Waiting for login to complete…');
   const deadline = Date.now() + 90_000;
+  // Cap re-prompts: a stale authenticator secret used to re-enter ~15 wrong codes
+  // per run (Oct 2026), which risks locking the FastTrack account.
+  const MAX_LATE_TOTP = 2;
+  let lateTotp = 0;
   while (Date.now() < deadline) {
     await page.waitForTimeout(2000);
     const cur = page.url();
@@ -367,6 +371,9 @@ async function autoLogin(page, ctx, loginUrl) {
     if (await isLoggedIn(page, loginUrl)) break;
     // Still on signin domain? Try handling another TOTP/OTP prompt that might have appeared
     if (cur.includes('signin.ft-crm.com') && await isTotpPrompt(page)) {
+      if (++lateTotp > MAX_LATE_TOTP) {
+        throw new Error(`Authenticator code rejected ${MAX_LATE_TOTP + 1}x — the stored TOTP secret is probably stale. Re-capture it: node bin/setup-ft-mfa.mjs --instance=${INSTANCE}`);
+      }
       const totpCode = hasTotpSecret(INSTANCE)
         ? generateTotp(INSTANCE)
         : await promptTotpCode(INSTANCE);
