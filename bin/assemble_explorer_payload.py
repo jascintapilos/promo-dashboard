@@ -211,16 +211,28 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
     band_agg = defaultdict(lambda: {"n": 0, "spend": 0.0})
     mon = defaultdict(lambda: {"codes": 0, "out": 0.0, "repeat": 0.0, "redep30": 0, "in30": 0.0})
     calls = defaultdict(lambda: {"n": 0, "sp": 0.0})
+    # Per-code spend/type from the COMPLETE money rows (the Money-tab source). verify-action is a
+    # scoped ROI pass that omits non-scored codes (check-ins / adhoc): on MY it matches money
+    # byte-for-byte for every code, but on SG it leaves 16 codes at spend=0 / type="Other" and
+    # diverges on the rest, breaking the exec-vs-Money reconciliation. Sourcing _spend/_type here
+    # makes the exec book equal the Money tab on both markets (verified MY no-op). verify-action is
+    # still used for _perrm / _tier only.
+    money_by_code = {}
+    for mrow in ex["money"]["rows"]:
+        mc_code = (mrow.get("Promo code") or {}).get("d")
+        if mc_code is not None:
+            money_by_code[mc_code] = {"spend": (mrow.get("Total bonus") or {}).get("n") or 0,
+                                      "type": (mrow.get("Bonus type") or {}).get("d") or ""}
     for rec in ex["codes"]:
         code = rec["Promo code"]["d"]
         vc = vmap.get(code, {})
         md = (wt.get(code) or {}).get("med_dep")
         pillar = rec["pillar"]
-        typ = bt(vc.get("mechanic"))
+        typ = (money_by_code.get(code, {}).get("type")) or bt(vc.get("mechanic"))
         b = band(md) if md is not None else "Low"
         tier = (wt.get(code) or {}).get("dom_tier", "") or vc.get("r_tier", "")
         call = rec["The call"]["d"]
-        spend = vc.get("r_spend") or 0
+        spend = money_by_code[code]["spend"] if code in money_by_code else (vc.get("r_spend") or 0)
         cells = {k: v for k, v in rec.items() if k != "pillar"}
         bc = dbc.get(code)  # per-code deposit behaviour: qualifying deposit (dep) or come-back reactivation (give-away)
         if bc:
