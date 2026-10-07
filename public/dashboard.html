@@ -266,6 +266,9 @@
   details.rec>summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;user-select:none;}
   details.rec>summary::-webkit-details-marker{display:none;}
   details.rec>summary .cnt{font-size:12px;font-weight:400;color:var(--ink3);}
+  .fresh-chip{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:11px;background:var(--good-soft);color:var(--good);}
+  .fresh-chip.amber{background:var(--warn-soft);color:var(--warn);}
+  .fresh-chip.red{background:var(--risk-soft);color:var(--risk);}
   details.rec>summary .chev{margin-left:auto;color:var(--ink3);transition:transform .2s;}
   details.rec[open]>summary .chev{transform:rotate(180deg);}
   .rec-body{padding:0 22px 20px;}
@@ -1330,10 +1333,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-const SHEET_ID = '1w4r0B0xNiEobi-URKEOQkWhl_uPznPlmDY8yCFutuXQ';
-const SHEETS_API_KEY = 'AIzaSyDhhztXErV46fbj1u_kqvfOUPqibgeJ2U8';
-const TABS = ['Promo Code Log','Banner Log','CRM Assignment Log','New Games','Utilisation','System Status','Adhoc Tasks','Utilisation Weekly','Manual Entry (Promo)','Manual Entry (Banner)','Manual Entry (CRM)','Banner Health','Homepage Banner Status','Work Log'];
+// Data comes from the dashboard server (/api/ops/data), pushed there nightly by
+// the VDI over the relay — no Google key in the page. OPS_STATUS holds each
+// dataset's pull status (pulledAt, lastGoodAt, ok, detail).
 const TAB_KEYS = ['promos','banners','crm','games','utilisation','sysStatus','adhoc','utilWeekly','manualPromo','manualBanner','manualCrm','bannerHealth','homepageBannerStatus','workLog'];
+const FRESH_AMBER_DAYS = 2, FRESH_RED_DAYS = 4;
+let OPS_STATUS = {};
 
 const C_BRAND='#4c6ef5', C_REGION='#0ca678', C_WORK='#64748b';
 const REGION_COLORS = { MY:'#4c6ef5', SG:'#0ca678', ID:'#f59e0b', TH:'#8b5cf6', KH:'#ec4899' };
@@ -1351,9 +1356,28 @@ let _donutChart=null, _trendChart=null, _escInit=false, _escSrcChart=null, _util
 
 function updateLastRefreshPill(){
   const pill=document.getElementById('lastRefreshPill');
-  if(!pill||!_lastRefreshAt) return;
-  const mins=Math.max(0, Math.round((Date.now()-_lastRefreshAt.getTime())/60000));
-  pill.textContent = mins===0 ? 'Just now' : (mins<60 ? `Updated ${mins}m ago` : `Updated ${Math.round(mins/60)}h ago`);
+  if(!pill) return;
+  const pulled=Object.values(OPS_STATUS).map(s=>Date.parse(s.lastGoodAt||'')).filter(n=>!isNaN(n));
+  if(!pulled.length){ pill.textContent='Not synced yet'; return; }
+  const mins=Math.max(0, Math.round((Date.now()-Math.max(...pulled))/60000));
+  pill.textContent = mins<1 ? 'Data pulled just now' : mins<60 ? `Data pulled ${mins}m ago` : mins<2880 ? `Data pulled ${Math.round(mins/60)}h ago` : `Data pulled ${Math.round(mins/1440)}d ago`;
+}
+
+const escText=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ── FRESHNESS: last good pull per dataset (amber > 2 days, red > 4 days) ── */
+function freshnessChip(key){
+  const st=OPS_STATUS[key];
+  if(!st||!st.lastGoodAt) return st&&st.ok===false
+    ? ` <span class="fresh-chip red" title="${escText(st.detail||'')}">no good pull yet · last pull failed ${fmtDateShort(new Date(st.lastFailureAt||st.pulledAt))}</span>`
+    : ' <span class="fresh-chip red">not synced yet</span>';
+  const days=(Date.now()-Date.parse(st.lastGoodAt))/864e5;
+  const cls=days>FRESH_RED_DAYS?'red':days>FRESH_AMBER_DAYS?'amber':'';
+  const notes=[];
+  if(st.ok===false) notes.push(`last pull failed ${fmtDateShort(new Date(st.lastFailureAt||st.pulledAt))}`);
+  else if(/^partial/.test(st.detail||'')) notes.push('partial');
+  const tip=escText(st.detail||'');
+  return ` <span class="fresh-chip ${notes.length&&!cls?'amber':cls}" title="${tip}">pulled ${fmtDateShort(new Date(st.lastGoodAt))}${notes.length?' · '+notes.join(' · '):''}</span>`;
 }
 setInterval(updateLastRefreshPill, 30000);
 
@@ -2523,10 +2547,10 @@ function sortAdhoc(col){toggleSort(aSort,col);renderAdhoc();}
 /* ── DETAILED RECORDS ── */
 function renderRecords(){
   const b=rawData.banners||[],p=rawData.promos||[],c=rawData.crm||[],g=rawData.games||[];
-  document.getElementById('rc-banner').textContent=`${b.length} records`;
-  document.getElementById('rc-promo').textContent=`${p.length} records`;
-  document.getElementById('rc-crm').textContent=`${c.length} records`;
-  document.getElementById('rc-game').textContent=`${g.length} records`;
+  document.getElementById('rc-banner').innerHTML=`${b.length} records`+freshnessChip('banners');
+  document.getElementById('rc-promo').innerHTML=`${p.length} records`+freshnessChip('promos');
+  document.getElementById('rc-crm').innerHTML=`${c.length} records`+freshnessChip('crm');
+  document.getElementById('rc-game').innerHTML=`${g.length} records`+freshnessChip('games');
 
   // Banner filters
   const bfc=document.getElementById('bf-c'),bfb=document.getElementById('bf-b'),bfr=document.getElementById('bf-r'),bfu=document.getElementById('bf-u');
@@ -2768,7 +2792,7 @@ function renderAdhoc(){
   }
   rows=applySort(rows,aSort);
   const cnt=document.getElementById('rc-adhoc');
-  if(cnt) cnt.textContent=`${rows.length} records`;
+  if(cnt) cnt.innerHTML=`${rows.length} records`+freshnessChip('adhoc');
   const shown=aShowAll?rows:rows.slice(0,PAGE);
   const th=document.getElementById('a-th');
   const tb=document.getElementById('at');
@@ -2833,42 +2857,32 @@ function loadData(){
     document.getElementById('error').innerHTML='<div class="errbox">Request timed out. Try refreshing.</div>';
     document.getElementById('refresh').disabled=false;
   },15000);
-  // Step 1: discover which tabs actually exist (avoids 400 when optional tabs aren't created yet)
-  const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${SHEETS_API_KEY}&fields=sheets.properties.title`;
-  fetch(metaUrl,{referrerPolicy:'strict-origin'})
-    .then(r=>r.json())
-    .then(meta=>{
-      if(meta.error) throw new Error('Sheets API error: '+meta.error.message);
-      const existing=new Set((meta.sheets||[]).map(s=>s.properties.title));
-      const availIdx=TABS.map((t,i)=>existing.has(t)?i:-1).filter(i=>i>=0);
-      const availTabs=availIdx.map(i=>TABS[i]);
-      const availKeys=availIdx.map(i=>TAB_KEYS[i]);
-      const qr=availTabs.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
-      return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`,{referrerPolicy:'strict-origin'})
-        .then(r=>r.json())
-        .then(json=>({json,availKeys}));
+  fetch('/api/ops/data',{credentials:'same-origin',cache:'no-store'})
+    .then(r=>{
+      if(r.status===401){ location.href='/?return=%2Fdashboard'; throw new Error('signed out'); }
+      if(!r.ok) throw new Error(`server returned ${r.status}`);
+      return r.json();
     })
-    .then(({json,availKeys})=>{
+    .then(json=>{
       clearTimeout(_to);
-      if(json.error){
+      OPS_STATUS=json.status||{};
+      const ds=json.datasets||{};
+      if(!Object.keys(ds).length){
         document.getElementById('loading').style.display='none';
         document.getElementById('error').style.display='block';
-        document.getElementById('error').innerHTML=`<div class="errbox">Sheets API error: ${json.error.message}</div>`;
+        document.getElementById('error').innerHTML='<div class="errbox">Not synced yet — the nightly pull has not sent any data to this server.</div>';
         document.getElementById('refresh').disabled=false;
         return;
       }
       const data={lastUpdated:new Date().toISOString()};
-      (json.valueRanges||[]).forEach((vr,i)=>{data[availKeys[i]]=rowsToObjects(vr.values);});
-      // Use the real nightly pull timestamp from System Status (not browser clock)
-      const _sysRows=(data.sysStatus||[]).filter(r=>r.Timestamp&&r.Instance!=='Instance');
-      if(_sysRows.length){const _best=_sysRows.reduce((t,r)=>r.Timestamp>t?r.Timestamp:t,'');if(_best)data.lastUpdated=_best;}
+      TAB_KEYS.forEach(k=>{ data[k]=ds[k]?rowsToObjects([ds[k].headers,...ds[k].rows]):[]; });
       render(data);
     })
     .catch(err=>{
       clearTimeout(_to);
       document.getElementById('loading').style.display='none';
       document.getElementById('error').style.display='block';
-      document.getElementById('error').innerHTML=`<div class="errbox">Failed to load: ${err.message}</div>`;
+      document.getElementById('error').innerHTML=`<div class="errbox">Failed to load: ${escText(err.message)}</div>`;
       document.getElementById('refresh').disabled=false;
     });
 }
