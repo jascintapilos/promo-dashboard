@@ -26,15 +26,24 @@ os.makedirs(STORE, exist_ok=True)
 c = csir_config.get_client(send_receive_timeout=1800)
 mx = str(c.query("SELECT max(SnapshotDate) FROM WORKSPACE.Daily_GMT8_Snapshot_A").result_rows[0][0])[:10]
 
+# SITE is carried through because the MYR/SGD snapshots are NOT single-brand per currency: a member can
+# have rows under WS1_MYS_MYR (partition A) AND another brand like QPRO10 (partition BC) in the same
+# currency. Deposit analyses deliberately sum cross-brand (they drop SITE), but any brand-specific NGR
+# cut (e.g. bonus_roi_horizon's 14-day baseline / forward activity, which the live query restricts with
+# b.SITE=act.SITE) needs to filter to the one SITE — so the column must be present to reproduce it.
+# GGR carried + filter broadened to GGR!=0: cashback_incrementality needs gross-gaming-revenue
+# member-days (a cashback is a % of losses = GGR), including days with GGR but no deposit/NGR. The
+# existing consumers (deposit/roi/segment) all filter on dep>0 or ngr!=0 at read time, so the extra
+# GGR-only rows are transparent to them (verified: deposit + equal-split reconciles still 0-diff).
 sql = f"""
-SELECT MEMBER_ID AS member, toString(SnapshotDate) AS sd, Currency AS cur,
-       DepositAmount AS dep, NGR AS ngr
+SELECT MEMBER_ID AS member, toString(SnapshotDate) AS sd, Currency AS cur, SITE AS site,
+       DepositAmount AS dep, NGR AS ngr, GGR AS ggr
 FROM (
-  SELECT MEMBER_ID, SnapshotDate, Currency, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE SnapshotDate >= '{FROM}' AND Currency IN ('MYR','SGD') AND (DepositAmount>0 OR NGR!=0)
+  SELECT MEMBER_ID, SnapshotDate, Currency, SITE, DepositAmount, NGR, GGR FROM WORKSPACE.Daily_GMT8_Snapshot_A
+    WHERE SnapshotDate >= '{FROM}' AND Currency IN ('MYR','SGD') AND (DepositAmount>0 OR NGR!=0 OR GGR!=0)
   UNION ALL
-  SELECT MEMBER_ID, SnapshotDate, Currency, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE SnapshotDate >= '{FROM}' AND Currency IN ('MYR','SGD') AND (DepositAmount>0 OR NGR!=0)
+  SELECT MEMBER_ID, SnapshotDate, Currency, SITE, DepositAmount, NGR, GGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC
+    WHERE SnapshotDate >= '{FROM}' AND Currency IN ('MYR','SGD') AND (DepositAmount>0 OR NGR!=0 OR GGR!=0)
 )
 """
 pq = c.raw_query(sql, fmt="Parquet")   # columnar export — no python per-row handling

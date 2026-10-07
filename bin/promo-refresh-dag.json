@@ -1,0 +1,444 @@
+{
+ "stages": [
+  "bin/pull_tl_codes.mjs",
+  "bin/acq_report/00_acq_codes.py",
+  "bin/acq_report/01a_first_deposit.py",
+  "bin/acq_report/01b_pull_outcomes.py",
+  "bin/acq_report/02_compute_metrics.py",
+  "bin/acq_report/03_draft_thresholds.py",
+  "bin/ret_report/00_ret_codes.py",
+  "bin/ret_report/01_pull.py",
+  "bin/ret_report/02_compute_metrics.py",
+  "bin/ret_report/rf_forward.py",
+  "bin/ret_report/03_thresholds.py",
+  "bin/vip_report/00_vip_codes.py",
+  "bin/vip_report/01_pull.py",
+  "bin/vip_report/01b_ledger.py",
+  "bin/vip_report/01c_rescue_forward.py",
+  "bin/vip_report/01d_forward_outcomes.py",
+  "bin/vip_report/02_compute_metrics.py",
+  "bin/vip_report/02b_program.py",
+  "bin/vip_report/cashback_incrementality.py",
+  "bin/vip_report/cashback_breakeven.py",
+  "bin/vip_report/03_thresholds.py",
+  "bin/ltv_report/lifetime_by_bonus.py",
+  "bin/attribution/phase1_control_pull.py",
+  "bin/attribution/phase1_treated_pretrend.py",
+  "bin/attribution/phase1_matched_did.py",
+  "bin/attribution/phase2_fatigue.py",
+  "bin/attribution/attribution_engine.py",
+  "bin/verify_action_codes.py",
+  "bin/who_targeted_pull.py",
+  "bin/segment_map_pull.py",
+  "bin/segment_migration_pull.py",
+  "bin/keeps_horizon.py",
+  "bin/bonus_value_analysis.py",
+  "bin/bonus_ripple.py",
+  "bin/pull_promo_config.py",
+  "bin/ggr_coverage.py",
+  "bin/bonus_roi_horizon.py",
+  "bin/reproduce_attribution.py",
+  "bin/attribution/regrade.py",
+  "bin/macro_pull.py",
+  "bin/code_players_pull.py",
+  "bin/moneyback_pull.py",
+  "bin/repeat_claimers_pull.py",
+  "bin/deposit_classify_pull.py",
+  "bin/deposit_truth_pull.py",
+  "bin/deposit_timedecay_pull.py",
+  "bin/deposit_alloc_bycode_pull.py",
+  "bin/deposit_behaviour_pull.py",
+  "bin/deposit_behaviour_bycode_pull.py",
+  "bin/deposit_afterclaim_split_pull.py",
+  "bin/trial_band_pull.py",
+  "bin/build_verify_xlsx.py",
+  "bin/extract_explorer_data.py",
+  "bin/assemble_explorer_payload.py"
+ ],
+ "deps": {
+  "bin/pull_tl_codes.mjs": [],
+  "bin/acq_report/00_acq_codes.py": [
+   "bin/pull_tl_codes.mjs"
+  ],
+  "bin/acq_report/01a_first_deposit.py": [
+   "bin/acq_report/00_acq_codes.py"
+  ],
+  "bin/acq_report/01b_pull_outcomes.py": [
+   "bin/acq_report/00_acq_codes.py",
+   "bin/acq_report/01a_first_deposit.py"
+  ],
+  "bin/acq_report/02_compute_metrics.py": [
+   "bin/acq_report/00_acq_codes.py",
+   "bin/acq_report/01b_pull_outcomes.py"
+  ],
+  "bin/acq_report/03_draft_thresholds.py": [
+   "bin/acq_report/02_compute_metrics.py"
+  ],
+  "bin/ret_report/00_ret_codes.py": [
+   "bin/pull_tl_codes.mjs"
+  ],
+  "bin/ret_report/01_pull.py": [
+   "bin/ret_report/00_ret_codes.py"
+  ],
+  "bin/ret_report/02_compute_metrics.py": [
+   "bin/ret_report/00_ret_codes.py",
+   "bin/ret_report/01_pull.py"
+  ],
+  "bin/ret_report/rf_forward.py": [
+   "bin/ret_report/00_ret_codes.py"
+  ],
+  "bin/ret_report/03_thresholds.py": [
+   "bin/ret_report/02_compute_metrics.py"
+  ],
+  "bin/vip_report/00_vip_codes.py": [
+   "bin/pull_tl_codes.mjs"
+  ],
+  "bin/vip_report/01_pull.py": [
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/vip_report/01b_ledger.py": [
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/vip_report/01c_rescue_forward.py": [
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/vip_report/01d_forward_outcomes.py": [
+   "bin/vip_report/00_vip_codes.py",
+   "bin/vip_report/01c_rescue_forward.py"
+  ],
+  "bin/vip_report/02_compute_metrics.py": [
+   "bin/vip_report/00_vip_codes.py",
+   "bin/vip_report/01_pull.py",
+   "bin/vip_report/01c_rescue_forward.py"
+  ],
+  "bin/vip_report/02b_program.py": [
+   "bin/vip_report/00_vip_codes.py",
+   "bin/vip_report/01_pull.py",
+   "bin/vip_report/01b_ledger.py",
+   "bin/vip_report/02_compute_metrics.py"
+  ],
+  "bin/vip_report/cashback_incrementality.py": [
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/vip_report/cashback_breakeven.py": [
+   "bin/vip_report/01b_ledger.py",
+   "bin/vip_report/02b_program.py",
+   "bin/vip_report/cashback_incrementality.py"
+  ],
+  "bin/vip_report/03_thresholds.py": [
+   "bin/vip_report/02b_program.py",
+   "bin/vip_report/cashback_breakeven.py"
+  ],
+  "bin/ltv_report/lifetime_by_bonus.py": [
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/attribution/phase1_control_pull.py": [],
+  "bin/attribution/phase1_treated_pretrend.py": [
+   "bin/ret_report/00_ret_codes.py",
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/attribution/phase1_matched_did.py": [
+   "bin/attribution/phase1_control_pull.py",
+   "bin/attribution/phase1_treated_pretrend.py",
+   "bin/vip_report/01_pull.py",
+   "bin/vip_report/01d_forward_outcomes.py"
+  ],
+  "bin/attribution/phase2_fatigue.py": [
+   "bin/ret_report/00_ret_codes.py",
+   "bin/vip_report/00_vip_codes.py"
+  ],
+  "bin/attribution/attribution_engine.py": [
+   "bin/attribution/phase1_matched_did.py",
+   "bin/attribution/phase2_fatigue.py",
+   "bin/vip_report/01d_forward_outcomes.py"
+  ],
+  "bin/verify_action_codes.py": [
+   "bin/acq_report/03_draft_thresholds.py",
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/who_targeted_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/segment_map_pull.py": [],
+  "bin/segment_migration_pull.py": [
+   "bin/segment_map_pull.py"
+  ],
+  "bin/keeps_horizon.py": [
+   "bin/acq_report/03_draft_thresholds.py",
+   "bin/ret_report/03_thresholds.py",
+   "bin/verify_action_codes.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/bonus_value_analysis.py": [
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/01_pull.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/bonus_ripple.py": [
+   "bin/bonus_value_analysis.py",
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/01_pull.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/pull_promo_config.py": [
+   "bin/acq_report/03_draft_thresholds.py",
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/ggr_coverage.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/bonus_roi_horizon.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/reproduce_attribution.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/attribution/regrade.py": [
+   "bin/attribution/attribution_engine.py",
+   "bin/ret_report/03_thresholds.py",
+   "bin/vip_report/03_thresholds.py"
+  ],
+  "bin/macro_pull.py": [],
+  "bin/code_players_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/moneyback_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/repeat_claimers_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_classify_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_truth_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_timedecay_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_alloc_bycode_pull.py": [
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_behaviour_pull.py": [
+   "bin/pull_promo_config.py",
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_behaviour_bycode_pull.py": [
+   "bin/pull_promo_config.py",
+   "bin/verify_action_codes.py"
+  ],
+  "bin/deposit_afterclaim_split_pull.py": [
+   "bin/deposit_classify_pull.py",
+   "bin/verify_action_codes.py"
+  ],
+  "bin/trial_band_pull.py": [],
+  "bin/build_verify_xlsx.py": [
+   "bin/acq_report/03_draft_thresholds.py",
+   "bin/attribution/regrade.py",
+   "bin/bonus_roi_horizon.py",
+   "bin/deposit_truth_pull.py",
+   "bin/ggr_coverage.py",
+   "bin/keeps_horizon.py",
+   "bin/moneyback_pull.py",
+   "bin/repeat_claimers_pull.py",
+   "bin/reproduce_attribution.py",
+   "bin/segment_map_pull.py",
+   "bin/verify_action_codes.py",
+   "bin/who_targeted_pull.py"
+  ],
+  "bin/extract_explorer_data.py": [
+   "bin/bonus_ripple.py",
+   "bin/segment_map_pull.py"
+  ],
+  "bin/assemble_explorer_payload.py": [
+   "bin/code_players_pull.py",
+   "bin/deposit_afterclaim_split_pull.py",
+   "bin/deposit_alloc_bycode_pull.py",
+   "bin/deposit_behaviour_bycode_pull.py",
+   "bin/deposit_behaviour_pull.py",
+   "bin/deposit_classify_pull.py",
+   "bin/deposit_timedecay_pull.py",
+   "bin/deposit_truth_pull.py",
+   "bin/extract_explorer_data.py",
+   "bin/macro_pull.py",
+   "bin/segment_migration_pull.py",
+   "bin/trial_band_pull.py",
+   "bin/verify_action_codes.py",
+   "bin/who_targeted_pull.py"
+  ]
+ },
+ "ext_inputs": {
+  "bin/pull_tl_codes.mjs": [],
+  "bin/acq_report/00_acq_codes.py": [],
+  "bin/acq_report/01a_first_deposit.py": [],
+  "bin/acq_report/01b_pull_outcomes.py": [],
+  "bin/acq_report/02_compute_metrics.py": [],
+  "bin/acq_report/03_draft_thresholds.py": [],
+  "bin/ret_report/00_ret_codes.py": [],
+  "bin/ret_report/01_pull.py": [],
+  "bin/ret_report/02_compute_metrics.py": [],
+  "bin/ret_report/rf_forward.py": [],
+  "bin/ret_report/03_thresholds.py": [],
+  "bin/vip_report/00_vip_codes.py": [],
+  "bin/vip_report/01_pull.py": [],
+  "bin/vip_report/01b_ledger.py": [],
+  "bin/vip_report/01c_rescue_forward.py": [],
+  "bin/vip_report/01d_forward_outcomes.py": [],
+  "bin/vip_report/02_compute_metrics.py": [],
+  "bin/vip_report/02b_program.py": [],
+  "bin/vip_report/cashback_incrementality.py": [],
+  "bin/vip_report/cashback_breakeven.py": [],
+  "bin/vip_report/03_thresholds.py": [],
+  "bin/ltv_report/lifetime_by_bonus.py": [],
+  "bin/attribution/phase1_control_pull.py": [],
+  "bin/attribution/phase1_treated_pretrend.py": [],
+  "bin/attribution/phase1_matched_did.py": [],
+  "bin/attribution/phase2_fatigue.py": [],
+  "bin/attribution/attribution_engine.py": [],
+  "bin/verify_action_codes.py": [],
+  "bin/who_targeted_pull.py": [],
+  "bin/segment_map_pull.py": [],
+  "bin/segment_migration_pull.py": [],
+  "bin/keeps_horizon.py": [],
+  "bin/bonus_value_analysis.py": [],
+  "bin/bonus_ripple.py": [
+   "lifetime-by-bonus"
+  ],
+  "bin/pull_promo_config.py": [],
+  "bin/ggr_coverage.py": [],
+  "bin/bonus_roi_horizon.py": [],
+  "bin/reproduce_attribution.py": [],
+  "bin/attribution/regrade.py": [],
+  "bin/macro_pull.py": [],
+  "bin/code_players_pull.py": [],
+  "bin/moneyback_pull.py": [],
+  "bin/repeat_claimers_pull.py": [],
+  "bin/deposit_classify_pull.py": [],
+  "bin/deposit_truth_pull.py": [],
+  "bin/deposit_timedecay_pull.py": [],
+  "bin/deposit_alloc_bycode_pull.py": [],
+  "bin/deposit_behaviour_pull.py": [],
+  "bin/deposit_behaviour_bycode_pull.py": [],
+  "bin/deposit_afterclaim_split_pull.py": [],
+  "bin/trial_band_pull.py": [],
+  "bin/build_verify_xlsx.py": [],
+  "bin/extract_explorer_data.py": [],
+  "bin/assemble_explorer_payload.py": []
+ },
+ "durations": {
+  "bin/pull_tl_codes.mjs": 3.49,
+  "bin/acq_report/00_acq_codes.py": 1.12,
+  "bin/acq_report/01a_first_deposit.py": 1.16,
+  "bin/acq_report/01b_pull_outcomes.py": 1.16,
+  "bin/acq_report/02_compute_metrics.py": 1.79,
+  "bin/acq_report/03_draft_thresholds.py": 0.33,
+  "bin/ret_report/00_ret_codes.py": 0.88,
+  "bin/ret_report/01_pull.py": 13.36,
+  "bin/ret_report/02_compute_metrics.py": 1.79,
+  "bin/ret_report/rf_forward.py": 2.56,
+  "bin/ret_report/03_thresholds.py": 0.34,
+  "bin/vip_report/00_vip_codes.py": 1.04,
+  "bin/vip_report/01_pull.py": 13.36,
+  "bin/vip_report/01b_ledger.py": 2.22,
+  "bin/vip_report/01c_rescue_forward.py": 1.03,
+  "bin/vip_report/01d_forward_outcomes.py": 1.98,
+  "bin/vip_report/02_compute_metrics.py": 1.79,
+  "bin/vip_report/02b_program.py": 2.2,
+  "bin/vip_report/cashback_incrementality.py": 14.71,
+  "bin/vip_report/cashback_breakeven.py": 0.33,
+  "bin/vip_report/03_thresholds.py": 0.34,
+  "bin/ltv_report/lifetime_by_bonus.py": 0.33,
+  "bin/attribution/phase1_control_pull.py": 12.22,
+  "bin/attribution/phase1_treated_pretrend.py": 1.61,
+  "bin/attribution/phase1_matched_did.py": 3.68,
+  "bin/attribution/phase2_fatigue.py": 1.59,
+  "bin/attribution/attribution_engine.py": 0.53,
+  "bin/verify_action_codes.py": 1.29,
+  "bin/who_targeted_pull.py": 1.52,
+  "bin/segment_map_pull.py": 0.98,
+  "bin/segment_migration_pull.py": 1.08,
+  "bin/keeps_horizon.py": 2.95,
+  "bin/bonus_value_analysis.py": 1.34,
+  "bin/bonus_ripple.py": 2.75,
+  "bin/pull_promo_config.py": 0.82,
+  "bin/ggr_coverage.py": 1.38,
+  "bin/bonus_roi_horizon.py": 19.23,
+  "bin/reproduce_attribution.py": 4.93,
+  "bin/attribution/regrade.py": 0.34,
+  "bin/macro_pull.py": 0.91,
+  "bin/code_players_pull.py": 9.86,
+  "bin/moneyback_pull.py": 1.14,
+  "bin/repeat_claimers_pull.py": 0.85,
+  "bin/deposit_classify_pull.py": 0.04,
+  "bin/deposit_truth_pull.py": 0.04,
+  "bin/deposit_timedecay_pull.py": 0.05,
+  "bin/deposit_alloc_bycode_pull.py": 7.53,
+  "bin/deposit_behaviour_pull.py": 5.46,
+  "bin/deposit_behaviour_bycode_pull.py": 12.02,
+  "bin/deposit_afterclaim_split_pull.py": 14.13,
+  "bin/trial_band_pull.py": 0.91,
+  "bin/build_verify_xlsx.py": 4.08,
+  "bin/extract_explorer_data.py": 1.82,
+  "bin/assemble_explorer_payload.py": 0.95
+ },
+ "engine": {
+  "bin/pull_tl_codes.mjs": "node",
+  "bin/acq_report/00_acq_codes.py": "python",
+  "bin/acq_report/01a_first_deposit.py": "python",
+  "bin/acq_report/01b_pull_outcomes.py": "python",
+  "bin/acq_report/02_compute_metrics.py": "python",
+  "bin/acq_report/03_draft_thresholds.py": "python",
+  "bin/ret_report/00_ret_codes.py": "python",
+  "bin/ret_report/01_pull.py": "python",
+  "bin/ret_report/02_compute_metrics.py": "python",
+  "bin/ret_report/rf_forward.py": "python",
+  "bin/ret_report/03_thresholds.py": "python",
+  "bin/vip_report/00_vip_codes.py": "python",
+  "bin/vip_report/01_pull.py": "python",
+  "bin/vip_report/01b_ledger.py": "python",
+  "bin/vip_report/01c_rescue_forward.py": "python",
+  "bin/vip_report/01d_forward_outcomes.py": "python",
+  "bin/vip_report/02_compute_metrics.py": "python",
+  "bin/vip_report/02b_program.py": "python",
+  "bin/vip_report/cashback_incrementality.py": "python",
+  "bin/vip_report/cashback_breakeven.py": "python",
+  "bin/vip_report/03_thresholds.py": "python",
+  "bin/ltv_report/lifetime_by_bonus.py": "python",
+  "bin/attribution/phase1_control_pull.py": "python",
+  "bin/attribution/phase1_treated_pretrend.py": "python",
+  "bin/attribution/phase1_matched_did.py": "python",
+  "bin/attribution/phase2_fatigue.py": "python",
+  "bin/attribution/attribution_engine.py": "python",
+  "bin/verify_action_codes.py": "python",
+  "bin/who_targeted_pull.py": "python",
+  "bin/segment_map_pull.py": "python",
+  "bin/segment_migration_pull.py": "python",
+  "bin/keeps_horizon.py": "python",
+  "bin/bonus_value_analysis.py": "python",
+  "bin/bonus_ripple.py": "python",
+  "bin/pull_promo_config.py": "python",
+  "bin/ggr_coverage.py": "python",
+  "bin/bonus_roi_horizon.py": "python",
+  "bin/reproduce_attribution.py": "python",
+  "bin/attribution/regrade.py": "python",
+  "bin/macro_pull.py": "python",
+  "bin/code_players_pull.py": "python",
+  "bin/moneyback_pull.py": "python",
+  "bin/repeat_claimers_pull.py": "python",
+  "bin/deposit_classify_pull.py": "python",
+  "bin/deposit_truth_pull.py": "python",
+  "bin/deposit_timedecay_pull.py": "python",
+  "bin/deposit_alloc_bycode_pull.py": "python",
+  "bin/deposit_behaviour_pull.py": "python",
+  "bin/deposit_behaviour_bycode_pull.py": "python",
+  "bin/deposit_afterclaim_split_pull.py": "python",
+  "bin/trial_band_pull.py": "python",
+  "bin/build_verify_xlsx.py": "python",
+  "bin/extract_explorer_data.py": "python",
+  "bin/assemble_explorer_payload.py": "python"
+ }
+}

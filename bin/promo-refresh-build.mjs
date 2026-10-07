@@ -18,7 +18,7 @@
 //
 // Flags:  --dry-run   print the plan (portability + every stage) and exit; run nothing.
 
-import { readFileSync, existsSync, mkdirSync, copyFileSync, lstatSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, copyFileSync, lstatSync, openSync, writeSync, closeSync, statSync, unlinkSync } from 'node:fs';
 import { spawnSync, spawn, execSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
@@ -105,7 +105,32 @@ async function runGroupConcurrent(stages, env) {
   if (firstErr) throw firstErr;
 }
 
+// Single build lock (same file as the parallel engine) — serialises every build sharing the one
+// scratchpad so two never corrupt each other. A lock older than LOCK_STALE_MS (a crashed build) is stolen.
+const LOCK = path.join(process.env.PROMO_LOCK_DIR || path.join(os.homedir(), '.qc-relay'), 'promo-build.lock');
+const LOCK_STALE_MS = 25 * 60 * 1000;
+let haveLock = false;
+async function acquireLock() {
+  mkdirSync(path.dirname(LOCK), { recursive: true });
+  const giveUp = Date.now() + LOCK_STALE_MS + 120000;
+  let waited = false;
+  for (;;) {
+    try { const fd = openSync(LOCK, 'wx'); writeSync(fd, `${process.pid} ${new Date().toISOString()}\n`); closeSync(fd); haveLock = true; if (waited) process.stdout.write('build lock acquired (waited)\n'); return; }
+    catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let age; try { age = Date.now() - statSync(LOCK).mtimeMs; } catch { continue; }
+      if (age > LOCK_STALE_MS || Date.now() > giveUp) { try { unlinkSync(LOCK); } catch {} continue; }
+      if (!waited) { process.stdout.write('another build is running — waiting for the build lock…\n'); waited = true; }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+}
+function releaseLock() { if (haveLock) { try { unlinkSync(LOCK); } catch {} haveLock = false; } }
+process.on('exit', releaseLock);
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { releaseLock(); process.exit(1); });
+
 async function main() {
+  if (!DRY) await acquireLock();
   const sc = ensureScratch();
   process.stdout.write(`PORTABILITY: scratchpad ${sc.mode} -> ${sc.target}\n`);
   // Pin PROMO_SCRATCH for every child to the resolved scratch dir, so the env-aware
