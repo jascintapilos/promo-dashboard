@@ -2974,7 +2974,7 @@ function loadData(){
   },15000);
   // Step 1: discover which tabs actually exist (avoids 400 when optional tabs aren't created yet)
   const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${SHEETS_API_KEY}&fields=sheets.properties.title`;
-  fetch(metaUrl,{referrerPolicy:'no-referrer'})
+  fetch(metaUrl,{referrerPolicy:'strict-origin'})
     .then(r=>r.json())
     .then(meta=>{
       if(meta.error) throw new Error('Sheets API error: '+meta.error.message);
@@ -2983,7 +2983,7 @@ function loadData(){
       const availTabs=availIdx.map(i=>TABS[i]);
       const availKeys=availIdx.map(i=>TAB_KEYS[i]);
       const qr=availTabs.map(t=>'ranges='+encodeURIComponent("'"+t+"'!A:Z")).join('&');
-      return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`,{referrerPolicy:'no-referrer'})
+      return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?key=${SHEETS_API_KEY}&${qr}`,{referrerPolicy:'strict-origin'})
         .then(r=>r.json())
         .then(json=>({json,availKeys}));
     })
