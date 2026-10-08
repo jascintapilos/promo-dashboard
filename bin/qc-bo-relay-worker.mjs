@@ -17,6 +17,7 @@
 import { readWorkerRelaySecret, buildSignedHeaders } from '../src/qc-dashboard/relay-auth.js';
 import { fetchPromoSnapshot } from '../src/qc-dashboard/fetch-promo.js';
 import { resolveExpectedSource } from '../src/qc-dashboard/expected-source.js';
+import { resolveExpectedSourceFromSheet } from '../src/qc-dashboard/sheets-fallback.js';
 import { snapshotToLiveState } from '../src/qc-dashboard/compare-flow.js';
 import { expectedFromSource, liveFromPlatform } from '../src/qc-dashboard/canonical/index.js';
 import { sanitizeCanonical, sanitizeExpectedSourceMeta } from '../src/qc-dashboard/relay-result.js';
@@ -114,12 +115,24 @@ export async function buildResultForJob({ jobId, brand, code, handle, deps = def
   if (snapshot?.notFound) {
     return _errorPayload({ jobId, brand, code, handle, workerError: { code: 'CODE_NOT_FOUND', message: 'promo code not present on live BO' } });
   }
-  // 2. Expected source.
+  // 2. Expected source — local captures first, then the live Promo Request Sheet.
   let expSrc;
   try {
     expSrc = deps.resolveExpectedSource({ brand, code, handle });
   } catch (e) {
     return _errorPayload({ jobId, brand, code, handle, workerError: { code: 'INTERNAL', message: sanitizeError(e) } });
+  }
+  // Local file not-found (and not a local ambiguity) → fall back to the live
+  // Promo Request Sheet, mirroring the hub's runComparisonWithSheetsFallback.
+  // Never override a local hit or a local ambiguity.
+  const resolveFromSheet = deps.resolveExpectedSourceFromSheet;
+  if (resolveFromSheet && (!expSrc || (!expSrc.source && expSrc.sourceType !== 'ambiguous'))) {
+    try {
+      const sheetSrc = await resolveFromSheet({ brand, code, handle });
+      if (sheetSrc && (sheetSrc.source || sheetSrc.sourceType === 'ambiguous')) expSrc = sheetSrc;
+    } catch (e) {
+      log('warn', 'sheet-fallback-error', { jobId, brand, code, reason: sanitizeError(e) });
+    }
   }
   if (!expSrc || !expSrc.source) {
     const errCode = expSrc?.sourceType === 'ambiguous' ? 'EXPECTED_SOURCE_AMBIGUOUS' : 'EXPECTED_SOURCE_MISSING';
@@ -202,6 +215,7 @@ const defaultDeps = {
   },
   fetchPromoSnapshot,
   resolveExpectedSource,
+  resolveExpectedSourceFromSheet,
   snapshotToLiveState,
   expectedFromSource,
   liveFromPlatform,

@@ -16,11 +16,13 @@ function stubDeps({
   expected = { identity: { promoCode: 'C1', platform: 'qp2' }, currencies: [] },
   actual = { identity: { promoCode: 'C1', platform: 'qp2' }, currencies: [] },
   throwFetch, throwResolve, throwExpectedAdapter, throwLiveAdapter,
+  resolveExpectedSourceFromSheet,
   overrideSnapshotToLiveState,
 } = {}) {
   return {
     fetchPromoSnapshot: async () => { if (throwFetch) throw throwFetch; return snapshot; },
     resolveExpectedSource: () => { if (throwResolve) throw throwResolve; return expSrc; },
+    ...(resolveExpectedSourceFromSheet ? { resolveExpectedSourceFromSheet } : {}),
     snapshotToLiveState: overrideSnapshotToLiveState || (() => ({ list_row: {}, detail: {}, tnc: null })),
     expectedFromSource: () => { if (throwExpectedAdapter) throw throwExpectedAdapter; return expected; },
     liveFromPlatform: () => { if (throwLiveAdapter) throw throwLiveAdapter; return actual; },
@@ -74,6 +76,60 @@ test('worker: EXPECTED_SOURCE_AMBIGUOUS when resolver returns ambiguous', async 
   const deps = stubDeps({ expSrc: { sourceType: 'ambiguous', source: null } });
   const r = await buildResultForJob({ ...JOB, deps });
   assert.equal(r.workerError.code, 'EXPECTED_SOURCE_AMBIGUOUS');
+});
+
+test('buildResultForJob falls back to the sheet when the local expected source is not-found', async () => {
+  let sheetCalls = 0;
+  const deps = stubDeps({
+    expSrc: { sourceType: 'not-found', source: null },
+    resolveExpectedSourceFromSheet: async () => {
+      sheetCalls += 1;
+      return {
+        source: { promo_code: 'C1', bonus_type: 'Free Credit' },
+        sourceType: 'sheet',
+        sourceId: 'Promo Request Sheet:P1',
+        sourceTs: '2026-10-08T00:00:00.000Z',
+        approvalStatus: 'Approved',
+        handle: 'P1',
+        promoCode: 'C1',
+        promotionId: null,
+        brand: 'QP2A',
+      };
+    },
+  });
+  const r = await buildResultForJob({ ...JOB, deps });
+  assert.equal(r.workerError, null);
+  assert.notEqual(r.expectedCanonical, null);
+  assert.equal(sheetCalls, 1);
+});
+
+test('buildResultForJob does NOT consult the sheet when the local expected source resolves', async () => {
+  let sheetCalls = 0;
+  const deps = stubDeps({
+    expSrc: {
+      source: { promo_code: 'C1', bonus_type: 'Free Credit', marker: 'local' },
+      sourceType: 'bundle',
+      sourceId: 'B1',
+      handle: 'P1',
+      promoCode: 'C1',
+      brand: 'QP2A',
+    },
+    resolveExpectedSourceFromSheet: async () => {
+      sheetCalls += 1;
+      return {
+        source: { promo_code: 'C1', bonus_type: 'Free Credit', marker: 'sheet' },
+        sourceType: 'sheet',
+        sourceId: 'Promo Request Sheet:P1',
+        handle: 'P1',
+        promoCode: 'C1',
+        brand: 'QP2A',
+      };
+    },
+  });
+  const r = await buildResultForJob({ ...JOB, deps });
+  assert.equal(r.workerError, null);
+  assert.equal(r.expectedSourceMeta.sourceType, 'bundle');
+  assert.equal(sheetCalls, 0);
 });
 
 test('worker: fetchPromoSnapshot throw → INTERNAL error, scrubbed message', async () => {
