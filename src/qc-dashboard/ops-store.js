@@ -36,8 +36,8 @@ export const OPS_DATASETS = Object.freeze({
   manualPromo:          { tab: 'Manual Entry (Promo)',   required: ['Date', 'Code', 'Brand', 'Region'], dateCol: 'Date' },
   manualBanner:         { tab: 'Manual Entry (Banner)',  required: ['Uploaded Date', 'Brand', 'Region', 'Banner Title'], dateCol: 'Uploaded Date' },
   manualCrm:            { tab: 'Manual Entry (CRM)',     required: ['Date', 'Brand', 'Region', 'CRM Tool'], dateCol: 'Date' },
-  bannerHealth:         { tab: 'Banner Health',          required: ['Timestamp', 'Type', 'Site', 'Brand'], dateCol: 'Timestamp' },
-  homepageBannerStatus: { tab: 'Homepage Banner Status', required: ['Timestamp', 'Site', 'Brand', 'Status'], dateCol: 'Timestamp' },
+  bannerHealth:         { tab: 'Banner Health',          required: ['Timestamp', 'Type', 'Site', 'Brand', 'Region'], dateCol: 'Timestamp' },
+  homepageBannerStatus: { tab: 'Homepage Banner Status', required: ['Timestamp', 'Site', 'Brand', 'Region', 'Status'], dateCol: 'Timestamp' },
   workLog:              { tab: 'Work Log',               required: ['Date', 'Staff', 'Task', 'Hours'], dateCol: 'Date' },
 });
 

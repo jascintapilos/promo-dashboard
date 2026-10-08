@@ -797,6 +797,7 @@
         <div class="rec-body">
           <div class="rec-tools">
             <select id="bhf-p"><option value="all">All brands</option></select>
+            <select id="bhf-r"><option value="all">All regions</option></select>
             <select id="bhf-st"><option value="all">All statuses</option><option value="issues">Only with issues</option><option value="ok">Only OK</option></select>
           </div>
           <table id="bh-tbl" style="table-layout:fixed;"><thead id="bh-th"></thead><tbody id="bht"></tbody></table>
@@ -2719,16 +2720,19 @@ function renderBannerHealthRecords(){
   const data=((_fullData&&_fullData.homepageBannerStatus)||(rawData&&rawData.homepageBannerStatus)||[])
     .map(r=>({...r,ActiveN:Number(r['Active Count'])||0}));
   let rows=data.slice();
-  const fp=document.getElementById('bhf-p'),fst=document.getElementById('bhf-st');
-  if(fp&&fst){
-    const prevP=fp.value,prevS=fst.value;
+  const fp=document.getElementById('bhf-p'),fr=document.getElementById('bhf-r'),fst=document.getElementById('bhf-st');
+  if(fp&&fr&&fst){
+    const prevP=fp.value,prevR=fr.value,prevS=fst.value;
     fp.innerHTML='<option value="all">All brands</option>'+uniq(data.map(x=>x.Brand).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
+    fr.innerHTML='<option value="all">All regions</option>'+uniq(data.map(x=>x.Region).filter(Boolean)).sort().map(x=>`<option value="${x}">${x}</option>`).join('');
     if([...fp.options].some(o=>o.value===prevP)) fp.value=prevP;
+    if([...fr.options].some(o=>o.value===prevR)) fr.value=prevR;
     if([...fst.options].some(o=>o.value===prevS)) fst.value=prevS;
-    fp.onchange=fst.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
+    fp.onchange=fr.onchange=fst.onchange=()=>{bhShowAll=false;renderBannerHealthRecords();};
     const mBtn=document.getElementById('bhm');
     if(mBtn) mBtn.onclick=()=>{bhShowAll=!bhShowAll;renderBannerHealthRecords();};
     if(fp.value!=='all') rows=rows.filter(r=>r.Brand===fp.value);
+    if(fr.value!=='all') rows=rows.filter(r=>(r.Region||'')===fr.value);
     if(fst.value==='issues') rows=rows.filter(r=>(r.Status||'OK')!=='OK');
     else if(fst.value==='ok') rows=rows.filter(r=>(r.Status||'OK')==='OK');
   }
@@ -2740,10 +2744,11 @@ function renderBannerHealthRecords(){
   const tb=document.getElementById('bht');
   if(!th||!tb) return;
   th.innerHTML='<tr>'
-    +thHtml('Brand','Brand',bhSort,'sortBh','20%')
-    +thHtml('Active','ActiveN',bhSort,'sortBh','10%')
-    +'<th style="width:35%;">Banner Names</th>'
-    +thHtml('Status','Status',bhSort,'sortBh','35%',true)+'</tr>';
+    +thHtml('Brand','Brand',bhSort,'sortBh','18%')
+    +thHtml('Region','Region',bhSort,'sortBh','9%')
+    +thHtml('Active','ActiveN',bhSort,'sortBh','9%')
+    +'<th style="width:31%;">Banner Names</th>'
+    +thHtml('Status','Status',bhSort,'sortBh','33%',true)+'</tr>';
   tb.innerHTML=shown.map(r=>{
     const status=r.Status||'OK';
     const isOk=status==='OK';
@@ -2753,7 +2758,7 @@ function renderBannerHealthRecords(){
       ? `<option>${names.length} banner${names.length!==1?'s':''} ▾</option>`+names.map(n=>`<option disabled>${(n||'').replace(/</g,'&lt;')}</option>`).join('')
       : '<option>No banners</option>';
     const sel=`<select onchange="this.selectedIndex=0;" style="width:100%;padding:3px 6px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);color:var(--ink2);font-size:0.78rem;">${opts}</select>`;
-    return `<tr><td style="font-weight:600;color:var(--ink);">${r.Brand||''}</td><td style="color:var(--ink2);font-variant-numeric:tabular-nums;">${r.ActiveN}</td><td>${sel}</td><td style="text-align:right;"><span class="badge ${badgeCls}">${status}</span></td></tr>`;
+    return `<tr><td style="font-weight:600;color:var(--ink);">${r.Brand||''}</td><td style="color:var(--ink2);">${r.Region||''}</td><td style="color:var(--ink2);font-variant-numeric:tabular-nums;">${r.ActiveN}</td><td>${sel}</td><td style="text-align:right;"><span class="badge ${badgeCls}">${status}</span></td></tr>`;
   }).join('');
   const m=document.getElementById('bhm');
   if(m){m.style.display=rows.length<=PAGE?'none':'';if(rows.length>PAGE)m.textContent=bhShowAll?'Show fewer':`Show all ${rows.length}`;}
@@ -2766,11 +2771,12 @@ function renderHKKpis(){
   bh.forEach(r=>{const t=r.Type||r.type||'';counts[t]=(counts[t]||0)+1;});
   const issues=hkData.filter(r=>(r.Status||'OK')!=='OK').length;
   const ok=hkData.length-issues;
+  const brandCount=uniq(hkData.map(r=>r.Brand).filter(Boolean)).length;
   const el=document.getElementById('hk-kpis');
   if(!el) return;
   el.innerHTML=[
-    {icon:'ti-home-2',val:hkData.length,lbl:'Brands monitored',note:'Homepage banner coverage'},
-    {icon:'ti-alert-triangle',val:issues,lbl:'With issues',note:'Need attention'},
+    {icon:'ti-home-2',val:brandCount,lbl:'Brands monitored',note:`${hkData.length} brand–region views`},
+    {icon:'ti-alert-triangle',val:issues,lbl:'With issues',note:'Brand–region views needing attention'},
     {icon:'ti-circle-check',val:ok,lbl:'OK',note:'All good'},
     {icon:'ti-photo-off',val:counts['ALREADY_EXPIRED']||0,lbl:'Expired',note:'Banner already expired'},
     {icon:'ti-clock',val:counts['EXPIRING_SOON']||0,lbl:'Expiring soon',note:'Within 3 days'},

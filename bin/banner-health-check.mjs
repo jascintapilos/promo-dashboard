@@ -155,6 +155,32 @@ function homepageRegion(componentName) {
   return { MYS: 'MY', MY: 'MY', SGP: 'SG', SG: 'SG', IDN: 'ID', ID: 'ID', KHM: 'KH', KH: 'KH', THA: 'TH', TH: 'TH', AUS: 'AUS' }[t] || t;
 }
 
+// -- QPRO/QP2 per-locale region ----------------------------------------------
+// Unlike WS1/WS2 (one carousel per region), a QPRO/QP2 homepage banner is a
+// single carousel slide carrying per-locale image variants in images[]. The
+// slide shows in every region it has an image for, so a banner spans regions.
+// settings_locale_id -> region: 1/3 = MY, 6/7 = SG, 8/9 = ID. (THB/KHR/AUD
+// locale ids are not provisioned on these BOs yet; an unknown id -> OTHER.)
+const SETTINGS_LOCALE_REGION = { 1: 'MY', 3: 'MY', 6: 'SG', 7: 'SG', 8: 'ID', 9: 'ID' };
+
+// The distinct regions a QPRO/QP2 banner serves, from its per-locale images.
+// Falls back to ['OTHER'] for a banner with no images / only unknown locales.
+function bannerRegions(row) {
+  const regions = new Set();
+  for (const im of row.images || []) {
+    regions.add(SETTINGS_LOCALE_REGION[Number(im.settings_locale_id)] || 'OTHER');
+  }
+  return regions.size ? [...regions] : ['OTHER'];
+}
+
+// A homepage carousel banner. QPRO splits placements via platform_type_id
+// (1 = user-portal homepage; 2+ = register/category, excluded — matching the
+// homepage-only WS probe). QP2's banner module has NO platform_type_id: every
+// active banner (session "All") IS the homepage carousel, so all QP2 qualify.
+function isHomepageBanner(row, isQp2) {
+  return isQp2 ? true : row.platform_type_id === 1;
+}
+
 // -- Provider classification (homepage composition) --------------------------
 // Read the provider off the banner label by keyword. Pragmatic Play -> 'pp';
 // any other named provider -> 'other'; no provider word (brand events, generic
@@ -337,10 +363,18 @@ async function probeSite(site, scheduleIndex) {
   // convention, a standing backlog rather than a current process gap.
   let untrackedBacklog = 0;
 
+  // -- Active HOMEPAGE banners only: expiry + schedule-overrun + untracked.
+  // Non-homepage placements (QPRO register/category, platform_type_id != 1) are
+  // excluded entirely, matching the homepage-only WS probe. Each finding carries
+  // the full set of regions the banner serves (regions[]) so one banner is one
+  // detail row but still counts toward every affected region's status.
   for (const row of active.rows || []) {
+    if (!isHomepageBanner(row, isQp2)) continue;
     const start = parseBoDate(row.start_datetime);
     const end = parseBoDate(row.end_datetime);
     const merchant = merchantOf(row);
+    const regions = bannerRegions(row);
+    const liveNow = !!(start && end && start.getTime() <= NOW && end.getTime() >= NOW);
     const flags = [];
 
     if (end && end.getTime() < NOW) {
@@ -363,46 +397,69 @@ async function probeSite(site, scheduleIndex) {
           campaignEnd: overrun.end,
         });
       }
+      // Cross-reference each live banner against the Banner Schedule sheet. One
+      // with no covering B-ID bypassed the tracked upload pipeline. Schedule
+      // coverage is brand-level (merchantKey), not per-region, so this is one
+      // finding per banner. Older than the lookback = backlog, not a gap.
+      if (liveNow) {
+        const covered = hasScheduleCoverage(scheduleEntries, {
+          merchantKey: isQp2 ? merchant.toUpperCase() : null,
+          start, end,
+        });
+        if (!covered) {
+          if (start && start.getTime() >= NOW - LOOKBACK_MS) flags.push({ type: 'UNTRACKED_LIVE_BANNER' });
+          else untrackedBacklog++;
+        }
+      }
     }
 
-    for (const f of flags) findings.push({ row, merchant, start, end, ...f });
+    for (const f of flags) findings.push({ row, merchant, regions, start, end, ...f });
   }
 
   // Drafts whose live window is open now but were scheduled long ago -- parked
   // evergreen banners, not a forgotten activation. Counted, not listed.
   let parkedDrafts = 0;
   for (const row of inactive.rows || []) {
+    if (!isHomepageBanner(row, isQp2)) continue;
     const start = parseBoDate(row.start_datetime);
     const end = parseBoDate(row.end_datetime);
     if (start && end && start.getTime() <= NOW && end.getTime() >= NOW) {
       if (start.getTime() >= NOW - LOOKBACK_MS) {
-        findings.push({ row, merchant: merchantOf(row), start, end, type: 'NOT_ACTIVATED' });
+        findings.push({ row, merchant: merchantOf(row), regions: bannerRegions(row), start, end, type: 'NOT_ACTIVATED' });
       } else {
         parkedDrafts++;
       }
     }
   }
 
-  // -- Homepage composition: per merchant, the banners that are Active AND live
-  // right now on the user portal. Check count and in-house -> PP -> other order.
-  const liveByMerchant = new Map();
+  // -- Homepage composition per (merchant, region): the banners Active AND live
+  // right now in each region's carousel (a banner appears in every region it
+  // carries a locale image for). Check count + in-house -> PP -> other order per
+  // region -- i.e. exactly what a player in that region sees.
+  const liveByMerchantRegion = new Map(); // "merchant\u0000region" -> rows[]
   for (const row of active.rows || []) {
-    if (row.platform_type_id !== 1) continue; // user portal only
+    if (!isHomepageBanner(row, isQp2)) continue;
     const start = parseBoDate(row.start_datetime);
     const end = parseBoDate(row.end_datetime);
     if (!(start && end && start.getTime() <= NOW && end.getTime() >= NOW)) continue;
     const m = merchantOf(row);
-    if (!liveByMerchant.has(m)) liveByMerchant.set(m, []);
-    liveByMerchant.get(m).push(row);
+    for (const region of bannerRegions(row)) {
+      const key = `${m}\u0000${region}`;
+      if (!liveByMerchantRegion.has(key)) liveByMerchantRegion.set(key, []);
+      liveByMerchantRegion.get(key).push(row);
+    }
   }
-  for (const [merchant, list] of liveByMerchant) {
+
+  const merchantsSnap = [];
+  for (const [key, list] of liveByMerchantRegion) {
+    const [merchant, region] = key.split('\u0000');
     const sorted = list
       .map((r) => ({ r, cat: classifyProvider(r.label), position: Number(r.position) || 0 }))
       .sort((a, b) => (a.position - b.position) || (a.r.id - b.r.id));
 
     if (sorted.length < HOMEPAGE_MIN) {
       findings.push({
-        type: 'TOO_FEW_BANNERS', merchant, row: null, count: sorted.length,
+        type: 'TOO_FEW_BANNERS', merchant, regions: [region], row: null, count: sorted.length,
         detail: `${sorted.length} live homepage banner(s), want >=${HOMEPAGE_MIN}`,
       });
     }
@@ -420,45 +477,17 @@ async function probeSite(site, scheduleIndex) {
       const detail = inversions.slice(0, 3).map(([hi, lo]) =>
         `${CAT_LABEL[hi.cat]} '${hi.r.label}' (pos ${hi.position}) above ${CAT_LABEL[lo.cat]} '${lo.r.label}' (pos ${lo.position})`,
       ).join('; ');
-      findings.push({ type: 'OUT_OF_ORDER', merchant, row: null, detail, sequence: seq });
+      findings.push({ type: 'OUT_OF_ORDER', merchant, regions: [region], row: null, detail, sequence: seq });
     }
 
-    // Cross-reference each live banner against the Banner Schedule sheet. One
-    // with no covering B-ID at all bypassed the tracked upload pipeline --
-    // banner-pre-qc/banner-deep-qc are both scoped to B-IDs in the sheet, so
-    // neither ever saw it. Only recently-started banners are flagged; older
-    // ones predate the B-ID tracking convention and are backlog, not a gap.
-    if (scheduleEntries) {
-      for (const row of list) {
-        const start = parseBoDate(row.start_datetime);
-        const end = parseBoDate(row.end_datetime);
-        const covered = hasScheduleCoverage(scheduleEntries, {
-          merchantKey: isQp2 ? merchant.toUpperCase() : null,
-          start, end,
-        });
-        if (covered) continue;
-        if (start && start.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant, start, end, type: 'UNTRACKED_LIVE_BANNER' });
-        } else {
-          untrackedBacklog++;
-        }
-      }
-    }
-  }
-
-  // Per-merchant snapshot for the dashboard's "Homepage banner" view: count of
-  // live homepage banners + their labels (sorted by carousel position).
-  const merchantsSnap = [];
-  for (const [merchant, list] of liveByMerchant) {
-    const sorted = list
-      .slice()
-      .sort((a, b) => ((Number(a.position) || 0) - (Number(b.position) || 0)) || (a.id - b.id));
     merchantsSnap.push({
       merchant,
+      region,
       activeCount: sorted.length,
-      bannerNames: sorted.map((r) => `#${r.id} ${r.label || '(no label)'}`),
+      bannerNames: sorted.map(({ r }) => `#${r.id} ${r.label || '(no label)'}`),
     });
   }
+  merchantsSnap.sort((a, b) => (a.merchant < b.merchant ? -1 : a.merchant > b.merchant ? 1 : a.region.localeCompare(b.region)));
 
   return {
     siteId: site.id,
@@ -509,26 +538,25 @@ async function probeBiaSite(site, scheduleIndex) {
     const end   = parseBiaDate(img.endDate, 'end');
     if (!start || !end) continue;
     seenRegions.add(region);
-    const mlabel = `${brandLabel} ${region}`;
     const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
     const isPublished = car.status === 'published';
 
     if (isPublished) {
       if (end.getTime() < NOW) {
         if (end.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant: mlabel, start, end, type: 'ALREADY_EXPIRED' });
+          findings.push({ row, merchant: brandLabel, regions: [region], start, end, type: 'ALREADY_EXPIRED' });
         } else {
           staleBacklog++;
         }
       } else if (end.getTime() <= NOW + EXPIRING_WINDOW_MS) {
-        findings.push({ row, merchant: mlabel, start, end, type: 'EXPIRING_SOON' });
+        findings.push({ row, merchant: brandLabel, regions: [region], start, end, type: 'EXPIRING_SOON' });
       }
       if (start.getTime() <= NOW && end.getTime() >= NOW) (liveByRegion[region] ||= []).push({ img, car });
     } else {
       // Draft/archived carousel with an open date window — not activated.
       if (start.getTime() <= NOW && end.getTime() >= NOW) {
         if (start.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant: mlabel, start, end, type: 'NOT_ACTIVATED' });
+          findings.push({ row, merchant: brandLabel, regions: [region], start, end, type: 'NOT_ACTIVATED' });
         } else {
           parkedDrafts++;
         }
@@ -539,12 +567,11 @@ async function probeBiaSite(site, scheduleIndex) {
   // One snapshot row per region: homepage banner count + too-few + schedule coverage.
   const merchants = [];
   for (const region of [...seenRegions].sort()) {
-    const mlabel = `${brandLabel} ${region}`;
     const slides = liveByRegion[region] || [];
 
     if (slides.length < HOMEPAGE_MIN) {
       findings.push({
-        type: 'TOO_FEW_BANNERS', merchant: mlabel, row: null, count: slides.length,
+        type: 'TOO_FEW_BANNERS', merchant: brandLabel, regions: [region], row: null, count: slides.length,
         detail: `${slides.length} live homepage slide(s), want >=${HOMEPAGE_MIN}`,
       });
     }
@@ -557,7 +584,7 @@ async function probeBiaSite(site, scheduleIndex) {
         if (covered) continue;
         const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
         if (start && start.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant: mlabel, start, end, type: 'UNTRACKED_LIVE_BANNER' });
+          findings.push({ row, merchant: brandLabel, regions: [region], start, end, type: 'UNTRACKED_LIVE_BANNER' });
         } else {
           untrackedBacklog++;
         }
@@ -565,7 +592,8 @@ async function probeBiaSite(site, scheduleIndex) {
     }
 
     merchants.push({
-      merchant: mlabel,
+      merchant: brandLabel,
+      region,
       activeCount: slides.length,
       bannerNames: slides
         .sort((a, b) => new Date(a.img.startDate) - new Date(b.img.startDate))
@@ -636,7 +664,8 @@ async function appendDashboardNotification({ type, title, message }) {
 // the dashboard Brand column. For QP2's single multi-merchant BO (ibc22), the
 // merchant name (IBC22/KING333/ACE66/SPADE66) maps to QP2A/B/C/D via brand-directory.
 function siteToLabel(siteId, merchant = null) {
-  // WS1/WS2 homepage probe passes a per-region merchant like "WS1 MY" — show it verbatim.
+  // WS1/WS2 homepage probe passes the brand label ("WS1"/"WS2") as merchant
+  // (region is a separate field now) — show it verbatim.
   if (merchant && /^WS[12]\b/i.test(merchant)) return merchant;
   if (merchant && QP2_MERCHANT_LABEL[merchant]) return QP2_MERCHANT_LABEL[merchant];
   const s = (siteId || '').toLowerCase();
@@ -672,7 +701,11 @@ async function writeMerchantStatusToWeeklyReport(siteResults, allFindings) {
   for (const sr of siteResults) {
     const siteFindings = allFindings.filter((f) => f.siteId === sr.siteId);
     for (const m of (sr.merchants || [])) {
-      const merchFindings = siteFindings.filter((f) => f.merchant === m.merchant);
+      // A banner spanning several regions counts toward each region it serves,
+      // so match on both merchant and whether this region is in the finding's set.
+      const merchFindings = siteFindings.filter(
+        (f) => f.merchant === m.merchant && (f.regions || []).includes(m.region),
+      );
       const statusParts = [];
       // Composition issues
       const tooFew = merchFindings.find((f) => f.type === 'TOO_FEW_BANNERS');
@@ -696,6 +729,7 @@ async function writeMerchantStatusToWeeklyReport(siteResults, allFindings) {
         NOW,
         sr.siteId,
         siteToLabel(sr.siteId, m.merchant),
+        m.region || '',
         String(m.activeCount),
         m.bannerNames.join('\n'),
         status,
@@ -703,7 +737,7 @@ async function writeMerchantStatusToWeeklyReport(siteResults, allFindings) {
     }
   }
 
-  const header = ['Timestamp', 'Site', 'Brand', 'Active Count', 'Banner Names', 'Status'];
+  const header = ['Timestamp', 'Site', 'Brand', 'Region', 'Active Count', 'Banner Names', 'Status'];
   await sheets.spreadsheets.values.clear({ spreadsheetId: OPS_ID, range: `'${TAB}'!A:Z` });
   await sheets.spreadsheets.values.update({
     spreadsheetId: OPS_ID,
@@ -735,12 +769,13 @@ async function writeBannerHealthToWeeklyReport(findings) {
     });
   }
 
-  const header = ['Timestamp', 'Type', 'Site', 'Brand', 'Banner ID', 'Label', 'End Date', 'Detail'];
+  const header = ['Timestamp', 'Type', 'Site', 'Brand', 'Region', 'Banner ID', 'Label', 'End Date', 'Detail'];
   const rows = findings.map((f) => [
     NOW,
     f.type,
     f.siteId || '',
-    f.merchant || '',
+    siteToLabel(f.siteId, f.merchant),
+    (f.regions || []).join('/'),
     f.row?.id ? String(f.row.id) : '',
     f.row?.label || '',
     f.end ? fmtDate(f.end) : (f.campaignEnd ? fmtDate(f.campaignEnd) : ''),
