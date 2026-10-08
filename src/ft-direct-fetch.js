@@ -17,7 +17,7 @@ import path from 'node:path';
 export const FT_API = {
   ws1:   { base: 'https://mb8.ft-crm.com',            tenant: 'x2avv90vh1' },
   qpro1: { base: 'https://alpha-iota-qp1.ft-crm.com', tenant: '2jdauyjn44' },
-  qp2:   { base: 'https://alpha-iota-qp2.ft-crm.com', tenant: null },
+  qp2:   { base: 'https://alpha-iota-qp2.ft-crm.com', tenant: 'htu9p48vmh' },
 };
 
 export async function ftDirectFetch(instance, token, cookieStr, { year, concurrency = 6 } = {}) {
