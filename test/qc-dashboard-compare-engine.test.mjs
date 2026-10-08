@@ -176,6 +176,17 @@ test('Increment 5: category sets compared unordered (case-normalized)', () => {
   assert.equal(catField.status, 'MATCH', 'unordered category set must match');
 });
 
+test('Increment 5: request has no category restriction → categories SKIPPED (not MISMATCH)', () => {
+  const exp = qp2FcExpected();
+  exp.scope.categories = []; // promo request imposes no category restriction
+  const act = qp2FcLive();
+  act.scope.categories = ['CG', 'CK', 'ES', 'FS', 'LIVE_CASINO', 'SLOTS', 'SPORTS']; // live BO exposes its full category set
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const catField = r.fields.find((f) => f.field === 'categories');
+  assert.equal(catField.status, 'SKIPPED', 'no category restriction in the request → skip, not flag');
+  assert.notEqual(r.verdict, 'NOT_SAFE', 'empty-expected categories must not cause a false FAIL');
+});
+
 test('Increment 5: decimal comparison ignores insignificant precision (0.02 vs 0.020000001)', () => {
   const exp = qp2FcExpected();
   exp.currencies[0].freeCreditAmount = 30.00;

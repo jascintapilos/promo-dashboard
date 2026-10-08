@@ -223,8 +223,8 @@ function ruleCategoriesAlignment(exp, act) {
   const aProviders = act.scope.gameProviderIds.length > 0 || act.scope.gameProviderCodes.length > 0;
   // Category set comparison — unordered set equality.
   const results = [];
-  if (eCats.length === 0 && aCats.length === 0) {
-    results.push(mkResult('categories', [], [], SKIPPED, INFO, 'scope.categories', 'no category restriction in source or live'));
+  if (eCats.length === 0) {
+    results.push(mkResult('categories', eCats, aCats, SKIPPED, INFO, 'scope.categories', 'no category restriction in the promo request — live categories not QC\'d'));
   } else if (setsEqual(eCats, aCats)) {
     results.push(mkResult('categories', eCats, aCats, MATCH, CRITICAL, 'scope.categories', 'category set matches'));
   } else {
