@@ -15,7 +15,7 @@ import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
 import { isPromoPath, handlePromo, ingestPromoPlayers, grantBrandAccess, revokeBrandAccess } from '../src/qc-dashboard/promo.js';
 import { normalizeRunQcRequest } from '../src/qc-dashboard/run-qc-request.js';
-import { runComparison } from '../src/qc-dashboard/compare-flow.js';
+import { runComparisonWithSheetsFallback } from '../src/qc-dashboard/compare-flow.js';
 import { recordRun } from '../src/qc-dashboard/run-store.js';
 import { hashComparePayload } from '../src/qc-dashboard/manual-pass.js';
 import { readJsonBounded } from '../src/qc-dashboard/read-json.js';
@@ -524,7 +524,7 @@ async function handleApi(req, res, user) {
       // more strictly if needed).
       if (isMvpBrand) {
         try {
-          const cmp = runComparison({ brand, code, handle, snapshot, brandConfig: selected });
+          const cmp = await runComparisonWithSheetsFallback({ brand, code, handle, snapshot, brandConfig: selected });
           if (cmp.status === 'ok') {
             verdict = cmp.verdict;
             findings = [...cmp.findings, ...findings.filter((f) => f.check !== 'run-qc-error')];

@@ -8,7 +8,7 @@
 //    its platform quirks — every future MVP addition must show up in a
 //    diff and pass this test explicitly.
 //
-// 2. bin/qc-dashboard.mjs only calls runComparison() when the selected
+// 2. bin/qc-dashboard.mjs only calls runComparisonWithSheetsFallback() when the selected
 //    brand has qcRules.mvp === true. A future refactor that inlines the
 //    call or drops the gate would silently expose non-MVP brands to a
 //    comparator wired against unvalidated platform paths.
@@ -37,15 +37,15 @@ test('Increment 8: enabled brand set matches the MVP set', () => {
 
 test('Increment 8: compare engine call in /api/run-qc is gated by isMvpBrand', () => {
   // Any refactor must keep the compare invocation inside the `if (isMvpBrand)`
-  // block. Ripgrep-style static check: the runComparison call must be
+  // block. Ripgrep-style static check: the runComparisonWithSheetsFallback call must be
   // preceded (within 400 chars) by a `isMvpBrand` conditional.
-  const runIx = DASHBOARD_JS.indexOf('runComparison(');
-  assert.notEqual(runIx, -1, 'runComparison call missing from bin/qc-dashboard.mjs');
+  const runIx = DASHBOARD_JS.indexOf('runComparisonWithSheetsFallback(');
+  assert.notEqual(runIx, -1, 'runComparisonWithSheetsFallback call missing from bin/qc-dashboard.mjs');
   const preContext = DASHBOARD_JS.slice(Math.max(0, runIx - 400), runIx);
   assert.match(
     preContext,
     /if\s*\(\s*isMvpBrand\s*\)/,
-    'runComparison() must be inside an `if (isMvpBrand)` gate — non-MVP brands must not run the compare engine',
+    'runComparisonWithSheetsFallback() must be inside an `if (isMvpBrand)` gate — non-MVP brands must not run the compare engine',
   );
 });
 

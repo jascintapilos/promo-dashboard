@@ -385,3 +385,22 @@ function _safeMessage(e) {
   // adapters shouldn't produce them, but keep this guard).
   return msg.replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>');
 }
+
+export async function runComparisonWithSheetsFallback({ brand, code, handle = null, snapshot, brandConfig, deps = {} } = {}) {
+  const resolveExpectedSource = deps.resolveExpectedSource || _defaultResolve;
+  const primary = resolveExpectedSource({ brand, code, handle });
+  // Local file already resolved it, or local ambiguity is itself authoritative — don't let the sheet override.
+  if (primary && (primary.source || primary.sourceType === 'ambiguous')) {
+    return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => primary } });
+  }
+  let sheetResult = null;
+  try {
+    const resolveFromSheet = deps.resolveExpectedSourceFromSheet
+      || (await import('./sheets-fallback.js')).resolveExpectedSourceFromSheet;
+    sheetResult = await resolveFromSheet({ brand, code, handle });
+  } catch {
+    sheetResult = null; // Sheets unavailable (no OAuth token etc.) — fall through to the local not-found result, never throw.
+  }
+  const finalSrc = (sheetResult && (sheetResult.source || sheetResult.sourceType === 'ambiguous')) ? sheetResult : primary;
+  return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => finalSrc } });
+}
