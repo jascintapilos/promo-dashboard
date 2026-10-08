@@ -55,27 +55,12 @@ function _buildIndex() {
   const bundleByHandleBrand = new Map(); // `${handle}::${brand}` → entry
   const requestByHandle = new Map(); // handle → entry
 
-  if (existsSync(BUNDLES_DIR)) {
-    for (const f of readdirSync(BUNDLES_DIR)) {
-      if (!f.endsWith('.json')) continue;
-      const p = path.join(BUNDLES_DIR, f);
-      const bundle = _safeReadJson(p);
-      if (!bundle || !bundle.brand || !bundle.promo_code) continue;
-      let savedAt = bundle.saved_at || null;
-      if (!savedAt) { try { savedAt = new Date(statSync(p).mtimeMs).toISOString(); } catch {} }
-      // Derive handle from filename: <handle>__<BRAND>.json — resilient to
-      // handles that themselves contain `_` because we split on `__`.
-      const base = f.slice(0, -5);
-      const parts = base.split('__');
-      const handle = parts.length >= 2 ? parts.slice(0, -1).join('__') : bundle.handle || null;
-      const entry = { path: p, kind: 'bundle', handle, promoCode: bundle.promo_code, brand: bundle.brand, savedAt, promotionId: bundle.promotion_id || null };
-      const codeKey = `${bundle.brand}::${bundle.promo_code}`;
-      // Keep the most recently saved bundle per (brand, promoCode)
-      const prior = bundleIx.get(codeKey);
-      if (!prior || (savedAt && (!prior.savedAt || savedAt > prior.savedAt))) bundleIx.set(codeKey, entry);
-      if (handle) bundleByHandleBrand.set(`${handle}::${bundle.brand}`, entry);
-    }
-  }
+  // qc-bundles are NO LONGER consulted for QC expected-source resolution.
+  // The promo request (captures/requests + the live Promo Request Sheet fallback)
+  // is the single source of truth — the QC compares the live BO against what was
+  // REQUESTED, never against a post-canary bundle snapshot. bundleIx /
+  // bundleByHandleBrand are left as empty Maps so the resolver falls through to
+  // the request index cleanly. (BUNDLES_DIR is intentionally unread.)
   if (existsSync(REQUESTS_DIR)) {
     for (const f of readdirSync(REQUESTS_DIR)) {
       if (!f.endsWith('.json')) continue;

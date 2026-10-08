@@ -38,9 +38,10 @@ function writeBundle(dir, handle, brand, { promoCode, source, liveState = null, 
   }, null, 2));
 }
 
-test('Increment 3: resolves by exact handle — bundle preferred over request', async () => {
-  const fx = mkFixture('handle-bundle-first');
+test('Increment 3: ignores qc-bundle — resolves from request by handle', async () => {
+  const fx = mkFixture('handle-request-over-bundle');
   writeRequest(fx.reqDir, 'P100', { promoCode: 'CODE_A', brands: ['QP2A'] });
+  // A bundle also exists for the same handle; it MUST be ignored now.
   writeBundle(fx.bundleDir, 'P100', 'QP2A', { promoCode: 'CODE_A', source: { promo_code: 'CODE_A', bonus_type: 'Deposit', parsed: { min_deposit: 30, to_multiplier: 5 } } });
   try {
     process.env.QC_REQUESTS_DIR = fx.reqDir;
@@ -48,11 +49,9 @@ test('Increment 3: resolves by exact handle — bundle preferred over request', 
     const { resolveExpectedSource, _clearExpectedSourceCache } = await importFresh();
     _clearExpectedSourceCache();
     const r = resolveExpectedSource({ brand: 'QP2A', code: 'CODE_A', handle: 'P100' });
-    assert.equal(r.sourceType, 'bundle');
-    assert.equal(r.sourceId, 'bundle:P100::QP2A');
-    assert.equal(r.handle, 'P100');
+    assert.equal(r.sourceType, 'request');
+    assert.equal(r.sourceId, 'request:P100');
     assert.equal(r.promoCode, 'CODE_A');
-    assert.equal(r.source.promo_code, 'CODE_A');
   } finally {
     rmSync(fx.tmp, { recursive: true, force: true });
     delete process.env.QC_REQUESTS_DIR; delete process.env.QC_BUNDLES_DIR;
@@ -77,8 +76,8 @@ test('Increment 3: resolves by exact handle — request when no bundle exists', 
   }
 });
 
-test('Increment 3: resolves by exact promo_code + brand match — bundle wins over request', async () => {
-  const fx = mkFixture('code-brand-bundle-wins');
+test('Increment 3: ignores qc-bundle — resolves from request by code+brand', async () => {
+  const fx = mkFixture('code-brand-request-over-bundle');
   writeRequest(fx.reqDir, 'P200', { promoCode: 'DUAL_CODE', brands: ['QP2A'] });
   writeBundle(fx.bundleDir, 'P200', 'QP2A', { promoCode: 'DUAL_CODE', source: { promo_code: 'DUAL_CODE' } });
   try {
@@ -87,16 +86,18 @@ test('Increment 3: resolves by exact promo_code + brand match — bundle wins ov
     const { resolveExpectedSource, _clearExpectedSourceCache } = await importFresh();
     _clearExpectedSourceCache();
     const r = resolveExpectedSource({ brand: 'QP2A', code: 'DUAL_CODE' });
-    assert.equal(r.sourceType, 'bundle');
+    assert.equal(r.sourceType, 'request');
   } finally {
     rmSync(fx.tmp, { recursive: true, force: true });
     delete process.env.QC_REQUESTS_DIR; delete process.env.QC_BUNDLES_DIR;
   }
 });
 
-test('Increment 3: ambiguous when two DIFFERENT handles share the same (brand, code)', async () => {
-  const fx = mkFixture('ambiguous');
+test('Increment 3: a bundle no longer creates ambiguity — the request alone resolves', async () => {
+  const fx = mkFixture('no-bundle-ambiguity');
   writeRequest(fx.reqDir, 'P300a', { promoCode: 'DUP_CODE', brands: ['QP2A'] });
+  // Previously a bundle under a DIFFERENT handle made this (brand, code) ambiguous.
+  // Bundles are ignored now, so only the request matches — a clean resolve.
   writeBundle(fx.bundleDir, 'P300b', 'QP2A', { promoCode: 'DUP_CODE', source: { promo_code: 'DUP_CODE' } });
   try {
     process.env.QC_REQUESTS_DIR = fx.reqDir;
@@ -104,10 +105,7 @@ test('Increment 3: ambiguous when two DIFFERENT handles share the same (brand, c
     const { resolveExpectedSource, _clearExpectedSourceCache } = await importFresh();
     _clearExpectedSourceCache();
     const r = resolveExpectedSource({ brand: 'QP2A', code: 'DUP_CODE' });
-    assert.equal(r.sourceType, 'ambiguous');
-    assert.equal(r.matches.length, 2);
-    // Must NEVER guess a winner — the caller (compare engine) turns this
-    // into MANUAL_REQUIRED per the "no guessing" rule.
+    assert.equal(r.sourceType, 'request');
   } finally {
     rmSync(fx.tmp, { recursive: true, force: true });
     delete process.env.QC_REQUESTS_DIR; delete process.env.QC_BUNDLES_DIR;
@@ -148,8 +146,9 @@ test('Increment 3: handle mismatch (brand not in request.brands) returns not-fou
 
 test('Increment 3: safety net — resolved source.promo_code MUST match requested code', async () => {
   const fx = mkFixture('code-mismatch');
-  // Contrive an inconsistency: bundle file named for CODE_X but source claims CODE_Y
-  writeBundle(fx.bundleDir, 'P500', 'QP2A', { promoCode: 'CODE_X', source: { promo_code: 'CODE_Y' } });
+  // Contrive an inconsistency: request handle P500 carries promo_code CODE_Y,
+  // but the caller asks for CODE_X under that handle — the safety net must reject.
+  writeRequest(fx.reqDir, 'P500', { promoCode: 'CODE_Y', brands: ['QP2A'] });
   try {
     process.env.QC_REQUESTS_DIR = fx.reqDir;
     process.env.QC_BUNDLES_DIR = fx.bundleDir;
