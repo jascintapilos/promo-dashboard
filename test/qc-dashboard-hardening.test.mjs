@@ -302,7 +302,7 @@ test('isLocalhost rejects external IPs and hostnames', () => {
 
 test('MVP brands are enabled, non-MVP brands are disabled', () => {
   const brands = buildBrandList();
-  const mvp = ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO10', 'QPRO15', 'QPRO2', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO6', 'QPRO7', 'QPRO8', 'WS1_MY'];
+  const mvp = ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO10', 'QPRO11', 'QPRO12', 'QPRO13', 'QPRO14', 'QPRO15', 'QPRO16', 'QPRO17', 'QPRO2', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO6', 'QPRO7', 'QPRO8', 'QPRO9', 'WS1_MY'];
   for (const id of mvp) {
     const b = brands.find((x) => x.id === id);
     assert.ok(b, `${id} missing from brand list`);

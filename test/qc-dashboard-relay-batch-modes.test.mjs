@@ -217,18 +217,18 @@ test('§1: preflight READY + code not found → NOT_SAFE via direct fetch, no re
 
 // ── §1 — disabled brand path never queues to relay ──────────────────────
 
-test('§1: a disabled brand (QPRO13) is rejected at entry and never queued to relay — 400 not enabled', async () => {
+test('§1: a disabled brand (WS1_SG) is rejected at entry and never queued to relay — 400 not enabled', async () => {
   const port = 4414;
   const s = startServer({ port, env: { RELAY_SECRET: SECRET } });
   try {
     await waitReady(`http://127.0.0.1:${port}`);
     const cookie = await login(`http://127.0.0.1:${port}`);
-    // QPRO13 is not enabled per data/qc-dashboard-brands.json → server 400s
+    // WS1_SG is not enabled per data/qc-dashboard-brands.json → server 400s
     // at entry. This is the "disabled brand path never relayed" invariant.
     // (QP2B/C/D used to live here but are now enabled MVP brands.)
     const r = await fetch(`http://127.0.0.1:${port}/api/run-qc`, {
       method: 'POST', headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ brand: 'QPRO13', codes: ['X'] }),
+      body: JSON.stringify({ brand: 'WS1_SG', codes: ['X'] }),
     });
     assert.equal(r.status, 400);
     const j = await r.json();
