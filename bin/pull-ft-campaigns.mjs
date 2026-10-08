@@ -114,6 +114,7 @@ if (PUSH && !FROM_BROWSER) {
 }
 
 let portaltoken = '';
+let cookieStr = '';
 let cookieExp = 0;
 if (!FROM_BROWSER) {
   const SESSION_FILE = path.resolve(`ft-session-${INSTANCE}.local.json`);
@@ -125,6 +126,7 @@ if (!FROM_BROWSER) {
   const portalCookie = session.cookies?.find(c => c.name === 'portaltoken');
   portaltoken = portalCookie?.value || session.token || '';
   if (!portaltoken) { console.error(sessionExpiredMsg(INSTANCE)); process.exit(1); }
+  cookieStr = (session.cookies || []).map(c => `${c.name}=${c.value}`).join('; ') || `portaltoken=${portaltoken}`;
   cookieExp = portalCookie?.expires || 0;
   const nowSec = Math.floor(Date.now() / 1000);
   if (cookieExp > 0 && cookieExp < nowSec + 300) { console.error(sessionExpiredMsg(INSTANCE)); process.exit(1); }
@@ -133,7 +135,7 @@ if (!FROM_BROWSER) {
 const modeLabel = INSTANCES[INSTANCE].label;
 console.log(`\nFastTrack CRM pull — ${modeLabel} (${INSTANCE})`);
 if (!FROM_BROWSER) console.log(`Token expires: ${cookieExp > 0 ? new Date(cookieExp * 1000).toISOString() : 'session cookie'}`);
-console.log(`Mode: ${WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
+console.log(`Mode: ${PUSH ? 'PUSH (crmFt direct feed)' : WRITE ? (APPEND ? 'WRITE (append)' : 'WRITE (overwrite FT section)') : 'DRY RUN'}\n`);
 
 // ── GAS relay via web app ─────────────────────────────────────────────────────
 
@@ -175,7 +177,10 @@ if (FROM_BROWSER) {
   console.log(`  ${Object.keys(pulled.changelogs||{}).length} changelogs, ${Object.keys(pulled.segFilters||{}).length} segment filters`);
   raw = pulled;
 } else {
-  raw = await gasRelayFetch(INSTANCE, portaltoken);
+  // Direct /crm-api read (replaces the GAS relay — confirmed reachable incl. WS1).
+  const { ftDirectFetch } = await import('../src/ft-direct-fetch.js');
+  raw = await ftDirectFetch(INSTANCE, portaltoken, cookieStr, { year: YEAR });
+  console.log(`  direct: ${(raw.users || []).length} users, ${(raw.segments || []).length} segments, ${(raw.activities || []).length} activities, ${Object.keys(raw.changelogs || {}).length} changelogs`);
 }
 
 // ── Build lookup maps ─────────────────────────────────────────────────────────
