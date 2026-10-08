@@ -46,9 +46,13 @@ const STEPS = [
   // crmSmartico dataset straight to the server itself, so datasets: [] here
   // (the runner must not also push it from the sheet).
   { id: '6',  title: 'Pulling Smartico CRM (MCP static token, direct push)', cmd: ['bin/pull-smartico-mcp.mjs', '--push'], status: ['smartico', 'Smartico CRM'], timeout: 12 * MIN, datasets: [] },
-  { id: '7',  title: 'Pulling FastTrack WS1 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=ws1', '--write'], status: ['ft-ws1', 'FT WS1/WS2 CRM'], hint: FT_HINT('ws1'), timeout: 15 * MIN, datasets: ['crm'] },
-  { id: '8',  title: 'Pulling FastTrack QPRO1 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=qpro1', '--write'], status: ['ft-qpro1', 'FT QPRO1 CRM'], hint: FT_HINT('qpro1'), timeout: 15 * MIN, datasets: ['crm'] },
-  { id: '9',  title: 'Pulling FastTrack QP2 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=qp2', '--write'], status: ['ft-qp2', 'FT QP2A-D CRM'], hint: FT_HINT('qp2'), timeout: 15 * MIN, datasets: ['crm'] },
+  // FastTrack → crmFt split feed (direct push). pull-ft-campaigns --push ensures the
+  // session (re-mint → one headless re-login), reads via the GAS relay (handles WS1
+  // Cloudflare), and pushes the per-instance union as crmFt; datasets:[] since it
+  // posts crmFt itself. A dead session exits 1 → this step's Telegram alert fires.
+  { id: '7',  title: 'FastTrack WS1 CRM → crmFt (direct push)', cmd: ['bin/pull-ft-campaigns.mjs', '--instance=ws1', '--push'], status: ['ft-ws1', 'FT WS1/WS2 CRM'], hint: FT_HINT('ws1'), timeout: 15 * MIN, datasets: [] },
+  { id: '8',  title: 'FastTrack QPRO1 CRM → crmFt (direct push)', cmd: ['bin/pull-ft-campaigns.mjs', '--instance=qpro1', '--push'], status: ['ft-qpro1', 'FT QPRO1 CRM'], hint: FT_HINT('qpro1'), timeout: 15 * MIN, datasets: [] },
+  { id: '9',  title: 'FastTrack QP2 CRM → crmFt (direct push)', cmd: ['bin/pull-ft-campaigns.mjs', '--instance=qp2', '--push'], status: ['ft-qp2', 'FT QP2A-D CRM'], hint: FT_HINT('qp2'), timeout: 15 * MIN, datasets: [] },
   { id: '10', title: 'Pulling adhoc tasks from Slack into Adhoc Tasks tab', cmd: ['bin/pull-adhoc-tasks.mjs', '--commit'], status: ['adhoc-tasks', 'Adhoc Tasks'], timeout: 10 * MIN, datasets: ['adhoc'] },
   { id: '11', title: 'Running banner health check (Banner Health tab + dashboard)', cmd: ['bin/banner-health-check.mjs', '--dashboard'], status: ['banner-health', 'Banner Health Check'], timeout: 15 * MIN, datasets: ['bannerHealth', 'homepageBannerStatus'] },
   { id: '12', title: 'Sorting all tabs by date descending (latest on top)', cmd: ['bin/sort-sheet-tabs.mjs'], status: null, timeout: 5 * MIN, datasets: [] },

@@ -22,7 +22,7 @@
  *   node bin/pull-ft-campaigns.mjs --instance=ws1 --write
  *   node bin/pull-ft-campaigns.mjs --instance=ws1 --write --append
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
@@ -32,8 +32,17 @@ const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
 const WRITE = flags.write === true;
 const APPEND = flags.append === true;
+const PUSH = flags.push === true; // push a crmFt split-feed to the dashboard server (no sheet)
 const FROM_BROWSER = flags['from-browser-pull'] === true;
 const YEAR = new Date().getFullYear();
+
+// crmFt is ONE server dataset fed by three FT instances (ws1/qpro1/qp2). A local
+// per-instance cache lets each run push the UNION, so one instance refreshing (or
+// failing) never drops another instance's last-good rows.
+const CRMFT_HEADER = ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'];
+const CRMFT_CACHE = path.resolve('ft-crm-cache.local.json');
+const readFtCache = () => { try { return JSON.parse(readFileSync(CRMFT_CACHE, 'utf8')); } catch { return {}; } };
+const unionFtRows = (cache) => Object.values(cache).flatMap((e) => (e && e.rows) || []).sort((a, b) => String(b[0] || '').localeCompare(String(a[0] || '')));
 
 const TAB = 'CRM Assignment Log';
 const OPS_ID = getOpsSheetId();
@@ -80,6 +89,28 @@ function sessionExpiredMsg(inst) {
     `  2. Press F12 → Application → Cookies → find "portaltoken" → copy the value`,
     `  3. Run: node bin/save-ft-token.mjs --instance=${inst} --token=<paste-value-here>`,
   ].join('\n');
+}
+
+// ── Direct-push session preflight: ensure a live session, or fail loud ────────
+// (Only in --push mode. Re-mint → one headless re-login → if both fail, keep every
+// instance's last-good via the union push, mark this run failed, and exit 1 so the
+// nightly runner's per-step Telegram alert fires.)
+if (PUSH && !FROM_BROWSER) {
+  const { ensureFtSession } = await import('../src/ft-session-ensure.js');
+  const { pushOpsDataset } = await import('../src/ops-relay-push.js');
+  const sess = await ensureFtSession(INSTANCE);
+  if (!sess.ok) {
+    const cache = readFtCache();
+    try {
+      await pushOpsDataset({ key: 'crmFt', headers: CRMFT_HEADER, rows: unionFtRows(cache), ok: true, detail: `${INSTANCE} stale: ${sess.reason}` });
+      console.error(`crmFt: kept last-good union (${unionFtRows(cache).length} rows); ${INSTANCE} NOT refreshed.`);
+    } catch (e) {
+      console.error(`crmFt union-push failed: ${e.message}`);
+    }
+    console.error(`FT ${INSTANCE} session unavailable: ${sess.reason}`);
+    process.exit(1);
+  }
+  console.log(`FT ${INSTANCE} session: ${sess.reason}`);
 }
 
 let portaltoken = '';
@@ -311,6 +342,19 @@ console.log('By creator (YTD):');
 Object.entries(byCreator).sort((a, b) => b[1] - a[1]).forEach(([name, n]) =>
   console.log(`  ${String(n).padStart(4)}  ${name}`)
 );
+
+if (PUSH) {
+  // Refresh this instance in the cache, then push the UNION of all instances as crmFt.
+  const cache = readFtCache();
+  cache[INSTANCE] = { rows: teamRows, at: new Date().toISOString() };
+  try { writeFileSync(CRMFT_CACHE, JSON.stringify(cache)); } catch (e) { console.warn(`cache write failed: ${e.message}`); }
+  const { pushOpsDataset } = await import('../src/ops-relay-push.js');
+  const union = unionFtRows(cache);
+  const others = Object.keys(cache).filter((k) => k !== INSTANCE);
+  const status = await pushOpsDataset({ key: 'crmFt', headers: CRMFT_HEADER, rows: union, ok: true, detail: `refreshed ${INSTANCE}` });
+  console.log(`\n✅ Pushed crmFt — union ${union.length} rows (refreshed ${INSTANCE}=${teamRows.length}${others.length ? `, cached: ${others.join(',')}` : ''}) → ${JSON.stringify(status)}`);
+  process.exit(0);
+}
 
 if (!WRITE) {
   console.log('\nSample rows (first 5):');

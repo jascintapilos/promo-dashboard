@@ -142,3 +142,20 @@ test('crmSmartico is a valid split-feed dataset (direct push lands + reads back)
   const data = await (await fetch(`${BASE}/api/ops/data`, { headers: { cookie: await cookieFor(BASE) } })).json();
   assert.equal(data.datasets.crmSmartico.rows[0][5], 'Alysa');
 });
+
+test('crmFt is a valid split-feed dataset (FastTrack direct push lands + reads back)', async () => {
+  const push = {
+    key: 'crmFt', pulledAt: '2026-10-08T12:00:00.000Z', ok: true,
+    headers: ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'],
+    rows: [['2026-10-07', 'MB8', 'MY', 'FastTrack WS1', 'Reactivation D4', 'Ridwan']],
+  };
+  const relPath = '/api/relay/ops/dataset/crmFt';
+  const gz = gzipSync(Buffer.from(JSON.stringify(push), 'utf8'));
+  const { headers, bodyBuffer } = buildSignedHeaders({ method: 'POST', path: relPath, bodyBuffer: gz, secret: SECRET, workerId: 'ft-test', maxBytes: MAX_REPORT_BUILD_BYTES });
+  headers['content-type'] = 'application/gzip';
+  const r = await fetch(`${BASE}${relPath}`, { method: 'POST', headers, body: bodyBuffer });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).status.rowCount, 1);
+  const data = await (await fetch(`${BASE}/api/ops/data`, { headers: { cookie: await cookieFor(BASE) } })).json();
+  assert.equal(data.datasets.crmFt.rows[0][5], 'Ridwan');
+});
