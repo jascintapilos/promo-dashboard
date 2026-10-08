@@ -160,19 +160,15 @@
             </div>
           </section>
 
-          <section class="form-grid card" id="remarksCard">
-            <div class="card-title-row">
-              <h2>Error &amp; remarks</h2>
-              <span class="muted small">Applies to the active result only</span>
+          <section class="details-card card checklist-card hidden" id="checklistCard" aria-live="polite">
+            <div class="card-title-row"><h2>QC Checklist</h2><span class="muted small" id="checklistHint"></span></div>
+            <p class="muted small" id="checklistNote">No matching promo request — QC each field against the live back office, then Save.</p>
+            <div class="details-table-wrap">
+              <table class="compare-table">
+                <thead><tr><th>Field</th><th>Live BO</th><th>Check</th></tr></thead>
+                <tbody id="checklistRows"></tbody>
+              </table>
             </div>
-            <label>Category <input id="errorCategory"></label>
-            <label>Description <textarea id="description"></textarea></label>
-            <label>Expected <textarea id="expected"></textarea></label>
-            <label>Actual <textarea id="actual"></textarea></label>
-            <label>Action <textarea id="actionRequired"></textarea></label>
-            <label>Person <input id="personResponsible"></label>
-            <label>Evidence <input id="evidenceLink"></label>
-            <button id="manualFix" class="secondary" type="button">Fix with Claude</button>
           </section>
         </div>
 
@@ -187,9 +183,6 @@
               <button id="manualPassBtn" type="button" class="manual-pass-btn" disabled title="Available only when the automated verdict is MANUAL_REQUIRED">Manual Pass Override</button>
             </div>
             <div class="action-bar-save">
-              <label class="apply-all-check">
-                <input type="checkbox" id="applyRemarksAll"> Apply remarks to all
-              </label>
               <button id="copySummary" class="secondary">Copy summary</button>
               <button id="saveRecord" class="primary">Save active</button>
               <button id="saveAll" class="primary">Save all</button>

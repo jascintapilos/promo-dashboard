@@ -5,7 +5,7 @@ const state = {
   activeBrand: null,
   results: [],
   activeKey: '',
-  selectedResults: {},      // { [resultKey]: { verdict, remarks } }
+  selectedResults: {},      // { [resultKey]: { verdict, checklist } }
   adminUsers: [],
   historyRows: [],
   workflowStep: 'setup',    // R10: 'setup' | 'running' | 'review' | 'save'
@@ -56,13 +56,6 @@ function restoreResults() {
     return true;
   } catch { return false; }
 }
-
-const EMPTY_REMARKS = () => ({
-  errorCategory: '', description: '', expected: '', actual: '',
-  actionRequired: '', personResponsible: '', evidenceLink: '',
-});
-
-const REMARK_FIELDS = ['errorCategory','description','expected','actual','actionRequired','personResponsible','evidenceLink'];
 
 /* R13: modal focus trap
    Keeps Tab / Shift+Tab cycling inside the open modal, closes on Escape,
@@ -167,43 +160,20 @@ function showSkeleton(on) {
   if (el) el.classList.toggle('hidden', !on);
 }
 
-/* ── R11 fix 4: form ↔ per-result remarks ── */
 function ensureResultSlot(key) {
   if (!state.selectedResults[key]) {
-    state.selectedResults[key] = { verdict: null, remarks: EMPTY_REMARKS() };
+    state.selectedResults[key] = { verdict: null, checklist: {} };
   } else if (typeof state.selectedResults[key] === 'string') {
-    state.selectedResults[key] = { verdict: state.selectedResults[key], remarks: EMPTY_REMARKS() };
+    state.selectedResults[key] = { verdict: state.selectedResults[key], checklist: {} };
+  } else {
+    state.selectedResults[key] = {
+      verdict: state.selectedResults[key].verdict || null,
+      checklist: state.selectedResults[key].checklist || {},
+    };
   }
-  if (!state.selectedResults[key].remarks) state.selectedResults[key].remarks = EMPTY_REMARKS();
   return state.selectedResults[key];
 }
 function getVerdictFor(key) { return state.selectedResults[key]?.verdict || null; }
-function loadRemarksIntoForm(remarks) {
-  const src = remarks || EMPTY_REMARKS();
-  for (const f of REMARK_FIELDS) {
-    const el = document.getElementById(f);
-    if (el) el.value = src[f] || '';
-  }
-}
-function persistRemarksFromForm() {
-  if (!state.activeKey) return;
-  const slot = ensureResultSlot(state.activeKey);
-  for (const f of REMARK_FIELDS) {
-    const el = document.getElementById(f);
-    if (el) slot.remarks[f] = el.value;
-  }
-  persistResults();
-}
-
-/* ── R10: remarks card visibility (FAIL/REVIEW only) ── */
-function updateRemarksVisibility() {
-  const card = document.getElementById('remarksCard');
-  if (!card) return;
-  const data = activeResult();
-  const v = data?.verdict;
-  const show = v === 'NOT_SAFE' || v === 'REVIEW' || v === 'REQUIRES_REVIEW';
-  card.classList.toggle('hidden', !show);
-}
 
 const $ = (id) => document.getElementById(id);
 
@@ -899,6 +869,91 @@ function renderCompareCard() {
   }).join('');
 }
 
+function hasLiveDetails(r) {
+  return r && r.details && Object.values(r.details).some((v) => v != null && String(v).trim() !== '');
+}
+
+function hasCompareFields(r) {
+  return !!(r && r.compare && Array.isArray(r.compare.fields) && r.compare.fields.length);
+}
+
+function isNoRequestManual(r) {
+  return r && r.verdict === 'MANUAL_REQUIRED' && hasLiveDetails(r) && !hasCompareFields(r);
+}
+
+function checklistVerdict(ticks) {
+  const vals = Object.values(ticks || {});
+  if (vals.includes('fail')) return 'MANUAL_FAIL';
+  if (vals.includes('pass')) return 'MANUAL_PASS';
+  return null;
+}
+
+function checklistFindings(data, ticks) {
+  const details = data?.details || {};
+  return DETAIL_COLUMNS
+    .filter((col) => ticks?.[col.key] === 'fail')
+    .map((col) => ({
+      severity: 'FAIL',
+      check: `checklist:${col.key}`,
+      message: `${col.label}: ${details[col.key] ?? '—'} — marked FAIL`,
+    }));
+}
+
+function checklistSummary(ticks) {
+  const vals = Object.values(ticks || {});
+  return {
+    pass: vals.filter((v) => v === 'pass').length,
+    fail: vals.filter((v) => v === 'fail').length,
+    na: vals.filter((v) => v === 'na').length,
+  };
+}
+
+function renderChecklistCard() {
+  const card = $('checklistCard');
+  const rows = $('checklistRows');
+  const hint = $('checklistHint');
+  if (!card || !rows) return;
+  const data = activeResult();
+  if (!isNoRequestManual(data)) {
+    card.classList.add('hidden');
+    rows.replaceChildren();
+    if (hint) hint.textContent = '';
+    return;
+  }
+
+  const key = resultKey(data);
+  const slot = ensureResultSlot(key);
+  slot.checklist = slot.checklist || {};
+  const details = data.details || {};
+  card.classList.remove('hidden');
+  rows.innerHTML = DETAIL_COLUMNS.map((col) => {
+    const current = slot.checklist[col.key] || '';
+    const value = details[col.key] ?? '—';
+    const button = (val, label) => (
+      `<button type="button" class="chk-btn ${val}${current === val ? ' active' : ''}" data-checklist-key="${escapeHtml(col.key)}" data-checklist-val="${val}">${label}</button>`
+    );
+    return `<tr>
+      <td class="field-name">${escapeHtml(col.label)}</td>
+      <td class="field-value">${escapeHtml(value)}</td>
+      <td><div class="chk-btn-group">${button('pass', 'PASS')}${button('fail', 'FAIL')}${button('na', 'N/A')}</div></td>
+    </tr>`;
+  }).join('');
+
+  const summary = checklistSummary(slot.checklist);
+  const derived = checklistVerdict(slot.checklist);
+  if (hint) {
+    hint.textContent = `${summary.pass} pass · ${summary.fail} fail · ${summary.na} n/a → ${derived || 'incomplete'}`;
+  }
+
+  rows.querySelectorAll('[data-checklist-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      slot.checklist[btn.dataset.checklistKey] = btn.dataset.checklistVal;
+      persistResults();
+      renderChecklistCard();
+    });
+  });
+}
+
 function renderDetailsTable() {
   // R15: DETAIL_COLUMNS[].label is a code-owned literal (safe), but result.brand
   // comes from the QC batch (BO-derived) and must be escaped before innerHTML.
@@ -951,7 +1006,7 @@ function renderActiveResult() {
     $('verdictPanel').className = 'verdict hidden card';
     renderDetailsTable();
     renderCompareCard();
-    updateRemarksVisibility();
+    renderChecklistCard();
     renderEmptyStates();
     return;
   }
@@ -978,6 +1033,7 @@ function renderActiveResult() {
   });
   renderDetailsTable();
   renderCompareCard();
+  renderChecklistCard();
   // Increment 1 (reverts R20): PASS is auto-only. MANUAL_REQUIRED must never
   // silently become an automated PASS — that would violate the "no PASS
   // without live BO evidence" invariant. Operators who want to record a pass
@@ -986,9 +1042,7 @@ function renderActiveResult() {
   // distinct audit record.
   $('passBtn').disabled = data.verdict !== 'SAFE';
   updateManualPassButtonGate(data);
-  // R11 fix 4: load this result's remarks into the form
-  loadRemarksIntoForm(ensureResultSlot(key).remarks);
-  updateRemarksVisibility();
+  ensureResultSlot(key);
   renderEmptyStates();
 }
 
@@ -1152,33 +1206,6 @@ async function dispatchFindingFix(index) {
   }
 }
 
-async function dispatchManualFix() {
-  const data = activeResult();
-  if (!data) return alert('Run QC before requesting a fix.');
-  const finding = {
-    severity: 'FAIL',
-    check: $('errorCategory').value || 'manual-error',
-    message: $('description').value || 'Manual QC error',
-  };
-  try {
-    const result = await api('/api/fix-request', {
-      method: 'POST',
-      body: JSON.stringify({
-        source: 'manual',
-        brand: data.brand,
-        code: data.code,
-        finding,
-        expected: $('expected').value,
-        actual: $('actual').value,
-        snapshotPath: data.snapshotPath,
-      }),
-    });
-    openPromptModal(result.prompt);
-  } catch (e) {
-    alert(`Fix request failed: ${e.message}`);
-  }
-}
-
 function compactFindings(data) {
   return (data?.findings || []).map((finding) => ({
     severity: finding.severity,
@@ -1188,27 +1215,33 @@ function compactFindings(data) {
   }));
 }
 
-function recordPayload(data, useActiveFormRemarks=false) {
+function effectiveResultFor(data) {
+  const slot = ensureResultSlot(resultKey(data));
+  if (isNoRequestManual(data)) return checklistVerdict(slot.checklist);
+  return slot.verdict;
+}
+
+function recordPayload(data) {
   const brand = state.brands.find((b) => b.id === data.brand);
   const key = resultKey(data);
   const slot = ensureResultSlot(key);
-  // R11 fix 3: use this result's own stored remarks by default; only pull from live form when explicitly asked
-  const remarks = useActiveFormRemarks ? Object.fromEntries(REMARK_FIELDS.map((f) => [f, document.getElementById(f)?.value || ''])) : slot.remarks;
+  const useChecklist = isNoRequestManual(data) && Object.values(slot.checklist || {}).length > 0;
+  const derivedResult = useChecklist ? checklistVerdict(slot.checklist) : null;
   return {
     brand: data.brand,
     code: data.code,
     platform: brand?.runtime?.platform || '',
     region: brand?.runtime?.region || '',
     promoType: data.details?.promoType || '',
-    result: slot.verdict,
-    findings: compactFindings(data),
-    errorCategory: remarks.errorCategory || '',
-    description: remarks.description || '',
-    expected: remarks.expected || '',
-    actual: remarks.actual || '',
-    actionRequired: remarks.actionRequired || '',
-    personResponsible: remarks.personResponsible || '',
-    evidenceLink: remarks.evidenceLink || '',
+    result: derivedResult || slot.verdict,
+    findings: useChecklist ? checklistFindings(data, slot.checklist) : compactFindings(data),
+    errorCategory: '',
+    description: '',
+    expected: '',
+    actual: '',
+    actionRequired: '',
+    personResponsible: '',
+    evidenceLink: '',
     fetchSnapshot: data.snapshotPath || '',
     durationS: data.duration_s || '',
   };
@@ -1220,12 +1253,14 @@ async function saveRecord() {
   if (!data) { toast('Run QC before saving.', 'error'); return; }
   const key = resultKey(data);
   const slot = ensureResultSlot(key);
-  if (!slot.verdict) { toast('Choose Pass/Fail/Review for the active result first.', 'error'); return; }
-  persistRemarksFromForm();
+  if (isNoRequestManual(data) && !checklistVerdict(slot.checklist)) {
+    toast('Complete the QC checklist first (tick each field).', 'error'); return;
+  }
+  if (!isNoRequestManual(data) && !slot.verdict) { toast('Choose Pass/Fail/Review for the active result first.', 'error'); return; }
   const btn = $('saveRecord');
   btn.disabled = true;
   try {
-    const saved = await api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(data, /*useActiveFormRemarks=*/true)) });
+    const saved = await api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(data)) });
     setWorkflowStep('save');
     toast(saved.sheet?.action === 'pending' ? `Saved locally; sheet pending: ${saved.sheet.error}` : `Saved ${data.brand} ${data.code}.`, 'success');
     try { await loadHistory(); } catch {}
@@ -1236,20 +1271,21 @@ async function saveRecord() {
   }
 }
 
-// R11 fix 3: remarks apply to ACTIVE result only, unless "Apply to all" checked
 async function saveAll() {
   if (!state.results.length) { toast('Run QC before saving.', 'error'); return; }
-  persistRemarksFromForm();
-  const missing = state.results.filter((r) => !getVerdictFor(resultKey(r))).map((r) => `${r.brand} ${r.code}`);
+  const incompleteChecklist = state.results
+    .filter((r) => isNoRequestManual(r) && !checklistVerdict(ensureResultSlot(resultKey(r)).checklist))
+    .map((r) => `${r.brand} ${r.code}`);
+  if (incompleteChecklist.length) { toast('Complete the QC checklist first (tick each field).', 'error'); return; }
+  const missing = state.results
+    .filter((r) => !effectiveResultFor(r))
+    .map((r) => `${r.brand} ${r.code}`);
   if (missing.length) { toast(`Choose a result for: ${missing.join(', ')}`, 'error'); return; }
-  const applyAll = document.getElementById('applyRemarksAll')?.checked;
   const btn = $('saveAll');
   btn.disabled = true;
   try {
-    const activeKey = state.activeKey;
     const results = await Promise.allSettled(state.results.map((r) => {
-      const useForm = applyAll || (resultKey(r) === activeKey);
-      return api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(r, useForm)) });
+      return api('/api/qc-record', { method: 'POST', body: JSON.stringify(recordPayload(r)) });
     }));
     const okCount = results.filter((x) => x.status === 'fulfilled').length;
     const failCount = results.length - okCount;
@@ -1441,19 +1477,12 @@ function bind() {
     state.results = [];
     state.activeKey = '';
     state.selectedResults = {};
-    loadRemarksIntoForm(EMPTY_REMARKS());
     setWorkflowStep('setup');
     renderActiveResult();
   });
-  // R11 fix 4: persist form edits into the active result's slot on every change
-  for (const f of REMARK_FIELDS) {
-    const el = document.getElementById(f);
-    if (el) el.addEventListener('input', persistRemarksFromForm);
-  }
   $('saveRecord').addEventListener('click', saveRecord);
   $('saveAll').addEventListener('click', saveAll);
   $('copySummary').addEventListener('click', copySummary);
-  $('manualFix').addEventListener('click', dispatchManualFix);
   // Increment 7: Manual Pass Override modal wiring
   const mpBtn = $('manualPassBtn');
   if (mpBtn) mpBtn.addEventListener('click', openManualPassModal);
@@ -1534,7 +1563,7 @@ function bind() {
       if (!data) { toast('Run QC before choosing a result.', 'error'); return; }
       const slot = ensureResultSlot(resultKey(data));
       slot.verdict = btn.dataset.result;
-      persistRemarksFromForm();
+      persistResults();
       renderActiveResult();
     });
   });
