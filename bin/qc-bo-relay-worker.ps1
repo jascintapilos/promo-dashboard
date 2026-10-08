@@ -10,7 +10,7 @@ Set-Location $Root
 try {
     $sig = '[DllImport("kernel32.dll", SetLastError=true)] public static extern uint SetThreadExecutionState(uint esFlags);'
     $pwr = Add-Type -MemberDefinition $sig -Name 'QcRelayPower' -Namespace 'Win32' -PassThru
-    [void]$pwr::SetThreadExecutionState([uint32]0x80000001)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
+    [void]$pwr::SetThreadExecutionState([uint32]0x80000001L)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
     Add-Content $Log "[$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))] keep-awake armed"
 } catch { Add-Content $Log "[$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))] keep-awake FAILED: $($_.Exception.Message)" }
 $backoff = 5
