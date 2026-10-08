@@ -20,6 +20,9 @@ import { resolveExpectedSource } from '../src/qc-dashboard/expected-source.js';
 import { snapshotToLiveState } from '../src/qc-dashboard/compare-flow.js';
 import { expectedFromSource, liveFromPlatform } from '../src/qc-dashboard/canonical/index.js';
 import { sanitizeCanonical, sanitizeExpectedSourceMeta } from '../src/qc-dashboard/relay-result.js';
+import { appendFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const HUB_URL = process.env.QC_HUB_URL || 'http://localhost:4321';
 const WORKER_ID = process.env.QC_RELAY_WORKER_ID || `vdi-${process.pid}`;
@@ -27,6 +30,7 @@ const WORKER_VERSION = 'qc-bo-relay/1.0';
 const POLL_MIN_MS = Number(process.env.QC_RELAY_POLL_MIN_MS || 2000);
 const POLL_MAX_MS = Number(process.env.QC_RELAY_POLL_MAX_MS || 10_000);
 const MAX_JOBS_PER_LEASE = 5;
+const LOG_FILE = process.env.QC_RELAY_LOG_FILE || path.join(os.homedir(), '.qc-relay', 'qc-bo-relay-worker.log');
 
 // ── Structured logger: jobId + brand + status only, no promo secrets ────
 function log(level, event, extra = {}) {
@@ -34,7 +38,11 @@ function log(level, event, extra = {}) {
   for (const k of ['jobId', 'brand', 'code', 'status', 'reason', 'httpStatus', 'nextDelayMs']) {
     if (extra[k] != null) safe[k] = String(extra[k]).slice(0, 128);
   }
-  try { console.log(JSON.stringify(safe)); } catch { /* stdio closed on shutdown */ }
+  const line = (() => { try { return JSON.stringify(safe); } catch { return null; } })();
+  if (line) {
+    try { console.log(line); } catch {}
+    try { appendFileSync(LOG_FILE, line + '\n'); } catch {}
+  }
 }
 
 // ── Poll loop with bounded backoff ─────────────────────────────────────
@@ -42,6 +50,8 @@ function log(level, event, extra = {}) {
 let shuttingDown = false;
 let inFlight = false;
 let currentDelay = POLL_MIN_MS;
+let authFailStreak = 0;
+const AUTH_FAIL_RELOAD_THRESHOLD = 3;
 
 function scheduleNext(delayMs) {
   if (shuttingDown) return;
@@ -174,7 +184,16 @@ const defaultDeps = {
   leaseJobs: async () => {
     const body = JSON.stringify({ workerVersion: WORKER_VERSION, limit: MAX_JOBS_PER_LEASE });
     const r = await httpSignedRequest({ method: 'POST', path: '/api/relay/jobs/lease', body, secret: RELAY_SECRET, workerId: WORKER_ID });
-    if (r.status !== 200) { log('warn', 'lease-non-200', { httpStatus: r.status }); return []; }
+    if (r.status === 200) authFailStreak = 0;
+    if (r.status !== 200) {
+      log('warn', 'lease-non-200', { httpStatus: r.status });
+      if ((r.status === 401 || r.status === 403) && ++authFailStreak >= AUTH_FAIL_RELOAD_THRESHOLD) {
+        const s = readWorkerRelaySecret();
+        if (s.present && s.secret && s.secret !== RELAY_SECRET) { RELAY_SECRET = s.secret; log('info', 'secret-reloaded', { status: 'rotated' }); }
+        authFailStreak = 0;
+      }
+      return [];
+    }
     try { return JSON.parse(r.text).jobs || []; } catch { return []; }
   },
   submitResult: async ({ jobId, result }) => {

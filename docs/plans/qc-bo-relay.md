@@ -193,16 +193,32 @@ Every rotate:
 
 
 ## Task Scheduler setup (Windows, run at login)
-1. Save the ≥ 32-byte secret to `%USERPROFILE%\.qc-relay\relay-secret` (no extension). Do **not** paste it anywhere else.
-2. Open Task Scheduler → Create Task…
-   - **General** — Name: `QC BO Relay`. Run only when user is logged on. Do not check "Run with highest privileges".
-   - **Triggers** — New… At log on → the current user. Delay 30 seconds.
-   - **Actions** — New… Start a program → `<repo>\bin\qc-bo-relay-worker.bat`. Start-in: `<repo>`.
-   - **Conditions** — uncheck "Start the task only if the computer is on AC power".
-   - **Settings** — Allow task to be run on demand; If the task fails, restart every 1 minute up to 3 times; If the running task does not end when requested, force it to stop.
-3. Save. The worker logs to stdout — pipe it through the Task Scheduler's own history for auditing.
+From the repo root run:
 
-When the VDI is logged out or the worker is stopped, `/api/admin/relay-health` shows the worker `offline: true`, and every new BO_UNREACHABLE-triggered QC run resolves to **MANUAL_REQUIRED** after the 2-min job TTL. Automatic QC is unavailable during that window — this is by design.
+```powershell
+powershell -ExecutionPolicy Bypass -File bin\qc-bo-relay-setup.ps1
+Start-ScheduledTask -TaskName 'QC BO Relay'
+```
+
+The setup script registers the `QC BO Relay` task for the current Windows user. It starts at logon with a 30-second delay, adds an hourly watchdog trigger, uses `RestartCount 10` with a one-minute restart interval, ignores duplicate instances, and allows battery operation. The task launches `bin\qc-bo-relay-worker.ps1`, which arms Windows keep-awake with `ES_SYSTEM_REQUIRED`, runs the Node relay worker, and relaunches it with capped backoff after a crash or clean exit.
+
+Logs are written to `%USERPROFILE%\.qc-relay\qc-bo-relay-worker.log`.
+
+When the VDI is logged out or the worker is stopped, `/api/admin/relay-health` shows the worker `offline: true`, and every new BO_UNREACHABLE-triggered QC run resolves to **MANUAL_REQUIRED** after the 2-min job TTL. Automatic QC is unavailable during that window. This is by design.
+
+### VDI auto-recovery runbook (A2)
+Prereqs:
+
+- Relay secret exists at `%USERPROFILE%\.qc-relay\relay-secret` and is at least 32 bytes.
+- `QC_HUB_URL` defaults to `https://qc-dashboard.zoom66.xyz` when unset.
+- Node is installed at `C:\Program Files\nodejs\node.exe`.
+
+Health check:
+
+- After VDI logon, admin `GET /api/admin/relay-health` should show this worker with `offline:false` within about 35 seconds.
+- Tail `%USERPROFILE%\.qc-relay\qc-bo-relay-worker.log` for recent `launching worker` and worker JSON startup lines.
+
+This auto-recovery is best-effort within VDI uptime: it self-heals on logon, hourly watchdog, worker crash, and short-lived process exits, but it cannot run while the VDI itself is powered off or unavailable.
 
 ## Live acceptance plan (pending explicit approval to run)
 1. Start Hub in production-compatible mode (`AUTH_MODE=dev` locally for the smoke, real cookie in prod).
