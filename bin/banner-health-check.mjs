@@ -142,6 +142,19 @@ function parseBiaDate(s, edge /* 'start' | 'end' */) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+// A WS1/WS2 carousel is a HOMEPAGE carousel only if its component_name says
+// "Homepage" (e.g. "MB8 MYS Homepage"). Register/login/category carousels are
+// excluded. Returns the region code (MY/SG/ID/TH/KH/AUS) or null if not a
+// homepage carousel.
+function homepageRegion(componentName) {
+  const n = String(componentName || '');
+  if (!/homepage/i.test(n)) return null;
+  const m = n.match(/\b(MYS?|SGP?|IDN?|KHM?|THA?|AUS)\b/i);
+  if (!m) return 'OTHER';
+  const t = m[1].toUpperCase();
+  return { MYS: 'MY', MY: 'MY', SGP: 'SG', SG: 'SG', IDN: 'ID', ID: 'ID', KHM: 'KH', KH: 'KH', THA: 'TH', TH: 'TH', AUS: 'AUS' }[t] || t;
+}
+
 // -- Provider classification (homepage composition) --------------------------
 // Read the provider off the banner label by keyword. Pragmatic Play -> 'pp';
 // any other named provider -> 'other'; no provider word (brand events, generic
@@ -482,34 +495,40 @@ async function probeBiaSite(site, scheduleIndex) {
   let staleBacklog = 0;
   let parkedDrafts = 0;
   let untrackedBacklog = 0;
-  const liveNow = []; // published carousel images whose date window is open right now
+  // HOMEPAGE carousels only, grouped per region (e.g. "MB8 MYS Homepage" → MY).
+  // Register/login/category carousels are excluded entirely.
+  const liveByRegion = {};  // region -> [{img,car}] live now
+  const seenRegions = new Set();
 
   for (const img of images) {
     const car = carById.get(img.UICarousel_id);
     if (!car) continue;
+    const region = homepageRegion(car.component_name);
+    if (!region) continue; // not a homepage carousel
     const start = parseBiaDate(img.startDate, 'start');
     const end   = parseBiaDate(img.endDate, 'end');
     if (!start || !end) continue;
-
+    seenRegions.add(region);
+    const mlabel = `${brandLabel} ${region}`;
     const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
     const isPublished = car.status === 'published';
 
     if (isPublished) {
       if (end.getTime() < NOW) {
         if (end.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant: brandLabel, start, end, type: 'ALREADY_EXPIRED' });
+          findings.push({ row, merchant: mlabel, start, end, type: 'ALREADY_EXPIRED' });
         } else {
           staleBacklog++;
         }
       } else if (end.getTime() <= NOW + EXPIRING_WINDOW_MS) {
-        findings.push({ row, merchant: brandLabel, start, end, type: 'EXPIRING_SOON' });
+        findings.push({ row, merchant: mlabel, start, end, type: 'EXPIRING_SOON' });
       }
-      if (start.getTime() <= NOW && end.getTime() >= NOW) liveNow.push({ img, car });
+      if (start.getTime() <= NOW && end.getTime() >= NOW) (liveByRegion[region] ||= []).push({ img, car });
     } else {
       // Draft/archived carousel with an open date window — not activated.
       if (start.getTime() <= NOW && end.getTime() >= NOW) {
         if (start.getTime() >= NOW - LOOKBACK_MS) {
-          findings.push({ row, merchant: brandLabel, start, end, type: 'NOT_ACTIVATED' });
+          findings.push({ row, merchant: mlabel, start, end, type: 'NOT_ACTIVATED' });
         } else {
           parkedDrafts++;
         }
@@ -517,39 +536,42 @@ async function probeBiaSite(site, scheduleIndex) {
     }
   }
 
-  if (liveNow.length < HOMEPAGE_MIN) {
-    findings.push({
-      type: 'TOO_FEW_BANNERS', merchant: brandLabel, row: null, count: liveNow.length,
-      detail: `${liveNow.length} live carousel slide(s), want >=${HOMEPAGE_MIN}`,
-    });
-  }
+  // One snapshot row per region: homepage banner count + too-few + schedule coverage.
+  const merchants = [];
+  for (const region of [...seenRegions].sort()) {
+    const mlabel = `${brandLabel} ${region}`;
+    const slides = liveByRegion[region] || [];
 
-  // Cross-reference each live slide against the Banner Schedule sheet -- same
-  // check as probeSite. BIA brands (WS1 (MB8), WS1 (CLASSIC MB8), WS2 (RWS77))
-  // are mapped in src/banner-schedule.js BIA_BRANDS, so schedule coverage
-  // applies here too, not just QPRO/QP2.
-  if (scheduleEntries) {
-    for (const { img, car } of liveNow) {
-      const start = parseBiaDate(img.startDate, 'start');
-      const end = parseBiaDate(img.endDate, 'end');
-      const covered = hasScheduleCoverage(scheduleEntries, { merchantKey: null, start, end });
-      if (covered) continue;
-      const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
-      if (start && start.getTime() >= NOW - LOOKBACK_MS) {
-        findings.push({ row, merchant: brandLabel, start, end, type: 'UNTRACKED_LIVE_BANNER' });
-      } else {
-        untrackedBacklog++;
+    if (slides.length < HOMEPAGE_MIN) {
+      findings.push({
+        type: 'TOO_FEW_BANNERS', merchant: mlabel, row: null, count: slides.length,
+        detail: `${slides.length} live homepage slide(s), want >=${HOMEPAGE_MIN}`,
+      });
+    }
+
+    if (scheduleEntries) {
+      for (const { img, car } of slides) {
+        const start = parseBiaDate(img.startDate, 'start');
+        const end = parseBiaDate(img.endDate, 'end');
+        const covered = hasScheduleCoverage(scheduleEntries, { merchantKey: null, start, end });
+        if (covered) continue;
+        const row = { id: img.id, label: car.component_name || `carousel_${img.UICarousel_id}` };
+        if (start && start.getTime() >= NOW - LOOKBACK_MS) {
+          findings.push({ row, merchant: mlabel, start, end, type: 'UNTRACKED_LIVE_BANNER' });
+        } else {
+          untrackedBacklog++;
+        }
       }
     }
-  }
 
-  const merchants = [{
-    merchant: brandLabel,
-    activeCount: liveNow.length,
-    bannerNames: liveNow
-      .sort((a, b) => new Date(a.img.startDate) - new Date(b.img.startDate))
-      .map(({ img, car }) => `#${img.id} ${car.component_name || '(no label)'}`),
-  }];
+    merchants.push({
+      merchant: mlabel,
+      activeCount: slides.length,
+      bannerNames: slides
+        .sort((a, b) => new Date(a.img.startDate) - new Date(b.img.startDate))
+        .map(({ img, car }) => `#${img.id} ${car.component_name || '(no label)'}`),
+    });
+  }
 
   return {
     siteId: site.id,
@@ -614,6 +636,8 @@ async function appendDashboardNotification({ type, title, message }) {
 // the dashboard Brand column. For QP2's single multi-merchant BO (ibc22), the
 // merchant name (IBC22/KING333/ACE66/SPADE66) maps to QP2A/B/C/D via brand-directory.
 function siteToLabel(siteId, merchant = null) {
+  // WS1/WS2 homepage probe passes a per-region merchant like "WS1 MY" — show it verbatim.
+  if (merchant && /^WS[12]\b/i.test(merchant)) return merchant;
   if (merchant && QP2_MERCHANT_LABEL[merchant]) return QP2_MERCHANT_LABEL[merchant];
   const s = (siteId || '').toLowerCase();
   if (s.startsWith('qpro')) return 'QPRO' + s.slice(4);
