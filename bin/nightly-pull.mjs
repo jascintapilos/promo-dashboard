@@ -42,8 +42,10 @@ const STEPS = [
   { id: '3',  title: 'Pulling WS1/WS2 CMS banners into Banner Log', cmd: ['bin/pull-cms-banners.mjs', '--write'], status: ['cms-banners', 'CMS Banners (WS1/WS2)'], timeout: 10 * MIN, datasets: ['banners'] },
   { id: '4',  title: 'Syncing New Games from working sheet', cmd: ['bin/pull-new-games.mjs', '--write'], status: ['new-games', 'New Games'], timeout: 5 * MIN, datasets: ['games'] },
   { id: '5',  title: 'Pulling team utilisation into Weekly Report', cmd: ['bin/pull-utilisation.mjs', '--write'], status: ['utilisation', 'Utilisation'], timeout: 10 * MIN, datasets: ['utilisation', 'utilWeekly', 'workLog'] },
-  { id: '6',  title: 'Refreshing Smartico session (headless auto-login)', cmd: ['bin/capture-smartico-session.mjs'], status: null, timeout: 5 * MIN, datasets: [], warnOnly: true },
-  { id: '6b', title: 'Pulling Smartico CRM segments + activities into CRM Assignment Log', cmd: ['bin/pull-smartico-campaigns.mjs', '--write', '--no-preserve'], status: ['smartico', 'Smartico CRM'], timeout: 10 * MIN, datasets: ['crm'] },
+  // Smartico via the MCP static token (no login, no 2FA). It pushes the
+  // crmSmartico dataset straight to the server itself, so datasets: [] here
+  // (the runner must not also push it from the sheet).
+  { id: '6',  title: 'Pulling Smartico CRM (MCP static token, direct push)', cmd: ['bin/pull-smartico-mcp.mjs', '--push'], status: ['smartico', 'Smartico CRM'], timeout: 12 * MIN, datasets: [] },
   { id: '7',  title: 'Pulling FastTrack WS1 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=ws1', '--write'], status: ['ft-ws1', 'FT WS1/WS2 CRM'], hint: FT_HINT('ws1'), timeout: 15 * MIN, datasets: ['crm'] },
   { id: '8',  title: 'Pulling FastTrack QPRO1 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=qpro1', '--write'], status: ['ft-qpro1', 'FT QPRO1 CRM'], hint: FT_HINT('qpro1'), timeout: 15 * MIN, datasets: ['crm'] },
   { id: '9',  title: 'Pulling FastTrack QP2 CRM segments (headless, unattended)', cmd: ['bin/pull-ft-headless.mjs', '--instance=qp2', '--write'], status: ['ft-qp2', 'FT QP2A-D CRM'], hint: FT_HINT('qp2'), timeout: 15 * MIN, datasets: ['crm'] },

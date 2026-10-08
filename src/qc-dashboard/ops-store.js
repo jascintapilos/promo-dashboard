@@ -22,6 +22,12 @@ export const OPS_DATASETS = Object.freeze({
   promos:               { tab: 'Promo Code Log',         required: ['Date', 'Code', 'Brand', 'Region', 'Created By', 'Type'], dateCol: 'Date' },
   banners:              { tab: 'Banner Log',             required: ['Uploaded Date', 'Brand', 'Region', 'Banner Title', 'Status', 'Uploaded By'], dateCol: 'Uploaded Date' },
   crm:                  { tab: 'CRM Assignment Log',     required: ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'], dateCol: 'Date' },
+  // The CRM log is a SPLIT feed: each source lands as its own dataset so a broken
+  // source can never clobber or mask a healthy one. The page concatenates these
+  // with `crm` (which carries whatever still arrives via the sheet) into one view.
+  // `crmSmartico` is pushed straight by bin/pull-smartico-mcp.mjs (no sheet).
+  crmSmartico:          { tab: '(direct push)',          required: ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'], dateCol: 'Date' },
+  crmFt:                { tab: '(direct push)',          required: ['Date', 'Brand', 'Region', 'CRM Tool', 'Segment Name', 'Created By'], dateCol: 'Date' },
   games:                { tab: 'New Games',              required: ['Date', 'Brand', 'Region', 'Game Name', 'Game Provider'], dateCol: 'Date' },
   utilisation:          { tab: 'Utilisation',            required: ['Staff', '% Utilisation'], dateCol: null },
   sysStatus:            { tab: 'System Status',          required: ['Timestamp', 'Instance', 'Label', 'Status'], dateCol: 'Timestamp' },
