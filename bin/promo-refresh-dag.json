@@ -252,7 +252,8 @@
   ],
   "bin/extract_explorer_data.py": [
    "bin/bonus_ripple.py",
-   "bin/segment_map_pull.py"
+   "bin/segment_map_pull.py",
+   "bin/build_verify_xlsx.py"
   ],
   "bin/assemble_explorer_payload.py": [
    "bin/code_players_pull.py",

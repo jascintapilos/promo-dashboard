@@ -130,8 +130,12 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
              round(medianIf(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0}))
       FROM pc
     """).result_rows[0]
-    out["timing"] = {"prefunded_gap_h": int(gap_h or 0), "bonusled_days": int(bl_days or 0)}
-    print(f"[{MK}] timing: pre-funded {int(gap_h or 0)}h deposit->claim · bonus-led {int(bl_days or 0)}d claim->deposit")
+    # NaN-safe: medianIf over an empty set (e.g. a thin window with ZERO bonus-led claims) returns
+    # NaN, and int(NaN) raises. `x == x` is False only for NaN, so this coerces NaN/None -> 0.
+    gh = int(gap_h) if gap_h is not None and gap_h == gap_h else 0
+    bd = int(bl_days) if bl_days is not None and bl_days == bl_days else 0
+    out["timing"] = {"prefunded_gap_h": gh, "bonusled_days": bd}
+    print(f"[{MK}] timing: pre-funded {gh}h deposit->claim · bonus-led {bd}d claim->deposit")
 
     json.dump(out, open(SCR / f"deposit-classify-{MK}.json", "w", encoding="utf-8"), ensure_ascii=False)
     print(f"[{MK}] wrote deposit-classify-{MK}.json\n")
