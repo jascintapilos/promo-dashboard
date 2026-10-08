@@ -863,11 +863,12 @@ function renderCompareCard() {
   const src = cmp.expectedSource || {};
   const kindLabel = ({
     bundle: 'From canary bundle',
-    request: 'From approved request',
-    ambiguous: 'Ambiguous — need Handle',
-    'not-found': 'No approved source',
+    request: 'From promo request',
+    sheet: 'From promo request',
+    ambiguous: 'Ambiguous — add a request handle',
+    'not-found': 'No matching promo request',
     invalid: 'Invalid source',
-  })[src.sourceType] || 'Unknown source';
+  })[src.sourceType] || 'No matching promo request';
   const parts = [];
   parts.push(`<span class="src-kind">${escapeHtml(kindLabel)}</span>`);
   const meta = [];
@@ -889,9 +890,8 @@ function renderCompareCard() {
     const actual = escapeHtml(formatCompareValue(f.actual));
     const expectedCls = f.expected == null ? 'field-value' : (cls === 'mismatch' ? 'field-value has-value mismatch' : 'field-value has-value');
     const actualCls = f.actual == null ? 'field-value' : (cls === 'mismatch' ? 'field-value has-value mismatch' : 'field-value has-value');
-    const notes = f.notes ? `<span class="field-notes">${escapeHtml(f.notes)}</span>` : '';
     return `<tr class="row-${cls}">
-      <td class="field-name">${escapeHtml(f.name)}${notes}</td>
+      <td class="field-name">${escapeHtml(f.name)}</td>
       <td class="${expectedCls}">${expected}</td>
       <td class="${actualCls}">${actual}</td>
       <td><span class="verdict-chip ${cls}">${escapeHtml(String(f.verdict || ''))}</span></td>
