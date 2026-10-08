@@ -180,7 +180,12 @@ function stripDeadData(payloadStr) {
       const first = (r) => (Array.isArray(r) ? String(r.find((x) => x) || '') : '');
       const start = m.configFull.findIndex((r) => /^Game details by segment/.test(first(r)));
       if (start >= 0) {
-        let end = m.configFull.findIndex((r, i) => i > start && /^(Budget|Eligible|House margin|Reach|Sportsbook|Config basis)/.test(first(r)));
+        // Terminators are section HEADERS only. "Sportsbook" was removed: the SG block has a prose
+        // note that STARTS with "Sportsbook is a meaningful…" (internal cross-market reviewer
+        // commentary) sitting just above the real "Config basis" footer — matching it mis-terminated
+        // the strip one row early and leaked that note into the public report. Ending on "Config basis"
+        // now removes the game-details table AND that note, keeping the public Config-basis footer.
+        let end = m.configFull.findIndex((r, i) => i > start && /^(Budget|Eligible|House margin|Reach|Config basis)/.test(first(r)));
         if (end < 0) end = m.configFull.length;
         m.configFull = m.configFull.slice(0, start).concat(m.configFull.slice(end));
       }
@@ -296,11 +301,17 @@ function serveReport(res, root, brand, user, htmlHeaders, send, windowKey = '') 
     const p = path.join(brandDir(root, brand), name);
     if (existsSync(p)) { try { const t = readFileSync(p, 'utf8'); JSON.parse(t); raw = t; break; } catch { /* try next */ } }
   }
-  const PREBUILT = STD.filter(k => existsSync(path.join(brandDir(root, brand), `report.${k}.live.json`)));
+  // The chosen candidate was JSON-validated in the loop, but if none matched, raw is still the base
+  // report.json — validate it too so a truncated/corrupt base returns 503 instead of blanking the page
+  // (stripDeadData fails open and so cannot be the guard).
+  try { JSON.parse(raw); } catch { return send(res, 503, { error: 'report data unreadable' }); }
+  // Advertise a window as "instant" only when its prebuilt file is present AND parses — a corrupt
+  // prebuilt must not be offered as instant (the picker would show it while serving a fallback window).
+  const PREBUILT = STD.filter(k => { const pf = path.join(brandDir(root, brand), `report.${k}.live.json`); if (!existsSync(pf)) return false; try { JSON.parse(readFileSync(pf, 'utf8')); return true; } catch { return false; } });
   const payload = stripDeadData(raw);
   const reg = loadBrandRegistry(root);
   const brandName = (reg[brand] && reg[brand].name) || String(brand || '').toUpperCase();
-  const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};window.__PREBUILT__=${JSON.stringify(PREBUILT)};`;
+  const apiGlobal = `window.__PLAYERS_API__=${JSON.stringify('/api/promo/' + brand)};window.__PROMO_BRAND__=${JSON.stringify(brand)};window.__PREBUILT__=${JSON.stringify(PREBUILT)};`;
   const wire = 'var _po=document.getElementById("pSessOut");if(_po)_po.onclick=function(){fetch("/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload();});};';
   // Brand-aware: the shared template's identity spots (title, header, footer) all
   // read "WS1" (the raw template has exactly those 3 identity occurrences).
