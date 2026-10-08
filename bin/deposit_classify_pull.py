@@ -135,13 +135,16 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
       FROM pc
     """).result_rows[0]
     # NaN-safe: medianIf/quantileIf over an empty set (e.g. a thin window with ZERO bonus-led claims)
-    # returns NaN, and int(NaN) raises. `x == x` is False only for NaN, so this coerces NaN/None -> 0.
-    _i = lambda v: int(v) if v is not None and v == v else 0
+    # returns NaN, and int(NaN) raises. `x == x` is False only for NaN. An empty bucket has NO typical
+    # value, so coerce NaN/None -> None (JSON null), NOT 0 -- a 0 would render in the report as a real
+    # "median 0 days later (middle half 0 to 0 days)". The template only shows a side when its median
+    # is non-null, so null correctly suppresses that side.
+    _n = lambda v: int(v) if v is not None and v == v else None
     gap_h, gap_h_p25, gap_h_p75, bl_days, bl_days_p25, bl_days_p75 = row
-    gh, bd = _i(gap_h), _i(bl_days)
+    gh, bd = _n(gap_h), _n(bl_days)
     # median + the middle-half (p25-p75) spread, so the typical is not read as a tight rule
-    out["timing"] = {"prefunded_gap_h": gh, "prefunded_gap_h_p25": _i(gap_h_p25), "prefunded_gap_h_p75": _i(gap_h_p75),
-                     "bonusled_days": bd, "bonusled_days_p25": _i(bl_days_p25), "bonusled_days_p75": _i(bl_days_p75)}
+    out["timing"] = {"prefunded_gap_h": gh, "prefunded_gap_h_p25": _n(gap_h_p25), "prefunded_gap_h_p75": _n(gap_h_p75),
+                     "bonusled_days": bd, "bonusled_days_p25": _n(bl_days_p25), "bonusled_days_p75": _n(bl_days_p75)}
     print(f"[{MK}] timing: pre-funded {gh}h deposit->claim · bonus-led {bd}d claim->deposit")
 
     json.dump(out, open(SCR / f"deposit-classify-{MK}.json", "w", encoding="utf-8"), ensure_ascii=False)

@@ -251,6 +251,20 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
         if pillar != "Acquisition":
             a = band_agg[b]; a["n"] += 1; a["spend"] += spend
         calls[call]["n"] += 1; calls[call]["sp"] += spend
+    # exec-vs-Money reconciliation guard: the exec book (sum of codes._spend) must equal the Money tab
+    # Total bonus (sum of money rows). After sourcing _spend from the money rows above they tie by
+    # construction; a divergence means a union-only code (in ex['codes'] with no money row -> r_spend
+    # fallback) or a money row with no code rec. Warn loudly (non-fatal) so a rebuild surfaces it rather
+    # than silently shipping an exec tile that contradicts the Money Total.
+    _code_set = {r["Promo code"]["d"] for r in ex["codes"]}
+    _money_set = set(money_by_code)
+    _exec_book = round(sum(c["_spend"] for c in codes))
+    _money_book = round(sum(v["spend"] for v in money_by_code.values()))
+    if _code_set != _money_set or _exec_book != _money_book:
+        import sys as _sys
+        print(f"[{mk}] WARN exec-vs-Money reconcile: book {_exec_book} vs money {_money_book} "
+              f"(delta {_exec_book - _money_book}); codes-only={sorted(_code_set - _money_set)[:8]} "
+              f"money-only={sorted(_money_set - _code_set)[:8]}", file=_sys.stderr)
     # deposit-band summary (non-acq) + estate from the per-cell segment grid [vband,state,members,ngr,med_dep]
     est = defaultdict(float); estmem = defaultdict(int)
     for row in ex["segGrid"]:
