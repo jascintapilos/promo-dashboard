@@ -339,6 +339,7 @@ textarea { min-height: 66px; resize: vertical; }
    product defect". Not the alarming red used for real FAILs. */
 .verdict.manual { border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 3%, transparent); }
 .verdict.not-safe { border-left: 3px solid var(--danger); }
+.verdict.not-found { border-left: 3px solid var(--accent); }
 .mechanics { color: var(--muted); font-size: 12.5px; }
 .findings { margin-top: 10px; }
 .finding {
@@ -371,6 +372,7 @@ textarea { min-height: 66px; resize: vertical; }
   50% { opacity: 1; }
 }
 .chip.not-safe { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.chip.not-found { color: var(--accent); background: var(--accent-soft); }
 
 /* Details table */
 .details-table-wrap {

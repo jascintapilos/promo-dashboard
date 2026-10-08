@@ -64,6 +64,18 @@ export async function readQcLog() {
   }).filter(Boolean);
 }
 
+export function dedupeByUuid(records) {
+  // Append-only JSONL: a failed sheet write appends a SECOND line with the same uuid.
+  // Collapse to the most-recent line per uuid for VIEW purposes; the raw log stays intact.
+  const byUuid = new Map();
+  const noUuid = [];
+  for (const r of records) {
+    if (r && r.uuid) byUuid.set(r.uuid, r); // later entries overwrite earlier -> latest wins
+    else if (r) noUuid.push(r);
+  }
+  return [...byUuid.values(), ...noUuid];
+}
+
 function rowFromRecord(r) {
   return [
     r.uuid, r.timestamp, r.code, r.brand, r.platform, r.region, r.promo_type,
@@ -145,7 +157,7 @@ export async function findDuplicateRecent({ brand, code, hours = 24 }) {
 }
 
 export async function queryHistory({ brand, result, from, to } = {}) {
-  const rows = await readQcLog();
+  const rows = dedupeByUuid(await readQcLog());
   const fromMs = from ? Date.parse(from) : -Infinity;
   const toMs = to ? Date.parse(to) : Infinity;
   const filtered = rows.filter((r) => {

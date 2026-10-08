@@ -11,6 +11,52 @@ const state = {
   workflowStep: 'setup',    // R10: 'setup' | 'running' | 'review' | 'save'
 };
 
+const RESULTS_CACHE_PREFIX = 'qc-hub:lastResults:v1:';
+const RESULTS_CACHE_TTL_MS = 8 * 60 * 60 * 1000; // 8h - don't resurrect stale runs
+function _resultsCacheKey() {
+  const email = state.user?.email;
+  return email ? RESULTS_CACHE_PREFIX + email : null; // per-user -> no cross-user leak on shared machines
+}
+function persistResults() {
+  try {
+    const key = _resultsCacheKey();
+    if (!key) return;
+    if (!state.results.length) { localStorage.removeItem(key); return; }
+    localStorage.setItem(key, JSON.stringify({
+      v: 1, user: state.user.email, ts: Date.now(),
+      results: state.results, activeKey: state.activeKey,
+      selectedResults: state.selectedResults, workflowStep: state.workflowStep,
+    }));
+  } catch {} // private window / storage disabled -> no-op
+}
+function restoreResults() {
+  try {
+    const key = _resultsCacheKey();
+    if (!key) return false;
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.v !== 1 || parsed.user !== state.user?.email
+        || !Array.isArray(parsed.results) || !parsed.results.length) return false;
+    if (typeof parsed.ts === 'number' && Date.now() - parsed.ts > RESULTS_CACHE_TTL_MS) {
+      localStorage.removeItem(key); return false;
+    }
+    // Relay jobs are server-side and gone after a refresh - demote any in-flight one to a terminal manual state.
+    state.results = parsed.results.map((r) =>
+      (r.status === 'QUEUED' || r.status === 'RELAY_FETCHING')
+        ? { ...r, status: 'LOST', verdict: 'MANUAL_REQUIRED',
+            findings: [{ severity: 'FAIL', check: 'relay-lost', message: 'Relay job was lost on page refresh - enter QC verdict manually via Override.' }] }
+        : r);
+    state.selectedResults = (parsed.selectedResults && typeof parsed.selectedResults === 'object') ? parsed.selectedResults : {};
+    for (const r of state.results) ensureResultSlot(resultKey(r));
+    state.activeKey = (parsed.activeKey && state.results.some((r) => resultKey(r) === parsed.activeKey))
+      ? parsed.activeKey : (state.results[0] ? resultKey(state.results[0]) : '');
+    setWorkflowStep(parsed.workflowStep === 'save' ? 'save' : 'review');
+    renderActiveResult();
+    return true;
+  } catch { return false; }
+}
+
 const EMPTY_REMARKS = () => ({
   errorCategory: '', description: '', expected: '', actual: '',
   actionRequired: '', personResponsible: '', evidenceLink: '',
@@ -146,6 +192,7 @@ function persistRemarksFromForm() {
     const el = document.getElementById(f);
     if (el) slot.remarks[f] = el.value;
   }
+  persistResults();
 }
 
 /* ── R10: remarks card visibility (FAIL/REVIEW only) ── */
@@ -633,6 +680,10 @@ function isRelayPendingStatus(result) {
   return result?.status === 'QUEUED' || result?.status === 'RELAY_FETCHING';
 }
 
+function isCodeNotFound(result) {
+  return Array.isArray(result?.findings) && result.findings.some((f) => f && f.check === 'code-not-found');
+}
+
 function verdictLabel(v, result) {
   const relay = relayStatusLabel(result);
   if (relay && v == null) return relay;
@@ -640,6 +691,7 @@ function verdictLabel(v, result) {
   if (v === 'REVIEW') return 'REVIEW';
   if (v === 'MANUAL_REQUIRED') return 'MANUAL';
   if (v === 'MANUAL_PASS') return 'MANUAL PASS';
+  if (v === 'NOT_SAFE' && isCodeNotFound(result)) return 'NOT FOUND';
   return 'FAIL';
 }
 
@@ -653,14 +705,16 @@ function verdictClass(v, result) {
   // distinct from auto-SAFE (green) so operators/reviewers can tell an
   // override apart from an automated pass at a glance.
   if (v === 'MANUAL_PASS') return 'manual';
+  if (v === 'NOT_SAFE' && isCodeNotFound(result)) return 'not-found';
   return 'not-safe';
 }
 
-function verdictWords(v, count) {
+function verdictWords(v, count, result) {
   if (v === 'SAFE') return 'SAFE TO APPROVE - PASS';
   if (v === 'REVIEW') return `REQUIRES REVIEW - WARNING - ${count} findings`;
   if (v === 'MANUAL_REQUIRED') return `MANUAL REVIEW REQUIRED - LIVE BO EVIDENCE UNAVAILABLE - ${count} findings`;
   if (v === 'MANUAL_PASS') return `MANUAL PASS OVERRIDE RECORDED - ${count} findings`;
+  if (v === 'NOT_SAFE' && isCodeNotFound(result)) return `CODE NOT FOUND - this promo code does not exist on the back office (check the code, or it may not be created yet)`;
   return `NOT SAFE TO APPROVE - FAIL - ${count} findings`;
 }
 
@@ -882,6 +936,7 @@ function renderPills() {
       renderActiveResult();
     });
   });
+  persistResults();
 }
 
 function renderActiveResult() {
@@ -904,7 +959,7 @@ function renderActiveResult() {
   panel.className = `verdict card ${verdictClass(data.verdict, data)}`;
   $('verdictText').textContent = isRelayPendingStatus(data)
     ? `${relayStatusLabel(data)} — awaiting BO relay evidence from the VDI worker`
-    : verdictWords(data.verdict, data.findings.length);
+    : verdictWords(data.verdict, data.findings.length, data);
   // R23: mechanics text also carries the failure detail; strip inline HTML +
   // absolute URLs same way R19 did for finding.message. Previously the raw
   // nginx 403 body leaked here even after R19 cleaned the finding.
@@ -1300,7 +1355,7 @@ async function copySummary() {
   if (!data) return;
   const text = [
     `${data.brand} ${data.code}`,
-    verdictWords(data.verdict, data.findings.length),
+    verdictWords(data.verdict, data.findings.length, data),
     data.mechanics,
     ...data.findings.map((f) => `- ${f.severity}: ${f.message}`),
   ].join('\n');
@@ -1563,6 +1618,7 @@ async function init() {
   renderBrands();
   // R11 fix 1: history failure no longer fatals init
   loadHistory().catch(() => {});
+  restoreResults();
   renderEmptyStates();
   // R18-lite: allow deep-linking to admin modals from Ops Dashboard topbar
   // (🔧 → ?open=site-configs, ⚙ → ?open=users-modal). Admin-only; silent for
