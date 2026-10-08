@@ -53,7 +53,7 @@ ROOT = Path(r"C:/Users/vdiuser/Downloads/promo-automation")
 sys.path.insert(0, str(ROOT))
 from csir_config import get_client, SITE_EDIT, START, END_EXCL
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 DEP_OK = "(d.TransactionStatus IN ('Success','Approved','Completed') OR d.TransactionStatus='')"
 # Authoritative promo config: RedemptionType 0=Deposit(match/reload), 1=Claim(assigned reward).
@@ -99,6 +99,19 @@ def main():
             va = load(f"verify-action-{MK}.json")
             meta = {co["code"].strip(): co for co in va["codes"]}
             codes = sorted(meta)
+            if not codes:
+                # No in-scope (ROI-scored verify-action) codes for this window — e.g. a recent 1-month
+                # window where nothing has matured yet. ClickHouse 25.8 rejects `IN ()` ("second argument
+                # is constant or table expression"), so skip the warehouse queries and emit an empty
+                # drawer — there is nothing to drill into. (Older ClickHouse treated IN () as always-false.)
+                fp = SCR / f"code-players-{MK}.json"
+                json.dump({"_meta": {"market": MK, "sym": SYM, "window": va.get("window"),
+                                     "n_codes": 0, "n_rows": 0, "n_distinct_members": 0,
+                                     "note": "no in-scope codes for this window — empty players drawer"}},
+                          open(fp, "w", encoding="utf-8"), ensure_ascii=False)
+                summary[MK] = {"file": str(fp), "n_codes": 0, "n_rows": 0, "note": "no in-scope codes for this window"}
+                print(f"[{MK}] no in-scope codes for this window — wrote empty drawer ({fp.name})")
+                continue
             INL = inl(codes)
             # free-credit codes: mechanic normalises to 'freecredit' (covers 'FreeCredit' + 'free-credit')
             fc_codes = {k for k in codes if norm_mech(meta[k].get("mechanic")) == "freecredit"}
