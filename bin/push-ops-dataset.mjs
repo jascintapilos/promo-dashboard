@@ -85,7 +85,9 @@ export async function pushOpsDatasets(keys, { ok = true, detail = '', pulledAt =
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const args = process.argv.slice(2);
   const failedArg = args.find((a) => a.startsWith('--failed'));
-  const keys = args.includes('--all') ? Object.keys(OPS_DATASETS) : args.filter((a) => !a.startsWith('--'));
+  // --all covers only sheet-backed datasets; direct-push feeds (crmSmartico/crmFt,
+  // tab '(direct push)') are sent by their own pulls, not read from a sheet.
+  const keys = args.includes('--all') ? Object.keys(OPS_DATASETS).filter((k) => OPS_DATASETS[k].tab !== '(direct push)') : args.filter((a) => !a.startsWith('--'));
   // process.exitCode, not process.exit(): exiting with fetch sockets still open
   // trips a libuv assert on Windows (exit 127).
   if (!keys.length) { console.error('usage: node bin/push-ops-dataset.mjs <key…> | --all [--failed="detail"]'); process.exitCode = 2; }
