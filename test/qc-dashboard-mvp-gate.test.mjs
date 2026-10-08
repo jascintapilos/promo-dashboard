@@ -2,7 +2,7 @@
 //
 // Locks in two invariants:
 //
-// 1. data/qc-dashboard-brands.json declares exactly the 10 MVP brands the
+// 1. data/qc-dashboard-brands.json declares exactly the 15 MVP brands the
 //    brief specified: QP2A, QP2B, QP2C, QP2D, QPRO1, QPRO5, WS1_MY. Adding an 8th silently
 //    would put a brand under a comparator that hasn't been validated for
 //    its platform quirks — every future MVP addition must show up in a
@@ -21,10 +21,10 @@ import { loadQcBrandConfig } from '../src/qc-dashboard/brand-config.js';
 
 const DASHBOARD_JS = readFileSync(path.resolve(process.cwd(), 'bin/qc-dashboard.mjs'), 'utf8');
 
-test('Increment 8: MVP brand set is exactly QP2A-D / QPRO1,3,4,5,8 / WS1_MY', () => {
+test('Increment 8: MVP brand set matches the enabled flags in brands.json', () => {
   const brands = loadQcBrandConfig();
   const mvp = brands.filter((b) => b.qcRules?.mvp === true).map((b) => b.id).sort();
-  assert.deepEqual(mvp, ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO8', 'WS1_MY']);
+  assert.deepEqual(mvp, ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO10', 'QPRO15', 'QPRO2', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO6', 'QPRO7', 'QPRO8', 'WS1_MY']);
 });
 
 test('Increment 8: enabled brand set matches the MVP set', () => {
@@ -32,7 +32,7 @@ test('Increment 8: enabled brand set matches the MVP set', () => {
   // it should be the same set the compare engine runs against.
   const brands = loadQcBrandConfig();
   const enabled = brands.filter((b) => b.enabled).map((b) => b.id).sort();
-  assert.deepEqual(enabled, ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO8', 'WS1_MY']);
+  assert.deepEqual(enabled, ['QP2A', 'QP2B', 'QP2C', 'QP2D', 'QPRO1', 'QPRO10', 'QPRO15', 'QPRO2', 'QPRO3', 'QPRO4', 'QPRO5', 'QPRO6', 'QPRO7', 'QPRO8', 'WS1_MY']);
 });
 
 test('Increment 8: compare engine call in /api/run-qc is gated by isMvpBrand', () => {
