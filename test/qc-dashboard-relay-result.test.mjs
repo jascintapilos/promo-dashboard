@@ -4,7 +4,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeCanonical, sanitizeExpectedSourceMeta, sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
+import { sanitizeCanonical, sanitizeExpectedSourceMeta, sanitizeResultPayload, payloadCarriesEvidence, sanitizeDetails } from '../src/qc-dashboard/relay-result.js';
 import { runComparisonFromRelay } from '../src/qc-dashboard/compare-flow.js';
 import { expectedFromSource, liveFromQpro, liveFromQp2 } from '../src/qc-dashboard/canonical/index.js';
 
@@ -129,6 +129,26 @@ test('sanitizeResultPayload: happy path — brand/code uppercased, canonical pas
   assert.equal(r.payload.platform, 'qp2');
   assert.equal(r.payload.expectedSourceMeta.sourceType, 'bundle');
   assert.equal(Object.prototype.hasOwnProperty.call(r.payload.expectedSourceMeta, 'sourcePath'), false);
+});
+
+test('sanitizeResultPayload: details keeps scalar display fields only', () => {
+  const r = sanitizeResultPayload(JSON.stringify({
+    jobId: 'qcj_abc123',
+    brand: 'QPRO1',
+    code: 'CODE1',
+    details: { name: 'X', maxBonus: 188, bad: { nested: 1 }, arr: [1], nul: null },
+  }));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.payload.details, { name: 'X', maxBonus: '188' });
+});
+
+test('sanitizeDetails: drops non-scalars and coerces scalar values to strings', () => {
+  assert.deepEqual(
+    sanitizeDetails({ name: 'X', maxBonus: 188, active: true, bad: { nested: 1 }, arr: [1], nul: null }),
+    { name: 'X', maxBonus: '188', active: 'true' },
+  );
+  assert.deepEqual(sanitizeDetails(null), {});
+  assert.deepEqual(sanitizeDetails([['name', 'X']]), {});
 });
 
 test('sanitizeResultPayload: workerError.code constrained to allowlist', () => {

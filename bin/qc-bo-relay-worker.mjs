@@ -168,6 +168,7 @@ export async function buildResultForJob({ jobId, brand, code, handle, deps = def
       sourceTs: expSrc.sourceTs, approvalStatus: expSrc.approvalStatus,
       handle: expSrc.handle, promoCode: expSrc.promoCode, brand: expSrc.brand,
     }),
+    details: (snapshot && snapshot.details) || null,
     workerError: null,
   };
 }

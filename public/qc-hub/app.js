@@ -1035,7 +1035,7 @@ async function pollRelayJob(result) {
           verdict: b.verdict,
           mechanics: b.verdict === 'MANUAL_REQUIRED' ? 'Relay evidence incomplete' : 'Via BO relay',
           findings: b.findings || [],
-          details: {},
+          details: b.details || {},
           compare: b.fields ? { expected: b.expectedRef, actual: b.actualRef, fields: b.fields, summary: b.summary, expectedSource: b.expectedSource } : null,
         });
         return;

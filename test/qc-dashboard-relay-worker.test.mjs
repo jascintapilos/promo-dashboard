@@ -36,12 +36,19 @@ const JOB = { jobId: 'qcj_test', brand: 'QP2A', code: 'C1', handle: 'P1' };
 // ── happy path ────────────────────────────────────────────────────────
 
 test('worker: happy path — returns sanitized canonicals + expectedSourceMeta, no workerError', async () => {
-  const deps = stubDeps();
+  const deps = stubDeps({
+    snapshot: {
+      runtime: { platform: 'qp2', siteId: 'ibc22' },
+      raw: { listingRow: { code: 'C1' }, detail: {} },
+      details: { name: 'Promo X', maxBonus: 188 },
+    },
+  });
   const r = await buildResultForJob({ ...JOB, deps });
   assert.equal(r.workerError, null);
   assert.equal(r.expectedCanonical.identity.promoCode, 'C1');
   assert.equal(r.actualCanonical.identity.promoCode, 'C1');
   assert.equal(r.expectedSourceMeta.sourceType, 'bundle');
+  assert.deepEqual(r.details, { name: 'Promo X', maxBonus: 188 });
   // sanitized shape must NOT carry a sourcePath, even if we tried to sneak one
   assert.equal(Object.prototype.hasOwnProperty.call(r.expectedSourceMeta, 'sourcePath'), false);
 });

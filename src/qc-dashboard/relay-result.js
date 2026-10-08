@@ -151,6 +151,7 @@ const PAYLOAD_TOP_KEYS = new Set([
   'jobId', 'brand', 'code', 'handle',
   'expectedCanonical', 'actualCanonical', 'expectedSourceMeta',
   'platform', 'siteId',
+  'details',
   // Structured error fields the worker uses to explain WHY it couldn't
   // produce evidence. Never a raw stack trace.
   'workerError',
@@ -162,6 +163,22 @@ const WORKER_ERROR_CODES = new Set([
   'EXPECTED_SOURCE_MISSING', 'EXPECTED_SOURCE_AMBIGUOUS',
   'UNKNOWN_PLATFORM', 'INTERNAL',
 ]);
+
+export function sanitizeDetails(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
+  const out = {};
+  let n = 0;
+  for (const k of Object.keys(obj)) {
+    if (n >= 50) break;
+    const v = obj[k];
+    if (v == null) continue;
+    const t = typeof v;
+    if (t !== 'string' && t !== 'number' && t !== 'boolean') continue;
+    out[String(k).slice(0, 64)] = String(v).slice(0, 200);
+    n++;
+  }
+  return out;
+}
 
 export function sanitizeResultPayload(rawJson) {
   if (typeof rawJson !== 'string') return { ok: false, code: 'NOT_A_STRING' };
@@ -185,11 +202,12 @@ export function sanitizeResultPayload(rawJson) {
   const actualCanonical = sanitizeCanonical(out.actualCanonical);
   const expectedSourceMeta = sanitizeExpectedSourceMeta(out.expectedSourceMeta);
   const workerError = _sanitizeWorkerError(out.workerError);
+  const details = sanitizeDetails(out.details);
   return {
     ok: true,
     payload: {
       jobId, brand, code, handle, platform, siteId,
-      expectedCanonical, actualCanonical, expectedSourceMeta, workerError,
+      expectedCanonical, actualCanonical, expectedSourceMeta, workerError, details,
     },
   };
 }

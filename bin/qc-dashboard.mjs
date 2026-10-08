@@ -919,6 +919,7 @@ async function handleRelayApi(req, res, url) {
         }
       }
 
+      if (bundle && typeof bundle === 'object') bundle.details = payload.details || {};
       const submit = relayJobStore.submitResult({
         jobId, brand: stored.brand, code: stored.code, handle: stored.handle,
         workerId, verdictBundle: bundle,
