@@ -116,7 +116,7 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
         print(f"        └ prefunded deposit-to-unlock (<=24h) claims={dtu:,} ({dtu/tot['prefunded'][0]*100:.0f}% of prefunded)  |  bonus-led reactivation claims={react:,}")
 
     # timing textures (30d): pre-funded median HOURS deposit->claim; bonus-led median DAYS claim->first after-deposit
-    gap_h, bl_days = c.query(f"""
+    row = c.query(f"""
       WITH claims AS (SELECT MEMBER_ID member, BonusTime_gmt8 bt FROM WORKSPACE.GetBonus_ABC WHERE {cw}),
       pc AS (
         SELECT c.member, c.bt,
@@ -127,14 +127,21 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
         GROUP BY c.member, c.bt
       )
       SELECT round(medianIf(dateDiff('hour', lb, bt), lb > {T0})),
-             round(medianIf(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0}))
+             round(quantileIf(0.25)(dateDiff('hour', lb, bt), lb > {T0})),
+             round(quantileIf(0.75)(dateDiff('hour', lb, bt), lb > {T0})),
+             round(medianIf(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0})),
+             round(quantileIf(0.25)(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0})),
+             round(quantileIf(0.75)(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0}))
       FROM pc
     """).result_rows[0]
-    # NaN-safe: medianIf over an empty set (e.g. a thin window with ZERO bonus-led claims) returns
-    # NaN, and int(NaN) raises. `x == x` is False only for NaN, so this coerces NaN/None -> 0.
-    gh = int(gap_h) if gap_h is not None and gap_h == gap_h else 0
-    bd = int(bl_days) if bl_days is not None and bl_days == bl_days else 0
-    out["timing"] = {"prefunded_gap_h": gh, "bonusled_days": bd}
+    # NaN-safe: medianIf/quantileIf over an empty set (e.g. a thin window with ZERO bonus-led claims)
+    # returns NaN, and int(NaN) raises. `x == x` is False only for NaN, so this coerces NaN/None -> 0.
+    _i = lambda v: int(v) if v is not None and v == v else 0
+    gap_h, gap_h_p25, gap_h_p75, bl_days, bl_days_p25, bl_days_p75 = row
+    gh, bd = _i(gap_h), _i(bl_days)
+    # median + the middle-half (p25-p75) spread, so the typical is not read as a tight rule
+    out["timing"] = {"prefunded_gap_h": gh, "prefunded_gap_h_p25": _i(gap_h_p25), "prefunded_gap_h_p75": _i(gap_h_p75),
+                     "bonusled_days": bd, "bonusled_days_p25": _i(bl_days_p25), "bonusled_days_p75": _i(bl_days_p75)}
     print(f"[{MK}] timing: pre-funded {gh}h deposit->claim · bonus-led {bd}d claim->deposit")
 
     json.dump(out, open(SCR / f"deposit-classify-{MK}.json", "w", encoding="utf-8"), ensure_ascii=False)
