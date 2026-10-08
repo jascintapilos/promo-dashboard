@@ -22,7 +22,7 @@
 import { chromium } from 'playwright-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 chromium.use(StealthPlugin());
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import readline from 'node:readline';
 import path from 'node:path';
 import { parseArgs } from './_args.js';
@@ -32,6 +32,13 @@ import { hasTotpSecret, generateTotp } from '../src/totp.js';
 const { flags } = parseArgs(process.argv.slice(2));
 const INSTANCE = flags.instance || 'ws1';
 const MANUAL   = flags.manual === true;
+// --dump-mfa: force the full-login path (ignore the saved profile) and, when the
+// WorkOS authenticator page appears, dump its DOM/screenshot and exit WITHOUT
+// entering a code (zero rejection/lockout risk). For debugging headless TOTP entry.
+const DUMP_MFA = flags['dump-mfa'] === true;
+// --force-login: ignore the saved profile and run the full OTP+TOTP login (to
+// exercise/verify the headless authenticator entry). Saves a fresh profile on success.
+const FORCE_LOGIN = flags['force-login'] === true || DUMP_MFA;
 
 const INSTANCES = {
   ws1:   { url: 'https://mb8.ft-crm.com/',                    label: 'WS1/WS2' },
@@ -79,7 +86,7 @@ const browser = await chromium.launch({
 const ctx = await browser.newContext({
   viewport: { width: 1440, height: 900 },
   // In manual mode start fresh (no stored cookies) so login page is obvious
-  ...(!MANUAL && existingProfile?.storageState ? { storageState: existingProfile.storageState } : {}),
+  ...(!MANUAL && !FORCE_LOGIN && existingProfile?.storageState ? { storageState: existingProfile.storageState } : {}),
 });
 const page = await ctx.newPage();
 
@@ -349,6 +356,18 @@ async function autoLogin(page, ctx, loginUrl) {
 
   // Handle TOTP (authenticator app) step if it appears
   if (await isTotpPrompt(page)) {
+    if (DUMP_MFA) {
+      mkdirSync(path.resolve('tmp'), { recursive: true });
+      const base = path.resolve('tmp', `mfa-dump-${INSTANCE}`);
+      try { writeFileSync(`${base}.html`, await page.content()); } catch {}
+      try { await page.screenshot({ path: `${base}.png`, fullPage: true }); } catch {}
+      const inputs = await page.$$eval('input', (els) => els.map((e) => ({ name: e.name, id: e.id, type: e.type, maxLength: e.maxLength, autocomplete: e.getAttribute('autocomplete'), inputmode: e.getAttribute('inputmode'), placeholder: e.placeholder, aria: e.getAttribute('aria-label'), cls: e.className }))).catch(() => []);
+      const buttons = await page.$$eval('button', (els) => els.map((e) => ({ type: e.type, text: (e.textContent || '').trim().slice(0, 40), cls: e.className }))).catch(() => []);
+      writeFileSync(`${base}.json`, JSON.stringify({ url: page.url(), inputs, buttons }, null, 2));
+      console.log(`DUMP-MFA: wrote tmp/mfa-dump-${INSTANCE}.{html,png,json} — exiting WITHOUT entering a code.`);
+      await browser.close().catch(() => {});
+      process.exit(0);
+    }
     const totpCode = hasTotpSecret(INSTANCE)
       ? generateTotp(INSTANCE)
       : await promptTotpCode(INSTANCE);
@@ -391,6 +410,24 @@ async function autoLogin(page, ctx, loginUrl) {
 }
 
 async function enterOtp(page, otp) {
+  // WorkOS AuthKit segmented OTP (the authenticator / mfa-verification page):
+  // visible boxes (input.rt-TextFieldInput, NO maxlength) backed by a hidden
+  // input.ak-OtpHiddenInput (maxlength=6); it auto-submits at 6 digits and has
+  // no submit button. The old maxlength="1" path misses it, so handle it first:
+  // focus a visible box, then type the whole code and let the component
+  // distribute the digits + auto-submit. (The email magic-code page uses
+  // maxlength=1 boxes instead and is handled below.)
+  const authkitHidden = page.locator('input.ak-OtpHiddenInput');
+  const authkitBoxes = page.locator('input.rt-TextFieldInput');
+  const hasAuthkit = (await authkitHidden.count().catch(() => 0)) > 0 || (await authkitBoxes.count().catch(() => 0)) >= otp.length;
+  if (hasAuthkit) {
+    const target = (await authkitBoxes.count().catch(() => 0)) > 0 ? authkitBoxes.first() : authkitHidden.first();
+    await target.click({ timeout: 5000 }).catch(() => {});
+    await page.keyboard.type(otp, { delay: 90 });
+    await page.waitForTimeout(1500); // let it auto-submit
+    return;
+  }
+
   // WorkOS magic-code page: 6 individual maxlength=1 inputs that auto-submit
   // when all digits are filled. Use Locator API (pressSequentially fires key events).
   const digitLoc = page.locator('input[maxlength="1"]');
