@@ -215,19 +215,20 @@ test('§1: preflight READY + code not found → NOT_SAFE via direct fetch, no re
   } finally { await killServer(s); }
 });
 
-// ── §1 — non-MVP brand path never queues to relay ──────────────────────
+// ── §1 — disabled brand path never queues to relay ──────────────────────
 
-test('§1: non-MVP enabled brand (QP2B/etc) is not eligible for relay — plain MANUAL_REQUIRED', async () => {
+test('§1: a disabled brand (QPRO2) is rejected at entry and never queued to relay — 400 not enabled', async () => {
   const port = 4414;
   const s = startServer({ port, env: { RELAY_SECRET: SECRET } });
   try {
     await waitReady(`http://127.0.0.1:${port}`);
     const cookie = await login(`http://127.0.0.1:${port}`);
-    // QP2B is not enabled per data/qc-dashboard-brands.json → server 400s
-    // at entry. This is the "invalid brand path never relayed" invariant.
+    // QPRO2 is not enabled per data/qc-dashboard-brands.json → server 400s
+    // at entry. This is the "disabled brand path never relayed" invariant.
+    // (QP2B/C/D used to live here but are now enabled MVP brands.)
     const r = await fetch(`http://127.0.0.1:${port}/api/run-qc`, {
       method: 'POST', headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ brand: 'QP2B', codes: ['X'] }),
+      body: JSON.stringify({ brand: 'QPRO2', codes: ['X'] }),
     });
     assert.equal(r.status, 400);
     const j = await r.json();
