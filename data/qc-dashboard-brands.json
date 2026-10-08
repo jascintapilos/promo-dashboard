@@ -1,9 +1,9 @@
 {
   "brands": [
     { "id": "QP2A", "label": "QP2A", "displayGroup": "QP2", "order": 10, "promoModulePath": "/promotion", "qcRules": { "mvp": true, "extraChecks": [] } },
-    { "id": "QP2B", "label": "QP2B", "displayGroup": "QP2", "order": 11, "promoModulePath": "/promotion", "qcRules": { "mvp": false, "extraChecks": [] } },
-    { "id": "QP2C", "label": "QP2C", "displayGroup": "QP2", "order": 12, "promoModulePath": "/promotion", "qcRules": { "mvp": false, "extraChecks": [] } },
-    { "id": "QP2D", "label": "QP2D", "displayGroup": "QP2", "order": 13, "promoModulePath": "/promotion", "qcRules": { "mvp": false, "extraChecks": [] } },
+    { "id": "QP2B", "label": "QP2B", "displayGroup": "QP2", "order": 11, "promoModulePath": "/promotion", "qcRules": { "mvp": true, "extraChecks": [] } },
+    { "id": "QP2C", "label": "QP2C", "displayGroup": "QP2", "order": 12, "promoModulePath": "/promotion", "qcRules": { "mvp": true, "extraChecks": [] } },
+    { "id": "QP2D", "label": "QP2D", "displayGroup": "QP2", "order": 13, "promoModulePath": "/promotion", "qcRules": { "mvp": true, "extraChecks": [] } },
 
     { "id": "QPRO1", "label": "QPRO1", "displayGroup": "QPRO", "order": 20, "promoModulePath": "/promotion", "qcRules": { "mvp": true, "extraChecks": [] } },
     { "id": "QPRO2", "label": "QPRO2", "displayGroup": "QPRO", "order": 21, "promoModulePath": "/promotion", "qcRules": { "mvp": false, "extraChecks": [] } },

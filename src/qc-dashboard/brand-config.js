@@ -3,7 +3,6 @@ import { brandToSite, QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES } from '../brand-id
 import { getSite } from '../sites.js';
 
 const CONFIG_PATH = 'data/qc-dashboard-brands.json';
-const MVP_BRANDS = new Set(['QP2A', 'QPRO1', 'QPRO5', 'WS1_MY']);
 
 export function loadQcBrandConfig() {
   const parsed = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
@@ -27,7 +26,11 @@ export function loadQcBrandConfig() {
   }
 
   return brands
-    .map((brand) => ({ ...brand, qcRules: brand.qcRules || {}, enabled: MVP_BRANDS.has(brand.id) }))
+    .map((brand) => ({
+      ...brand,
+      qcRules: brand.qcRules || {},
+      enabled: brand.enabled === true || (brand.qcRules && brand.qcRules.mvp === true),
+    }))
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.id.localeCompare(b.id));
 }
 
