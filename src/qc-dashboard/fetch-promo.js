@@ -7,6 +7,8 @@ import {
   readonlyIgmpPost,
 } from './readonly-client.js';
 import { resolveBrandRuntime } from './brand-config.js';
+import { getCategoryCatalogue, getProviderCatalogue } from './canonical/catalogues.js';
+import { getPopupCatalogue } from './canonical/dialog-bodies.js';
 
 const FETCH_DIR = 'captures/qc-dashboard/fetches';
 const FAILED_LOG = 'captures/qc-dashboard/failed-fetches.jsonl';
@@ -146,7 +148,7 @@ function firstCurrencyBlock(rows = []) {
   return rows[0] || {};
 }
 
-export function normalizeQproQp2({ brand, runtime, listingRow, detail, currencies, names, listingFull }) {
+export function normalizeQproQp2({ brand, runtime, listingRow, detail, currencies, names, listingFull, categoryCatalogue = null, providerCatalogue = null, popupCatalogue = null }) {
   const firstCurrency = firstCurrencyBlock(currencies);
   const platform = String(runtime.platform || '').toLowerCase();
   const messageTemplates = listingRow?.message_templates || [];
@@ -193,7 +195,7 @@ export function normalizeQproQp2({ brand, runtime, listingRow, detail, currencie
     validTo: detail?.valid_to || listingRow?.valid_to,
     status: detail?.status ?? listingRow?.status,
   };
-  return { details, checkCandidate, raw: { listingRow, detail, currencies, names, listingFull } };
+  return { details, checkCandidate, raw: { listingRow, detail, currencies, names, listingFull, categoryCatalogue, providerCatalogue, popupCatalogue } };
 }
 
 function promoTypeLabel(type, subType) {
@@ -310,13 +312,21 @@ async function fetchQproQp2(brand, code, runtime) {
     if (diagOn) _r17LogQpro({ tag: 'listing-empty', brand, code, site, listingResp, detailBundle: null });
     throw new PromoNotFoundError(brand, code);
   }
-  const [detailBundle, listingFull] = await Promise.all([
+  const [detailBundle, listingFull, categoryCatalogue, providerCatalogue, popupCatalogue] = await Promise.all([
     getPromotionDetailReadonly(site, listingRow.id),
     diagOn ? Promise.resolve(listingResp) : getQproListingReadonly(site, code, { merchantId: runtime.merchantId }),
+    // Items 2 + 4: live per-site catalogues (cached briefly — see
+    // catalogues.js / dialog-bodies.js). Fetched alongside detail so a slow/
+    // failed catalogue fetch never blocks promo evidence; none of these ever
+    // throw — they return {complete:false} on failure so this Promise.all
+    // can't reject because of them.
+    getCategoryCatalogue(site),
+    getProviderCatalogue(site),
+    getPopupCatalogue(site),
   ]);
   if (diagOn) _r17LogQpro({ tag: 'listing+detail', brand, code, site, listingResp: listingFull, detailBundle });
   const fullRow = (listingFull?.data?.rows || []).find((r) => r.code === code) || listingRow;
-  return normalizeQproQp2({ brand, runtime, listingRow: fullRow, listingFull, ...detailBundle });
+  return normalizeQproQp2({ brand, runtime, listingRow: fullRow, listingFull, categoryCatalogue, providerCatalogue, popupCatalogue, ...detailBundle });
 }
 
 async function fetchIgmp(brand, code, runtime) {

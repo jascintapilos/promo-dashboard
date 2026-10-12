@@ -9,6 +9,7 @@
 //   runComparison({ brand, code, handle, snapshot, brandConfig }) → {
 //     status:  'ok' | 'skip',                       // skip → do not override existing verdict
 //     verdict, findings, fields, summary,           // when status === 'ok'
+//     evidence,                                     // item 6: consolidated source tags + locale coverage
 //     expectedSource, expectedRef, actualRef,        // audit trail
 //     reason,                                       // when status === 'skip'
 //   }
@@ -26,15 +27,40 @@
 import { resolveExpectedSource as _defaultResolve } from './expected-source.js';
 import { expectedFromSource as _defaultExpectedFromSource, liveFromPlatform as _defaultLiveFromPlatform } from './canonical/index.js';
 import { compare as _defaultCompare } from './compare-engine.js';
+import { evaluateCanonicalLocaleCoverage } from './canonical/locale-matrix.js';
+
+// Item 6: consolidate per-field evidence source tags that are otherwise
+// scattered across the canonical (scope.*Evidence from item 2,
+// content.dialogEvidence from item 4) plus the expected-source tag (item 5:
+// 'bundle' | 'request' | 'sheet') into one summary. `liveTransport` is
+// always 'api' today — every actual live fetch goes through the plain
+// read-only REST client; it is surfaced (rather than assumed) so a future
+// browser-context transport shows up here distinctly once one exists.
+function _buildEvidenceSummary({ actual, expSrc }) {
+  const scope = actual?.scope || {};
+  const content = actual?.content || {};
+  return {
+    expectedSourceType: expSrc?.sourceType || null,
+    liveTransport: 'api',
+    categories: scope.categoriesEvidence || null,
+    gameProviderCodes: scope.gameProviderCodesEvidence || null,
+    dialog: content.dialogEvidence || null,
+    localeCoverage: actual ? evaluateCanonicalLocaleCoverage(actual, { brand: actual.identity?.brand }) : null,
+  };
+}
 
 const SUPPORTED_PLATFORMS = new Set(['qpro', 'qp2', 'igmp']);
 
-// --- snapshot.raw → { list_row, detail, tnc? } shape the canonical adapters expect.
+// --- snapshot.raw → { list_row, detail, tnc?, rewardContents? } shape the
+// canonical adapters expect.
 //
 // fetch-promo.js normalizes differently per platform:
 //   qpro / qp2 → raw: { listingRow, detail, currencies, names, listingFull }
 //   igmp        → raw: { list, detail, rewardContents } where list/detail may be
-//                 wrapped as { data: { Promotion: {...} } }.
+//                 wrapped as { data: { Promotion: {...} } }, and
+//                 rewardContents is the raw GetPromotionRewardContents POST
+//                 response ({success, data: [{RewardId, Locale, Content,
+//                 PromotionRewardName}]}) — unwrapped to a plain array here.
 //
 // This function keeps ALL knowledge of those shapes localized here, so the
 // canonical adapters can stay ignorant of the fetcher and remain testable
@@ -47,10 +73,17 @@ export function snapshotToLiveState(snapshot, platform) {
     if (!listRow) return null;
     // Fold currency/name arrays onto detail so the adapters don't need to
     // reach back into raw for them.
+    //
+    // promotion_name_list was previously DROPPED here, so the authoritative
+    // promotion names from /api/bo/promotionname never reached the adapter on
+    // the live QC-Hub path — only the bundle path (which carries the
+    // api-client normalized promotion_name_en/_zh_id) had them. That is why
+    // promotion-name coverage looked fine in fixtures and was empty live.
     const detail = {
       ...(raw.detail || {}),
       promotion_currency_list: raw.detail?.promotion_currency_list
         || (Array.isArray(raw.currencies) ? raw.currencies : []),
+      promotion_name_list: Array.isArray(raw.names) ? raw.names : [],
     };
     return { list_row: listRow, detail, tnc: null };
   }
@@ -58,7 +91,14 @@ export function snapshotToLiveState(snapshot, platform) {
     const list = _unwrapIgmp(raw.list);
     const detail = _unwrapIgmp(raw.detail);
     if (!list && !detail) return null;
-    return { list_row: list || {}, detail: detail || {}, tnc: null };
+    // Gap-closure item 1: rewardContents used to be fetched (fetch-promo.js's
+    // fetchIgmp already calls GetPromotionRewardContents) but dropped here
+    // before the adapter ever saw it — every IGMP locale-completeness check
+    // was structurally unable to pass no matter how complete the live BO
+    // data actually was. `raw.rewardContents` is the raw POST response
+    // ({success, data: [...]}); igmp-adapter.js reads the plain array.
+    const rewardContents = Array.isArray(raw.rewardContents?.data) ? raw.rewardContents.data : [];
+    return { list_row: list || {}, detail: detail || {}, rewardContents };
   }
   return null;
 }
@@ -119,6 +159,7 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
       }],
       fields: [],
       summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+      evidence: _buildEvidenceSummary({ actual: null, expSrc }),
       expectedSource: _publicExpectedSource(expSrc, handle),
       expectedRef: null,
       actualRef: null,
@@ -154,6 +195,7 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
       }],
       fields: [],
       summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+      evidence: _buildEvidenceSummary({ actual: null, expSrc }),
       expectedSource: _publicExpectedSource(expSrc, handle),
       expectedRef: null,
       actualRef: null,
@@ -162,7 +204,17 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
 
   let actual;
   try {
-    actual = liveFromPlatform(platform, liveState, { brand, promoCode: code, siteId: runtime?.siteId });
+    // Items 2 + 4: thread the live per-site catalogues (fetched alongside
+    // the snapshot in fetch-promo.js) through to the qpro/qp2 adapters so
+    // code/dialog resolution prefers authoritative BO data over static
+    // fallbacks. Harmless no-op for igmp (liveFromIgmp doesn't read
+    // opts.catalogue).
+    const catalogue = {
+      categories: snapshot?.raw?.categoryCatalogue || null,
+      providers: snapshot?.raw?.providerCatalogue || null,
+      popups: snapshot?.raw?.popupCatalogue || null,
+    };
+    actual = liveFromPlatform(platform, liveState, { brand, promoCode: code, siteId: runtime?.siteId, catalogue });
   } catch (e) {
     return {
       status: 'ok',
@@ -175,6 +227,7 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
       }],
       fields: [],
       summary: { total: 0, passed: 0, failed: 0, warnings: 0, unavailable: 0, skipped: 0 },
+      evidence: _buildEvidenceSummary({ actual: null, expSrc }),
       expectedSource: _publicExpectedSource(expSrc, handle),
       expectedRef: null,
       actualRef: null,
@@ -213,6 +266,13 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
     findings: _findingsFromFields(uiFields),
     fields: uiFields,
     summary,
+    // Item 6: per-field evidence source tags, consolidated. The individual
+    // tags already exist scattered across the canonical (scope.*Evidence
+    // from item 2, content.dialogEvidence from item 4, expSrc.sourceType
+    // from item 5) — this pulls them into one place so a caller doesn't
+    // need to know the canonical's internal shape to answer "where did
+    // this verdict's evidence actually come from?"
+    evidence: _buildEvidenceSummary({ actual, expSrc }),
     expectedSource: _publicExpectedSource(expSrc, handle),
     // These references are shown to the UI as compact summaries — never the
     // full canonical objects (which would leak a lot of BO detail with no
@@ -236,6 +296,42 @@ export function runComparison({ brand, code, handle = null, snapshot, brandConfi
 // reason so downstream logging / observability still knows why.
 function _skip(code, reason) {
   return { status: 'skip', reason, code };
+}
+
+// Item 5: async wrapper adding the cached, read-only Sheets fallback ON TOP
+// of the existing synchronous filesystem resolution — used only when local
+// (captures/requests + captures/qc-bundles) has nothing. runComparison()
+// itself stays synchronous and 100% unchanged for every existing caller
+// (bin/qc-dashboard.mjs's direct-fetch path, every runComparison() test) —
+// this wraps it rather than making it async, so nothing already calling it
+// synchronously silently starts receiving a Promise.
+//
+// sheets-fallback.js is imported LAZILY (dynamic import), not at module top,
+// because it transitively pulls in googleapis via sheets-ingest.js /
+// sheets-client.js / google-auth.js. compare-flow.js is also imported by the
+// company server for runComparisonFromRelay() — that path never calls this
+// function, but a static top-level import would still load googleapis into
+// the server's process on every startup for a capability it never uses. A
+// dynamic import means that cost (and any credential-file requirement) is
+// paid only by a caller that actually invokes this VDI-side wrapper.
+export async function runComparisonWithSheetsFallback({ brand, code, handle = null, snapshot, brandConfig, deps = {} } = {}) {
+  const resolveExpectedSource = deps.resolveExpectedSource || _defaultResolve;
+  const primary = resolveExpectedSource({ brand, code, handle });
+  // Local file already resolved it, or local ambiguity is itself the
+  // authoritative answer — either way, do not let the sheet override it.
+  if (primary && (primary.source || primary.sourceType === 'ambiguous')) {
+    return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => primary } });
+  }
+  let sheetResult = null;
+  try {
+    const resolveFromSheet = deps.resolveExpectedSourceFromSheet
+      || (await import('./sheets-fallback.js')).resolveExpectedSourceFromSheet;
+    sheetResult = await resolveFromSheet({ brand, code, handle });
+  } catch {
+    sheetResult = null; // Sheets unavailable in this process (e.g. no OAuth token file) — fall through to the local not-found result, never a thrown error.
+  }
+  const finalSrc = (sheetResult && (sheetResult.source || sheetResult.sourceType === 'ambiguous')) ? sheetResult : primary;
+  return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => finalSrc } });
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -384,23 +480,4 @@ function _safeMessage(e) {
   // Strip absolute filesystem paths (defense in depth — the canonical
   // adapters shouldn't produce them, but keep this guard).
   return msg.replace(/[A-Z]:\\\S+|\/var\/\S+|\/etc\/\S+|\/opt\/\S+|\/home\/\S+/g, '<server-path>');
-}
-
-export async function runComparisonWithSheetsFallback({ brand, code, handle = null, snapshot, brandConfig, deps = {} } = {}) {
-  const resolveExpectedSource = deps.resolveExpectedSource || _defaultResolve;
-  const primary = resolveExpectedSource({ brand, code, handle });
-  // Local file already resolved it, or local ambiguity is itself authoritative — don't let the sheet override.
-  if (primary && (primary.source || primary.sourceType === 'ambiguous')) {
-    return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => primary } });
-  }
-  let sheetResult = null;
-  try {
-    const resolveFromSheet = deps.resolveExpectedSourceFromSheet
-      || (await import('./sheets-fallback.js')).resolveExpectedSourceFromSheet;
-    sheetResult = await resolveFromSheet({ brand, code, handle });
-  } catch {
-    sheetResult = null; // Sheets unavailable (no OAuth token etc.) — fall through to the local not-found result, never throw.
-  }
-  const finalSrc = (sheetResult && (sheetResult.source || sheetResult.sourceType === 'ambiguous')) ? sheetResult : primary;
-  return runComparison({ brand, code, handle, snapshot, brandConfig, deps: { ...deps, resolveExpectedSource: () => finalSrc } });
 }

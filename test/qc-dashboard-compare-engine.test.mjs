@@ -8,6 +8,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compare } from '../src/qc-dashboard/compare-engine.js';
 import { expectedFromSource, liveFromQpro, liveFromQp2, liveFromIgmp } from '../src/qc-dashboard/canonical/index.js';
+import { BONUS_TYPES } from '../src/qc-dashboard/canonical/canonical-model.js';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+// Item 6: locale-completeness is now wired into the verdict (compare-engine.js
+// ruleLocaleCompleteness), so every fixture representing a "fully matching,
+// should reach SAFE" promo needs locale-complete content too. QP2A requires
+// 8 locales (MY/SG/ID/TH x EN/local-language) for promotion name and 4
+// languages for MT body. TH_EN/TH_TH have no known settings_locale_id
+// mapping in listing-row-fields.js's SETTINGS_LOCALE_ID_MAP yet (a separate,
+// open collector gap — not invented here), so the REAL adapter path cannot
+// currently produce TH content from raw BO fields. This helper synthesizes
+// complete locale content directly on the CANONICAL result (post-adapter)
+// purely to isolate these tests' actual subject (currency/category/auto-
+// reward/etc) from that unrelated, unresolved gap — it is test-only
+// scaffolding, never a claim that the real collector can produce this today.
+function withCompleteLocaleContent(canonical, { languages = ['EN', 'ZH', 'ID', 'TH'], locales = ['MY_EN', 'MY_ZH', 'SG_EN', 'SG_ZH', 'ID_EN', 'ID_ID', 'TH_EN', 'TH_TH'] } = {}) {
+  for (const l of languages) { canonical.content.names[l] = `Test Promo ${l}`; canonical.content.mtBody[l] = `<p>Test MT body ${l}</p>`; }
+  for (const loc of locales) canonical.content.promotionNamesByLocale[loc] = `Test Promo ${loc}`;
+  return canonical;
+}
 
 // Fresh minimally-complete QP2 FC pair (SAFE reference)
 function qp2FcExpected() {
@@ -20,7 +41,7 @@ function qp2FcExpected() {
   }, { brand: 'QP2A' });
 }
 function qp2FcLive() {
-  return liveFromQp2({
+  const c = liveFromQp2({
     list_row: {
       id: 999, code: 'FT_QP2A_FC', bonus_type: 'Free Credit',
       validity: 7, reward_validity: 3, status: 1,
@@ -36,6 +57,7 @@ function qp2FcLive() {
       auto_reward_activation: true,
     },
   }, { brand: 'QP2A' });
+  return withCompleteLocaleContent(c);
 }
 
 test('Increment 5: SAFE — every critical field matches, no warnings', () => {
@@ -96,7 +118,13 @@ test('Increment 5: REVIEW — warning-level mismatch only (extra currency in liv
   assert.equal(r.verdict, 'REVIEW');
 });
 
-test('Increment 5: QPRO auto_reward_activation null → SKIPPED, not FAIL (Sentinel quirk)', () => {
+test('Item 3 fix: QPRO auto-reward genuinely absent (no auto_approve, no auto_reward_activation) → UNAVAILABLE/CRITICAL → MANUAL_REQUIRED, never silently SKIPPED', () => {
+  // Pre-item-3 this SKIPPED unconditionally on the (disproven) theory that
+  // QPRO's GET API never exposes auto-reward evidence at all. Now that
+  // auto_approve is a trusted proxy, a record that carries NEITHER field is a
+  // genuine evidence gap, not a permanent platform limitation — and per the
+  // standing invariant, missing critical evidence must resolve to
+  // MANUAL_REQUIRED, never a silent pass-through.
   const exp = expectedFromSource({
     promo_code: 'QPRO_REL', brands: ['QPRO1'], currencies: ['MYR'], regions: ['MY'],
     bonus_type: 'Deposit', parsed: { min_deposit: 100, bonus_rate_pct: 30, to_multiplier: 8, max_bonus: 500 },
@@ -107,14 +135,46 @@ test('Increment 5: QPRO auto_reward_activation null → SKIPPED, not FAIL (Senti
     detail: {
       promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }],
       per_currency_overrides: { MYR: { min_deposit: 100, max_bonus: 500, bonus_rate: 30 } },
-      to_multiplier: 8, auto_reward_activation: null, // QPRO quirk
+      to_multiplier: 8, auto_reward_activation: null, // neither field present anywhere
     },
   }, { brand: 'QPRO1' });
   const r = compare({ expected: exp, actual: act, brand: 'QPRO1' });
   const arField = r.fields.find((f) => f.field === 'autoRewardActivation');
-  assert.equal(arField.status, 'SKIPPED');
-  assert.match(arField.message, /QPRO GET does not return/);
-  assert.notEqual(r.verdict, 'NOT_SAFE', 'QPRO null autoReward must not FAIL the verdict');
+  assert.equal(arField.status, 'UNAVAILABLE');
+  assert.equal(arField.severity, 'CRITICAL');
+  assert.equal(r.verdict, 'MANUAL_REQUIRED', 'genuinely missing auto-reward evidence must force MANUAL_REQUIRED, never an implicit pass');
+});
+
+test('Item 3 fix: QPRO auto_approve present → real MATCH/MISMATCH, no longer permanently SKIPPED', () => {
+  const baseExpected = () => expectedFromSource({
+    promo_code: 'QPRO_REL2', brands: ['QPRO1'], currencies: ['MYR'], regions: ['MY'],
+    bonus_type: 'Deposit', parsed: { min_deposit: 100, bonus_rate_pct: 30, to_multiplier: 8, max_bonus: 500 },
+    per_currency_overrides: { MYR: { min_deposit: 100 } },
+  }, { brand: 'QPRO1' });
+  const liveWithAutoApprove = (autoApprove) => liveFromQpro({
+    list_row: { id: 2, code: 'QPRO_REL2', bonus_type: 'Deposit - Reload', status: 1, auto_approve: autoApprove },
+    detail: {
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }],
+      per_currency_overrides: { MYR: { min_deposit: 100, max_bonus: 500, bonus_rate: 30 } },
+      to_multiplier: 8,
+    },
+  }, { brand: 'QPRO1' });
+
+  // Expected defaults to auto-reward ON (expectedFromSource never asserts
+  // auto_reward_off here) — live auto_approve=1 must MATCH, not SKIP.
+  const rOn = compare({ expected: baseExpected(), actual: liveWithAutoApprove(1), brand: 'QPRO1' });
+  const arOn = rOn.fields.find((f) => f.field === 'autoRewardActivation');
+  assert.equal(arOn.status, 'MATCH');
+  assert.equal(arOn.severity, 'CRITICAL');
+
+  // A live promo that is genuinely OFF (confirmed to exist: 522/7324 in the
+  // item-3 live sweep) must now surface as a real MISMATCH against the
+  // ON-by-default expectation, not be hidden behind SKIPPED.
+  const rOff = compare({ expected: baseExpected(), actual: liveWithAutoApprove(0), brand: 'QPRO1' });
+  const arOff = rOff.fields.find((f) => f.field === 'autoRewardActivation');
+  assert.equal(arOff.status, 'MISMATCH');
+  assert.equal(arOff.severity, 'CRITICAL');
+  assert.equal(rOff.verdict, 'NOT_SAFE');
 });
 
 test('Increment 5 + Blocker 3: QPRO4-17 no-SG quirk — SGD filtered from expected, never surfaces as field', () => {
@@ -176,15 +236,81 @@ test('Increment 5: category sets compared unordered (case-normalized)', () => {
   assert.equal(catField.status, 'MATCH', 'unordered category set must match');
 });
 
-test('Increment 5: request has no category restriction → categories SKIPPED (not MISMATCH)', () => {
+// Gap-closure category-alignment fix (2026-08-11): a promo whose approved
+// source has no category restriction always came back from a live save with
+// this codebase's OWN no-restriction default (src/api-mapper-qpro.js
+// ALLOWED_WALLET_CATEGORY_NAMES for non-FS, FS_ONLY_CATEGORY_NAMES for Free
+// Spin — same in src/api-mapper-qp2.js). Comparing bare `[]` against that
+// default produced a false CRITICAL mismatch on a large fraction of live
+// Deposit/Free-Credit/Free-Spin promos. Verified live 2026-08-11 against
+// WHALE_CRM_PROBE_DEP50PCT_500_12X (Deposit, QPRO1 + QP2A) and two Free Spin
+// probes (QPRO2 TEST_RET_CRM_REL_5FS_PTI_8X_060_MHLOG_GLD, QPRO5
+// TEST_RET_CRM_REL_5FS_8X_040_SR) before writing this fix.
+test('Gap-closure: source unrestricted + live matches the non-FS wallet default → MATCH, not a false mismatch', () => {
   const exp = qp2FcExpected();
-  exp.scope.categories = []; // promo request imposes no category restriction
+  exp.scope.categories = []; // source never asked for a category restriction
   const act = qp2FcLive();
-  act.scope.categories = ['CG', 'CK', 'ES', 'FS', 'LIVE_CASINO', 'SLOTS', 'SPORTS']; // live BO exposes its full category set
+  act.scope.categories = ['CRASH', 'CRICKET', 'E_SPORTS', 'FISHING', 'LIVE_CASINO', 'SLOTS', 'SPORTS'];
+  act.scope.gameProviderCodes = ['LIVE22', 'PP'];
   const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
   const catField = r.fields.find((f) => f.field === 'categories');
-  assert.equal(catField.status, 'SKIPPED', 'no category restriction in the request → skip, not flag');
-  assert.notEqual(r.verdict, 'NOT_SAFE', 'empty-expected categories must not cause a false FAIL');
+  assert.equal(catField.status, 'MATCH', 'the wallet-category default must not read as an operator-configured restriction');
+  assert.equal(r.verdict, 'SAFE', 'an otherwise-complete fixture must not be dragged to NOT_SAFE by this default');
+});
+
+test('Gap-closure: unrestricted + live default in SHORT-CODE form (catalogue fetch failed) → MATCH, not a false NOT_SAFE', () => {
+  // When the per-site category catalogue fails to load, the live default set
+  // arrives as raw/mixed short codes (CG/CK/ES/FS + already-resolved names).
+  // isMapperDefaultCategorySet must still recognize it as the no-restriction
+  // default — otherwise a correctly unrestricted promo false-FAILs (the exact
+  // regression bitbucket fix 000c54f prevented).
+  const exp = qp2FcExpected();
+  exp.scope.categories = [];
+  const act = qp2FcLive();
+  act.scope.categories = ['CG', 'CK', 'ES', 'FS', 'LIVE_CASINO', 'SLOTS', 'SPORTS'];
+  act.scope.gameProviderCodes = ['LIVE22', 'PP'];
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const catField = r.fields.find((f) => f.field === 'categories');
+  assert.equal(catField.status, 'MATCH', 'short-code default set must be recognized even when the catalogue did not resolve');
+  assert.notEqual(r.verdict, 'NOT_SAFE');
+});
+
+test('Gap-closure: source unrestricted + live matches the Free-Spin-only default → MATCH', () => {
+  const exp = qp2FcExpected();
+  exp.identity.bonusType = BONUS_TYPES.FREE_SPIN;
+  exp.scope.categories = [];
+  const act = qp2FcLive();
+  act.identity.bonusType = BONUS_TYPES.FREE_SPIN;
+  act.scope.categories = ['SLOTS'];
+  act.scope.gameProviderCodes = ['PP'];
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const catField = r.fields.find((f) => f.field === 'categories');
+  assert.equal(catField.status, 'MATCH', 'Free Spin promos default to Slots-only — this must read as a match, not a restriction the operator configured');
+});
+
+test('Gap-closure: source unrestricted + live is a genuine, non-default partial restriction → still MISMATCH (no blanket suppression)', () => {
+  const exp = qp2FcExpected();
+  exp.scope.categories = [];
+  const act = qp2FcLive();
+  act.scope.categories = ['SPORTS']; // a real restriction that happens to not match either known default
+  act.scope.gameProviderCodes = ['SBO'];
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const catField = r.fields.find((f) => f.field === 'categories');
+  assert.equal(catField.status, 'MISMATCH', 'a genuine restriction the source never asked for must still be flagged');
+  assert.equal(catField.severity, 'CRITICAL');
+  assert.equal(r.verdict, 'NOT_SAFE');
+});
+
+test('Gap-closure: source explicitly restricted + live has a different restricted set → still MISMATCH (fix is scoped to the empty-source case only)', () => {
+  const exp = qp2FcExpected();
+  exp.scope.categories = ['SLOTS'];
+  const act = qp2FcLive();
+  act.scope.categories = ['CRASH', 'CRICKET', 'E_SPORTS', 'FISHING', 'LIVE_CASINO', 'SLOTS', 'SPORTS']; // the wallet default, but source DID ask for Slots-only
+  act.scope.gameProviderCodes = ['PP'];
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const catField = r.fields.find((f) => f.field === 'categories');
+  assert.equal(catField.status, 'MISMATCH', 'an explicit source restriction must never be silently widened to the platform default');
+  assert.equal(r.verdict, 'NOT_SAFE');
 });
 
 test('Increment 5: decimal comparison ignores insignificant precision (0.02 vs 0.020000001)', () => {
@@ -241,32 +367,179 @@ test('Increment 5: IGMP linkage rules skipped (no MT/dialog concept)', () => {
   assert.notEqual(r.verdict, 'NOT_SAFE');
 });
 
-test('Blocker 4: IGMP FS spinCount / valuePerSpin — SKIPPED (platform limit), not MANUAL_REQUIRED', () => {
-  // IGMP has no GET endpoint that returns FreeSpinRounds or AmountPerBet
-  // (verified against every /PM/GetFreeSpin* endpoint 2026-07-30). The
-  // compare engine must emit SKIPPED with a "platform-limit" reason instead
-  // of UNAVAILABLE — otherwise every IGMP FS promo forever resolves to
-  // MANUAL_REQUIRED for a systematic limitation, not a per-promo evidence
-  // gap. Documented in src/qc-dashboard/canonical/igmp-adapter.js.
+// SUPERSEDED 2026-07-31. This test previously asserted that IGMP FS
+// spinCount/valuePerSpin were a permanent "platform limitation" and therefore
+// SKIPPED. That premise was wrong: a read-only probe found FreeSpinRounds and
+// AmountPerBet nested under PromotionRewards[0].FreeSpin. The adapter now reads
+// them, the downgrade list is empty, and these fields must compare for real.
+// Rewritten to assert affirmative evidence in both directions.
+
+test('G5/G6: IGMP FS spinCount + valuePerSpin compare as real evidence (MATCH)', () => {
+  const exp = expectedFromSource({
+    promo_code: 'IGMP_FS', brands: ['WS1_MY'], currencies: ['MYR'], regions: ['MY'],
+    bonus_type: 'Free Spin', parsed: { spin_count: 88, value_per_spin: 0.5, to_multiplier: 10, min_deposit: 0 },
+  }, { brand: 'WS1_MY', platform: 'igmp', siteId: 'ws1-v3-my' });
+  const act = withCompleteLocaleContent(liveFromIgmp({
+    list_row: { PromotionCode: 'IGMP_FS', PromotionType: 'FreeSpin', IsActive: true },
+    detail: {
+      PromotionRewards: [{
+        RolloverMultiplier: 10, RedemptionType: 1, MinimumActionAmount: 0,
+        FreeSpin: { FreeSpinId: 7, FreeSpinRounds: 88, AmountPerBet: 0.5 },
+      }],
+    },
+  }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' }), { languages: ['EN', 'ZH'], locales: ['MY_EN', 'MY_ZH'] });
+  const r = compare({ expected: exp, actual: act, brand: 'WS1_MY' });
+  const spin = r.fields.find((f) => f.field === 'currency:MYR:spinCount');
+  const vps = r.fields.find((f) => f.field === 'currency:MYR:valuePerSpin');
+  assert.equal(spin.status, 'MATCH', 'spinCount is now collectable — must genuinely compare');
+  assert.equal(vps.status, 'MATCH', 'valuePerSpin is now collectable — must genuinely compare');
+  assert.equal(r.verdict, 'SAFE', 'a fully-matching IGMP FS promo must reach PASS automatically');
+});
+
+test('G5/G6: IGMP FS spin-count drift is caught as a real MISMATCH (no longer hidden by SKIP)', () => {
   const exp = expectedFromSource({
     promo_code: 'IGMP_FS', brands: ['WS1_MY'], currencies: ['MYR'], regions: ['MY'],
     bonus_type: 'Free Spin', parsed: { spin_count: 88, value_per_spin: 0.5, to_multiplier: 10, min_deposit: 0 },
   }, { brand: 'WS1_MY', platform: 'igmp', siteId: 'ws1-v3-my' });
   const act = liveFromIgmp({
     list_row: { PromotionCode: 'IGMP_FS', PromotionType: 'FreeSpin', IsActive: true },
-    detail: { PromotionRewards: [{ Quantity: 1, RolloverMultiplier: 10, RedemptionType: 1, MinimumActionAmount: 0 }] },
+    detail: {
+      PromotionRewards: [{
+        RolloverMultiplier: 10, RedemptionType: 1, MinimumActionAmount: 0,
+        FreeSpin: { FreeSpinId: 7, FreeSpinRounds: 68, AmountPerBet: 0.5 },  // 68 ≠ 88
+      }],
+    },
   }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' });
   const r = compare({ expected: exp, actual: act, brand: 'WS1_MY' });
   const spin = r.fields.find((f) => f.field === 'currency:MYR:spinCount');
-  const vps = r.fields.find((f) => f.field === 'currency:MYR:valuePerSpin');
-  assert.equal(spin.status, 'SKIPPED', 'IGMP FS spinCount is a platform limitation — must SKIP, not UNAVAILABLE');
-  assert.equal(spin.severity, 'INFO', 'SKIPPED must carry INFO severity');
-  assert.match(spin.message, /not exposed by IGMP GET endpoints/);
-  assert.equal(vps.status, 'SKIPPED', 'IGMP FS valuePerSpin is also a platform limitation');
-  assert.notEqual(r.verdict, 'MANUAL_REQUIRED', 'platform-limitation SKIP must not force MANUAL_REQUIRED');
+  assert.equal(spin.status, 'MISMATCH');
+  assert.equal(spin.severity, 'CRITICAL');
+  assert.equal(r.verdict, 'NOT_SAFE', 'the old SKIP behavior would have hidden this as a PASS');
+});
+
+test('G5/G6: the platform-unretrievable downgrade list is empty', () => {
+  // Guard against silently re-adding a field here to make a red test green.
+  // Adding an entry requires proving no read path exposes the field.
+  const src = readFileSync(path.resolve(process.cwd(), 'src/qc-dashboard/compare-engine.js'), 'utf8');
+  const m = src.match(/PLATFORM_UNRETRIEVABLE_CURRENCY_FIELDS\s*=\s*Object\.freeze\((\{[\s\S]*?\})\)/);
+  assert.ok(m, 'downgrade map must still exist as a mechanism');
+  assert.match(m[1].replace(/\s/g, ''), /^\{\}$/, 'downgrade map must be EMPTY — no field may be written off as uncollectable without proof');
 });
 
 test('Increment 5: compare throws when expected or actual is missing', () => {
   assert.throws(() => compare({ expected: null, actual: {} }), /required/);
   assert.throws(() => compare({ expected: {}, actual: null }), /required/);
+});
+
+// ── Item 6: locale completeness wired into the verdict ──────────────────
+
+test('Item 6: locale-complete promotion name + MT body → MATCH, verdict unaffected', () => {
+  const r = compare({ expected: qp2FcExpected(), actual: qp2FcLive(), brand: 'QP2A' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  const mt = r.fields.find((f) => f.field === 'localeCompleteness:mtBodyLanguages');
+  assert.equal(name.status, 'MATCH');
+  assert.equal(name.severity, 'CRITICAL');
+  assert.equal(mt.status, 'MATCH');
+  assert.equal(r.verdict, 'SAFE');
+});
+
+// A promo that genuinely serves all four QP2 regions carries all four
+// currencies. The locale gate is now scoped to the promo's real currency
+// footprint (2026-08-11 fix), so a test proving "missing SG/ID/TH flags" must
+// give the promo those currencies — otherwise it isn't a 4-region promo and
+// SG/ID/TH are correctly not required.
+function withFourRegionCurrencies(canonical) {
+  const have = new Set(canonical.currencies.map((c) => c.code));
+  for (const code of ['MYR', 'SGD', 'IDR', 'THB']) if (!have.has(code)) canonical.currencies.push({ code });
+  return canonical;
+}
+
+test('Item 6: a 4-region promo (MYR+SGD+IDR+THB) missing SG/ID/TH names → UNAVAILABLE/CRITICAL → MANUAL_REQUIRED', () => {
+  const act = withFourRegionCurrencies(qp2FcLive());
+  act.content.promotionNamesByLocale = { MY_EN: 'x', MY_ZH: 'y' }; // SG/ID/TH all missing
+  const r = compare({ expected: qp2FcExpected(), actual: act, brand: 'QP2A' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  assert.equal(name.status, 'UNAVAILABLE');
+  assert.equal(name.severity, 'CRITICAL');
+  assert.match(name.message, /SG_EN/);
+  assert.equal(r.verdict, 'MANUAL_REQUIRED');
+});
+
+test('Item 6: a 4-region promo missing a required MT-body language → UNAVAILABLE/CRITICAL → MANUAL_REQUIRED', () => {
+  const act = withFourRegionCurrencies(qp2FcLive());
+  delete act.content.mtBody.TH;
+  const r = compare({ expected: qp2FcExpected(), actual: act, brand: 'QP2A' });
+  const mt = r.fields.find((f) => f.field === 'localeCompleteness:mtBodyLanguages');
+  assert.equal(mt.status, 'UNAVAILABLE');
+  assert.match(mt.message, /TH/);
+  assert.equal(r.verdict, 'MANUAL_REQUIRED');
+});
+
+// ── Gap-closure: locale requirement follows the promo's currency footprint ──
+//
+// Root cause (2026-08-11, user-reported): a QP2 promo intentionally scoped to
+// MY/SG (currencies MYR+SGD, localized MY_EN/MY_ZH/SG_EN/SG_ZH) was flagged
+// MANUAL_REQUIRED for "missing ID/TH", because the locale gate keyed off the
+// brand's maximal region set instead of the promo's real footprint. Verified
+// live on QP2A WHALE_CRM_PROBE_DEP50PCT_500_12X and QPRO2 TEST_RET_CRM_REL_5FS.
+test('Gap-closure: a QP2 promo carrying only MYR+SGD requires only MY/SG locales → SAFE, not flagged for ID/TH', () => {
+  const act = qp2FcLive();
+  act.currencies = [{ code: 'MYR' }, { code: 'SGD' }];       // intentionally MY/SG only
+  act.content.promotionNamesByLocale = { MY_EN: 'x', MY_ZH: 'y', SG_EN: 'x', SG_ZH: 'y' };
+  act.content.mtBody = { EN: 'a', ZH: 'b' };
+  const exp = qp2FcExpected();
+  exp.currencies = [{ code: 'MYR' }, { code: 'SGD' }];        // source agrees: MY/SG promo
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  const mt = r.fields.find((f) => f.field === 'localeCompleteness:mtBodyLanguages');
+  assert.equal(name.status, 'MATCH', 'MY/SG-only promo must not be dinged for ID/TH it never serves');
+  assert.deepEqual(name.expected, ['MY_EN', 'MY_ZH', 'SG_EN', 'SG_ZH'], 'required set is exactly the promo\'s two regions');
+  assert.equal(mt.status, 'MATCH');
+  assert.equal(r.verdict, 'SAFE');
+});
+
+test('Gap-closure: narrowing never hides a real gap — a MY/SG promo missing SG_ZH still flags', () => {
+  const act = qp2FcLive();
+  act.currencies = [{ code: 'MYR' }, { code: 'SGD' }];
+  act.content.promotionNamesByLocale = { MY_EN: 'x', MY_ZH: 'y', SG_EN: 'x' }; // SG_ZH missing
+  const exp = qp2FcExpected();
+  exp.currencies = [{ code: 'MYR' }, { code: 'SGD' }];
+  const r = compare({ expected: exp, actual: act, brand: 'QP2A' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  assert.equal(name.status, 'UNAVAILABLE');
+  assert.match(name.message, /SG_ZH/);
+  assert.equal(r.verdict, 'MANUAL_REQUIRED');
+});
+
+test('Item 6: dialog-locale completeness is WARNING-only and only checked when a dialog is actually linked', () => {
+  const linked = qp2FcLive(); // qp2FcLive links dialog_popup_list: [{popup_id:100}] but never populates dialogBody
+  const rLinked = compare({ expected: qp2FcExpected(), actual: linked, brand: 'QP2A' });
+  const dlgLinked = rLinked.fields.find((f) => f.field === 'localeCompleteness:dialogBodyLanguages');
+  assert.equal(dlgLinked.status, 'UNAVAILABLE');
+  assert.equal(dlgLinked.severity, 'WARNING', 'dialog-locale gaps must never force MANUAL_REQUIRED — no verified per-bonus-type requirement exists yet');
+
+  const unlinked = qp2FcLive();
+  unlinked.linkage.dialogPopupList = [];
+  const rUnlinked = compare({ expected: qp2FcExpected(), actual: unlinked, brand: 'QP2A' });
+  const dlgUnlinked = rUnlinked.fields.find((f) => f.field === 'localeCompleteness:dialogBodyLanguages');
+  assert.equal(dlgUnlinked.status, 'SKIPPED', 'no dialog linked at all — locale completeness is not applicable, not a gap');
+});
+
+test('Item 6: a brand with no mapped region requirement is SKIPPED, never fabricates a requirement', () => {
+  const act = qp2FcLive();
+  const r = compare({ expected: qp2FcExpected(), actual: act, brand: 'BRAND_NOT_IN_REGION_MAP' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  assert.equal(name.status, 'SKIPPED');
+  assert.equal(name.severity, 'INFO');
+});
+
+test('Item 6: MY-only brand (QPRO5) only requires MY_EN/MY_ZH — SG/ID/TH absence is not a gap', () => {
+  const act = withCompleteLocaleContent(qp2FcLive(), { languages: ['EN', 'ZH'], locales: ['MY_EN', 'MY_ZH'] });
+  act.content.promotionNamesByLocale = { MY_EN: 'x', MY_ZH: 'y' };
+  act.content.mtBody = { EN: 'a', ZH: 'b' };
+  const r = compare({ expected: qp2FcExpected(), actual: act, brand: 'QPRO5' });
+  const name = r.fields.find((f) => f.field === 'localeCompleteness:promotionName');
+  const mt = r.fields.find((f) => f.field === 'localeCompleteness:mtBodyLanguages');
+  assert.equal(name.status, 'MATCH');
+  assert.equal(mt.status, 'MATCH');
 });

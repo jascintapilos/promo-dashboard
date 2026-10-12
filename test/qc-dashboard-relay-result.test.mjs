@@ -174,14 +174,25 @@ const HAPPY_EXP = expectedFromSource({
   parsed: { spin_count: 5, value_per_spin: 5, min_deposit: 50, to_multiplier: 8 },
 }, { brand: 'QP2A', platform: 'qp2' });
 
-const HAPPY_ACT = liveFromQp2({
+// Item 6: locale completeness is now part of the verdict, so the "happy
+// path" fixture needs locale-complete content too — see compare-engine.test
+// .mjs's withCompleteLocaleContent() doc comment for why TH has no known
+// settings_locale_id mapping yet (a separate, open collector gap) and this
+// is synthesized directly on the canonical rather than via real BO fields.
+function withCompleteLocaleContent(canonical) {
+  for (const l of ['EN', 'ZH', 'ID', 'TH']) { canonical.content.names[l] = `Test ${l}`; canonical.content.mtBody[l] = `<p>Test ${l}</p>`; }
+  for (const loc of ['MY_EN', 'MY_ZH', 'SG_EN', 'SG_ZH', 'ID_EN', 'ID_ID', 'TH_EN', 'TH_TH']) canonical.content.promotionNamesByLocale[loc] = `Test ${loc}`;
+  return canonical;
+}
+
+const HAPPY_ACT = withCompleteLocaleContent(liveFromQp2({
   list_row: { id: 1, code: 'REL_FS', bonus_type: 'Free Spin', status: 1, merchant_ids: [1], message_template_id: 1, dialog_popup_list: [{ popup_id: 100 }] },
   detail: {
     free_spin_game_code: 'vs20olympgate',
     to_multiplier: 8, auto_reward_activation: true,
     promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, amount_per_line: 0.25, lines: 0, min_transfer: 50, rounds: 5 }],
   },
-}, { brand: 'QP2A' });
+}, { brand: 'QP2A' }));
 
 test('relay-flow: happy path — server re-derives PASS from clean evidence', () => {
   const r = runComparisonFromRelay({
@@ -192,6 +203,39 @@ test('relay-flow: happy path — server re-derives PASS from clean evidence', ()
   });
   assert.equal(r.status, 'ok');
   assert.equal(r.verdict, 'SAFE');
+});
+
+test('relay-flow: through sanitizeCanonical → still SAFE (regression: sanitizer dropped promotionNamesByLocale, forcing every relay verdict to MANUAL)', () => {
+  // The production relay path sanitizes both canonicals before compare(). This
+  // test routes them through sanitizeCanonical (unlike the happy-path test),
+  // guarding the merge defect where ruleLocaleCompleteness read a field the
+  // sanitizer stripped → UNAVAILABLE/CRITICAL → MANUAL on every clean promo.
+  const r = runComparisonFromRelay({
+    brand: 'QP2A', code: 'REL_FS', handle: 'P123',
+    expectedCanonical: sanitizeCanonical(HAPPY_EXP),
+    actualCanonical: sanitizeCanonical(HAPPY_ACT),
+    expectedSourceMeta: { sourceType: 'bundle', sourceId: 'P123__QP2A.json' },
+    platform: 'qp2',
+  });
+  assert.equal(r.status, 'ok');
+  assert.equal(r.verdict, 'SAFE', 'sanitized relay canonicals must verify SAFE — the sanitizer must keep the locale-keyed content surfaces');
+});
+
+test('sanitizeCanonical preserves the locale-keyed content surfaces the compare engine reads', () => {
+  const c = sanitizeCanonical({
+    content: {
+      names: { EN: 'x' }, mtBody: { EN: '<p>x</p>' }, dialogBody: {},
+      promotionNamesByLocale: { MY_EN: 'n', MY_ZH: 'n2' },
+      dialogBodyByLocale: { MY_EN: 'd' },
+      messageTemplate: { subjectByLocale: { MY_EN: 's' }, bodyByLocale: { MY_EN: 'b' } },
+      localesDeclared: ['MY_EN', 'MY_ZH'],
+    },
+  });
+  assert.deepEqual(Object.keys(c.content.promotionNamesByLocale).sort(), ['MY_EN', 'MY_ZH']);
+  assert.equal(c.content.messageTemplate.subjectByLocale.MY_EN, 's');
+  assert.equal(c.content.messageTemplate.bodyByLocale.MY_EN, 'b');
+  assert.equal(c.content.dialogBodyByLocale.MY_EN, 'd');
+  assert.deepEqual([...c.content.localesDeclared].sort(), ['MY_EN', 'MY_ZH']);
 });
 
 test('relay-flow: incomplete evidence → MANUAL_REQUIRED, never SAFE', () => {

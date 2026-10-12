@@ -9,7 +9,28 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { preflightBrand, preflightAllBrands, _clearPreflightCache } from '../src/qc-dashboard/preflight.js';
+import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+// Install synthetic config before sites.js captures its paths at import time.
+// Probe-only injection still goes through the real site resolver/validator.
+const fixtureDir = mkdtempSync(path.join(tmpdir(), 'promo-preflight-fixture-'));
+process.env.BO_SITES_FILE = path.join(fixtureDir, 'sites.json');
+process.env.BO_SITES_LOCAL_FILE = path.join(fixtureDir, 'no-local-config.json');
+process.env.BO_SITES_RUNTIME_FILE = path.join(fixtureDir, 'no-runtime-overlay.json');
+const sites = Object.fromEntries(['ibc22', 'qpro1', 'qpro5'].map(id => [id, {
+  platform: id === 'ibc22' ? 'qp2' : 'qpro',
+  baseUrl: 'https://example.invalid', apiHost: 'https://example.invalid',
+  username: 'test-user', password: 'test-only-not-a-real-password', // nosecret: synthetic fixture
+  reqSignKey: 'test-only-signing-key', loginMerchantCode: 'test-merchant', // nosecret: synthetic fixture
+}]));
+writeFileSync(process.env.BO_SITES_FILE, JSON.stringify({ sites }));
+const { preflightBrand, preflightAllBrands, _clearPreflightCache } = await import('../src/qc-dashboard/preflight.js');
+test.after(() => {
+  unlinkSync(path.join(fixtureDir, 'sites.json'));
+  rmdirSync(fixtureDir);
+});
 
 // Minimal brand-config stubs (matches loadQcBrandConfig return shape).
 function mkBrand(id, { mvp = true, extra = {} } = {}) {
@@ -22,6 +43,40 @@ test('Increment 2: NOT_ENABLED when brand missing mvp:true flag', async () => {
   const r = await preflightBrand('QP2B', { brandConfig: cfg });
   assert.equal(r.status, 'NOT_ENABLED');
   assert.ok(r.checks.some((c) => c.name === 'mvp-enabled' && !c.ok));
+});
+
+test('Item 7: bypassMvpGate probes real reachability for a non-MVP brand instead of short-circuiting to NOT_ENABLED', async () => {
+  _clearPreflightCache();
+  const cfg = [mkBrand('QP2B', { mvp: false })];
+  const r = await preflightBrand('QP2B', {
+    brandConfig: cfg, bypassMvpGate: true,
+    deps: { probeReachable: async () => ({ ok: true, detail: 'probe HTTP 200' }) },
+  });
+  assert.equal(r.status, 'READY', 'the reachability probe must actually run, not be skipped for a non-MVP brand');
+  assert.equal(r.mvpEnabled, false, 'mvpEnabled fact is still reported even though it no longer gates the probe');
+});
+
+test('Item 7: bypassMvpGate still reports mvpEnabled:true for an already-MVP brand', async () => {
+  _clearPreflightCache();
+  const cfg = [mkBrand('QP2A', { mvp: true })];
+  const r = await preflightBrand('QP2A', {
+    brandConfig: cfg, bypassMvpGate: true,
+    deps: { probeReachable: async () => ({ ok: true, detail: 'probe HTTP 200' }) },
+  });
+  assert.equal(r.status, 'READY');
+  assert.equal(r.mvpEnabled, true);
+});
+
+test('Item 7: bypassMvpGate does not poison the normal (non-bypass) cached result for the same brand', async () => {
+  _clearPreflightCache();
+  const cfg = [mkBrand('QP2B', { mvp: false })];
+  const bypassed = await preflightBrand('QP2B', {
+    brandConfig: cfg, bypassMvpGate: true,
+    deps: { probeReachable: async () => ({ ok: true, detail: 'probe HTTP 200' }) },
+  });
+  assert.equal(bypassed.status, 'READY');
+  const normal = await preflightBrand('QP2B', { brandConfig: cfg });
+  assert.equal(normal.status, 'NOT_ENABLED', 'the production dashboard rollout gate must be unaffected by a prior bypass call');
 });
 
 test('Increment 2: CONFIG_MISSING when brand not in qc-dashboard-brands.json', async () => {

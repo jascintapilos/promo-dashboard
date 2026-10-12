@@ -62,12 +62,60 @@ export function newCanonical() {
       gameProviderCodes: [], // string codes (QP2, IGMP)
       blacklistId: null,
       blacklistedProviders: [],
+      // Item 2 evidence (collector Phase 3): completeness of the code
+      // resolution above, sourced from catalogues.js's live per-site
+      // catalogue when one was supplied. Auxiliary only — compare-engine.js
+      // reads scope.categories/gameProviderIds/gameProviderCodes by exact
+      // name, never these siblings, so they can never affect a PASS/FAIL
+      // rule. Defaults assume nothing was left unresolved (true on the
+      // expected side, which never has codes to resolve in the first place).
+      categoriesEvidence: { unmapped: [], complete: true, catalogue: null },
+      gameProviderCodesEvidence: { checked: false, unknownCodes: [], catalogueComplete: false, source: null },
+      // Gap-closure item 3: WHERE gameProviderCodes was actually resolved
+      // from — 'detail' | 'target' | 'listing-row' | 'none' on the live
+      // side (see gameProviderCodesFromRow in listing-row-fields.js), null
+      // on the expected side (the approved source has no such distinction).
+      // Auxiliary/non-comparison, same guarantee as the two fields above.
+      gameProviderCodesSource: null,
     },
     content: {
-      names: {},             // { EN: "…", ZH: "…" } — locale key varies per platform
-      mtBody: {},            // { EN: "…", ZH: "…" }
+      // PROMOTION NAME — the player-facing promo title, authoritative source
+      // is /api/bo/promotionname (QPRO/QP2) or PromotionName (IGMP).
+      // Language-keyed for backwards compatibility with the compare engine.
+      names: {},                     // { EN: "88% Slots Reload Bonus", ZH: "…" }
+      // Locale-keyed (MY_EN / SG_EN / MY_ZH / ID_ID …) because a promo can
+      // carry a different name per region even within one language.
+      promotionNamesByLocale: {},    // { MY_EN: "…", SG_EN: "…", MY_ZH: "…" }
+
+      // MESSAGE TEMPLATE — the inbox message. Its subject is a DIFFERENT
+      // field from the promotion name and must never overwrite it. Team
+      // convention has them intentionally divergent: promo name comes from
+      // the request's column M, inbox subject is "Exclusive Offer…".
+      // Observed on QPRO1/P026-r27:
+      //   promotion name : "88% Slots Reload Bonus"
+      //   MT subject     : "Exclusive Reload Bonus — Claim Yours — 88% Bonus"
+      messageTemplate: {
+        subjectByLocale: {},         // { MY_EN: "…", SG_ZH: "…" }
+        bodyByLocale: {},            // { MY_EN: "<p>…", … }
+        templateIds: [],
+      },
+      mtBody: {},            // { EN: "…", ZH: "…" } — language-keyed MT body
       dialogBody: {},        // { EN: "…", ZH: "…" }
+      dialogBodyByLocale: {},// { MY_EN: "…", … } — locale-keyed dialog body
+      dialogTitleByLocale: {}, // { MY_EN: "…", … } — the popup's own heading, separate from both the promotion name and the dialog body
       tncClauses: [],        // ordered list of clauses if the BO exposes them
+
+      // Locale bookkeeping so a missing required localization is detectable
+      // rather than silently absent. `localesDeclared` is what the BO says
+      // the promo has; the locale-matrix module compares it against what the
+      // brand REQUIRES and what we actually collected.
+      localesDeclared: [],   // e.g. ["MY_EN","MY_ZH","SG_EN","SG_ZH"]
+
+      // Item 4 evidence: which dialog links were rejected (stale/duplicate/
+      // ambiguous/cross-merchant) and which were actually matched+attributed.
+      // Auxiliary only, same non-comparison guarantee as scope.*Evidence
+      // above — compare-engine.js never reads this field.
+      dialogEvidence: { matchedPopupIds: [], rejected: [], catalogueSource: null },
     },
     linkage: {
       templateId: null,

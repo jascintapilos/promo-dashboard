@@ -19,10 +19,22 @@ import {
   normalizeDate, normalizeDecimal, normalizeBool,
 } from './canonical-model.js';
 import { deriveValuePerSpin } from './value-per-spin.js';
+import {
+  messageTemplatesFromRow, dialogLinkageFromRow,
+  categoriesFromShortCodesDetailed, autoRewardFromRow, promotionNamesFrom,
+  gameProviderCodesFromRow,
+} from './listing-row-fields.js';
+import { checkProviderCodesAgainstCatalogue } from './catalogues.js';
+import { resolveDialogBodiesForPromotion } from './dialog-bodies.js';
 
 const CURRENCY_ID_MAP = { 1: 'MYR', 3: 'SGD', 4: 'IDR', 5: 'THB' }; // per memory/project_bo_currency_id_catalog.md
 
-export function liveFromQpro(liveState, { brand, promoCode } = {}) {
+// `opts.catalogue` = { categories, providers } — the live per-site
+// catalogues from catalogues.js (item 2). Optional: omitting it falls back
+// to the small pre-verified static map in listing-row-fields.js, exactly as
+// before catalogues existed — no caller is forced to fetch a catalogue to
+// keep working (bundle-replay / unit tests never will).
+export function liveFromQpro(liveState, { brand, promoCode, catalogue = null } = {}) {
   if (!liveState || typeof liveState !== 'object') {
     throw new Error('liveFromQpro: liveState must be an object');
   }
@@ -70,7 +82,18 @@ export function liveFromQpro(liveState, { brand, promoCode } = {}) {
       code,
       minDeposit: normalizeDecimal(pc.min_transfer ?? pc.min_deposit),
       maxBonus: normalizeDecimal(pc.max_bonus),
-      bonusRatePct: normalizeDecimal(pc.bonus_rate),
+      // Gap-closure fix (2026-08-11): same shape problem as toMultiplier
+      // above. QPRO's /api/bo/promotioncurrency row has no bonus_rate
+      // column at all (verified live on WHALE_CRM_PROBE_DEP50PCT_500_12X —
+      // the per-currency row carries min_transfer/max_bonus/rounds/etc but
+      // never bonus_rate); the value lives only on the top-level detail
+      // object (detail.bonus_rate: 50.00 for that same promo, matching the
+      // "DEP50PCT" in its own code). Reading pc.bonus_rate alone made every
+      // QPRO Deposit promo report bonusRatePct UNAVAILABLE regardless of
+      // live BO reality. QP2's per-currency row DOES carry its own
+      // bonus_rate (verified live on the same promo code on QP2A) — this
+      // fallback is additive and never overrides a real per-currency value.
+      bonusRatePct: normalizeDecimal(pc.bonus_rate ?? detail.bonus_rate),
       freeCreditAmount: normalizeDecimal(pc.free_credit_amount ?? pc.bonus_amount),
       spinCount: Number.isFinite(pc.rounds ?? pc.spin_count) ? (pc.rounds ?? pc.spin_count) : null,
       valuePerSpin: vps.valuePerSpin,
@@ -78,9 +101,21 @@ export function liveFromQpro(liveState, { brand, promoCode } = {}) {
       valuePerSpinInconclusive: vps.inconclusive,
       valuePerSpinNote: vps.note,
       amountPerLine: vps.amountPerLine,     // raw wire, for audit trail
-      // to_multiplier lives on the top-level detail (single value across
-      // currencies) — keep the fallback so an override on the pc row wins.
-      toMultiplier: normalizeDecimal(pc.to_multiplier ?? detail.to_multiplier),
+      // G1 fix: turnover multiplier has TWO shapes depending on which layer
+      // produced `detail`:
+      //   raw BO response (/api/bo/promotion/{id} via fetch-promo.js) →
+      //       detail.target[0].multiplier          ← authoritative, see
+      //       src/api-client.js:515 which derives to_multiplier from it
+      //   api-client normalized record (qc-bundles live_state.detail) →
+      //       detail.to_multiplier
+      // Reading only `to_multiplier` made every live QC-Hub run report
+      // toMultiplier UNAVAILABLE (observed on QPRO5 + QP2A in production
+      // acceptance). Check pc-row override, then both detail shapes.
+      toMultiplier: normalizeDecimal(
+        pc.to_multiplier
+        ?? detail.to_multiplier
+        ?? (Array.isArray(detail.target) ? detail.target[0]?.multiplier : undefined),
+      ),
       maxTransferOut: normalizeDecimal(pc.max_transfer_out),
       withdrawalCap: normalizeDecimal(pc.max_withdraw),
       active: pc.status != null ? (pc.status === 1 || pc.status === '1' || pc.status === true) : null,
@@ -92,28 +127,103 @@ export function liveFromQpro(liveState, { brand, promoCode } = {}) {
   c.eligibility.memberGroupIds = Array.isArray(row.member_group_ids) ? [...row.member_group_ids] : []; // QPRO always [] — suppressed at compare
   c.eligibility.redemptionType = null;
 
-  c.scope.categories = normalizeCategoriesArray(detail.categories || detail.game_categories);
+  // G9 fix: categories come from detail when present, else from the listing
+  // row's short-code string ("SL" / "SL, LC"). detail.categories is often
+  // absent, which previously left scope.categories empty and made a
+  // category-restricted promo look unrestricted.
+  const detailCats = normalizeCategoriesArray(detail.categories || detail.game_categories);
+  let categoryResolution = null;
+  if (detailCats.length) {
+    c.scope.categories = detailCats;
+  } else {
+    categoryResolution = categoriesFromShortCodesDetailed(row.category, { catalogue: catalogue?.categories });
+    c.scope.categories = categoryResolution.categories;
+  }
   c.scope.gameProviderIds = Array.isArray(detail.game_provider_ids) ? [...detail.game_provider_ids].sort() : [];
-  c.scope.gameProviderCodes = Array.isArray(detail.game_provider_codes) ? [...detail.game_provider_codes].sort() : [];
+  // Gap-closure item 3: fallback ORDER, not a union — see
+  // gameProviderCodesFromRow's doc comment in listing-row-fields.js.
+  // detail.game_provider_codes is frequently genuinely absent on QPRO
+  // (confirmed live), so the listing-row string remains the fallback of
+  // last resort — it's just no longer unioned on TOP of a complete detail
+  // answer, which was quietly widening the resolved scope.
+  const providerResolution = gameProviderCodesFromRow({ row, detail });
+  c.scope.gameProviderCodes = providerResolution.codes;
   c.scope.blacklistId = detail.blacklist_id ?? null;
   c.scope.blacklistedProviders = [];
+  // Item 2 evidence: see canonical-model.js scope.*Evidence doc comment.
+  // detail.categories was already an unambiguous name list — nothing to
+  // resolve, so it's reported complete without a catalogue reference.
+  c.scope.categoriesEvidence = categoryResolution
+    ? { unmapped: categoryResolution.unmapped, complete: categoryResolution.complete, catalogue: categoryResolution.catalogue }
+    : { unmapped: [], complete: true, catalogue: null };
+  c.scope.gameProviderCodesEvidence = checkProviderCodesAgainstCatalogue(catalogue?.providers, c.scope.gameProviderCodes);
+  c.scope.gameProviderCodesSource = providerResolution.source;
+
+  // G2: message-template bodies are ALREADY on the listing row at
+  // list_row.message_templates[] = {settings_locale_id, subject, message}.
+  // No per-template follow-up fetch is needed.
+  //
+  // CORRECTNESS GATE: the MT subject is stored ONLY under
+  // content.messageTemplate.subjectByLocale. It must never be written into
+  // content.names, which is the PROMOTION NAME. The two legitimately differ
+  // (QPRO1/P026-r27: name "88% Slots Reload Bonus" vs subject "Exclusive
+  // Reload Bonus - Claim Yours - 88% Bonus"); conflating them would either
+  // fabricate a mismatch or mask a real promo-name defect.
+  const mt = messageTemplatesFromRow(row);
+  for (const [lang, body] of Object.entries(mt.mtBody)) c.content.mtBody[lang] = body;
+  for (const [locale, entry] of Object.entries(mt.byLocale)) {
+    if (entry.subject != null) c.content.messageTemplate.subjectByLocale[locale] = entry.subject;
+    if (entry.message != null) c.content.messageTemplate.bodyByLocale[locale] = entry.message;
+  }
+  c.content.messageTemplate.templateIds = mt.templateIds;
+
+  // PROMOTION NAMES from the authoritative promotion-name source.
+  const pn = promotionNamesFrom({ detail, row });
+  for (const [lang, name] of Object.entries(pn.byLanguage)) c.content.names[lang] = name;
+  c.content.promotionNamesByLocale = pn.byLocale;
+  c.content.localesDeclared = pn.localesDeclared;
 
   if (tnc && tnc.messages) {
     for (const [locale, msg] of Object.entries(tnc.messages)) {
       if (msg && msg.body) c.content.mtBody[locale.toUpperCase()] = msg.body;
-      if (msg && msg.subject && !c.content.names[locale.toUpperCase()]) c.content.names[locale.toUpperCase()] = msg.subject;
+      // A tnc subject is still an MT subject - never a promotion name.
+      if (msg && msg.subject) c.content.messageTemplate.subjectByLocale[locale.toUpperCase()] = msg.subject;
     }
   }
 
-  c.linkage.templateId = row.message_template_id ?? detail.message_template_id ?? null;
-  c.linkage.dialogPopupId = null;
-  const dpl = Array.isArray(row.dialog_popup_list) ? row.dialog_popup_list : [];
-  c.linkage.dialogPopupList = dpl.map((d) => d.popup_id ?? d.id ?? null).filter((x) => x != null);
-  if (c.linkage.dialogPopupList.length > 0) c.linkage.dialogPopupId = c.linkage.dialogPopupList[0];
+  c.linkage.templateId = row.message_template_id ?? detail.message_template_id ?? mt.templateIds[0] ?? null;
+  const dialog = dialogLinkageFromRow(row);
+  c.linkage.dialogPopupList = dialog.popupIds;
+  c.linkage.dialogPopupId = dialog.popupIds[0] ?? null;
   c.linkage.promotionListIds = [];
 
-  // QPRO auto_reward_activation is never returned by the GET endpoint — leave null.
-  c.autoReward.autoRewardActivation = detail.auto_reward_activation ?? null;
+  // Item 4: actual dialog BODIES, separate from both the MT body and the
+  // promotion name — see dialog-bodies.js's doc comment for the identity
+  // matching this performs (exact promotion-ID match, duplicate/stale
+  // rejection). Only runs when a popup catalogue was supplied; without one
+  // this stays empty exactly as before item 4 (linkage IDs only, no body).
+  if (catalogue?.popups) {
+    const dlg = resolveDialogBodiesForPromotion({
+      dialogLinks: row.dialog_popup_list, promotionId: row.id ?? detail.id, catalogue: catalogue.popups,
+    });
+    c.content.dialogBody = dlg.dialogBody;
+    c.content.dialogBodyByLocale = dlg.dialogBodyByLocale;
+    c.content.dialogTitleByLocale = dlg.dialogTitleByLocale;
+    c.content.dialogEvidence = { matchedPopupIds: dlg.matchedPopupIds, rejected: dlg.rejected, catalogueSource: dlg.catalogueSource };
+    for (const l of dlg.localesDeclared) if (!c.content.localesDeclared.includes(l)) c.content.localesDeclared.push(l);
+    c.content.localesDeclared.sort();
+  }
+
+  // G4 fix, proven item 3 (see listing-row-fields.js autoRewardFromRow doc
+  // comment for the full evidence): QPRO has NO auto_reward_activation key
+  // anywhere in the API. Its equivalent is `auto_approve` — proven via the
+  // BO's own compiled frontend (toggle label "Auto Approve", tooltip "Auto
+  // approves promotion applied or claimed from user portal by the user")
+  // plus a live sweep finding real ON/OFF variance across all 17 QPRO
+  // brands. autoRewardFromRow() now trusts auto_approve by default and
+  // still returns null (never a silent false) when no source carries any
+  // form of the flag.
+  c.autoReward.autoRewardActivation = autoRewardFromRow({ row, detail, platform: 'qpro' });
 
   return c;
 }

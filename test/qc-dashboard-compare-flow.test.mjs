@@ -105,6 +105,29 @@ test('Increment 6: runComparison returns compare verdict for MVP brand + healthy
   assert.equal(r.actualRef.promotionId, 42);
 });
 
+test('Item 6: runComparison attaches a consolidated evidence summary (source tags + locale coverage)', () => {
+  const r = runComparison({
+    brand: 'QP2A', code: 'CODE1', handle: 'P100',
+    snapshot: baseSnapshot(), brandConfig: baseBrandConfig(),
+    deps: makeHappyDeps(),
+  });
+  assert.ok(r.evidence, 'evidence summary must be present on every ok result');
+  assert.equal(r.evidence.expectedSourceType, 'bundle');
+  assert.equal(r.evidence.liveTransport, 'api');
+  assert.ok(r.evidence.localeCoverage, 'locale coverage must be computed even when the stub canonical has no content block');
+});
+
+test('Item 6: runComparison still attaches an evidence summary on the expected-source-unresolved MANUAL_REQUIRED path', () => {
+  const r = runComparison({
+    brand: 'QP2A', code: 'NO_SUCH_CODE',
+    snapshot: baseSnapshot(), brandConfig: baseBrandConfig(),
+    deps: { ...makeHappyDeps(), resolveExpectedSource: () => ({ sourceType: 'not-found' }) },
+  });
+  assert.equal(r.verdict, 'MANUAL_REQUIRED');
+  assert.ok(r.evidence, 'evidence summary must be present even on the earliest MANUAL_REQUIRED return path');
+  assert.equal(r.evidence.expectedSourceType, 'not-found');
+});
+
 test('Increment 6: runComparison skips (does not override) when snapshot carries a fetch error', () => {
   const r = runComparison({
     brand: 'QP2A', code: 'CODE1',

@@ -28,6 +28,7 @@
 //     without changing the engine shape.
 
 import { BONUS_TYPES } from './canonical/canonical-model.js';
+import { evaluateCanonicalLocaleCoverage } from './canonical/locale-matrix.js';
 
 // Severity classification per Sentinel field-criteria table.
 const CRITICAL = 'CRITICAL';
@@ -54,9 +55,15 @@ const QPRO_NO_SG = new Set(Array.from({ length: 14 }, (_, i) => `QPRO${i + 4}`))
 // by grepping every /PM/GetFreeSpin* endpoint and the reward record shape.
 // Extending the fetch layer to hit an additional endpoint would not help —
 // there is no such endpoint. Documented in igmp-adapter.js.
-const PLATFORM_UNRETRIEVABLE_CURRENCY_FIELDS = Object.freeze({
-  igmp: new Set(['spinCount', 'valuePerSpin']),
-});
+// 2026-07-31 UPDATE: this list is now EMPTY. The previous entry claimed IGMP
+// could not return spinCount/valuePerSpin, which was a misreading — both ARE
+// in the API under PromotionRewards[0].FreeSpin (FreeSpinRounds / AmountPerBet).
+// The igmp-adapter now reads them, so downgrading those fields to SKIPPED would
+// hide real mismatches. Keep the mechanism (a genuinely-absent field may appear
+// later) but add nothing without proving, endpoint by endpoint, that no read
+// path exposes it — per the operator's standing rule that an unimplemented
+// collector is never an acceptable reason for Manual Review.
+const PLATFORM_UNRETRIEVABLE_CURRENCY_FIELDS = Object.freeze({});
 
 function mkResult(field, expected, actual, status, severity, rule, message, extras = {}) {
   return {
@@ -217,16 +224,57 @@ function ruleCurrencies(exp, act, brand) {
   return results;
 }
 
+// Default category scope this codebase's OWN creation-time mappers write
+// when a request specifies no category restriction. NOT a BO default and
+// NOT invented here — it is the canonical-token form of:
+//   src/api-mapper-qpro.js  ALLOWED_WALLET_CATEGORY_NAMES / FS_ONLY_CATEGORY_NAMES
+//   src/api-mapper-qp2.js   QP2_ALLOWED_WALLET_CATEGORY_NAMES / QP2_FS_ONLY_CATEGORY_NAMES
+// Verified live 2026-08-11: WHALE_CRM_PROBE_DEP50PCT_500_12X (Deposit) came
+// back with scope.categories exactly equal to DEFAULT_WALLET_CATEGORIES on
+// BOTH QPRO1 and QP2A; every sampled Free Spin promo came back exactly
+// DEFAULT_FS_CATEGORIES. A bare `expected [], got [...]` mismatch on these
+// was a false positive — the source never asked for a restriction, and live
+// is showing this platform's own no-restriction default, not an
+// operator-configured divergence. Kept as an explicit local copy (never
+// imported from the write-path mappers, which this read-only module must
+// not depend on) — if either mapper's allow-list ever changes, this needs
+// updating to match or this rule starts under/over-flagging again.
+const DEFAULT_WALLET_CATEGORIES = ['CRASH', 'CRICKET', 'E_SPORTS', 'FISHING', 'LIVE_CASINO', 'SLOTS', 'SPORTS'];
+const DEFAULT_FS_CATEGORIES = ['SLOTS'];
+
+// BO short code → canonical category name, for the default-set comparison only.
+// Live categories arrive as full names when the per-site category catalogue
+// loaded, but as raw short codes (or a mix) when that fetch FAILED. Without
+// this, a catalogue-load failure makes the default set [CG,CK,ES,FS,...] look
+// like a genuine restriction → a false CRITICAL NOT_SAFE on a correctly
+// unrestricted promo (the regression bitbucket fix 000c54f had prevented).
+const CATEGORY_CODE_TO_NAME = {
+  CG: 'CRASH', CK: 'CRICKET', ES: 'E_SPORTS', FS: 'FISHING',
+  LC: 'LIVE_CASINO', SL: 'SLOTS', SP: 'SPORTS',
+};
+function _normCatForDefault(c) {
+  const u = String(c || '').toUpperCase();
+  return CATEGORY_CODE_TO_NAME[u] || u;
+}
+
+function isMapperDefaultCategorySet(aCats, bonusType) {
+  const defaults = bonusType === BONUS_TYPES.FREE_SPIN ? DEFAULT_FS_CATEGORIES : DEFAULT_WALLET_CATEGORIES;
+  // Normalize short codes → names so the default is recognized whether or not
+  // the category catalogue resolved the live set.
+  return setsEqual((aCats || []).map(_normCatForDefault), defaults);
+}
+
 function ruleCategoriesAlignment(exp, act) {
   const eCats = exp.scope.categories || [];
   const aCats = act.scope.categories || [];
   const aProviders = act.scope.gameProviderIds.length > 0 || act.scope.gameProviderCodes.length > 0;
   // Category set comparison — unordered set equality.
   const results = [];
-  if (eCats.length === 0) {
-    results.push(mkResult('categories', eCats, aCats, SKIPPED, INFO, 'scope.categories', 'no category restriction in the promo request — live categories not QC\'d'));
-  } else if (setsEqual(eCats, aCats)) {
+  if (setsEqual(eCats, aCats)) {
+    // Identical sets (including both empty) — a clean match.
     results.push(mkResult('categories', eCats, aCats, MATCH, CRITICAL, 'scope.categories', 'category set matches'));
+  } else if (eCats.length === 0 && isMapperDefaultCategorySet(aCats, act.identity.bonusType)) {
+    results.push(mkResult('categories', eCats, aCats, MATCH, CRITICAL, 'scope.categories', `source specified no category restriction; live [${aCats.join(', ')}] is this platform's own no-restriction default for ${act.identity.bonusType} (see ALLOWED_WALLET_CATEGORY_NAMES / FS_ONLY_CATEGORY_NAMES in the mappers) — not an operator-configured divergence`));
   } else {
     results.push(mkResult('categories', eCats, aCats, MISMATCH, CRITICAL, 'scope.categories', `category mismatch: expected [${eCats.join(', ')}], got [${aCats.join(', ')}]`));
   }
@@ -243,15 +291,21 @@ function ruleCategoriesAlignment(exp, act) {
 function ruleAutoReward(exp, act) {
   const e = exp.autoReward.autoRewardActivation;
   const a = act.autoReward.autoRewardActivation;
-  // Platform limitations — the GET APIs do NOT expose this field:
-  //   QPRO — API bug (never returned)
-  //   IGMP — auto-reward is not a concept in the iGMP promotion model
-  // For both, downgrade to SKIPPED so per-platform limitations don't force
-  // MANUAL_REQUIRED forever (blocker 4).
   const platform = act.identity.platform;
-  if (platform === 'qpro') {
-    return mkResult('autoRewardActivation', e, a, SKIPPED, INFO, 'autoReward.qpro-inconclusive', 'QPRO GET does not return auto_reward_activation — cannot verify (Sentinel Rule 3)');
-  }
+  // QPRO used to be downgraded to SKIPPED here on the theory that its GET API
+  // never exposes auto_reward_activation at all. Item 3 (2026-08-10) proved
+  // that wrong on two counts: (1) QPRO's `auto_approve` field IS the same
+  // setting — see listing-row-fields.js autoRewardFromRow's doc comment for
+  // the full evidence (vendor's own frontend copy + a 7,324-promotion live
+  // sweep with 522 confirmed OFF examples across every bonus type); (2) even
+  // when evidence really is missing, SKIPPED/INFO was the wrong verdict for a
+  // CRITICAL field — it let a promo with no auto-reward evidence PASS instead
+  // of forcing MANUAL_REQUIRED. QPRO now falls through to the same
+  // presence/match logic as every other platform below.
+  //
+  // IGMP has no equivalent concept in its promotion model (no manual-approval
+  // workflow exists to auto-bypass), so it stays SKIPPED — not disproven, and
+  // not the target of item 3.
   if (platform === 'igmp') {
     return mkResult('autoRewardActivation', e, a, SKIPPED, INFO, 'autoReward.igmp-not-applicable', 'auto-reward is not a concept on IGMP — no equivalent field to compare');
   }
@@ -260,6 +314,58 @@ function ruleAutoReward(exp, act) {
   return e === a
     ? mkResult('autoRewardActivation', e, a, MATCH, CRITICAL, 'autoReward.exact', 'auto_reward_activation matches')
     : mkResult('autoRewardActivation', e, a, MISMATCH, CRITICAL, 'autoReward.exact', `auto_reward_activation mismatch: expected ${e}, got ${a}`);
+}
+
+// Item 6: wire locale-matrix.js's completeness evaluation into the verdict.
+// It was fully built and tested in Phase 2.5 but never actually CALLED from
+// here — every canonical always reported content.dialogBody etc as empty, so
+// this check would have failed every promo vacuously had it been wired in
+// before items 2/4 populated real category/dialog evidence. It's safe now.
+//
+// This is a REQUIRED-vs-COLLECTED check on the LIVE side only (locale-
+// matrix.js derives "required" from the BRAND's own region mapping, never
+// from the expected/approved source) — it runs even when there's nothing to
+// diff against, which is different from every other rule in this file.
+//
+// Severity: promotion name and MT body are CRITICAL — every promo has both,
+// in every locale the brand serves, as a baseline operational fact (see
+// CLAUDE.md's "Upload order: 3.3 first, then 14.2/15.2" — MT/inbox content
+// is a mandatory per-promo deliverable). A required locale genuinely absent
+// on live BO is missing critical evidence, not a style nitpick — the
+// standing invariant is that missing critical evidence never PASSes.
+// Dialog-locale completeness is WARNING and only checked when a dialog is
+// actually linked — there is no verified mapping of which bonus types
+// require a dialog at all, so treating an UNLINKED dialog as a locale gap
+// would conflate "no dialog by design" with "dialog missing a locale"
+// (ruleLinkage already flags dialog presence/absence on its own).
+function ruleLocaleCompleteness(act, { brand } = {}) {
+  const results = [];
+  const coverage = evaluateCanonicalLocaleCoverage(act, { brand: brand || act.identity.brand });
+
+  const surface = (key, label, severity) => {
+    const c = coverage[key];
+    if (!c || c.required.length === 0) {
+      results.push(mkResult(`localeCompleteness:${key}`, [], [], SKIPPED, INFO, `locale.${key}.no-requirement`, `${label}: brand has no mapped region requirement — nothing to check`));
+      return;
+    }
+    if (c.complete) {
+      results.push(mkResult(`localeCompleteness:${key}`, c.required, c.collected, MATCH, severity, `locale.${key}`, `${label} covers every required locale (${c.required.join(', ')})`));
+    } else {
+      results.push(mkResult(`localeCompleteness:${key}`, c.required, c.collected, UNAVAILABLE, severity, `locale.${key}`, `${label} missing required locale(s): ${c.missing.join(', ')}`));
+    }
+  };
+
+  surface('promotionName', 'promotion name', CRITICAL);
+  surface('mtBodyLanguages', 'MT body', CRITICAL);
+
+  const dialogLinked = Array.isArray(act.linkage?.dialogPopupList) && act.linkage.dialogPopupList.length > 0;
+  if (dialogLinked) {
+    surface('dialogBodyLanguages', 'dialog body', WARNING);
+  } else {
+    results.push(mkResult('localeCompleteness:dialogBodyLanguages', [], [], SKIPPED, INFO, 'locale.dialogBodyLanguages.no-dialog-linked', 'no dialog popup linked to this promotion — locale completeness not applicable'));
+  }
+
+  return results;
 }
 
 function ruleLinkage(exp, act) {
@@ -317,6 +423,7 @@ export function compare({ expected, actual, brand, platform }) {
   fields.push(...ruleCategoriesAlignment(expected, actual));
   fields.push(ruleAutoReward(expected, actual));
   fields.push(...ruleLinkage(expected, actual));
+  fields.push(...ruleLocaleCompleteness(actual, { brand: brand || expected.identity.brand }));
 
   // Aggregate summary + verdict per brief §5.
   let passed = 0, failed = 0, warning = 0, unavailable = 0;

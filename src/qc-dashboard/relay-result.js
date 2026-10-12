@@ -80,19 +80,40 @@ function pickCurrencies(arr) {
   return out;
 }
 
-function pickContent(obj) {
-  if (!obj || typeof obj !== 'object') return { names: {}, mtBody: {}, dialogBody: {} };
-  const out = { names: {}, mtBody: {}, dialogBody: {} };
-  for (const bucket of ['names', 'mtBody', 'dialogBody']) {
-    const src = obj[bucket];
-    if (!src || typeof src !== 'object') continue;
-    let n = 0;
-    for (const [locale, val] of Object.entries(src)) {
-      if (n++ >= MAX_OBJECT_KEYS) break;
-      if (typeof locale !== 'string' || locale.length > 8) continue;
-      out[bucket][locale.toUpperCase()] = _scrubString(val);
-    }
+function _pickLocaleMap(src, dst) {
+  if (!src || typeof src !== 'object') return;
+  let n = 0;
+  for (const [locale, val] of Object.entries(src)) {
+    if (n++ >= MAX_OBJECT_KEYS) break;
+    if (typeof locale !== 'string' || locale.length > 8) continue;
+    dst[locale.toUpperCase()] = _scrubString(val);
   }
+}
+
+function pickContent(obj) {
+  // Preserve every locale-keyed content surface the compare engine reads —
+  // ruleLocaleCompleteness (locale-matrix.js) consumes promotionNamesByLocale,
+  // messageTemplate.{subjectByLocale,bodyByLocale}, dialogBodyByLocale and
+  // localesDeclared, in addition to names/mtBody/dialogBody. Dropping any of
+  // them on the relay path forced every relay verdict to MANUAL_REQUIRED.
+  const out = {
+    names: {}, mtBody: {}, dialogBody: {},
+    promotionNamesByLocale: {}, dialogBodyByLocale: {},
+    messageTemplate: { subjectByLocale: {}, bodyByLocale: {} },
+    localesDeclared: [],
+  };
+  if (!obj || typeof obj !== 'object') return out;
+  _pickLocaleMap(obj.names, out.names);
+  _pickLocaleMap(obj.mtBody, out.mtBody);
+  _pickLocaleMap(obj.dialogBody, out.dialogBody);
+  _pickLocaleMap(obj.promotionNamesByLocale, out.promotionNamesByLocale);
+  _pickLocaleMap(obj.dialogBodyByLocale, out.dialogBodyByLocale);
+  if (obj.messageTemplate && typeof obj.messageTemplate === 'object') {
+    _pickLocaleMap(obj.messageTemplate.subjectByLocale, out.messageTemplate.subjectByLocale);
+    _pickLocaleMap(obj.messageTemplate.bodyByLocale, out.messageTemplate.bodyByLocale);
+  }
+  const decl = _scalarOrArray(obj.localesDeclared);
+  out.localesDeclared = Array.isArray(decl) ? decl : [];
   return out;
 }
 

@@ -107,14 +107,27 @@ async function _probeQproQp2Reachable(apiHost) {
   }
 }
 
-export async function preflightBrand(brandId, { skipCache = false, brandConfig = null, deps = {} } = {}) {
+// `bypassMvpGate` (item 7): the MVP flag in qc-dashboard-brands.json is a
+// ROLLOUT-STAGING decision (Real-QC Increment 8 — which brands the live
+// dashboard runs automatic comparisons for), not a connectivity fact. The
+// acceptance run needs actual BO reachability for all 27 brands regardless
+// of rollout stage — "run all 27 brands through connectivity checks" is a
+// different question than "is this brand live in the dashboard yet." When
+// true, the mvp-enabled check still runs and is still reported (callers can
+// see both facts), it just no longer short-circuits the reachability probe.
+// Never used by the production dashboard path (bin/qc-dashboard.mjs never
+// passes it) — the rollout gate there is unchanged. Bypasses the cache
+// (rather than keying it by this flag) since it's a rare diagnostic path,
+// not the hot path.
+export async function preflightBrand(brandId, { skipCache = false, brandConfig = null, deps = {}, bypassMvpGate = false } = {}) {
   const cached = _cache.get(brandId);
-  if (!skipCache && cached && cached.expiresAt > Date.now()) return cached.result;
+  if (!skipCache && !bypassMvpGate && cached && cached.expiresAt > Date.now()) return cached.result;
 
   const checks = [];
+  let mvpEnabled = null;
   const build = (status, extras = {}) => {
-    const result = { brand: brandId, status, checks, reachedAt: new Date().toISOString(), ...extras };
-    _cache.set(brandId, { result, expiresAt: Date.now() + CACHE_TTL_MS });
+    const result = { brand: brandId, status, checks, mvpEnabled, reachedAt: new Date().toISOString(), ...extras };
+    if (!bypassMvpGate) _cache.set(brandId, { result, expiresAt: Date.now() + CACHE_TTL_MS });
     return result;
   };
 
@@ -131,9 +144,9 @@ export async function preflightBrand(brandId, { skipCache = false, brandConfig =
     checks.push({ name: 'brand-known', ok: false, detail: `brand "${brandId}" not in qc-dashboard-brands.json` });
     return build('CONFIG_MISSING', { platform: null, siteId: null });
   }
-  const enabled = _mvpEnabled(brand);
-  checks.push({ name: 'mvp-enabled', ok: enabled, detail: enabled ? 'in MVP conformance set' : 'not in MVP set (real-QC comparison disabled)' });
-  if (!enabled) return build('NOT_ENABLED', { platform: null, siteId: null });
+  mvpEnabled = _mvpEnabled(brand);
+  checks.push({ name: 'mvp-enabled', ok: mvpEnabled, detail: mvpEnabled ? 'in MVP conformance set' : 'not in MVP set (real-QC comparison disabled)' });
+  if (!mvpEnabled && !bypassMvpGate) return build('NOT_ENABLED', { platform: null, siteId: null });
 
   // 2. Runtime resolves? (brandToSite → getSite)
   let runtime;

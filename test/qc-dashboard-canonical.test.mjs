@@ -254,3 +254,216 @@ test('regression: normalizeBonusType recognises "Free Spin - Reload" as FREE_SPI
   // Guard: still returns OTHER for unrelated types
   assert.equal(normalizeBonusType('Rebate'), 'OTHER');
 });
+
+// ── G1 regression: toMultiplier must resolve from BOTH detail shapes ─────
+//
+// Root cause found in production acceptance (2026-07-31): the live QC-Hub
+// path (fetch-promo.js) passes the RAW /api/bo/promotion/{id} response, where
+// the turnover multiplier lives at detail.target[0].multiplier. The adapters
+// only read detail.to_multiplier — which exists solely in api-client.js's
+// NORMALIZED record (what qc-bundles store). Result: every live run reported
+// currency:*:toMultiplier as UNAVAILABLE, forcing MANUAL_REQUIRED.
+// api-client.js:515 confirms `to_multiplier: main.target?.[0]?.multiplier`.
+
+test('G1: QPRO toMultiplier resolves from raw shape detail.target[0].multiplier', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Free Spin - Reload', status: 1 },
+    detail: {
+      // RAW BO shape — no to_multiplier key at all
+      target: [{ multiplier: 8 }],
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, min_transfer: 50 }],
+    },
+  }, { brand: 'QPRO5' });
+  assert.equal(c.currencies[0].toMultiplier, 8, 'must read target[0].multiplier from the raw response');
+});
+
+test('G1: QPRO toMultiplier still resolves from normalized detail.to_multiplier', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Free Spin - Reload', status: 1 },
+    detail: {
+      to_multiplier: 12,   // api-client normalized shape (qc-bundles)
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }],
+    },
+  }, { brand: 'QPRO5' });
+  assert.equal(c.currencies[0].toMultiplier, 12, 'normalized shape must keep working');
+});
+
+test('G1: QP2 toMultiplier resolves from raw shape detail.target[0].multiplier', () => {
+  const c = liveFromQp2({
+    list_row: { code: 'X', bonus_type: 'Free Spin', merchant_ids: [1] },
+    detail: {
+      target: [{ multiplier: 12 }],
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }],
+    },
+  }, { brand: 'QP2A' });
+  assert.equal(c.currencies[0].toMultiplier, 12);
+});
+
+test('G1: pc-row override wins over both detail shapes', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', status: 1 },
+    detail: {
+      to_multiplier: 5,
+      target: [{ multiplier: 6 }],
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, to_multiplier: 99 }],
+    },
+  }, { brand: 'QPRO1' });
+  assert.equal(c.currencies[0].toMultiplier, 99, 'per-currency override takes precedence');
+});
+
+test('G1: toMultiplier is null (not 0/NaN) when NO shape carries it', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', status: 1 },
+    detail: { promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }] },
+  }, { brand: 'QPRO1' });
+  assert.equal(c.currencies[0].toMultiplier, null, 'genuinely absent must stay null → UNAVAILABLE, never a fake 0');
+});
+
+// ── Gap-closure regression: QPRO bonusRatePct must fall back to detail ───
+//
+// Same failure shape as G1's toMultiplier bug. Root cause found in
+// production acceptance (2026-08-11): the QPRO /api/bo/promotioncurrency row
+// never carries a bonus_rate column at all (verified live on
+// WHALE_CRM_PROBE_DEP50PCT_500_12X — the row has min_transfer/max_bonus/
+// rounds/etc but no bonus_rate); the value lives only on the top-level
+// detail object (detail.bonus_rate: 50.00 for that same promo, matching its
+// own "DEP50PCT" code). Reading pc.bonus_rate alone made every QPRO Deposit
+// promo in the 27-brand acceptance sample (15 of 22 sampled MANUAL_REQUIRED
+// cases) report bonusRatePct UNAVAILABLE regardless of live BO reality.
+
+test('Gap-closure: QPRO bonusRatePct resolves from top-level detail.bonus_rate when the per-currency row has none', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', status: 1 },
+    detail: {
+      bonus_rate: 50, // top-level only — the real live BO shape for QPRO
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, min_transfer: 1000, max_bonus: 500 }],
+    },
+  }, { brand: 'QPRO1' });
+  assert.equal(c.currencies[0].bonusRatePct, 50, 'must fall back to detail.bonus_rate when the per-currency row has none');
+});
+
+test('Gap-closure: QPRO per-currency bonus_rate still wins when present (no regression to the working case)', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', status: 1 },
+    detail: {
+      bonus_rate: 999, // must NOT be used — the per-currency row has its own value
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, bonus_rate: 30 }],
+    },
+  }, { brand: 'QPRO1' });
+  assert.equal(c.currencies[0].bonusRatePct, 30, 'per-currency value takes precedence over the detail-level fallback');
+});
+
+test('Gap-closure: QPRO bonusRatePct is null (not 0/NaN) when neither shape carries it', () => {
+  const c = liveFromQpro({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', status: 1 },
+    detail: { promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1 }] },
+  }, { brand: 'QPRO1' });
+  assert.equal(c.currencies[0].bonusRatePct, null, 'genuinely absent must stay null → UNAVAILABLE, never a fake 0');
+});
+
+// ── Gap-closure regression: QP2 freeCreditAmount must fall back to bonus_amount ───
+//
+// Root cause found in production acceptance (2026-08-11): QP2's
+// /api/bo/promotioncurrency row has no free_credit_amount column — verified
+// live on WHALE_VM_PROBE_NODEP_FC138_20X (QP2A): pc.free_credit_amount was
+// undefined while pc.bonus_amount was "138.00", matching the promo's own
+// "FC138" code. QP2 reuses the generic bonus_amount column for both Deposit
+// (bonus_type 2, where it sits at "0.00" because the real value is
+// bonus_rate) and Free Credit (bonus_type 1, where it IS the free credit
+// amount) — the same ambiguity qpro-adapter.js already resolves via the
+// identical `?? pc.bonus_amount` fallback (see liveFromQpro).
+
+test('Gap-closure: QP2 freeCreditAmount resolves from pc.bonus_amount when free_credit_amount is absent', () => {
+  const c = liveFromQp2({
+    list_row: { code: 'X', bonus_type: 'Free Credit', merchant_ids: [1] },
+    detail: {
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, bonus_type: 1, bonus_amount: '138.00' }],
+    },
+  }, { brand: 'QP2A' });
+  assert.equal(c.currencies[0].freeCreditAmount, 138, 'must fall back to pc.bonus_amount when free_credit_amount is absent');
+});
+
+test('Gap-closure: QP2 per-currency free_credit_amount still wins when present (no regression)', () => {
+  const c = liveFromQp2({
+    list_row: { code: 'X', bonus_type: 'Free Credit', merchant_ids: [1] },
+    detail: {
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, free_credit_amount: 30, bonus_amount: '999.00' }],
+    },
+  }, { brand: 'QP2A' });
+  assert.equal(c.currencies[0].freeCreditAmount, 30, 'an explicit free_credit_amount must win over the bonus_amount fallback');
+});
+
+test('Gap-closure: QP2 freeCreditAmount fallback never leaks a Deposit promo\'s unrelated bonus_amount into a comparison', () => {
+  // bonus_amount sits at "0.00" on a real Deposit promo's currency row (the
+  // Deposit promo's actual value lives in bonus_rate instead) — the
+  // fallback picking up 0 here is harmless because the compare engine only
+  // ever looks at freeCreditAmount when the EXPECTED side asserts it, which
+  // a Deposit source never does (see compare-engine.js ruleCurrencies: `if
+  // (e == null) continue`).
+  const c = liveFromQp2({
+    list_row: { code: 'X', bonus_type: 'Deposit - Reload', merchant_ids: [1] },
+    detail: {
+      promotion_currency_list: [{ currency: 'MYR', currency_id: 1, status: 1, bonus_type: 2, bonus_amount: '0.00', bonus_rate: '50.00' }],
+    },
+  }, { brand: 'QP2A' });
+  assert.equal(c.currencies[0].bonusRatePct, 50);
+  assert.equal(c.currencies[0].freeCreditAmount, 0, 'harmless — never compared for a Deposit bonus type');
+});
+
+// ── G5/G6 regression: IGMP FS rounds + bet value ARE in the API ──────────
+//
+// The earlier conclusion ("FreeSpinRounds / AmountPerBet are create-only, so
+// these fields need DOM scraping") was WRONG. A read-only probe of a live
+// WS1_MY FS bundle (2026-07-31) showed both values nested under
+// PromotionRewards[0].FreeSpin. The previous code read only the reward ROOT,
+// where `Quantity` is the redeemable-claim count — not the spin count. Reading
+// the nested object removes the entire Layer-3/DOM requirement for IGMP.
+
+test('G5/G6: IGMP FS reads FreeSpinRounds + AmountPerBet from PromotionRewards[0].FreeSpin', () => {
+  const c = liveFromIgmp({
+    list_row: { PromotionCode: 'FS1', PromotionType: 'FreeSpin', IsActive: true },
+    detail: {
+      PromotionRewards: [{
+        RewardId: 15387, RolloverMultiplier: 10, MinimumActionAmount: 0, RedemptionType: 1,
+        Quantity: 1,                            // claim count — must NOT be used as spinCount
+        FreeSpin: { FreeSpinId: 323, FreeSpinRounds: 68, AmountPerBet: 0.4, AmountPerLine: 0 },
+      }],
+    },
+  }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' });
+  assert.equal(c.currencies[0].spinCount, 68, 'spinCount must come from FreeSpin.FreeSpinRounds, not Quantity');
+  assert.equal(c.currencies[0].valuePerSpin, 0.4, 'valuePerSpin must come from FreeSpin.AmountPerBet');
+});
+
+test('G5/G6: IGMP FreeSpinRounds accepted as a numeric string', () => {
+  const c = liveFromIgmp({
+    list_row: { PromotionCode: 'FS1', PromotionType: 'FreeSpin', IsActive: true },
+    detail: { PromotionRewards: [{ FreeSpin: { FreeSpinId: 9, FreeSpinRounds: '88', AmountPerBet: '0.5' } }] },
+  }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' });
+  assert.equal(c.currencies[0].spinCount, 88);
+  assert.equal(c.currencies[0].valuePerSpin, 0.5);
+});
+
+test('G5/G6: Deposit promo with an empty FreeSpin stub yields null, NOT 0 spins', () => {
+  const c = liveFromIgmp({
+    list_row: { PromotionCode: 'DEP1', PromotionType: 'Bonus', IsActive: true },
+    detail: {
+      PromotionRewards: [{
+        MinimumActionAmount: 50, BonusPercentage: 88, RolloverMultiplier: 3,
+        FreeSpin: { FreeSpinRounds: 0, AmountPerBet: 0 },   // stub, no FreeSpinId
+      }],
+    },
+  }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' });
+  assert.equal(c.currencies[0].spinCount, null, 'stub without FreeSpinId must not report 0 spins as evidence');
+  assert.equal(c.currencies[0].valuePerSpin, null);
+  assert.equal(c.currencies[0].minDeposit, 50, 'deposit fields unaffected');
+});
+
+test('G5/G6: absent FreeSpin object yields null (no throw)', () => {
+  const c = liveFromIgmp({
+    list_row: { PromotionCode: 'FC1', PromotionType: 'FreeCredit', IsActive: true },
+    detail: { PromotionRewards: [{ FixedBonusAmount: 30, RolloverMultiplier: 5 }] },
+  }, { brand: 'WS1_MY', siteId: 'ws1-v3-my' });
+  assert.equal(c.currencies[0].spinCount, null);
+  assert.equal(c.currencies[0].valuePerSpin, null);
+  assert.equal(c.currencies[0].freeCreditAmount, 30);
+});
