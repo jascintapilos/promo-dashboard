@@ -346,25 +346,36 @@ function tgT(){const t=(d()&&d().thresholds)||{},s=TG_SNAP[R]||{};return {acq:t.
 const tgCall=v=>chip(v);
 const tgMut=t=>`<span class="mut">${t}</span>`;
 function tgTbl(h0,rows){return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">${h0}</th><th>Call</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="stick">${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table></div>`;}
-function tgRoi(){return tgTbl("7-day Bonus ROI",[["Below 0",tgCall("Reduce")],["0 to below 0.5×",tgCall("Optimise")],["0.5× to below 2×",tgCall("Maintain")],["At least 2×",tgCall("Scale")+" "+tgMut("if volume &amp; concentration checks pass")]]);}
+function tgRoi(){
+ const rows=[
+  ["Below 0",[["More than usual",tgCall("Reduce")],["No better than usual",tgCall("Stop")]]],
+  ["0 to below 0.5×",[["either way",tgCall("Optimise")]]],
+  ["0.5× to below 2×",[["More than usual",tgCall("Maintain")],["No better than usual",tgCall("Optimise")]]],
+  ["At least 2×",[["More than usual",tgCall("Scale")+" "+tgMut("if volume &amp; concentration checks pass")],["No better than usual",tgCall("Optimise")]]],
+ ];
+ let b="";rows.forEach(([band,subs])=>{subs.forEach(([up,call],i)=>{b+=`<tr>${i===0?`<td class="stick" rowspan="${subs.length}">${band}</td>`:""}<td>${up}</td><td>${call}</td></tr>`;});});
+ return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">7-day Bonus ROI</th><th>Players coming back (30d)</th><th>Call</th></tr></thead><tbody>${b}</tbody></table></div>`;
+}
 function tgAcq(){
  const T=tgT().acq||{},s=sym();
- const cheap=T.cost_per_ftd_p25==null?"—":s+T.cost_per_ftd_p25,dear=T.cost_per_ftd_p75==null?"—":s+T.cost_per_ftd_p75,sm=T.stick_median==null?"—":T.stick_median+"%";
+ const cheap=T.cost_per_ftd_p25==null?"the cheap cutoff":"≤ "+s+T.cost_per_ftd_p25,dear=T.cost_per_ftd_p75==null?"the pricey cutoff":"≥ "+s+T.cost_per_ftd_p75,sm=T.stick_median==null?"the median":T.stick_median+"%";
+ const rows=[
+  [`Cheap ${tgMut("("+cheap+")")}`,[["Stick",tgCall("Scale")+" "+tgMut("if enough new depositors — else Maintain")],["Don't stick",tgCall("Optimise")]]],
+  ["Middling",[["Stick",tgCall("Maintain")],["Don't stick",tgCall("Optimise")]]],
+  [`Pricey ${tgMut("("+dear+")")}`,[["Stick",tgCall("Optimise")],["Don't stick",tgCall("Reduce")]]],
+ ];
+ let b="";rows.forEach(([band,subs])=>{subs.forEach(([st,call],i)=>{b+=`<tr>${i===0?`<td class="stick" rowspan="${subs.length}">${band}</td>`:""}<td>${st}</td><td>${call}</td></tr>`;});});
+ const tbl=`<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">Cost per new depositor</th><th>Do they stick?</th><th>Call</th></tr></thead><tbody>${b}</tbody></table></div>`;
  return `<div class="tgsec"><div class="tgh"><span class="tgi">🎯</span>Acquisition</div>
   <div class="tgsub">Did it bring in new depositors cheaply, and do they stick? ${tgMut("(Referral &amp; reload codes are set aside first; a code with too few players waits.)")}</div>
-  ${tgTbl("Cost per new depositor &amp; stickiness",[
-   ["Cheap <b>and</b> players stick",tgCall("Scale")+" "+tgMut("if enough new depositors")],
-   ["Cheap &amp; sticky but too few — or middling cost",tgCall("Maintain")],
-   ["Pricey <b>or</b> players don't stick",tgCall("Optimise")],
-   ["Pricey <b>and</b> players don't stick",tgCall("Reduce")],
-  ])}
-  <div class="tgnote">This run: cheap ≤ ${cheap}, pricey ≥ ${dear} per new depositor; "stick" = beats the ${sm} who came back. <span class="tgdraft">DRAFT</span></div></div>`;
+  ${tbl}
+  <div class="tgnote"><b>Cheap / pricey</b> = this run's cheapest / most-expensive quarter per new depositor; <b>stick</b> = beats the ${sm} median who came back (≥2 deposits in 30 days). <span class="tgdraft">DRAFT — moves each run</span></div></div>`;
 }
 function tgRet(){
  return `<div class="tgsec"><div class="tgh"><span class="tgi">🔁</span>Retention</div>
   <div class="tgsub">Does the spend bring players back and pay for itself? ${tgMut("(Win-back codes are judged separately; brand-new codes wait as Monitor.)")}</div>
   ${tgRoi()}
-  <div class="tgnote"><b>Maintain</b> &amp; <b>Scale</b> also need players coming back <b>more than usual</b>; a losing code that doesn't is <b>Stop</b>, not Reduce. Free-credit / free-spins giveaways are judged on <b>deposits pulled</b> instead.</div></div>`;
+  <div class="tgnote"><b>"More than usual"</b> = the redeposit rate is more than <b>+1 percentage point</b> above the usual rate for that <b>tier &amp; bonus type</b> — so both columns decide the call. Free-credit / free-spins giveaways are judged on <b>deposits pulled</b> instead.</div></div>`;
 }
 function tgVipA(){
  const band=R==="SG"?"~S$45":"RM150";
