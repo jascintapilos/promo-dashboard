@@ -68,6 +68,11 @@ table.d{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%}
 table.d th{position:sticky;top:0;background:var(--surface-2);text-align:left;font:600 10.5px "IBM Plex Sans";text-transform:uppercase;letter-spacing:.03em;color:var(--muted);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2}
 table.d th .lab{cursor:pointer}table.d th.grp{text-align:center;color:var(--ink);background:var(--surface);top:0;z-index:3}
 table.d thead tr.leaf th{top:26px;z-index:2}
+/* Lean (Codes) view has only the leaf header row — no group-header row above it — so the 26px sticky
+   offset (which clears the group row in the Full-grid view) pushed the header 26px down over the FIRST
+   data row and hid it; a single-row filter result then looked like an empty table. Stick the lean leaf
+   header at the scroll-container top instead. */
+table.d.lean thead tr.leaf th{top:0}
 table.d td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 table.d.cmpct th,table.d.cmpct td{padding:4px 3px;font-size:11px}
 table.d.cmpct th{font-size:9px;letter-spacing:.01em}
