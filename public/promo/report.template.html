@@ -108,6 +108,25 @@ tr.detail td{background:var(--surface-2);padding:0}tr.detail .dwrap{padding:14px
 .dkv{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:2px 0}.dkv .k{color:var(--muted)}.dkv .v{font-family:"IBM Plex Mono";text-align:right}
 .dsec .dnote{font-size:10.5px;color:var(--muted);line-height:1.4;margin:0 0 6px}
 .dkv .info{color:var(--accent);font-size:9.5px;cursor:help;vertical-align:1px}
+.tgsec{margin:2px 0 14px}
+.tgh{display:flex;align-items:baseline;gap:7px;font:700 13px "IBM Plex Sans";color:var(--ink);margin:12px 0 3px}
+.tgi{font-size:14px}
+.tgt{font-weight:500;font-size:11px;color:var(--muted);font-style:italic}
+.tgsub{font-size:11.5px;color:var(--muted);line-height:1.45;margin:0 0 8px}
+.tgcap{font:600 10px "IBM Plex Sans";text-transform:uppercase;letter-spacing:.04em;color:var(--accent);margin:10px 0 3px}
+.tgdraft{display:inline-block;font:700 8.5px "IBM Plex Sans";letter-spacing:.05em;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:1px 5px;vertical-align:1px}
+.tglegend{font-size:11px;color:var(--muted);line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin-bottom:12px}
+.tglegend b,.tgflags b,.tgsub b{color:var(--ink)}
+.tgflags{font-size:10.5px;color:var(--muted);line-height:1.5;margin:7px 0 2px}
+.tglane{border-left:2px solid var(--line);padding-left:11px;margin:12px 0 12px 2px}
+.tglh{display:flex;align-items:baseline;gap:7px;font:700 12px "IBM Plex Sans";color:var(--ink);margin:0 0 3px}
+.tgtop{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:11px}
+.tgtop b,.tgnote b{color:var(--ink)}
+.tgnote{font-size:10.5px;color:var(--muted);line-height:1.45;margin:4px 0 2px}
+table.d.cmpct.tg{margin:4px 0 2px}
+table.d.cmpct.tg td{white-space:normal;vertical-align:top;font-size:11px;line-height:1.4}
+table.d.cmpct.tg td.stick{font-weight:600;color:var(--ink);font-family:"IBM Plex Sans";background:var(--surface)}
+table.d.cmpct.tg th{font-size:9px}
 .dwhy{grid-column:1/-1;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:12.5px}.dwhy b{color:var(--ink)}
 .dtabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--line)}
 .dtab{background:none;border:0;border-bottom:2px solid transparent;padding:6px 12px;font:600 12.5px "IBM Plex Sans";color:var(--muted);cursor:pointer}
@@ -317,6 +336,82 @@ function detailHTML(c){
  return `<div class="dwrap"><div class="dtabs"><button class="dtab ${dt==='detail'?'on':''}" data-dtab="detail">Detail</button><button class="dtab ${dt==='players'?'on':''}" data-dtab="players">Players${pc!=null?` <span class="cnt">${pc.toLocaleString()}</span>`:""}</button></div><div class="dbody">${dt==="players"?playersPane(c):detailBody(c)}</div></div>`;
 }
 function fullCols(){return d().columns.filter(c=>c.group!=="CHECK"&&(c.group==="Identity"||CS.pillar==="All"||c.pillars.includes(CS.pillar))).slice().sort((a,b)=>GORDER.indexOf(a.group)-GORDER.indexOf(b.group));}
+/* ===== Tab-4 "How codes are scored" — simple band→call view (confirmed against the scoring python) ===== */
+const TG_SNAP={
+ MY:{acq:{cost_per_ftd_p25:36,cost_per_ftd_p75:198,stick_median:36.6},ret:{give_floor:0.5,scale_hi:2.0},
+     vipCashback:{Diamond:{verdict:"FAILS both"},Platinum:{verdict:"INCONCLUSIVE"},Gold:{verdict:"FAILS both"},Silver:{verdict:"INCONCLUSIVE"},Bronze:{verdict:"n/a"}}},
+ SG:{acq:{cost_per_ftd_p25:24,cost_per_ftd_p75:29,stick_median:0.0},ret:{give_floor:0.5,scale_hi:2.0},vipCashback:null}
+};
+function tgT(){const t=(d()&&d().thresholds)||{},s=TG_SNAP[R]||{};return {acq:t.acq||s.acq||{},ret:t.ret||s.ret||{},vipCashback:(t.vipCashback!=null?t.vipCashback:s.vipCashback)};}
+const tgCall=v=>chip(v);
+const tgMut=t=>`<span class="mut">${t}</span>`;
+function tgTbl(h0,rows){return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">${h0}</th><th>Call</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="stick">${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table></div>`;}
+function tgRoi(){return tgTbl("7-day Bonus ROI",[["Below 0",tgCall("Reduce")],["0 to below 0.5×",tgCall("Optimise")],["0.5× to below 2×",tgCall("Maintain")],["At least 2×",tgCall("Scale")+" "+tgMut("if volume &amp; concentration checks pass")]]);}
+function tgAcq(){
+ const T=tgT().acq||{},s=sym();
+ const cheap=T.cost_per_ftd_p25==null?"—":s+T.cost_per_ftd_p25,dear=T.cost_per_ftd_p75==null?"—":s+T.cost_per_ftd_p75,sm=T.stick_median==null?"—":T.stick_median+"%";
+ return `<div class="tgsec"><div class="tgh"><span class="tgi">🎯</span>Acquisition</div>
+  <div class="tgsub">Did it bring in new depositors cheaply, and do they stick? ${tgMut("(Referral &amp; reload codes are set aside first; a code with too few players waits.)")}</div>
+  ${tgTbl("Cost per new depositor &amp; stickiness",[
+   ["Cheap <b>and</b> players stick",tgCall("Scale")+" "+tgMut("if enough new depositors")],
+   ["Cheap &amp; sticky but too few — or middling cost",tgCall("Maintain")],
+   ["Pricey <b>or</b> players don't stick",tgCall("Optimise")],
+   ["Pricey <b>and</b> players don't stick",tgCall("Reduce")],
+  ])}
+  <div class="tgnote">This run: cheap ≤ ${cheap}, pricey ≥ ${dear} per new depositor; "stick" = beats the ${sm} who came back. <span class="tgdraft">DRAFT</span></div></div>`;
+}
+function tgRet(){
+ return `<div class="tgsec"><div class="tgh"><span class="tgi">🔁</span>Retention</div>
+  <div class="tgsub">Does the spend bring players back and pay for itself? ${tgMut("(Win-back codes are judged separately; brand-new codes wait as Monitor.)")}</div>
+  ${tgRoi()}
+  <div class="tgnote"><b>Maintain</b> &amp; <b>Scale</b> also need players coming back <b>more than usual</b>; a losing code that doesn't is <b>Stop</b>, not Reduce. Free-credit / free-spins giveaways are judged on <b>deposits pulled</b> instead.</div></div>`;
+}
+function tgVipA(){
+ const band=R==="SG"?"~S$45":"RM150";
+ return `<div class="tglane"><div class="tglh"><span class="tgi">📈</span>Lane A — Performance <span class="tgt">reload / free-credit / free-spins</span></div>
+  <div class="tgsub">Same 7-day Bonus ROI test as Retention.</div>
+  ${tgRoi()}
+  <div class="tgnote">VIP-only: a <b>losing big-ticket</b> reward (avg bonus ≥ ${band}) becomes <b>Reduce</b>, not Stop — trim, don't kill.</div></div>`;
+}
+function tgVipB(){
+ const cb=tgT().vipCashback,order=["Diamond","Platinum","Gold","Silver","Bronze"];
+ const vc=v=>!v?"—":(v.indexOf("FAILS")===0?"Trim":v.indexOf("CLEARS")===0?"Keep":"Review");
+ const note=cb?("This run: "+order.filter(t=>cb[t]).map(t=>t+" → "+vc(cb[t].verdict)).join(", ")+".")
+              :(R+": no tier-by-tier test — kept if its forward revenue is positive, else Trim (never Review).");
+ return `<div class="tglane"><div class="tglh"><span class="tgi">🛟</span>Lane B — Cashback <span class="tgt">weekly loss-rescue</span></div>
+  <div class="tgsub">Does the money-back earn its keep, tier by tier?</div>
+  ${tgTbl("Break-even test (by tier)",[["Pays back both ways",tgCall("Keep")],["Pays back neither way",tgCall("Trim")],["Mixed signals",tgCall("Review")],["Too few to judge yet",tgCall("Monitor")]])}
+  <div class="tgnote">${esc(note)}</div></div>`;
+}
+function tgVipC(){
+ return `<div class="tglane"><div class="tglh"><span class="tgi">🎁</span>Lane C — Entitlement <span class="tgt">birthday / loyalty gifts</span></div>
+  <div class="tgsub"><b>Not scored</b> — relationship gifts, so the call is always <b>Entitlement</b>. ${tgMut("Flagged if more than 15% went to dormant / dead accounts.")}</div></div>`;
+}
+function tgVipD(){
+ return `<div class="tglane"><div class="tglh"><span class="tgi">🎡</span>Lane D — Engagement <span class="tgt">lucky-wheel / scratch / check-in</span></div>
+  <div class="tgsub">Does the house margin cover the giveaway?</div>
+  ${tgTbl("House-margin cover",[["Covers its cost, not mostly freebie-grabbers",tgCall("Keep")],["Doesn't cover — or &gt;30% freebie-grabbers",tgCall("Trim")],["Too few to judge yet",tgCall("Monitor")]])}</div>`;
+}
+function tgVip(){
+ return `<div class="tgsec"><div class="tgh"><span class="tgi">👑</span>VIP <span class="tgt">four lanes, each judged on its own job</span></div>
+  <div class="tgsub">${tgMut("Each VIP code goes to one lane by its name: Cashback → mini-game / check-in → gift → else Performance.")}</div>
+  ${tgVipA()}${tgVipB()}${tgVipC()}${tgVipD()}</div>`;
+}
+function tgAll(){
+ return `<div class="tgsub" style="margin-bottom:6px">Pick a pillar above — <b>Acquisition</b> / <b>Retention</b> / <b>VIP</b> — to see its rules.</div>`+
+  tgTbl("Pillar",[
+   ["🎯 Acquisition","cost per new depositor + do they stick"],
+   ["🔁 Retention","7-day Bonus ROI (+ do players come back)"],
+   ["👑 VIP","4 lanes — Performance (ROI), Cashback, Entitlement, Engagement"],
+  ]);
+}
+function threshCard(){
+ const p=CS.pillar,mkt=R==="SG"?"S$":"RM";
+ const body=p==="Acquisition"?tgAcq():p==="Retention"?tgRet():p==="VIP"?tgVip():tgAll();
+ return `<details class="card fold tgcard"><summary class="cthdr"><span class="ct">📏 How ${p==="All"?"codes are":esc(p)+" codes are"} scored <span class="basis">${esc(mkt)} · tap to open</span></span></summary>
+  <div style="padding:10px 14px 4px"><div class="tgtop">A first-week read on matured players — a direction to <b>test</b>, not a final cut. <b>×</b> = net revenue per RM1 of bonus (0 = it paid for itself).</div>${body}</div>
+  <div class="foot">Mirrors the live scoring rules; cutoffs marked <span class="tgdraft">DRAFT</span> move each run with the code mix.</div></details>`;
+}
 function renderCodes(){
  const rows=codesFiltered();
  const nf=Object.keys(CS.cf).length;
@@ -343,7 +438,7 @@ function renderCodes(){
     ${rows.map(c=>`<tr>${cols.map(col=>{const cel=c.cells[col.key];const cls=(col.type==='cur'||col.type==='num'||col.type==='pct'?'n':'')+(col.key==='Promo code'?' stick':'');return `<td class="${cls}">${cel&&cel.d!==""&&cel.d!=="—"?(col.type==='chip'?chip(cel.d):esc(cel.d)):'<span class="mut">—</span>'}</td>`;}).join("")}</tr>`).join("")}
     </tbody></table></div>`;
  }
- g("panel").innerHTML=takeCodes(rows)+`<div class="card">${fbar}${tbl}</div>`;
+ g("panel").innerHTML=takeCodes(rows)+threshCard()+`<div class="card">${fbar}${tbl}</div>`;
  wireCodes();
 }
 function wireCodes(){
