@@ -123,6 +123,19 @@ tr.detail td{background:var(--surface-2);padding:0}tr.detail .dwrap{padding:14px
 .tgtop{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:11px}
 .tgtop b,.tgnote b{color:var(--ink)}
 .tgnote{font-size:10.5px;color:var(--muted);line-height:1.45;margin:4px 0 2px}
+.tgmore{margin:7px 0 4px;border-left:2px solid var(--line);padding-left:9px}
+.tgmore>summary{cursor:pointer;font:600 10.5px "IBM Plex Sans";color:var(--accent);list-style:none;padding:2px 0}
+.tgmore>summary::-webkit-details-marker{display:none}
+.tgmore>summary::before{content:"▸ ";color:var(--muted)}
+.tgmore[open]>summary::before{content:"▾ "}
+.tgmorebody{padding:3px 0 2px}
+.vlseg{margin-left:2px}.vlseg button{font-size:10.5px}
+.vscope{font-size:11px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 11px;margin:2px 0 10px;line-height:1.5}
+.vscope .mut{color:var(--muted)}.vscope b{color:var(--ink)}
+table.d.cmpct.vlt th,table.d.cmpct.vlt td{white-space:nowrap}
+table.d.cmpct.vlt td.stick{font-family:"IBM Plex Mono";font-size:11px;background:var(--surface)}
+table.d.cmpct.vlt tr.vrow{cursor:pointer}table.d.cmpct.vlt tr.vrow:hover td{background:var(--surface-2)}
+.vlt .exp{display:inline-block;width:12px;color:var(--muted)}
 table.d.cmpct.tg{margin:4px 0 2px}
 table.d.cmpct.tg td{white-space:normal;vertical-align:top;font-size:11px;line-height:1.4}
 table.d.cmpct.tg td.stick{font-weight:600;color:var(--ink);font-family:"IBM Plex Sans";background:var(--surface)}
@@ -211,7 +224,7 @@ const money=n=>sym()+Math.round(n).toLocaleString();
 const chip=v=>v?`<span class="chip c-${String(v).toLowerCase().replace(/[^a-z]/g,'')}">${esc(v)}</span>`:"";
 const bandchip=b=>b?`<span class="bchip"><i style="background:var(--band-${String(b).toLowerCase().replace(/[^a-z]/g,'')})"></i>${esc(b)}</span>`:"";
 /* ================= CODES ================= */
-const CS={pillar:"All",q:"",sort:null,dir:1,view:"lean",open:null,cf:{},hidden:new Set()};
+const CS={pillar:"All",q:"",sort:null,dir:1,view:"lean",open:null,cf:{},hidden:new Set(),vlane:"A",vopen:null};
 const cellD=(c,key)=>{const x=c.cells[key];return x?x.d:"";};
 const cnum=(c,k)=>{const x=c.cells[k];return x&&x.n!=null?x.n:null;};
 const LEAN=[
@@ -336,16 +349,24 @@ function detailHTML(c){
  return `<div class="dwrap"><div class="dtabs"><button class="dtab ${dt==='detail'?'on':''}" data-dtab="detail">Detail</button><button class="dtab ${dt==='players'?'on':''}" data-dtab="players">Players${pc!=null?` <span class="cnt">${pc.toLocaleString()}</span>`:""}</button></div><div class="dbody">${dt==="players"?playersPane(c):detailBody(c)}</div></div>`;
 }
 function fullCols(){return d().columns.filter(c=>c.group!=="CHECK"&&(c.group==="Identity"||CS.pillar==="All"||c.pillars.includes(CS.pillar))).slice().sort((a,b)=>GORDER.indexOf(a.group)-GORDER.indexOf(b.group));}
-/* ===== Tab-4 "How codes are scored" — simple band→call view (confirmed against the scoring python) ===== */
+/* ===== Tab-4 "How codes are scored" — band→call matrices + expandable gates/safeguards.
+   Rules verified against bin/acq_report, bin/ret_report, bin/vip_report (implemented logic is
+   authoritative). ROI = estimated NGR lift vs the player's own baseline per unit of bonus. ===== */
 const TG_SNAP={
- MY:{acq:{cost_per_ftd_p25:36,cost_per_ftd_p75:198,stick_median:36.6},ret:{give_floor:0.5,scale_hi:2.0},
+ MY:{acq:{cost_per_ftd_p25:36,cost_per_ftd_p75:198,stick_median:36.6,scale_floor_claimers:40,floor_claimers:20},ret:{give_floor:0.5,scale_hi:2.0,vol_floor:15,scale_vol_floor:30},
      vipCashback:{Diamond:{verdict:"FAILS both"},Platinum:{verdict:"INCONCLUSIVE"},Gold:{verdict:"FAILS both"},Silver:{verdict:"INCONCLUSIVE"},Bronze:{verdict:"n/a"}}},
- SG:{acq:{cost_per_ftd_p25:24,cost_per_ftd_p75:29,stick_median:0.0},ret:{give_floor:0.5,scale_hi:2.0},vipCashback:null}
+ SG:{acq:{cost_per_ftd_p25:24,cost_per_ftd_p75:29,stick_median:0.0,scale_floor_claimers:16,floor_claimers:8},ret:{give_floor:0.5,scale_hi:2.0,vol_floor:8,scale_vol_floor:16},vipCashback:null}
 };
 function tgT(){const t=(d()&&d().thresholds)||{},s=TG_SNAP[R]||{};return {acq:t.acq||s.acq||{},ret:t.ret||s.ret||{},vipCashback:(t.vipCashback!=null?t.vipCashback:s.vipCashback)};}
 const tgCall=v=>chip(v);
 const tgMut=t=>`<span class="mut">${t}</span>`;
+const cur1=()=>R==="SG"?"S$1":"RM1";
+/* simple 2-col band→call table */
 function tgTbl(h0,rows){return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">${h0}</th><th>Call</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="stick">${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table></div>`;}
+/* generic compact table (n cols), cells may hold HTML */
+function tgGrid(cols,rows){return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr>${cols.map((c,i)=>`<th class="${i===0?'stick':''}">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i===0?'stick':''}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;}
+function tgDet(title,inner){return `<details class="tgmore"><summary>${esc(title)}</summary><div class="tgmorebody">${inner}</div></details>`;}
+/* ROI matrix (Retention + VIP Lane A) — money axis × redeposit axis */
 function tgRoi(){
  const rows=[
   ["Below 0",[["More than usual",tgCall("Reduce")],["No better than usual",tgCall("Stop")]]],
@@ -354,54 +375,118 @@ function tgRoi(){
   ["At least 2×",[["More than usual",tgCall("Scale")+" "+tgMut("if volume &amp; concentration checks pass")],["No better than usual",tgCall("Optimise")]]],
  ];
  let b="";rows.forEach(([band,subs])=>{subs.forEach(([up,call],i)=>{b+=`<tr>${i===0?`<td class="stick" rowspan="${subs.length}">${band}</td>`:""}<td>${up}</td><td>${call}</td></tr>`;});});
- return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">7-day Bonus ROI</th><th>Players coming back (30d)</th><th>Call</th></tr></thead><tbody>${b}</tbody></table></div>`;
+ return `<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">Bonus ROI (7-day)</th><th>Players coming back (30-day)</th><th>Call</th></tr></thead><tbody>${b}</tbody></table></div>`;
 }
+/* ---------------- ACQUISITION ---------------- */
 function tgAcq(){
  const T=tgT().acq||{},s=sym();
  const cheap=T.cost_per_ftd_p25==null?"the cheap cutoff":"≤ "+s+T.cost_per_ftd_p25,dear=T.cost_per_ftd_p75==null?"the pricey cutoff":"≥ "+s+T.cost_per_ftd_p75,sm=T.stick_median==null?"the median":T.stick_median+"%";
+ const SF=T.scale_floor_claimers==null?(R==="SG"?16:40):T.scale_floor_claimers, FL=T.floor_claimers==null?(R==="SG"?8:20):T.floor_claimers;
  const rows=[
-  [`Cheap ${tgMut("("+cheap+")")}`,[["Stick",tgCall("Scale")+" "+tgMut("if enough new depositors — else Maintain")],["Don't stick",tgCall("Optimise")]]],
+  [`Cheap ${tgMut("("+cheap+")")}`,[["Stick",tgCall("Scale")+" "+tgMut("if ≥ "+SF+" claimers — else Maintain")],["Don't stick",tgCall("Optimise")]]],
   ["Middling",[["Stick",tgCall("Maintain")],["Don't stick",tgCall("Optimise")]]],
   [`Pricey ${tgMut("("+dear+")")}`,[["Stick",tgCall("Optimise")],["Don't stick",tgCall("Reduce")]]],
  ];
  let b="";rows.forEach(([band,subs])=>{subs.forEach(([st,call],i)=>{b+=`<tr>${i===0?`<td class="stick" rowspan="${subs.length}">${band}</td>`:""}<td>${st}</td><td>${call}</td></tr>`;});});
  const tbl=`<div class="tblwrap"><table class="d cmpct tg"><thead><tr><th class="stick">Cost per new depositor</th><th>Do they stick?</th><th>Call</th></tr></thead><tbody>${b}</tbody></table></div>`;
+ const more=tgGrid(["Checked first (in order)","When","Result"],[
+   ["Referral","code is a referral (contains REFER)","set aside — paid off by the friend's deposit, tracked separately"],
+   ["Reload","&lt; 40% of claimers are genuinely new (low purity)",tgMut("routed to")+" Reload "+tgMut("— judged on the Retention tab, not as acquisition")],
+   ["Low volume","fewer than "+FL+" ("+(R==="SG"?"SG":"MY")+") claimers","can't call yet — too few to judge"],
+   ["No first deposits","the code brought in zero new depositors",tgCall("Stop")],
+ ])+tgGrid(["Floor","Claimers needed"],[
+   ["Any call","≥ 20 (MY) / ≥ 8 (SG)"],["Scale (budget increase)","≥ 40 (MY) / ≥ 16 (SG)"],
+ ])+`<div class="tgnote"><b>Missing-stickiness fallback:</b> a code with no matured first-depositors yet (stickiness unknown) is treated as <b>meeting</b> the median, so stickiness doesn't block it — the call then rests on cost. <b>Stick</b> = <b>meets or exceeds</b> the median; a first-depositor "came back" = deposited on <b>at least two separate days</b> within 30 days.</div>`;
  return `<div class="tgsec"><div class="tgh"><span class="tgi">🎯</span>Acquisition</div>
   <div class="tgsub">Did it bring in new depositors cheaply, and do they stick? ${tgMut("(Referral &amp; reload codes are set aside first; a code with too few players waits.)")}</div>
   ${tbl}
-  <div class="tgnote"><b>Cheap / pricey</b> = this run's cheapest / most-expensive quarter per new depositor; <b>stick</b> = beats the ${sm} median who came back (≥2 deposits in 30 days). <span class="tgdraft">DRAFT — moves each run</span></div></div>`;
+  <div class="tgnote"><b>Cheap / pricey</b> = this run's cheapest / most-expensive quarter per new depositor; <b>stick</b> = meets or exceeds the ${sm} median who came back (deposited on ≥2 separate days). <span class="tgdraft">DRAFT — moves each run</span></div>
+  ${tgDet("Gates, floors & the stickiness fallback",more)}</div>`;
 }
+/* ---------------- RETENTION ---------------- */
 function tgRet(){
+ const T=tgT().ret||{},s=sym();const VOL=T.vol_floor==null?(R==="SG"?8:15):T.vol_floor,SVOL=T.scale_vol_floor==null?(R==="SG"?16:30):T.scale_vol_floor;
+ const gates=tgGrid(["First, set aside / hold","When","Result"],[
+   ["Hold","the code is a win-back / reactivation (rescue, comeback, dormant…)",tgMut("judged on the VIP tab with a control — left out of the norms")],
+   ["Monitor","fewer than "+"15 (MY) / 8 (SG)"+" matured 7-day members, or no 7-day money yet",tgCall("Monitor")],
+   ["Watch-money","past the 7-day gate but &lt; 15 (MY) / 8 (SG) matured 30-day members",tgCall("Watch-money")+" "+tgMut("(a read; firms at 30 days)")],
+ ]);
+ const guard=tgGrid(["A Scale is demoted when…","Threshold","Lands on"],[
+   ["too thin","&lt; 30 (MY) / 16 (SG) matured 30-day members",tgCall("Maintain")],
+   ["one player dominates (hard)","&gt; 50% of the code's NGR lift is from the top player",tgCall("Maintain")],
+   ["one player dominates (soft)","&gt; 30% share AND the ROI with that player removed &lt; 2.0×",tgCall("Optimise")+" "+tgMut("(if ex-player ROI &lt; 0.5×)")+" / "+tgCall("Maintain")],
+ ]);
+ const give=tgGrid(["No-deposit giveaway (free credit / free spins)","Judged on deposits pulled per "+cur1(),"Call"],[
+   ["can't see the deposits yet","—",tgCall("Monitor")],
+   ["below the usual rate (uplift &lt; −1pp) &amp; thin pull (&lt; 0.5)","both",tgCall("Stop")],
+   ["below the usual rate (uplift &lt; −1pp) &amp; some pull (≥ 0.5)","both",tgCall("Reduce")],
+   ["about usual &amp; thin pull (&lt; 0.5)","deposits pulled",tgCall("Optimise")],
+   ["more than usual (uplift &gt; +1pp) &amp; strong pull (≥ 0.8)","both",tgCall("Scale")],
+   ["more than usual (uplift &gt; +1pp) &amp; moderate pull (&lt; 0.8)","both",tgCall("Maintain")],
+   ["about usual &amp; some pull (≥ 0.5)","deposits pulled",tgCall("Optimise")],
+ ]);
+ const more=gates+`<div class="tgcap">Safeguards on a Scale</div>`+guard+`<div class="tgcap">Separate tree for no-deposit giveaways</div>`+give;
  return `<div class="tgsec"><div class="tgh"><span class="tgi">🔁</span>Retention</div>
   <div class="tgsub">Does the spend bring players back and pay for itself? ${tgMut("(Win-back codes are judged separately; brand-new codes wait as Monitor.)")}</div>
   ${tgRoi()}
-  <div class="tgnote"><b>"More than usual"</b> = the redeposit rate is more than <b>+1 percentage point</b> above the usual rate for that <b>tier &amp; bonus type</b> — so both columns decide the call. Free-credit / free-spins giveaways are judged on <b>deposits pulled</b> instead.</div></div>`;
+  <div class="tgnote"><b>"More than usual"</b> = the redeposit rate is more than <b>+1 percentage point</b> above the usual rate for that <b>tier &amp; bonus type</b> — so both columns decide the call. Free-credit / free-spins giveaways use the separate tree below.</div>
+  ${tgDet("Gates, floors, Scale safeguards & the giveaway tree",more)}</div>`;
 }
+/* ---------------- VIP ---------------- */
 function tgVipA(){
  const band=R==="SG"?"~S$45":"RM150";
+ const more=tgGrid(["Gate","When","Result"],[
+   ["Monitor","fewer than 15 matured 7-day claims (same 15 for SG)",tgCall("Monitor")],
+   ["Watch-money","past the 7-day gate but &lt; 15 matured 30-day claims",tgCall("Watch-money")],
+ ])+`<div class="tgcap">How Lane A differs from Retention</div>`+tgGrid(["Rule","Retention","VIP Lane A"],[
+   ["Scale volume guard","demote if &lt; 30 / 16 matured-30","<b>none</b> — a Scale can rest on 15 matured-30"],
+   ["Top-player &gt; 50% (hard)","demote Scale → Maintain","<b>no hard demote</b>"],
+   ["Top-player &gt; 30% (soft)","demote if ROI-ex-player &lt; 2.0×","same — demote if ROI-ex-player &lt; 2.0× (→ Optimise if &lt; 0.5×, else Maintain)"],
+   ["Loyalty softening","none","a <b>losing big-ticket</b> reward (avg bonus ≥ "+band+") turns <b>Stop → Reduce</b>"],
+ ]);
  return `<div class="tglane"><div class="tglh"><span class="tgi">📈</span>Lane A — Performance <span class="tgt">reload / free-credit / free-spins</span></div>
-  <div class="tgsub">Same 7-day Bonus ROI test as Retention.</div>
+  <div class="tgsub">Same Bonus-ROI × players-coming-back test as Retention.</div>
   ${tgRoi()}
-  <div class="tgnote">VIP-only: a <b>losing big-ticket</b> reward (avg bonus ≥ ${band}) becomes <b>Reduce</b>, not Stop — trim, don't kill.</div></div>`;
+  <div class="tgnote">VIP-only: a <b>losing big-ticket</b> reward (avg bonus ≥ ${band}) becomes <b>Reduce</b>, not Stop — trim, don't kill.</div>
+  ${tgDet("Maturity floor & differences from Retention",more)}</div>`;
 }
 function tgVipB(){
  const cb=tgT().vipCashback,order=["Diamond","Platinum","Gold","Silver","Bronze"];
  const vc=v=>!v?"—":(v.indexOf("FAILS")===0?"Trim":v.indexOf("CLEARS")===0?"Keep":"Review");
  const note=cb?("This run: "+order.filter(t=>cb[t]).map(t=>t+" → "+vc(cb[t].verdict)).join(", ")+".")
               :(R+": no tier-by-tier test — kept if its forward revenue is positive, else Trim (never Review).");
+ const more=tgGrid(["Step","Rule"],[
+   ["Maturity floor","fewer than 15 matured 30-day money-back claims → "+tgCall("Monitor")],
+   ["Break-even test 1 (cross-section)","this tier's cashback players vs <b>matched</b> players who got none — forward-30-day NGR, net of the cashback (RM0 line)"],
+   ["Break-even test 2 (within-member)","the <b>same</b> players' weeks with cashback vs their weeks without — forward-30-day NGR, net"],
+   ["Both clear","both &gt; 0 → "+tgCall("Keep")],
+   ["Both fail","both ≤ 0 → "+tgCall("Trim")],
+   ["Disagree","one &gt; 0, one ≤ 0 → "+tgCall("Review")+" "+tgMut("(hold &amp; prove with a side-by-side test)")],
+   ["Fallback","no tier verdict (incl. all of SG) → kept if forward-30-day NGR &gt; 0, else Trim (never Review)"],
+ ]);
  return `<div class="tglane"><div class="tglh"><span class="tgi">🛟</span>Lane B — Cashback <span class="tgt">weekly loss-rescue</span></div>
   <div class="tgsub">Does the money-back earn its keep, tier by tier?</div>
   ${tgTbl("Break-even test (by tier)",[["Pays back both ways",tgCall("Keep")],["Pays back neither way",tgCall("Trim")],["Mixed signals",tgCall("Review")],["Too few to judge yet",tgCall("Monitor")]])}
-  <div class="tgnote">${esc(note)}</div></div>`;
+  <div class="tgnote">${esc(note)} ${tgMut("These are observational reads vs matched players — directional, not a controlled proof.")}</div>
+  ${tgDet("The two break-even tests & the fallback",more)}</div>`;
 }
 function tgVipC(){
  return `<div class="tglane"><div class="tglh"><span class="tgi">🎁</span>Lane C — Entitlement <span class="tgt">birthday / loyalty gifts</span></div>
-  <div class="tgsub"><b>Not scored</b> — relationship gifts, so the call is always <b>Entitlement</b>. ${tgMut("Flagged if more than 15% went to dormant / dead accounts.")}</div></div>`;
+  <div class="tgsub"><b>Not scored</b> — relationship gifts, so the call is always <b>Entitlement</b>. ${tgMut("Flagged if more than 15% of the spend went to dormant / dead accounts (took the gift, no deposit, ~0 house win) — tighten eligibility.")}</div></div>`;
 }
 function tgVipD(){
+ const s=sym();
+ const more=tgGrid(["Rule","Detail"],[
+   ["Maturity floor","fewer than 15 matured 7-day claims → "+tgCall("Monitor")],
+   ["Cost-coverage","house GGR over the 7-day window must be <b>greater than</b> the spend (coverage &gt; 1.0×) → "+tgCall("Keep")+"; otherwise "+tgCall("Trim")],
+   ["Low-value spend","bonus cost of claims where the player made <b>no deposit</b> AND the house GGR was <b>below 5% of that claim's bonus</b>, over the 7-day window, as a <b>% of all mature 7-day bonus spend</b>"],
+   ["Threshold","<b>Trim</b> if more than <b>30%</b> of mature 7-day bonus spend goes to those claims — checked after the maturity &amp; cost-coverage checks. "+tgMut("e.g. "+s+"400 out of "+s+"1,000 = 40%, which exceeds the 30% threshold.")],
+   ["What it is <i>not</i>","a <b>share of bonus spend</b>, not a count of players — it does <b>not</b> show the same players repeatedly collecting; and low GGR doesn't necessarily mean little wagering activity."],
+ ]);
  return `<div class="tglane"><div class="tglh"><span class="tgi">🎡</span>Lane D — Engagement <span class="tgt">lucky-wheel / scratch / check-in</span></div>
-  <div class="tgsub">Does the house margin cover the giveaway?</div>
-  ${tgTbl("House-margin cover",[["Covers its cost, not mostly freebie-grabbers",tgCall("Keep")],["Doesn't cover — or &gt;30% freebie-grabbers",tgCall("Trim")],["Too few to judge yet",tgCall("Monitor")]])}</div>`;
+  <div class="tgsub">Does the house margin cover the giveaway — and isn't too much spend going nowhere?</div>
+  ${tgTbl("House-margin cover",[["Covers its cost, little low-value spend",tgCall("Keep")],["Doesn't cover, or &gt;30% of spend has no deposits &amp; very low GGR",tgCall("Trim")],["Too few to judge yet",tgCall("Monitor")]])}
+  ${tgDet("Maturity floor, cost-coverage & the low-value-spend rule",more)}</div>`;
 }
 function tgVip(){
  return `<div class="tgsec"><div class="tgh"><span class="tgi">👑</span>VIP <span class="tgt">four lanes, each judged on its own job</span></div>
@@ -409,25 +494,82 @@ function tgVip(){
   ${tgVipA()}${tgVipB()}${tgVipC()}${tgVipD()}</div>`;
 }
 function tgAll(){
- return `<div class="tgsub" style="margin-bottom:6px">Pick a pillar above — <b>Acquisition</b> / <b>Retention</b> / <b>VIP</b> — to see its rules.</div>`+
+ return `<div class="tgsub" style="margin-bottom:6px">Pick a pillar above — <b>Acquisition</b> / <b>Retention</b> / <b>VIP</b> — to see its rules, gates and safeguards.</div>`+
   tgTbl("Pillar",[
    ["🎯 Acquisition","cost per new depositor + do they stick"],
-   ["🔁 Retention","7-day Bonus ROI (+ do players come back)"],
+   ["🔁 Retention","Bonus ROI (7-day) + do players come back (30-day)"],
    ["👑 VIP","4 lanes — Performance (ROI), Cashback, Entitlement, Engagement"],
   ]);
 }
 function threshCard(){
  const p=CS.pillar,mkt=R==="SG"?"S$":"RM";
  const body=p==="Acquisition"?tgAcq():p==="Retention"?tgRet():p==="VIP"?tgVip():tgAll();
+ const defs=tgDet("What the words mean",tgGrid(["Term","Means"],[
+   ["Bonus ROI","the <b>estimated NGR lift vs the player's own 14-day baseline</b>, per "+cur1()+" of bonus. 0× = no lift (paid for itself), negative = below baseline. A read, not proven cause — a holdout is the proof step."],
+   ["Matured","a claim old enough to see the full window (7-day claims past ~1 week, 30-day past ~1 month). Younger claims wait."],
+   ["Percentage points (pp)","a gap between two rates (e.g. +1pp above the usual rate) — not a % of a total."],
+   ["Claim counts vs players","floors count <b>matured claiming members</b> per code (de-duped per code), not total claims and not unique people across codes."],
+   ["Observational","figures compare a promo to its own players or matched players — directional, <b>not</b> a controlled proof."],
+ ]));
  return `<details class="card fold tgcard"><summary class="cthdr"><span class="ct">📏 How ${p==="All"?"codes are":esc(p)+" codes are"} scored <span class="basis">${esc(mkt)} · tap to open</span></span></summary>
-  <div style="padding:10px 14px 4px"><div class="tgtop">A first-week read on matured players — a direction to <b>test</b>, not a final cut. <b>×</b> = net revenue per RM1 of bonus (0 = it paid for itself).</div>${body}</div>
-  <div class="foot">Mirrors the live scoring rules; cutoffs marked <span class="tgdraft">DRAFT</span> move each run with the code mix.</div></details>`;
+  <div style="padding:10px 14px 4px"><div class="tgtop">A first-week read on matured players — a direction to <b>test</b>, not a final cut. <b>×</b> = estimated NGR lift vs baseline, per ${cur1()} of bonus (0 = no lift).</div>${defs}${body}</div>
+  <div class="foot">Mirrors the live scoring scripts (implemented logic is authoritative); cutoffs marked <span class="tgdraft">DRAFT</span> move each run with the code mix.</div></details>`;
+}
+/* ===== VIP lane filter + per-lane tables (full VIP program from vip-metrics; Lanes B/C/D use their
+   OWN rules — never the Lane-A ROI matrix. Separate, labelled population; managed totals untouched). ===== */
+const VLANES=[["all","All lanes"],["A","A · Performance"],["B","B · Cashback"],["C","C · Entitlement"],["D","D · Engagement"]];
+const VLFULL={A:"Performance",B:"Cashback",C:"Entitlement",D:"Engagement"};
+const vipAll=()=>(d().vipLanes)||[];
+function vipRows(l){const a=vipAll();let r=l==="all"?a.slice():a.filter(c=>c.lane===l);if(CS.q){const q=CS.q.toLowerCase();r=r.filter(c=>((c.code||"")+" "+(c.name||"")+" "+(c.reason||"")).toLowerCase().includes(q));}return r.sort((x,y)=>(y.spend||0)-(x.spend||0));}
+const vm$=n=>n==null?'<span class="mut">—</span>':money(n);
+const vms=n=>n==null?'<span class="mut">—</span>':(n<0?'<span class="neg">−'+money(-n)+'</span>':money(n));
+const vnum=n=>n==null?'<span class="mut">—</span>':Number(n).toLocaleString();
+const vpct=n=>n==null?'<span class="mut">—</span>':n+'%';
+const vcov=n=>n==null?'<span class="mut">—</span>':n+'×';
+const codeC=c=>`<span class="exp">${CS.vopen===c.code?'▾':'▸'}</span>${esc(c.code)}`;
+function vlBar(){return `<div class="seg vlseg" id="vlsub">${VLANES.map(([k,l])=>`<button data-vl="${k}" class="${k===(CS.vlane||'A')?'on':''}">${esc(l)}</button>`).join("")}</div>`;}
+function vipScope(l,rows){
+ const vp=d().vipPeriod||"",spend=rows.reduce((t,c)=>t+(c.spend||0),0),lab=l==="all"?"all four VIP lanes — the full VIP program":"VIP "+VLFULL[l]+" (Lane "+l+")";
+ return `<div class="vscope"><b>${rows.length}</b> codes · <b>${money(spend)}</b> bonus spend — <b>${esc(lab)}</b>. <span class="mut">A separate population from the managed ROI action table (Summary counts/spend unchanged); each lane uses its own rules, not Lane&nbsp;A's ROI matrix. VIP scoring window ${esc(vp)}. Spend &amp; code counts sum cleanly; player counts are shown <b>per code</b> — not de-duped across codes, so they don't sum to a unique total.</span></div>`;
+}
+function vdet(c){return `<div class="dwhy" style="margin:2px 0 4px"><b>${esc(c.decision||"")}</b> — ${esc(c.reason||"—")}${c.do?`<br><b>Do:</b> ${esc(c.do)}`:""}</div>`;}
+function vipLaneTable(l,rows){
+ let cols,nums,cell,foot;
+ if(l==="B"){cols=["Code","Tier","Mature 30d claims","Bonus spend","Break-even (tier)","Kept after loss","Fwd 30d NGR","Call"];nums=[0,0,1,1,0,1,1,0];
+  cell=c=>[codeC(c),esc(c.tier||'—'),vnum(c.matured_30),vm$(c.spend),c.breakeven?esc(c.breakeven):'<span class="mut">— no tier test</span>',vpct(c.retention_after_loss),vms(c.fwd_ngr_30),chip(c.decision)];
+  foot="Lane B — weekly loss-rescue. Judged on the per-tier <b>break-even</b> test (incremental, net of the cashback) → Keep / Trim / Review, after a 15 mature-30 floor (Monitor). Kept-after-loss &amp; Fwd NGR are shown for context, not the judge. Observational, not a controlled proof.";}
+ else if(l==="C"){cols=["Code","Recipients","Gift spend","Dormant leakage","Downstream NGR (7d)","Call"];nums=[0,1,1,1,1,0];
+  cell=c=>[codeC(c),vnum(c.claimers),vm$(c.spend),vpct(c.leakage_share),vms(c.downstream_ngr),chip(c.decision)];
+  foot="Lane C — relationship gifts, <b>not profit-scored</b> (always Entitlement). Dormant leakage = share of gift spend going to inactive accounts (flagged above 15%). Downstream NGR is the 7-day net revenue after the gift — often negative; the gift isn't meant to pay back.";}
+ else if(l==="D"){cols=["Code","Mature 7d claims","Bonus spend","GGR coverage","Low-value spend","Call"];nums=[0,1,1,1,1,0];
+  cell=c=>[codeC(c),vnum(c.matured_7),vm$(c.spend),vcov(c.ggr_coverage),vpct(c.habitual_share),chip(c.decision)];
+  foot="Lane D — engagement games. Keep if the house GGR covers the giveaway (coverage &gt;1.0×) AND ≤30% of spend is <b>low-value</b> (claims with no deposit and GGR below 5% of their bonus); else Trim; fewer than 15 mature-7 claims → Monitor. Low-value spend is a <b>share of bonus spend</b>, not a count of players.";}
+ else {cols=["Code","Lane","Call","Bonus spend","Claimers"];nums=[0,0,0,1,1];
+  cell=c=>[codeC(c),esc(VLFULL[c.lane]||c.lane),chip(c.decision),vm$(c.spend),vnum(c.claimers)];
+  foot="The full VIP program across all four lanes — each judged on its own rules. Click a row for the reason &amp; recommended action.";}
+ const body=rows.map(c=>{const open=CS.vopen===c.code;const tds=cell(c).map((h,i)=>`<td class="${i===0?'stick':(nums[i]?'n':'')}">${h}</td>`).join("");return `<tr class="vrow" data-vc="${esc(c.code)}">${tds}</tr>${open?`<tr class="detail"><td colspan="${cols.length}">${vdet(c)}</td></tr>`:""}`;}).join("")||`<tr><td colspan="${cols.length}" class="mut" style="padding:12px">No codes in this lane for this market.</td></tr>`;
+ return `<div class="tblwrap"><table class="d cmpct vlt"><thead><tr>${cols.map((c,i)=>`<th class="${i===0?'stick':(nums[i]?'n':'')}">${esc(c)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div><div class="foot">${foot}</div>`;
+}
+function wireVipChips(){const s=g("vlsub");if(s)s.querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.vlane=b.dataset.vl;CS.open=null;CS.vopen=null;closePop&&closePop();renderCodes();});
+ document.querySelectorAll("tr.vrow").forEach(tr=>tr.onclick=()=>{const c=tr.dataset.vc;CS.vopen=CS.vopen===c?null:c;renderCodes();});}
+function wireVipPath(){
+ g("pillsub").querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.pillar=b.dataset.p;CS.open=null;CS.vopen=null;closePop&&closePop();renderCodes();});
+ const cq=g("cq");if(cq)cq.oninput=e=>{CS.q=e.target.value;clearTimeout(window._t);window._t=setTimeout(()=>{if(TAB!=="codes")return;renderCodes();const el=g("cq");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},180);};
+ wireVipChips();
+}
+function renderVipLanes(l){
+ const rows=vipRows(l);
+ const fbar=`<div class="fbar"><div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${vlBar()}<input type="text" id="cq" placeholder="search code / name / why…" value="${esc(CS.q)}"><span class="rc">${rows.length} codes</span></div>`;
+ const bodyHTML=vipAll().length?`${vipScope(l,rows)}${vipLaneTable(l,rows)}`:`<div class="vscope">The VIP lane detail (Lanes B / C / D) loads from the <b>next data refresh</b> — the current published build hasn't carried it yet. Lane A (Performance) is available now via the managed table; hit <b>Generate</b> or wait for the overnight refresh to populate the other lanes.</div>`;
+ g("panel").innerHTML=threshCard()+`<div class="card">${fbar}${bodyHTML}</div>`;
+ wireVipPath();
 }
 function renderCodes(){
+ if(CS.pillar==="VIP"&&(CS.vlane||"A")!=="A"){renderVipLanes(CS.vlane);return;}
  const rows=codesFiltered();
  const nf=Object.keys(CS.cf).length;
  const fbar=`<div class="fbar">
-   <div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>
+   <div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${CS.pillar==="VIP"?vlBar():""}
    <input type="text" id="cq" placeholder="search code / why / lever…" value="${esc(CS.q)}">
    <button class="btn" id="colbtn">⊞ Columns</button>
    <button class="btn ${CS.view==='full'?'on':''}" id="vtog">Full grid</button>
@@ -451,6 +593,7 @@ function renderCodes(){
  }
  g("panel").innerHTML=takeCodes(rows)+threshCard()+`<div class="card">${fbar}${tbl}</div>`;
  wireCodes();
+ if(CS.pillar==="VIP")wireVipChips();
 }
 function wireCodes(){
  g("pillsub").querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.pillar=b.dataset.p;CS.open=null;closePop();renderCodes();});
@@ -934,7 +1077,7 @@ function tRef(){
    return `<tr class="${ish?'cfghd':''}">${r.map((x,i)=>`<td${i===0?' class="cfgk"':''} style="white-space:normal">${x?esc(x):''}</td>`).join("")}</tr>`;};
  const callsTbl=calls.length?`<div class="card"><div class="ct">Calls &amp; levers</div><div class="tblwrap"><table class="d cfg"><tbody>${calls.map(r=>rowHTML(r,4)).join("")}</tbody></table></div></div>`:"";
  const formTbl=forms.length?`<div class="card"><div class="ct">Formulas ${R==="SG"?'<span class="basis">worked examples use Malaysia figures — illustrative</span>':''}</div><div class="tblwrap"><table class="d cfg"><tbody>${forms.map(r=>rowHTML(r,4)).join("")}</tbody></table></div></div>`:"";
- const terms=[["Came back % vs “Extra redeposits vs typical” — two separate comparisons",[["Came back % (+N)","Share of claimers who deposited again within the window — any deposit, not only on this code. The bracketed number is percentage points vs the average for the SAME pillar + bonus type. Observed, not a controlled test."],["Extra redeposits vs typical","This code's 30-day redeposit rate minus the typical rate for the same MEMBERSHIP TIER + bonus type (broader groups are used when a tier has too few players), in percentage points. This is the redeposit figure the Retention / VIP Lane A decision is scored on. Observed, not a controlled test."],["Why they can look contradictory","They use different benchmarks AND separate player populations, so the two numbers won't line up and you can't work one out from the other — a came-back % can beat its pillar average while “Extra redeposits vs typical” reads flat or negative against the tighter tier benchmark."]]],["Value & segments",[["Deposit band",`Players grouped by deposit value — beats membership tier on stability. Two bases, never combined in one grid: the at-risk / lifecycle view bands on selected-period deposit (Top value ≥100k / High ≥20k / Mid ≥2k) and counts distinct estate members (selected period); the config and 'what each band is worth' view bands on 90-day pre-claim deposit (Whale ≥50k / High ≥5k / Mid ≥500) and counts claimers. Same band names, different populations — not directly comparable.`],["Recency state","Active · Cooling 31–60d · Lapsed 61–90d · Dormant 90d+. Cooling + lapsed = pre-churn."],["VIP scope (lanes)","VIP codes sit in 4 lanes; this report shows only the <b>Performance</b> lane (deposit / free-credit rewards scored on Bonus ROI). The other lanes — <b>Cashback</b> (weekly rescue), <b>Engagement</b> (lucky-wheel / check-in / scratch) and <b>Entitlement</b> (birthday / loyalty gifts) — are judged on their own bases (retention-after-loss, house-margin cover, downstream NGR) and are not surfaced here."]]],
+ const terms=[["Came back % vs “Extra redeposits vs typical” — two separate comparisons",[["Came back % (+N)","Share of claimers who deposited again within the window — any deposit, not only on this code. The bracketed number is percentage points vs the average for the SAME pillar + bonus type. Observed, not a controlled test."],["Extra redeposits vs typical","This code's 30-day redeposit rate minus the typical rate for the same MEMBERSHIP TIER + bonus type (broader groups are used when a tier has too few players), in percentage points. This is the redeposit figure the Retention / VIP Lane A decision is scored on. Observed, not a controlled test."],["Why they can look contradictory","They use different benchmarks AND separate player populations, so the two numbers won't line up and you can't work one out from the other — a came-back % can beat its pillar average while “Extra redeposits vs typical” reads flat or negative against the tighter tier benchmark."]]],["Value & segments",[["Deposit band",`Players grouped by deposit value — beats membership tier on stability. Two bases, never combined in one grid: the at-risk / lifecycle view bands on selected-period deposit (Top value ≥100k / High ≥20k / Mid ≥2k) and counts distinct estate members (selected period); the config and 'what each band is worth' view bands on 90-day pre-claim deposit (Whale ≥50k / High ≥5k / Mid ≥500) and counts claimers. Same band names, different populations — not directly comparable.`],["Recency state","Active · Cooling 31–60d · Lapsed 61–90d · Dormant 90d+. Cooling + lapsed = pre-churn."],["VIP scope (lanes)","VIP codes sit in 4 lanes. The Codes tab's VIP <b>lane filter</b> shows all four: <b>Performance</b> (deposit / free-credit rewards on the Bonus-ROI matrix — the managed action table), <b>Cashback</b> (weekly rescue, per-tier break-even), <b>Engagement</b> (lucky-wheel / check-in / scratch, judged on house-margin cover + the low-value-spend share) and <b>Entitlement</b> (birthday / loyalty gifts, not profit-scored). Each lane is judged on its own basis, never the Lane-A ROI matrix; the B/C/D lane tables are a separate population from the managed Summary totals."]]],
    ["Decisions",[["The call",`Scale · Maintain · Optimise · Reduce · Stop — a first-week Bonus-ROI trigger on matured cohorts, NOT a final cut order. Bonus ROI = the LIFT in net NGR versus the player's own 14-day pre-claim daily-average baseline, divided by bonus spend — credit-split across any bonuses running at once and weighted toward the earlier days of the window (see Formulas). It measures IMPROVEMENT versus the player's own baseline run-rate, per unit of bonus — NOT absolute profit: 0 = no change vs baseline, positive = better than baseline, negative = worse. (The pipeline treats NGR as already net of the bonus cost; that data definition has not been independently re-verified against the warehouse.) Scale = strongly positive → size up; Maintain = positive and stable → keep; Optimise = marginal → adjust size/terms; Reduce/Stop = negative → route to the 'Pays back later?' review + a holdout before any cut. Cut only if it does NOT recover by 30/60/90d AND reaches no high-lifetime players — otherwise test, don't cut.`],["Pays back later?","Review flag for losing calls — does the lift recover at 30/60/90d? Green = test before cutting."],["Holdout","A matched untreated control group; the proof step — the ROI here is an estimated change vs baseline, an association, not a proven causal effect."]]],
    ["Levers",[["Cashback",`A loss-rebate; the VIP loyalty lever — here a lever to PILOT, not yet ROI-scored. Where a “+3.0/+3.1” figure appears near cashback it is the observed no-deposit give-back proxy, not a measured cashback result.`],["Deposit-match / reload","Deposit-required bonus; judged on Bonus ROI (net-NGR lift vs baseline, per unit bonus)."],["No-deposit giveaway",`Free credit / spins — a no-deposit cost, so it typically reads negative on Bonus ROI (its short-window net-NGR lift rarely recoups the bonus). That is the wrong lens: judge it on its purpose — reactivation and gross deposits pulled per ${sym()}1 given, measured against the claimer's own pre-claim baseline (true incremental pull needs a holdout), plus the lifetime value of the players it reaches. Short-run ROI and long-run value can point opposite ways.`]]],["Metrics",[["NGR",`Net Gaming Revenue — what the house keeps from player bets after winnings and all bonuses are paid out; treated here as already net of bonus cost.`],["GGR","Gross Gaming Revenue — what the house wins before bonuses are taken out (bets minus player winnings)."],["Turnover (TO)","How much a player must bet before a bonus can be withdrawn — e.g. 10x means bet ten times the bonus first."],["FTD","First-time depositor — a player making their first-ever deposit; acquisition codes are judged on cost per new depositor."]]]];
  const termsTbl=`<div class="card"><div class="ct">Key terms</div><div class="tblwrap"><table class="d cfg"><tbody>${terms.map(([cat,items])=>`<tr><td colspan="2" class="cfgband">${esc(cat)}</td></tr>`+items.map(([k,v])=>`<tr><td class="cfgk" style="white-space:normal;width:190px">${esc(k)}</td><td style="white-space:normal">${esc(v)}</td></tr>`).join("")).join("")}</tbody></table></div></div>`;
