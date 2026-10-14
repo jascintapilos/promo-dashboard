@@ -341,9 +341,12 @@ function serveLogin(res, root, brand, entry, htmlHeaders) {
 function serveAsset(res, root, rel) {
   const base = path.join(root, 'public', 'promo');
   const file = path.join(base, rel);
-  if (!file.startsWith(base + path.sep) || rel.includes('..') || !existsSync(file)) { res.writeHead(404); res.end(); return; }
+  // This is the ONLY unauthenticated path into public/promo/, so it may hand out
+  // front-end assets ONLY — never .html templates (which bake in report figures),
+  // .json, or any other file. An unknown extension is 404, not octet-stream.
   const ext = path.extname(file).toLowerCase();
-  const ct = { '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.ico': 'image/x-icon' }[ext] || 'application/octet-stream';
+  const ct = { '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.ico': 'image/x-icon' }[ext];
+  if (!ct || !file.startsWith(base + path.sep) || rel.includes('..') || !existsSync(file)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { 'content-type': `${ct}; charset=utf-8`, 'cache-control': 'no-cache' });
   createReadStream(file).pipe(res);
 }
