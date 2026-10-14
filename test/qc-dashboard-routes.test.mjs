@@ -181,6 +181,36 @@ test('leave add rejects invalid input before any sheet write', async () => {
   assert.match(body.error, /type/i);
 });
 
+test('unauthenticated /api/notices returns 401', async () => {
+  const r = await fetchNoRedirect('/api/notices');
+  assert.equal(r.status, 401);
+});
+
+test('notice post rejects a missing message before any write', async () => {
+  const cookie = await login();
+  const r = await fetchNoRedirect('/api/notices', {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ title: 'Only a title', body: '' }),
+  });
+  assert.equal(r.status, 400);
+  const body = await r.json();
+  assert.match(body.error, /message/i);
+});
+
+test('report-only account cannot read or post notices', async () => {
+  await withDevServer({ port: 4401, role: 'promo-report' }, async ({ base, cookie }) => {
+    const g = await fetch(`${base}/api/notices`, { headers: { cookie }, redirect: 'manual' });
+    assert.equal(g.status, 403);
+    const p = await fetch(`${base}/api/notices`, {
+      method: 'POST', redirect: 'manual',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 't', body: 'b' }),
+    });
+    assert.equal(p.status, 403);
+  });
+});
+
 test('logout clears cookie + subsequent /dashboard blocked without cookie', async () => {
   const cookie = await login();
   const r = await fetchNoRedirect('/auth/logout', { method: 'POST', headers: { cookie } });
