@@ -68,8 +68,9 @@
   /* ── Team notices ── */
   .notices-card{margin-bottom:28px;}
   .notices-card .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-  .notice-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
-  .notice{border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--card);}
+  /* every notice is listed; past ~4 the list scrolls inside the card so the tab below stays put */
+  .notice-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;max-height:460px;overflow-y:auto;padding-right:4px;overscroll-behavior:contain;}
+  .notice{flex-shrink:0;border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--card);}
   .notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   .notice-title{font-size:14px;font-weight:600;color:var(--ink);}
   .notice-date{font-size:11.5px;color:var(--ink3);white-space:nowrap;}
@@ -87,8 +88,6 @@
   .notice-form .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
   .notice-err{color:var(--risk);font-size:12px;margin-right:auto;}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .notices-more{font:inherit;font-size:12.5px;border:0;background:none;color:var(--accent);cursor:pointer;padding:6px 0 0;}
-  .notices-more[hidden]{display:none;}
 
   /* ── Read This First + Suggested Actions ── */
   .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
@@ -605,7 +604,7 @@
       <div class="card-header">
         <div class="card-header-info">
           <div class="card-title">Notices</div>
-          <div class="card-hint">Memos for the whole team, newest first. Anyone on the team can post, edit or remove one.</div>
+          <div class="card-hint">Memos for the whole team, newest first (scroll the list for older ones). Anyone on the team can post, edit or remove one.</div>
         </div>
         <button class="btn" id="notice-new" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Post notice</button>
       </div>
@@ -619,7 +618,6 @@
         </div>
       </form>
       <div class="notice-list" id="notice-list"></div>
-      <button class="notices-more" id="notices-more" type="button" hidden></button>
     </div>
 
     <!-- 2. KPI OVERVIEW -->
@@ -2888,9 +2886,7 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   const bodyEl = document.getElementById('notice-body');
   const errEl = document.getElementById('notice-err');
   const saveBtn = document.getElementById('notice-save');
-  const moreBtn = document.getElementById('notices-more');
-  const SHOW = 3;
-  let notices = [], editingId = null, showAll = false;
+  let notices = [], editingId = null;
 
   const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); };
   const who = email => String(email || '').split('@')[0] || 'someone';
@@ -2905,11 +2901,9 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   function render(){
     if (!notices.length) {
       list.innerHTML = '<div class="notice-empty">No notices yet.</div>';
-      moreBtn.hidden = true;
       return;
     }
-    const shown = showAll ? notices : notices.slice(0, SHOW);
-    list.innerHTML = shown.map(n => `
+    list.innerHTML = notices.map(n => `
       <div class="notice">
         <div class="notice-head"><span class="notice-title">${escText(n.title)}</span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
         <div class="notice-body">${escText(n.body)}</div>
@@ -2918,8 +2912,6 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
           <span class="notice-actions"><button type="button" data-edit="${escText(n.id)}">Edit</button><button type="button" class="del" data-del="${escText(n.id)}">Remove</button></span>
         </div>
       </div>`).join('');
-    moreBtn.hidden = notices.length <= SHOW;
-    moreBtn.textContent = showAll ? 'Show fewer' : `Show all ${notices.length} notices`;
   }
 
   function openForm(n){
@@ -2935,7 +2927,6 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 
   document.getElementById('notice-new').addEventListener('click', () => openForm(null));
   document.getElementById('notice-cancel').addEventListener('click', closeForm);
-  moreBtn.addEventListener('click', () => { showAll = !showAll; render(); });
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
