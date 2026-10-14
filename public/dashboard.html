@@ -65,6 +65,31 @@
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
 
+  /* ── Team notices ── */
+  .notices-card{margin-bottom:28px;}
+  .notices-card .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .notice-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .notice{border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--card);}
+  .notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .notice-title{font-size:14px;font-weight:600;color:var(--ink);}
+  .notice-date{font-size:11.5px;color:var(--ink3);white-space:nowrap;}
+  .notice-body{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .notice-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:11.5px;color:var(--ink3);flex-wrap:wrap;}
+  .notice-actions{display:flex;gap:4px;}
+  .notice-actions button{font:inherit;font-size:12px;border:0;background:none;color:var(--ink2);cursor:pointer;padding:3px 8px;border-radius:6px;}
+  .notice-actions button:hover{background:var(--line);}
+  .notice-actions button.del{color:var(--risk);}
+  .notice-empty{font-size:13px;color:var(--ink3);margin-top:12px;}
+  .notice-form{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);}
+  .notice-form[hidden]{display:none;}
+  .notice-form input,.notice-form textarea{font:inherit;font-size:13px;width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);}
+  .notice-form textarea{min-height:110px;resize:vertical;}
+  .notice-form .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
+  .notice-err{color:var(--risk);font-size:12px;margin-right:auto;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .notices-more{font:inherit;font-size:12.5px;border:0;background:none;color:var(--accent);cursor:pointer;padding:6px 0 0;}
+  .notices-more[hidden]{display:none;}
+
   /* ── Read This First + Suggested Actions ── */
   .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
   @media(max-width:1000px){.brief-row{grid-template-columns:1fr;}}
@@ -573,6 +598,29 @@
 
   <div id="content" style="display:none;">
     <div id="view-ops">
+
+    <!-- 1. TEAM NOTICES -->
+    <p class="section-label">Team notices</p>
+    <div class="card notices-card" id="notices-card">
+      <div class="card-header">
+        <div class="card-header-info">
+          <div class="card-title">Notices</div>
+          <div class="card-hint">Memos for the whole team, newest first. Anyone on the team can post, edit or remove one.</div>
+        </div>
+        <button class="btn" id="notice-new" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Post notice</button>
+      </div>
+      <form class="notice-form" id="notice-form" hidden>
+        <input id="notice-title" maxlength="100" placeholder="Title, e.g. Test account usernames" aria-label="Notice title" required>
+        <textarea id="notice-body" maxlength="2000" placeholder="Message" aria-label="Notice message" required></textarea>
+        <div class="row">
+          <span class="notice-err" id="notice-err"></span>
+          <button class="btn" type="button" id="notice-cancel">Cancel</button>
+          <button class="btn primary" type="submit" id="notice-save">Post</button>
+        </div>
+      </form>
+      <div class="notice-list" id="notice-list"></div>
+      <button class="notices-more" id="notices-more" type="button" hidden></button>
+    </div>
 
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
@@ -2829,6 +2877,96 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   const f=new Date(weekStart());f.setHours(0,0,0,0);_filterFrom=f;
   const t=new Date(today);t.setHours(23,59,59,999);_filterTo=t;
   document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
+})();
+
+/* ── TEAM NOTICES ── */
+(function teamNotices(){
+  const list = document.getElementById('notice-list');
+  if (!list) return;
+  const form = document.getElementById('notice-form');
+  const titleEl = document.getElementById('notice-title');
+  const bodyEl = document.getElementById('notice-body');
+  const errEl = document.getElementById('notice-err');
+  const saveBtn = document.getElementById('notice-save');
+  const moreBtn = document.getElementById('notices-more');
+  const SHOW = 3;
+  let notices = [], editingId = null, showAll = false;
+
+  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); };
+  const who = email => String(email || '').split('@')[0] || 'someone';
+
+  async function api(path, body){
+    const r = await fetch(path, body === undefined ? {} : { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    return d.notices || [];
+  }
+
+  function render(){
+    if (!notices.length) {
+      list.innerHTML = '<div class="notice-empty">No notices yet.</div>';
+      moreBtn.hidden = true;
+      return;
+    }
+    const shown = showAll ? notices : notices.slice(0, SHOW);
+    list.innerHTML = shown.map(n => `
+      <div class="notice">
+        <div class="notice-head"><span class="notice-title">${escText(n.title)}</span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
+        <div class="notice-body">${escText(n.body)}</div>
+        <div class="notice-foot">
+          <span>Posted by ${escText(who(n.by))}${n.updatedBy ? ' · edited by ' + escText(who(n.updatedBy)) : ''}</span>
+          <span class="notice-actions"><button type="button" data-edit="${escText(n.id)}">Edit</button><button type="button" class="del" data-del="${escText(n.id)}">Remove</button></span>
+        </div>
+      </div>`).join('');
+    moreBtn.hidden = notices.length <= SHOW;
+    moreBtn.textContent = showAll ? 'Show fewer' : `Show all ${notices.length} notices`;
+  }
+
+  function openForm(n){
+    editingId = n ? n.id : null;
+    titleEl.value = n ? n.title : '';
+    bodyEl.value = n ? n.body : '';
+    errEl.textContent = '';
+    saveBtn.textContent = n ? 'Save' : 'Post';
+    form.hidden = false;
+    titleEl.focus();
+  }
+  function closeForm(){ form.hidden = true; editingId = null; }
+
+  document.getElementById('notice-new').addEventListener('click', () => openForm(null));
+  document.getElementById('notice-cancel').addEventListener('click', closeForm);
+  moreBtn.addEventListener('click', () => { showAll = !showAll; render(); });
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    errEl.textContent = '';
+    saveBtn.disabled = true;
+    try {
+      const payload = { title: titleEl.value, body: bodyEl.value };
+      notices = await api(editingId ? '/api/notices/' + encodeURIComponent(editingId) : '/api/notices', payload);
+      closeForm();
+      render();
+    } catch (e) {
+      errEl.textContent = "Couldn't save: " + e.message;
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  list.addEventListener('click', async (ev) => {
+    const editId = ev.target.closest('[data-edit]')?.dataset.edit;
+    const delId = ev.target.closest('[data-del]')?.dataset.del;
+    if (editId) { const n = notices.find(x => x.id === editId); if (n) openForm(n); return; }
+    if (delId) {
+      const n = notices.find(x => x.id === delId);
+      if (!n || !confirm(`Remove the notice "${n.title}" for everyone?`)) return;
+      try { notices = await api('/api/notices/' + encodeURIComponent(delId) + '/delete', {}); render(); }
+      catch (e) { alert("Couldn't remove it: " + e.message); }
+    }
+  });
+
+  api('/api/notices').then(n => { notices = n; render(); })
+    .catch(e => { list.innerHTML = `<div class="notice-empty">Couldn't load notices: ${escText(e.message)}</div>`; });
 })();
 
 /* ── PAGE VIEW SWITCHER ── */
