@@ -10,11 +10,24 @@
 import { existsSync, readFileSync, createReadStream, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readSession } from './auth.js';
 import { promoRefreshStore } from './promo-refresh-store.js';
 import { macroServe } from './store_a_macro.mjs';
 
 const BRAND_OVERLAY_FILE = (root) => path.join(root, 'data', 'promo', 'promo-brands.overlay.json');
+
+// Static report snapshots (TG_SNAP/ARSNAP/RETVIP_SNAP) live server-side next to this
+// module — NOT baked into the shared public template — so the figures they carry reach
+// only authenticated report responses. Parsed once (the process restarts on deploy).
+const SNAP_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'report-snapshots.json');
+let _snapCache;
+function loadReportSnaps() {
+  if (_snapCache !== undefined) return _snapCache;
+  try { _snapCache = JSON.parse(readFileSync(SNAP_FILE, 'utf8')); }
+  catch { _snapCache = {}; }  // fail open: cards degrade, the page still serves
+  return _snapCache;
+}
 
 /** Base brand entries straight from the git-tracked registry (no overlay). */
 function baseBrands(root) {
@@ -324,6 +337,17 @@ function serveReport(res, root, brand, user, htmlHeaders, send, windowKey = '') 
     html = html.replace('const DATA=/*__DATA__*/;', `${apiGlobal}const DATA=${payload};${wire}`);
   } else {
     html = html.replace('/*__DATA__*/', payload).replace('</head>', `<script>${apiGlobal}</script></head>`);
+  }
+  // Inject the static snapshots the same way DATA is injected (authenticated response only).
+  // The brand substitution that ran on the template above (WS1 -> brandName) is replayed on
+  // each snapshot so the rendered values match exactly what the baked-in literals produced
+  // (the injected JSON text differs from the old hand-written literal, but parses to the same
+  // object). A function replacer is used so '$' sequences inside the JSON (e.g. "S$33,556")
+  // are inserted literally, not treated as replacement patterns.
+  const snaps = loadReportSnaps();
+  for (const key of ['TG_SNAP', 'ARSNAP', 'RETVIP_SNAP']) {
+    const json = JSON.stringify(snaps[key] ?? {}).replace(/WS1/g, () => brandName);
+    html = html.replace(`/*__SNAP_${key}__*/{}`, () => json);
   }
   res.writeHead(200, htmlHeaders);
   res.end(html);
