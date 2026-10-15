@@ -101,6 +101,7 @@ table.d th.stick{z-index:4;background:var(--surface-2)}
 table.lean tr.crow{cursor:pointer}table.lean tr.crow:hover td{background:var(--surface-2)}table.lean tr.crow:hover td.stick{background:var(--surface-2)}
 table.d td .exp{color:var(--muted);font-family:"IBM Plex Sans";margin-right:5px;display:inline-block;width:9px}
 .fun{cursor:pointer;color:var(--muted);margin-left:5px;vertical-align:middle;display:inline-block}.fun:hover{color:var(--ink)}.fun.act{color:var(--accent)}.fun svg{vertical-align:middle}
+.psort{display:flex;flex-direction:column;gap:1px;margin-bottom:5px;border-bottom:1px solid var(--line);padding-bottom:5px}.psort button{text-align:left;border:none;background:none;color:var(--ink);font:500 12px "IBM Plex Sans";padding:4px 6px;cursor:pointer;border-radius:4px}.psort button:hover{background:var(--surface-2)}.pll{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:5px 0 2px}.cdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}.cdot.green{background:#1B7A46}.cdot.amber{background:#B9791F}.cdot.red{background:#B23A2E}
 .sarrow{color:var(--accent);margin-left:3px;font-size:9px}
 tr.detail td{background:var(--surface-2);padding:0}tr.detail .dwrap{padding:14px 16px}
 .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 20px}
@@ -1233,7 +1234,8 @@ function bonusTargetCard(){
  const B=(typeof BONUS_TARGET!=="undefined"&&BONUS_TARGET)||null;
  if(!B||!B.brands||!B.brands.length) return "";
  const fm=(v,s)=>{const n=Math.abs(v),t=n>=1e6?(n/1e6).toFixed(2)+"m":n>=1e3?Math.round(n/1e3)+"k":Math.round(n);return (v<0?"-":"")+s+t;};
- const stat=(big,lab,col)=>`<div style="min-width:118px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;color:${col||"var(--ink)"}">${big}</div><div style="font-size:11px;color:var(--muted)">${lab}</div></div>`;
+ const hstat=(big,lab,col)=>`<div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:600${col?";color:"+col:""}">${big}</div><div style="font-size:11px;color:#9DB4C7">${lab}</div></div>`;
+ const hero=`<div style="background:#152A3A;color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:18px"><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9DB4C7;margin-bottom:10px">&#127919; Bonus-cost target &middot; ${esc(B.end)} &middot; proposal</div><div style="display:flex;gap:28px;flex-wrap:wrap">${hstat("~US$"+(B.usd45/1e6).toFixed(1)+"m","saved /yr &middot; first step ("+B.first+"%)","#F4A259")}${hstat("~US$"+(B.usd40/1e6).toFixed(1)+"m","saved /yr &middot; at goal ("+B.goal+"%)","#7FD1A6")}${hstat(B.n_over,"brands act (over "+B.first+"% today)")}</div><div style="font-size:12px;color:#9DB4C7;margin-top:12px">Cut company bonus from <b style="color:#fff">${B.company_bon}%</b> to <b style="color:#fff">${B.goal}%</b> by ${esc(B.end)} &mdash; a per-brand ceiling, ratcheting down monthly. ${esc(B.asOf)}.</div></div>`;
  const glide=B.glide.map((g,i)=>`<span style="display:inline-block;padding:3px 7px;margin:2px;border-radius:6px;background:${i===0?"#EAF3EA":i===B.glide.length-1?"#E7EEF5":"var(--surface-2,#F3F6F9)"};border:1px solid var(--line);font-size:11px;white-space:nowrap">${esc(g.m.split(" ")[0])} <b>${g.ceil}%</b></span>`).join("");
  const brows=B.brands.map(b=>`<tr><td class="stick">${esc(b.code)}</td><td>${esc(b.region)}</td><td class="n" style="font-weight:700;color:#B23A2E">${b.now}%</td><td class="n">${fm(b.s45,b.sym)}</td><td class="n" style="font-weight:700">${fm(b.s40,b.sym)}</td></tr>`).join("");
  const rtot=B.regions.map(r=>`<tr style="font-weight:700;background:var(--surface-2)"><td class="stick">${esc(r.region)} total</td><td></td><td></td><td class="n">${fm(r.s45,r.sym)}</td><td class="n">${fm(r.s40,r.sym)}</td></tr>`).join("");
@@ -1245,17 +1247,10 @@ function bonusTargetCard(){
      <b>Worked example &mdash; ${esc(e.code)} (${esc(e.region)}):</b> spends <b>${e.now}%</b> of deposits on bonus; deposits &asymp; <b>${fm(e.depA,e.sym)}/yr</b>, so bonus &asymp; ${e.now}% &times; ${fm(e.depA,e.sym)} = <b>${fm(e.bonus_now,e.sym)}/yr</b>. Capped at <b>${e.cap}%</b> &rarr; ${fm(e.bonus_cap,e.sym)}/yr. <b>Saving = ${fm(e.save,e.sym)}/yr.</b></p>
    <p style="color:var(--muted)"><b>Assumptions:</b> target is on <b>Bonus %</b> (not Bonus+Rebate); deposits are <b>annualised</b> from the 9-month year-to-date run-rate; savings assume deposits hold when bonus is trimmed &mdash; if trimming softens deposits the real saving is a little lower, which is why the glide is gradual (0.05%/month) so each brand can watch deposits as it steps down.</p>
  </div>`;
- return `<div class="card" style="margin-top:18px;border-top:3px solid #116FA6">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span style="font-size:18px">&#127919;</span><span style="font-family:Fraunces,serif;font-size:18px;font-weight:600">Bonus-cost target &middot; ${esc(B.end)}</span><span style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;background:#116FA6;color:#fff;padding:2px 7px;border-radius:10px">Proposal</span></div>
-  <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Cut company bonus from <b>${B.company_bon}%</b> to <b>${B.goal}%</b> by ${esc(B.end)} &mdash; a per-brand ceiling, ratcheting down monthly. ${esc(B.asOf)}.</div>
-  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">
-   ${stat("~US$"+(B.usd45/1e6).toFixed(1)+"m","saved /yr &middot; first step ("+B.first+"%)","#B9791F")}
-   ${stat("~US$"+(B.usd40/1e6).toFixed(1)+"m","saved /yr &middot; at goal ("+B.goal+"%)","#1B7A46")}
-   ${stat(B.n_over+" brands","act (over "+B.first+"% today)")}
-  </div>
+ return hero+`<div class="card" style="margin-top:0">
   <div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Glide path &mdash; the monthly ceiling every brand is held to</div>
   <div style="margin-bottom:16px">${glide}</div>
-  <div class="tblwrap"><table class="d cmpct"><thead><tr><th class="stick">Brand</th><th>Region</th><th class="n">Bonus % now</th><th class="n">Save @${B.first}% /yr</th><th class="n">Save @${B.goal}% /yr</th></tr></thead><tbody>${brows}${rtot}</tbody></table></div>
+  <div class="tblwrap"><table class="d"><thead><tr><th class="stick">Brand</th><th>Region</th><th class="n">Bonus % now</th><th class="n">Save @${B.first}% /yr</th><th class="n">Save @${B.goal}% /yr</th></tr></thead><tbody>${brows}${rtot}</tbody></table></div>
   <details class="tgmore" style="margin-top:12px"><summary>How this is calculated</summary>${note}</details>
  </div>`;
 }
@@ -1285,8 +1280,10 @@ function tMacro(){
  const mh=(id,lab)=>`<span class="mlab" data-ms="${id}" style="cursor:pointer">${lab}${sar(id)}</span><span class="fun${MS.cf[id]?" act":""}" data-mf="${id}" title="Filter" style="cursor:pointer">${FUN}</span>`;
  const mpil=(x,k)=>{const mk=r.cur==="MYR"?"MY":r.cur==="SGD"?"SG":null;const P=(/^WS1$/i.test(x.b)&&mk&&WS1_PILLARS&&WS1_PILLARS[mk])||null;return P?pct(P[k],x.d):null;};
  const MGET={brand:x=>x.b,dep:x=>x.d,db:x=>pct(x.db,x.d),fc:x=>pct(x.fc,x.d),fs:x=>pct(x.fs,x.d),bonpct:x=>+(pct(x.db,x.d)+pct(x.fc,x.d)+pct(x.fs,x.d)).toFixed(1),rebate:x=>pct(x.rb,x.d),brpct:x=>+(pct(x.db,x.d)+pct(x.fc,x.d)+pct(x.fs,x.d)+pct(x.rb,x.d)).toFixed(1),ngr:x=>x.mg,acq:x=>mpil(x,"acq"),ret:x=>mpil(x,"ret"),vip:x=>mpil(x,"vip"),other:x=>mpil(x,"other")};
- MS._brs=brs;MS._get=MGET;
- let rows=brs.filter(x=>{for(const id in MS.cf){const f=MS.cf[id],v=MGET[id](x);if(f.vals){if(!f.vals.has(String(v==null?"":v)))return false;}else{if(v==null)return false;if(f.min!=null&&v<f.min)return false;if(f.max!=null&&v>f.max)return false;}}return true;});
+ const h2b=h=>h==="#1B7A46"?"Green":h==="#B9791F"?"Amber":h==="#B23A2E"?"Red":null;
+ const MCOL={fc:x=>h2b(fcol(pct(x.fc,x.d))),bonpct:x=>h2b(bcol(x.bon_pct)),rebate:x=>h2b(rcol(pct(x.rb,x.d))),ngr:x=>h2b(mcol(x.mg))};
+ MS._brs=brs;MS._get=MGET;MS._col=MCOL;
+ let rows=brs.filter(x=>{for(const id in MS.cf){const f=MS.cf[id];if(f.colours){const cb=MCOL[id]?MCOL[id](x):null;if(!cb||!f.colours.has(cb))return false;}else if(f.vals){const v=MGET[id](x);if(!f.vals.has(String(v==null?"":v)))return false;}}return true;});
  if(MS.sort&&MGET[MS.sort]){const gg=MGET[MS.sort];rows=rows.slice().sort((a,b)=>{let va=gg(a),vb=gg(b);if(va==null&&vb==null)return 0;if(va==null)return 1;if(vb==null)return -1;if(typeof va==="string")return va.localeCompare(vb)*MS.dir;return (va-vb)*MS.dir;});}
  const mActive=MS.sort||Object.keys(MS.cf).length;
  const clearBar=mActive?`<div class="foot" style="padding-top:6px;margin-top:0"><button class="mclr" style="border:1px solid var(--line);background:var(--surface);color:var(--accent);border-radius:6px;padding:3px 9px;font:600 11px 'IBM Plex Sans';cursor:pointer">✕ Clear sort &amp; filters</button> <span style="color:var(--muted)">${rows.length} of ${brs.length} brands shown</span></div>`:"";
@@ -1307,14 +1304,17 @@ function wireMacro(){
  const cb=root.querySelector(".mclr");if(cb)cb.onclick=()=>{MS.cf={};MS.sort=null;MS.dir=1;tMacro();};
 }
 function openMacroFilter(id,anchor){
- closePop();const get=MS._get||{},brs=MS._brs||[];const pop=document.createElement("div");pop.className="pop";pop.id="pop";const isText=id==="brand";
- if(isText){const vals=[...new Set(brs.map(x=>String(get[id]?get[id](x):"")).filter(v=>v!==""))].sort();const cur=MS.cf[id]&&MS.cf[id].vals?MS.cf[id].vals:new Set(vals);
-  pop.innerHTML=`<input type="text" class="ps" placeholder="search…"><div class="pa"><button data-a="all">Select all</button><button data-a="none">Clear</button></div><div class="pl">${vals.map(v=>`<label><input type="checkbox" value="${esc(v)}" ${cur.has(v)?"checked":""}><span>${esc(v)}</span></label>`).join("")}</div><div class="pf"><button class="clr">Remove filter</button><button class="app">Apply</button></div>`;
- }else{const f=MS.cf[id]||{};pop.innerHTML=`<div class="prow"><label>min<input type="number" class="mn" value="${f.min??""}"></label><label>max<input type="number" class="mx" value="${f.max??""}"></label></div><div class="pf"><button class="clr">Remove filter</button><button class="app">Apply</button></div>`;}
- place(pop,anchor);
+ closePop();const get=MS._get||{},col=MS._col||{},brs=MS._brs||[];const pop=document.createElement("div");pop.className="pop";pop.id="pop";const isCol=!!col[id];
+ let h=`<div class="psort"><button data-s="asc">↑ Sort ascending</button><button data-s="desc">↓ Sort descending</button></div>`;
+ if(isCol){const order=["Green","Amber","Red"];const present=[...new Set(brs.map(x=>col[id](x)).filter(Boolean))].sort((a,b)=>order.indexOf(a)-order.indexOf(b));const cur=MS.cf[id]&&MS.cf[id].colours?MS.cf[id].colours:new Set(present);
+  h+=`<div class="pll">Filter by colour</div><div class="pl">${present.map(c=>`<label><input type="checkbox" value="${c}" ${cur.has(c)?"checked":""}><span class="cdot ${c.toLowerCase()}"></span>${c}</label>`).join("")}</div>`;
+ }else{const vals=[...new Set(brs.map(x=>String(get[id]?get[id](x):"")).filter(v=>v!==""&&v!=="null"))];const num=vals.length&&vals.every(v=>!isNaN(+v));num?vals.sort((a,b)=>+a-+b):vals.sort();const cur=MS.cf[id]&&MS.cf[id].vals?MS.cf[id].vals:new Set(vals);
+  h+=`<input type="text" class="ps" placeholder="search…"><div class="pll">Filter by value</div><div class="pl">${vals.map(v=>`<label><input type="checkbox" value="${esc(v)}" ${cur.has(v)?"checked":""}><span>${esc(v)}</span></label>`).join("")}</div>`;}
+ h+=`<div class="pf"><button class="clr">Remove filter</button><button class="app">Apply</button></div>`;
+ pop.innerHTML=h;place(pop,anchor);
+ pop.querySelectorAll(".psort button").forEach(b=>b.onclick=()=>{MS.sort=id;MS.dir=b.dataset.s==="asc"?1:-1;closePop();tMacro();});
  const ps=pop.querySelector(".ps");if(ps)ps.oninput=()=>{const q=ps.value.toLowerCase();pop.querySelectorAll(".pl label").forEach(l=>l.style.display=l.textContent.toLowerCase().includes(q)?"":"none");};
- pop.querySelectorAll(".pa button").forEach(b=>b.onclick=()=>pop.querySelectorAll(".pl input").forEach(i=>{if(i.closest("label").style.display!=="none")i.checked=b.dataset.a==="all";}));
- pop.querySelector(".app").onclick=()=>{if(isText){const boxes=[...pop.querySelectorAll(".pl input")],sel=boxes.filter(i=>i.checked).map(i=>i.value);if(sel.length===boxes.length||sel.length===0)delete MS.cf[id];else MS.cf[id]={vals:new Set(sel)};}else{const mn=pop.querySelector(".mn").value,mx=pop.querySelector(".mx").value;if(mn===""&&mx==="")delete MS.cf[id];else MS.cf[id]={min:mn===""?null:+mn,max:mx===""?null:+mx};}closePop();tMacro();};
+ pop.querySelector(".app").onclick=()=>{const boxes=[...pop.querySelectorAll(".pl input")],sel=boxes.filter(i=>i.checked).map(i=>i.value);const full=sel.length===boxes.length||sel.length===0;if(isCol){full?delete MS.cf[id]:MS.cf[id]={colours:new Set(sel)};}else{full?delete MS.cf[id]:MS.cf[id]={vals:new Set(sel)};}closePop();tMacro();};
  pop.querySelector(".clr").onclick=()=>{delete MS.cf[id];closePop();tMacro();};
 }
 const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
