@@ -685,6 +685,7 @@ function repeatPerCode(c){
    Retention & VIP Lane A = "Return and value investigation"; VIP B/C/D = "Performance investigation". ===== */
 const RETVIP_SNAP=/*__SNAP_RETVIP_SNAP__*/{};
 const WS1_PILLARS=/*__SNAP_WS1_PILLARS__*/{};
+const BONUS_TARGET=/*__SNAP_BONUS_TARGET__*/{};
 const rvS=()=>RETVIP_SNAP[R]||null;
 function rvInv(code){
  const s=rvS(); if(!s||!s.codes) return ""; const e=s.codes[code]; if(!e) return "";
@@ -1227,6 +1228,36 @@ function tRef(){
  g("panel").innerHTML=takeBox([`Every metric, call and term used across the tabs — defined here.`,`What each number is made of, with a worked example — grouped facts → economics → costs → behaviour.`,`Directional own-baseline — a matched holdout is the causal proof step.`])+callsTbl+formTbl+termsTbl;
 }
 /* ================= shell ================= */
+function bonusTargetCard(){
+ const B=(typeof BONUS_TARGET!=="undefined"&&BONUS_TARGET)||null;
+ if(!B||!B.brands||!B.brands.length) return "";
+ const fm=(v,s)=>{const n=Math.abs(v),t=n>=1e6?(n/1e6).toFixed(2)+"m":n>=1e3?Math.round(n/1e3)+"k":Math.round(n);return (v<0?"-":"")+s+t;};
+ const stat=(big,lab,col)=>`<div style="min-width:118px"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;color:${col||"var(--ink)"}">${big}</div><div style="font-size:11px;color:var(--muted)">${lab}</div></div>`;
+ const glide=B.glide.map((g,i)=>`<span style="display:inline-block;padding:3px 7px;margin:2px;border-radius:6px;background:${i===0?"#EAF3EA":i===B.glide.length-1?"#E7EEF5":"var(--surface-2,#F3F6F9)"};border:1px solid var(--line);font-size:11px;white-space:nowrap">${esc(g.m.split(" ")[0])} <b>${g.ceil}%</b></span>`).join("");
+ const brows=B.brands.map(b=>`<tr><td class="stick">${esc(b.code)}</td><td>${esc(b.region)}</td><td class="n" style="font-weight:700;color:#B23A2E">${b.now}%</td><td class="n">${fm(b.s45,b.sym)}</td><td class="n" style="font-weight:700">${fm(b.s40,b.sym)}</td></tr>`).join("");
+ const rtot=B.regions.map(r=>`<tr style="font-weight:700;background:var(--surface-2)"><td class="stick">${esc(r.region)} total</td><td></td><td></td><td class="n">${fm(r.s45,r.sym)}</td><td class="n">${fm(r.s40,r.sym)}</td></tr>`).join("");
+ const e=B.example;
+ const note=`<div class="tgmorebody" style="font-size:12.5px;line-height:1.55">
+   <p><b>Bonus cost %</b> = bonus paid out &divide; deposits taken in. Company-wide that is <b>${B.company_bon}%</b> this year. The target (first <b>${B.first}%</b>, goal <b>${B.goal}%</b>) is applied as a <b>cap on each brand</b>: a brand already under the cap is unchanged; a brand over it trims to the cap.</p>
+   <p><b>A brand&rsquo;s saving</b> = (its current % &minus; the cap) &times; its deposits. Only brands above the cap save; the regional/company totals just add those up.</p>
+   <p style="background:var(--surface-2,#F3F6F9);border-left:3px solid #116FA6;padding:8px 10px;border-radius:4px">
+     <b>Worked example &mdash; ${esc(e.code)} (${esc(e.region)}):</b> spends <b>${e.now}%</b> of deposits on bonus; deposits &asymp; <b>${fm(e.depA,e.sym)}/yr</b>, so bonus &asymp; ${e.now}% &times; ${fm(e.depA,e.sym)} = <b>${fm(e.bonus_now,e.sym)}/yr</b>. Capped at <b>${e.cap}%</b> &rarr; ${fm(e.bonus_cap,e.sym)}/yr. <b>Saving = ${fm(e.save,e.sym)}/yr.</b></p>
+   <p style="color:var(--muted)"><b>Assumptions:</b> target is on <b>Bonus %</b> (not Bonus+Rebate); deposits are <b>annualised</b> from the 9-month year-to-date run-rate; savings assume deposits hold when bonus is trimmed &mdash; if trimming softens deposits the real saving is a little lower, which is why the glide is gradual (0.05%/month) so each brand can watch deposits as it steps down.</p>
+ </div>`;
+ return `<div class="card" style="margin-top:18px;border-top:3px solid #116FA6">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span style="font-size:18px">&#127919;</span><span style="font-family:Fraunces,serif;font-size:18px;font-weight:600">Bonus-cost target &middot; ${esc(B.end)}</span><span style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;background:#116FA6;color:#fff;padding:2px 7px;border-radius:10px">Proposal</span></div>
+  <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Cut company bonus from <b>${B.company_bon}%</b> to <b>${B.goal}%</b> by ${esc(B.end)} &mdash; a per-brand ceiling, ratcheting down monthly. ${esc(B.asOf)}.</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">
+   ${stat("~US$"+(B.usd45/1e6).toFixed(1)+"m","saved /yr &middot; first step ("+B.first+"%)","#B9791F")}
+   ${stat("~US$"+(B.usd40/1e6).toFixed(1)+"m","saved /yr &middot; at goal ("+B.goal+"%)","#1B7A46")}
+   ${stat(B.n_over+" brands","act (over "+B.first+"% today)")}
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Glide path &mdash; the monthly ceiling every brand is held to</div>
+  <div style="margin-bottom:16px">${glide}</div>
+  <div class="tblwrap"><table class="d cmpct"><thead><tr><th class="stick">Brand</th><th>Region</th><th class="n">Bonus % now</th><th class="n">Save @${B.first}% /yr</th><th class="n">Save @${B.goal}% /yr</th></tr></thead><tbody>${brows}${rtot}</tbody></table></div>
+  <details class="tgmore" style="margin-top:12px"><summary>How this is calculated</summary>${note}</details>
+ </div>`;
+}
 function tMacro(){
  const M=MACRO; if(!M||!M.company){g("panel").innerHTML='<div class="card">Brands overview data not available in this build.</div>';return;}
  const C=M.company, regs=M.regions||[];
@@ -1254,7 +1285,7 @@ function tMacro(){
   <tr><th class="n">Dep bonus</th><th class="n">Free credit</th><th class="n">Free spins</th><th class="n">Acq</th><th class="n">Ret</th><th class="n">VIP</th><th class="n">Other</th></tr></thead>
   <tbody>${brs.map(brow).join("")}${tot}</tbody></table></div>`;
  const foot=`<div class="foot"><b>Every figure is a % of deposits except Deposits itself.</b> <b>Bonus by type</b> (Dep bonus · Free credit · Free spins) are the three slices that <b>add up to Bonus %</b> — so free credit is already counted inside Bonus %, not on top of it. <b>Bonus %</b>: <span style="color:#1B7A46">green ≤5%</span> · <span style="color:#B9791F">amber 5–8%</span> · <span style="color:#B23A2E">red &gt;8%</span>; <b>Free credit %</b> (the no-deposit giveaway): <span style="color:#1B7A46">green ≤2.5</span> · <span style="color:#B9791F">amber 2.5–4</span> · <span style="color:#B23A2E">red &gt;4</span>. <b>Rebate %</b> give-back (a loyalty lever, not a leak): <span style="color:#1B7A46">low ≤3.5</span> · <span style="color:#B9791F">mid 3.5–4.5</span> · <span style="color:#B23A2E">high &gt;4.5</span>. <b>NGR margin</b> vs the <b>20% benchmark</b>. <b>Bonus by pillar</b> (Acquisition \u00b7 Retention \u00b7 VIP \u00b7 Other) splits a brand's <b>Bonus %</b> by each code's objective across <b>all</b> that brand's codes \u2014 not only the scored ones. <b>Other</b> = codes not yet in the pillar list (mostly retention/VIP check-in &amp; CRM). Shown for <b>WS1 only</b>; other brands read \u201c\u2014\u201d until per-code pillar tagging is built across the estate. Whole-company revenue · ${esc(M.asOf||"")} · cost view (observational). <b>USD figures</b> use the data platform's own pre-converted USD columns (its daily FX rates); the per-brand grid above is each market's local currency.</div>`;
- g("panel").innerHTML=hero+`<div class="card">${table}${foot}</div>`;
+ g("panel").innerHTML=hero+`<div class="card">${table}${foot}</div>`+bonusTargetCard();
 }
 const RENDER={macro:tMacro,exec:tExec,money:tMoney,codes:renderCodes,bands:tValueBands,config:tConfig,ref:tRef};
 const CAP={macro:"company-wide cost view — current to the latest complete month; the detail tabs cover the selected report window, which may end earlier",exec:"the two-minute read — finding, spend to review, and the decisions proposed for sign-off",money:"bonus spend and the player deposits that follow — kept as separate measures",codes:"every code — filter (funnel icons), hide columns, click a row for detail, or ‘Full grid’",bands:"who's in the base, where value sits & is at risk, and what each band is worth",config:"the sweet-spot lever by band",ref:"glossary the tabs point to"};

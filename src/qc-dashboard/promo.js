@@ -345,7 +345,7 @@ function serveReport(res, root, brand, user, htmlHeaders, send, windowKey = '') 
   // object). A function replacer is used so '$' sequences inside the JSON (e.g. "S$33,556")
   // are inserted literally, not treated as replacement patterns.
   const snaps = loadReportSnaps();
-  for (const key of ['TG_SNAP', 'ARSNAP', 'RETVIP_SNAP', 'WS1_PILLARS']) {
+  for (const key of ['TG_SNAP', 'ARSNAP', 'RETVIP_SNAP', 'WS1_PILLARS', 'BONUS_TARGET']) {
     const json = JSON.stringify(snaps[key] ?? {}).replace(/WS1/g, () => brandName);
     html = html.replace(`/*__SNAP_${key}__*/{}`, () => json);
   }
