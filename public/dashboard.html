@@ -65,17 +65,19 @@
   .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;
        border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);}
 
-  /* ── Team notices ── */
+  /* ── Team memos (own tab) ── */
   .notices-card{margin-bottom:28px;}
   .notices-card .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-  /* every notice is listed; past ~4 the list scrolls inside the card so the tab below stays put */
-  .notice-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;max-height:460px;overflow-y:auto;padding-right:4px;overscroll-behavior:contain;}
-  .notice{flex-shrink:0;border:1px solid var(--line2);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--card);}
-  .notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-  .notice-title{font-size:14px;font-weight:600;color:var(--ink);}
-  .notice-date{font-size:11.5px;color:var(--ink3);white-space:nowrap;}
-  .notice-body{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;}
-  .notice-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:11.5px;color:var(--ink3);flex-wrap:wrap;}
+  .notice-list{display:flex;flex-direction:column;gap:14px;margin-top:16px;}
+  .notice{border:1px solid var(--line2);border-top:4px solid var(--accent);border-radius:10px;padding:16px 20px;background:var(--card);}
+  .notice-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .notice-kind{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);}
+  .notice-date{font-size:12px;color:var(--ink2);white-space:nowrap;}
+  .notice-subject{font-size:14px;color:var(--ink);margin-top:10px;}
+  .notice-subject b{font-weight:600;color:var(--ink2);margin-right:4px;}
+  .notice-title{font-weight:600;}
+  .notice-body{font-size:13.5px;color:var(--ink);line-height:1.65;margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .notice-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink3);flex-wrap:wrap;}
   .notice-actions{display:flex;gap:4px;}
   .notice-actions button{font:inherit;font-size:12px;border:0;background:none;color:var(--ink2);cursor:pointer;padding:3px 8px;border-radius:6px;}
   .notice-actions button:hover{background:var(--line);}
@@ -84,7 +86,7 @@
   .notice-form{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);}
   .notice-form[hidden]{display:none;}
   .notice-form input,.notice-form textarea{font:inherit;font-size:13px;width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);}
-  .notice-form textarea{min-height:110px;resize:vertical;}
+  .notice-form textarea{min-height:140px;resize:vertical;}
   .notice-form .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
   .notice-err{color:var(--risk);font-size:12px;margin-right:auto;}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
@@ -583,12 +585,13 @@
         <button class="pg-tab active" id="pg-ops" onclick="switchView('ops')"><span class="pg-num">1</span><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Operations</button>
         <button class="pg-tab" id="pg-util" onclick="switchView('util')"><span class="pg-num">2</span><i class="ti ti-chart-histogram" aria-hidden="true"></i> Utilization</button>
         <button class="pg-tab" id="pg-leave" onclick="switchView('leave')"><span class="pg-num">3</span><i class="ti ti-calendar-heart" aria-hidden="true"></i> Leave</button>
+        <button class="pg-tab" id="pg-memo" onclick="switchView('memo')"><span class="pg-num">4</span><i class="ti ti-file-text" aria-hidden="true"></i> Memos</button>
         <div class="pg-group-label">Quality</div>
-        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">4</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
+        <button class="pg-tab" id="pg-hk" onclick="switchView('hk')"><span class="pg-num">5</span><i class="ti ti-home-check" aria-hidden="true"></i> Housekeeping</button>
         <div class="pg-group-label">Resources</div>
-        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">5</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
-        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">6</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
-        <button class="pg-tab" id="pg-codes" style="display:none;" onclick="switchView('codes')"><span class="pg-num">7</span><i class="ti ti-ticket" aria-hidden="true"></i> Promo Codes</button>
+        <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">6</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
+        <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">7</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
+        <button class="pg-tab" id="pg-codes" style="display:none;" onclick="switchView('codes')"><span class="pg-num">8</span><i class="ti ti-ticket" aria-hidden="true"></i> Promo Codes</button>
       </div>
     </nav>
     <div class="app-main">
@@ -598,28 +601,6 @@
 
   <div id="content" style="display:none;">
     <div id="view-ops">
-
-    <!-- 1. TEAM NOTICES -->
-    <p class="section-label">Team notices</p>
-    <div class="card notices-card" id="notices-card">
-      <div class="card-header">
-        <div class="card-header-info">
-          <div class="card-title">Notices</div>
-          <div class="card-hint">Memos for the whole team, newest first (scroll the list for older ones). Anyone on the team can post, edit or remove one.</div>
-        </div>
-        <button class="btn" id="notice-new" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Post notice</button>
-      </div>
-      <form class="notice-form" id="notice-form" hidden>
-        <input id="notice-title" maxlength="100" placeholder="Title, e.g. Test account usernames" aria-label="Notice title" required>
-        <textarea id="notice-body" maxlength="2000" placeholder="Message" aria-label="Notice message" required></textarea>
-        <div class="row">
-          <span class="notice-err" id="notice-err"></span>
-          <button class="btn" type="button" id="notice-cancel">Cancel</button>
-          <button class="btn primary" type="submit" id="notice-save">Post</button>
-        </div>
-      </form>
-      <div class="notice-list" id="notice-list"></div>
-    </div>
 
     <!-- 2. KPI OVERVIEW -->
     <p class="section-label">Key metrics</p>
@@ -815,6 +796,28 @@
     <div id="view-leave" style="display:none;">
     <iframe id="leave-frame" title="Leave board" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;background:#fff;"></iframe>
     </div><!-- /view-leave -->
+    <div id="view-memo" style="display:none;">
+    <p class="section-label">Team memos</p>
+    <div class="card notices-card" id="notices-card">
+      <div class="card-header">
+        <div class="card-header-info">
+          <div class="card-title">Memos</div>
+          <div class="card-hint">Official memo statements for the whole team, newest first. Anyone on the team can issue, edit or withdraw a memo.</div>
+        </div>
+        <button class="btn" id="notice-new" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Issue memo</button>
+      </div>
+      <form class="notice-form" id="notice-form" hidden>
+        <input id="notice-title" maxlength="100" placeholder="Subject, e.g. Test account usernames" aria-label="Memo subject" required>
+        <textarea id="notice-body" maxlength="2000" placeholder="Memo statement" aria-label="Memo statement" required></textarea>
+        <div class="row">
+          <span class="notice-err" id="notice-err"></span>
+          <button class="btn" type="button" id="notice-cancel">Cancel</button>
+          <button class="btn primary" type="submit" id="notice-save">Issue memo</button>
+        </div>
+      </form>
+      <div class="notice-list" id="notice-list"></div>
+    </div>
+    </div><!-- /view-memo -->
     <div id="view-codes" style="display:none;">
     <iframe id="codes-frame" title="Promo Codes" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;"></iframe>
     </div><!-- /view-codes -->
@@ -2892,8 +2895,8 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   document.getElementById('date-label').textContent=fmtDate(_filterFrom)+' – '+fmtDate(_filterTo);
 })();
 
-/* ── TEAM NOTICES ── */
-(function teamNotices(){
+/* ── TEAM MEMOS ── */
+(function teamMemos(){
   const list = document.getElementById('notice-list');
   if (!list) return;
   const form = document.getElementById('notice-form');
@@ -2903,7 +2906,7 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   const saveBtn = document.getElementById('notice-save');
   let notices = [], editingId = null;
 
-  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); };
+  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }); };
   const who = email => String(email || '').split('@')[0] || 'someone';
 
   async function api(path, body){
@@ -2915,16 +2918,17 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 
   function render(){
     if (!notices.length) {
-      list.innerHTML = '<div class="notice-empty">No notices yet.</div>';
+      list.innerHTML = '<div class="notice-empty">No memos issued yet.</div>';
       return;
     }
     list.innerHTML = notices.map(n => `
       <div class="notice">
-        <div class="notice-head"><span class="notice-title">${escText(n.title)}</span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
+        <div class="notice-head"><span class="notice-kind">MEMO</span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
+        <div class="notice-subject"><b>Subject:</b><span class="notice-title">${escText(n.title)}</span></div>
         <div class="notice-body">${escText(n.body)}</div>
         <div class="notice-foot">
-          <span>Posted by ${escText(who(n.by))}${n.updatedBy ? ' · edited by ' + escText(who(n.updatedBy)) : ''}</span>
-          <span class="notice-actions"><button type="button" data-edit="${escText(n.id)}">Edit</button><button type="button" class="del" data-del="${escText(n.id)}">Remove</button></span>
+          <span>Issued by ${escText(who(n.by))}${n.updatedBy ? ' · amended by ' + escText(who(n.updatedBy)) : ''}</span>
+          <span class="notice-actions"><button type="button" data-edit="${escText(n.id)}">Edit</button><button type="button" class="del" data-del="${escText(n.id)}">Withdraw</button></span>
         </div>
       </div>`).join('');
   }
@@ -2934,7 +2938,7 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
     titleEl.value = n ? n.title : '';
     bodyEl.value = n ? n.body : '';
     errEl.textContent = '';
-    saveBtn.textContent = n ? 'Save' : 'Post';
+    saveBtn.textContent = n ? 'Save changes' : 'Issue memo';
     form.hidden = false;
     titleEl.focus();
   }
@@ -2965,14 +2969,14 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
     if (editId) { const n = notices.find(x => x.id === editId); if (n) openForm(n); return; }
     if (delId) {
       const n = notices.find(x => x.id === delId);
-      if (!n || !confirm(`Remove the notice "${n.title}" for everyone?`)) return;
+      if (!n || !confirm(`Withdraw the memo "${n.title}" for everyone?`)) return;
       try { notices = await api('/api/notices/' + encodeURIComponent(delId) + '/delete', {}); render(); }
-      catch (e) { alert("Couldn't remove it: " + e.message); }
+      catch (e) { alert("Couldn't withdraw it: " + e.message); }
     }
   });
 
   api('/api/notices').then(n => { notices = n; render(); })
-    .catch(e => { list.innerHTML = `<div class="notice-empty">Couldn't load notices: ${escText(e.message)}</div>`; });
+    .catch(e => { list.innerHTML = `<div class="notice-empty">Couldn't load memos: ${escText(e.message)}</div>`; });
 })();
 
 /* ── PAGE VIEW SWITCHER ── */
@@ -2991,7 +2995,7 @@ function renderCodesTab(){
   if(f){ f.src = '/promo-codes'; _codesFrameLoaded = true; }
 }
 function switchView(v){
-  ['ops','sop','hk','util','leave','at','codes'].forEach(n=>{
+  ['ops','sop','hk','util','leave','memo','at','codes'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -3005,7 +3009,7 @@ function switchView(v){
   if(v==='leave') renderLeaveTab();
   if(v==='at') renderAutomationTab();
   if(v==='codes') renderCodesTab();
-  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='util'?'#utilization':v==='leave'?'#leave':v==='sop'?'#sop':v==='at'?'#automation':v==='codes'?'#promo-codes':'#');}catch(e){}
+  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='util'?'#utilization':v==='leave'?'#leave':v==='memo'?'#memos':v==='sop'?'#sop':v==='at'?'#automation':v==='codes'?'#promo-codes':'#');}catch(e){}
 }
 
 // ── Automation Tab ───────────────────────────────────────────────────────────
@@ -3094,6 +3098,7 @@ function filterAtPortfolio(){
   if(location.hash==='#housekeeping') switchView('hk');
   else if(location.hash==='#utilization') switchView('util');
   else if(location.hash==='#leave') switchView('leave');
+  else if(location.hash==='#memos') switchView('memo');
   else if(location.hash==='#sop') switchView('sop');
   else if(location.hash==='#automation') switchView('at');
 })();
