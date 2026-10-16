@@ -44,6 +44,8 @@ Brand ranges like `QPRO1-4`, `QP2A-D` are expanded to individual brands.
 
 ## Delivery to the server
 
+> **Superseded (2026-10-16):** the upload no longer uses the QC relay secret. It goes to `POST /api/promo-codes/snapshot`, signed with a dedicated Promo Codes feed key — see `docs/plans/promo-codes-feed-key.md`. The `/api/relay/promo-codes/dataset` route below was removed.
+
 - New VDI script `bin/push-promo-codes.mjs`: read sheets → normalise → BO check → gzip JSON →
   `POST /api/relay/promo-codes/dataset`, HMAC-signed with the existing relay secret (same mechanism as `bin/push-ops-dataset.mjs`).
 - Server writes it to `data/ops/promo-codes*.json` (already gitignored + deploy-surviving via `data/ops/`; override with `PROMO_CODES_DATA_DIR`). Code data never goes into git or into a public static file.
