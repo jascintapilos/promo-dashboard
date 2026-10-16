@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { _test, listNotices, addNotice, updateNotice, deleteNotice } from '../src/qc-dashboard/notices-store.js';
+import { _test, CATEGORIES, listNotices, addNotice, updateNotice, deleteNotice } from '../src/qc-dashboard/notices-store.js';
 
 // Point the store at a throwaway file for each file-backed test.
 function withTempFile(fn) {
@@ -70,4 +70,30 @@ test('a corrupt data file throws and is never overwritten', withTempFile(async (
   await assert.rejects(listNotices(), /unreadable/);
   await assert.rejects(addNotice({ title: 'New', body: 'x' }), /unreadable/);
   assert.equal(readFileSync(file, 'utf8'), '{ "notices": [ truncated');
+}));
+
+test('category defaults to General, matches case-insensitively, rejects unknown with 400', () => {
+  assert.equal(_test.cleanInput({ title: 't', body: 'b' }).category, 'General');
+  assert.equal(_test.cleanInput({ title: 't', body: 'b', category: '  promo code ' }).category, 'Promo Code');
+  assert.equal(_test.cleanInput({ title: 't', body: 'b', category: 'GAME' }).category, 'Game');
+  assert.throws(() => _test.cleanInput({ title: 't', body: 'b', category: 'Promos' }),
+    (e) => e.status === 400 && /category must be one of/.test(e.message));
+  assert.deepEqual(CATEGORIES, ['Operations', 'Promo Code', 'Game', 'Banner', 'CRM', 'General']);
+});
+
+test('memos saved before categories existed read as General', withTempFile(async (file) => {
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify({ notices: [{ id: 'old-memo-1', title: 'TUMKT', body: 'prefix', by: 'g@x', createdAt: '2026-10-14T00:00:00.000Z', updatedAt: '2026-10-14T00:00:00.000Z' }] }), 'utf8');
+  const [old] = await listNotices();
+  assert.equal(old.category, 'General');
+  assert.equal(old.title, 'TUMKT');
+}));
+
+test('category is saved on add and can be changed on edit', withTempFile(async () => {
+  const { notice } = await addNotice({ category: 'Game', title: 'New provider', body: 'x' }, { email: 'a@x' });
+  assert.equal(notice.category, 'Game');
+  await updateNotice(notice.id, { category: 'Operations', title: 'New provider', body: 'x' }, { email: 'b@x' });
+  const [n] = await listNotices();
+  assert.equal(n.category, 'Operations');
 }));

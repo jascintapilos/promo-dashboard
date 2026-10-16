@@ -11,7 +11,7 @@ import { buildMechanics, computeVerdict } from '../src/qc-dashboard/verdict-engi
 import { dispatchFixRequest } from '../src/qc-dashboard/fix-request.js';
 import { findDuplicateRecent, queryHistory, saveQcRecord } from '../src/qc-dashboard/qc-log.js';
 import { listEntries, addEntry, updateEntry, deleteEntry } from '../src/qc-dashboard/leave-board-store.js';
-import { listNotices, addNotice, updateNotice, deleteNotice } from '../src/qc-dashboard/notices-store.js';
+import { listNotices, addNotice, updateNotice, deleteNotice, CATEGORIES as NOTICE_CATEGORIES } from '../src/qc-dashboard/notices-store.js';
 import { validateManualPassOverride } from '../src/qc-dashboard/manual-pass.js';
 import { getGoogleClientId, isLocalhost, loadAdmittedUsers, loginFromRequest, makeSessionCookie, readSession, validateProductionConfig, REPORT_ONLY_ROLES, upsertAdmittedUser, removeAdmittedUser } from '../src/qc-dashboard/auth.js';
 import { isPromoPath, handlePromo, ingestPromoPlayers, grantBrandAccess, revokeBrandAccess } from '../src/qc-dashboard/promo.js';
@@ -348,24 +348,24 @@ async function handleApi(req, res, user) {
   if (req.method === 'POST' && !checkCsrf(req, res)) return;
   // Team Notices — memos at the top of the Ops Dashboard (any logged-in team member can post/edit/remove).
   if (req.method === 'GET' && url.pathname === '/api/notices') {
-    return send(res, 200, { notices: await listNotices() });
+    return send(res, 200, { notices: await listNotices(), categories: NOTICE_CATEGORIES });
   }
   if (req.method === 'POST' && url.pathname === '/api/notices') {
     const body = await readJsonBounded(req);
     await addNotice(body, user);
-    return send(res, 200, { notices: await listNotices() });
+    return send(res, 200, { notices: await listNotices(), categories: NOTICE_CATEGORIES });
   }
   {
     const nd = url.pathname.match(/^\/api\/notices\/([A-Za-z0-9_-]{6,64})\/delete$/);
     if (nd && req.method === 'POST') {
       await deleteNotice(nd[1], user);
-      return send(res, 200, { notices: await listNotices() });
+      return send(res, 200, { notices: await listNotices(), categories: NOTICE_CATEGORIES });
     }
     const nu = url.pathname.match(/^\/api\/notices\/([A-Za-z0-9_-]{6,64})$/);
     if (nu && req.method === 'POST') {
       const body = await readJsonBounded(req);
       await updateNotice(nu[1], body, user);
-      return send(res, 200, { notices: await listNotices() });
+      return send(res, 200, { notices: await listNotices(), categories: NOTICE_CATEGORIES });
     }
   }
   // Leave Board — casual team leave tracker (any logged-in team member; no approval).

@@ -198,6 +198,17 @@ test('notice post rejects a missing message before any write', async () => {
   assert.match(body.error, /message/i);
 });
 
+test('notice post rejects an unknown category', async () => {
+  const cookie = await login();
+  const r = await fetchNoRedirect('/api/notices', {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ title: 't', body: 'b', category: 'Not a category' }),
+  });
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /category/i);
+});
+
 test('report-only account cannot read or post notices', async () => {
   await withDevServer({ port: 4401, role: 'promo-report' }, async ({ base, cookie }) => {
     const g = await fetch(`${base}/api/notices`, { headers: { cookie }, redirect: 'manual' });
