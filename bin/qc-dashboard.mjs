@@ -29,6 +29,7 @@ import { promoRefreshStore } from '../src/qc-dashboard/promo-refresh-store.js';
 import { sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
 import { readStatus as readRelayStatus, rotateSecret as rotateRelaySecret, registerRotationInvalidation } from '../src/qc-dashboard/relay-secret-store.js';
 import { OPS_DATASETS, opsDataDir, validateOpsPush, applyOpsPush, readOpsData } from '../src/qc-dashboard/ops-store.js';
+import { PROMO_CODES_ROLE, canViewPromoCodes, promoCodesDataDir, validatePromoCodesPush, applyPromoCodesPush, readPromoCodes } from '../src/qc-dashboard/promo-codes-store.js';
 import { gzipSync, gunzipSync } from 'node:zlib';
 
 // BO Relay: the secret is read on demand each request. The admin can rotate
@@ -146,6 +147,17 @@ function sendReportOnly(res) {
   res.end('<!doctype html><meta charset=utf-8><title>Report-only access</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">Report-only account</h2><p>This account can view the Promo Effectiveness report only — the QC Hub and Ops Dashboard are not available to it.</p><p>Open your promo report from the link you were given (a <code>*.promo.zoom66.xyz</code> address).</p></body>');
 }
 
+
+function redirectTo(res, location) {
+  res.writeHead(302, { location });
+  res.end();
+}
+
+// Signed in, but not on promo-codes-viewers.json.
+function sendNoPromoCodesAccess(res) {
+  res.writeHead(403, HTML_HEADERS);
+  res.end('<!doctype html><meta charset=utf-8><title>No access</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">No access to Promo Codes</h2><p>Your account is signed in but is not on the Promo Codes viewer list. Ask the promo team to add you.</p></body>');
+}
 
 function contentType(file) {
   if (file.endsWith('.html')) return 'text/html; charset=utf-8';
@@ -295,7 +307,7 @@ async function checkPlaywrightReadiness() {
 
 async function handleApi(req, res, user) {
   const url = new URL(req.url, 'http://localhost');
-  if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user });
+  if (req.method === 'GET' && url.pathname === '/api/me') return send(res, 200, { user, canViewPromoCodes: canViewPromoCodes(user) });
   // Ops Dashboard data — the server copy of the Ops sheet tabs, pushed by the VDI
   // over the relay. ~2.6MB raw, so gzip it for clients that accept it.
   if (req.method === 'GET' && url.pathname === '/api/ops/data') {
@@ -744,6 +756,23 @@ async function handle(req, res) {
     if (url.pathname.startsWith('/api/relay/')) {
       return await handleRelayApi(req, res, url);
     }
+    // Promo Codes data — dispatched BEFORE the report-only gate below so a
+    // `promo-codes` account can read it. The viewer allowlist is the gate for
+    // EVERY role (admins included); the tab being hidden in the page is UX only.
+    if (url.pathname === '/api/promo-codes') {
+      const user = requireSession(req, res);
+      if (!user) return;
+      if (req.method !== 'GET') return send(res, 405, { error: 'method not allowed' });
+      if (!canViewPromoCodes(user)) return send(res, 403, { error: 'no access to Promo Codes' });
+      const body = Buffer.from(JSON.stringify(readPromoCodes(promoCodesDataDir(ROOT))), 'utf8');
+      const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+      if (/\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) {
+        res.writeHead(200, { ...headers, 'content-encoding': 'gzip', vary: 'accept-encoding' });
+        return res.end(gzipSync(body));
+      }
+      res.writeHead(200, headers);
+      return res.end(body);
+    }
     if (url.pathname.startsWith('/api/')) {
       const user = requireSession(req, res);
       if (!user) return;
@@ -771,8 +800,17 @@ async function handle(req, res) {
         res.end();
         return;
       }
+      if (s.role === PROMO_CODES_ROLE) return redirectTo(res, '/promo-codes');
       if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
       return await sendHtml(res, path.join(ROOT, 'public', 'dashboard.html'));
+    }
+    // Promo Codes page — standalone for `promo-codes` accounts, embedded (iframe)
+    // as a tab in the Ops Dashboard for everyone else on the viewer allowlist.
+    if (url.pathname === '/promo-codes') {
+      const s = readSession(req);
+      if (!s) return redirectTo(res, `/?return=${encodeURIComponent('/promo-codes')}`);
+      if (!canViewPromoCodes(s)) return sendNoPromoCodesAccess(res);
+      return await sendHtml(res, path.join(ROOT, 'public', 'promo-codes.html'));
     }
     if (url.pathname === '/leave-board.html') {
       const s = readSession(req);
@@ -800,6 +838,7 @@ async function handle(req, res) {
     // Report-only accounts can't open the QC Hub entry HTML either (assets are harmless).
     if (url.pathname === '/' || url.pathname === '/index.html') {
       const s = readSession(req);
+      if (s?.role === PROMO_CODES_ROLE) return redirectTo(res, '/promo-codes');
       if (s && REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
     }
     if (await serveStatic(req, res)) return;
@@ -824,9 +863,10 @@ async function handleRelayApi(req, res, url) {
   const isReportBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/report-build';
   const isStoreBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/store-build';
   const opsPush = req.method === 'POST' ? url.pathname.match(/^\/api\/relay\/ops\/dataset\/([A-Za-z]{1,40})$/) : null;
+  const promoCodesPush = req.method === 'POST' && url.pathname === '/api/relay/promo-codes/dataset';
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild || opsPush) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild || opsPush || promoCodesPush) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -842,6 +882,20 @@ async function handleRelayApi(req, res, url) {
     return send(res, verify.status || 401, { error: 'unauthorized' });
   }
   const workerId = String(req.headers['x-relay-worker'] || 'unknown').slice(0, 64);
+
+  // POST /api/relay/promo-codes/dataset — the daily Promo Codes list + BO status
+  // from bin/push-promo-codes.mjs (gzip JSON). ok:false keeps the last good list.
+  if (promoCodesPush) {
+    let body;
+    try { body = JSON.parse(gunzipSync(rawBody, { maxOutputLength: 64 * 1024 * 1024 }).toString('utf8')); }
+    catch { return send(res, 400, { error: 'body is not valid gzip/JSON' }); }
+    try {
+      const status = applyPromoCodesPush(promoCodesDataDir(ROOT), validatePromoCodesPush(body));
+      return send(res, 200, { ok: true, status });
+    } catch (e) {
+      return send(res, e.status && e.status < 500 ? e.status : 500, { error: e.status && e.status < 500 ? e.message : 'store failed' });
+    }
+  }
 
   // POST /api/relay/ops/dataset/<key> — one Ops sheet tab from the VDI nightly runner
   // (gzip JSON). ok:false records a failed pull without touching the last good rows.

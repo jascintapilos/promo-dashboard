@@ -11,12 +11,14 @@ const ALLOWLIST = process.env.ADMITTED_USERS_PATH || 'admitted-users.json';
 const OVERLAY_FILE = process.env.ADMITTED_OVERLAY_PATH || 'admitted-users.overlay.json';
 const SECRET_FILE = 'qc-dashboard-session-secret.local.json';
 const CONFIG_FILE = 'qc-hub-config.json';
-const VALID_ROLES = new Set(['admin', 'promo-team', 'hod-view', 'guest', 'promo-report']);
+const VALID_ROLES = new Set(['admin', 'promo-team', 'hod-view', 'guest', 'promo-report', 'promo-codes']);
 // Report-only roles: admitted for the promo report but DENIED the QC Hub (`/`) and
 // Ops Dashboard (`/dashboard`). A DENYLIST (not a whitelist) on purpose — every
 // pre-existing role keeps its current access unchanged; only the new `promo-report`
 // role is bounced to the promo site. Keep in sync with bin/qc-dashboard.mjs.
-export const REPORT_ONLY_ROLES = new Set(['promo-report']);
+// `promo-codes` is the same kind of limited account for the Promo Codes page only
+// (/promo-codes) — see src/qc-dashboard/promo-codes-store.js.
+export const REPORT_ONLY_ROLES = new Set(['promo-report', 'promo-codes']);
 
 export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
 

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Promo Codes</title>
+<script>/* Embedded in the (light-only) Ops Dashboard → match it; standalone follows the system theme. */
+if (window.self !== window.top) document.documentElement.setAttribute('data-theme', 'light');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EDF0F5; --ink:#18212E; --muted:#5B6678; --line:#DCE1EA;
+  --accent:#2B4C9B; --accent-ink:#FFFFFF;
+  --on:#1E7A4C; --on-bg:#DFF3E8; --off:#5B6678; --off-bg:#EDF0F5; --exp:#B86E0A; --exp-bg:#FCEFD9;
+  --unk:#7A8394; --unk-bg:transparent; --warn:#C8384F; --warn-bg:#FBE6E9;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ color-scheme:dark;
+    --bg:#10151D; --surface:#171E29; --surface-2:#1F2835; --ink:#E6EAF1; --muted:#98A3B5; --line:#2A3443;
+    --accent:#8FAAF0; --accent-ink:#0E1522;
+    --on:#6FD39F; --on-bg:#173527; --off:#98A3B5; --off-bg:#1F2835; --exp:#E9B061; --exp-bg:#3A2A12;
+    --unk:#7D879A; --warn:#F0879A; --warn-bg:#3F1E26; }
+}
+:root[data-theme="dark"]{ color-scheme:dark;
+  --bg:#10151D; --surface:#171E29; --surface-2:#1F2835; --ink:#E6EAF1; --muted:#98A3B5; --line:#2A3443;
+  --accent:#8FAAF0; --accent-ink:#0E1522;
+  --on:#6FD39F; --on-bg:#173527; --off:#98A3B5; --off-bg:#1F2835; --exp:#E9B061; --exp-bg:#3A2A12;
+  --unk:#7D879A; --warn:#F0879A; --warn-bg:#3F1E26; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+.wrap{max-width:1400px;margin:0 auto;padding:24px 20px 48px;display:grid;gap:16px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+header .sub{margin-top:4px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select,input{font:inherit;color:var(--ink)}
+button{cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--surface);padding:7px 12px;font-weight:500}
+button:hover{background:var(--surface-2)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.banner{border-radius:8px;padding:10px 14px;font-weight:500}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner.info{background:var(--surface-2);color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat .n{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+.stat.flag .n{color:var(--warn)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters input[type=search]{flex:1 1 260px;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.filters select{padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);max-width:100%}
+.filters label{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:980px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--surface-2);font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none}
+th[aria-sort="ascending"]::after{content:" ▲";font-size:10px}
+th[aria-sort="descending"]::after{content:" ▼";font-size:10px}
+tr.mm td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+td.code{font-family:var(--mono);font-size:12.5px;word-break:break-all;min-width:200px}
+td.code .ws{display:block;color:var(--muted);font-size:11.5px}
+td.offer{min-width:220px;max-width:340px}
+td.small{font-size:12.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;min-width:200px}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 8px;font-size:11.5px;font-family:var(--mono);border:1px solid transparent;white-space:nowrap}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.c-active{background:var(--on-bg);color:var(--on)}
+.c-inactive{background:var(--off-bg);color:var(--off)}
+.c-expired{background:var(--exp-bg);color:var(--exp)}
+.c-unchecked{background:transparent;color:var(--unk);border-color:var(--line);border-style:dashed}
+.c-unchecked::before{background:transparent;border:1px solid currentColor}
+.flag{color:var(--warn);font-size:12px;font-weight:500;min-width:190px}
+.flag ul{margin:4px 0 0;padding-left:16px;font-weight:400}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted);align-items:center}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+body.embed header .who{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Promo Codes</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div class="actions">
+      <span class="muted who" id="who"></span>
+      <button type="button" id="csv" disabled>Export CSV</button>
+      <button type="button" id="logout" class="who">Log out</button>
+    </div>
+  </header>
+
+  <div id="banners"></div>
+
+  <section class="stats" id="stats" aria-label="Summary"></section>
+
+  <section class="panel filters" aria-label="Filters">
+    <label class="sr" for="q">Search</label>
+    <input type="search" id="q" placeholder="Search code, bonus name, team…" autocomplete="off">
+    <select id="f-source" aria-label="Source"><option value="">All sources</option></select>
+    <select id="f-group" aria-label="Team or stakeholder"><option value="">All teams</option></select>
+    <select id="f-brand" aria-label="Brand"><option value="">All brands</option></select>
+    <select id="f-region" aria-label="Region"><option value="">All regions</option></select>
+    <select id="f-type" aria-label="Type"><option value="">All types</option></select>
+    <select id="f-bo" aria-label="BO status">
+      <option value="">Any BO status</option>
+      <option value="active">Active on at least one brand</option>
+      <option value="none">Not active on any brand</option>
+      <option value="expired">Has an expired brand</option>
+      <option value="unchecked">Has a brand not checked</option>
+    </select>
+    <label><input type="checkbox" id="f-mm"> Mismatches only</label>
+    <button type="button" id="reset">Reset</button>
+  </section>
+
+  <div class="legend" aria-label="Legend">
+    <span class="chip c-active">Active on BO</span>
+    <span class="chip c-expired">End date passed</span>
+    <span class="chip c-inactive">Not active on BO</span>
+    <span class="chip c-unchecked">Not checked</span>
+    <span class="flag">⚠ = sheet and BO disagree</span>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th data-k="code" scope="col">Code</th>
+        <th data-k="source" scope="col">Source · Team</th>
+        <th data-k="offer" scope="col">Offer / Bonus name</th>
+        <th data-k="section" scope="col">Mechanic · Type</th>
+        <th data-k="regions" scope="col">Region</th>
+        <th data-k="boActive" scope="col">BO status by brand</th>
+        <th data-k="mm" scope="col">Check</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <span class="muted" id="count"></span>
+    <button type="button" id="more" hidden>Show 100 more</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const PAGE = 100;
+  const STALE_MS = 36 * 3600 * 1000;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? '—' : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); };
+  const embedded = window.self !== window.top;
+  if (embedded) document.body.classList.add('embed');
+
+  let ROWS = [];
+  let view = [];
+  let shown = PAGE;
+  let sort = { k: 'code', dir: 1 };
+
+  const boList = (r, st) => Object.entries(r.bo).filter(([, v]) => v === st).map(([k]) => k);
+
+  function prep(rows) {
+    return rows.map((r) => {
+      const active = boList(r, 'active');
+      const text = [r.code, r.wsCode, r.group, r.pic, r.offer, r.section, r.type, r.sheetStatus, r.note].join(' ').toLowerCase();
+      return { ...r, _active: active, _text: text, boActive: active.length, mm: r.mismatch.length };
+    });
+  }
+
+  function fillSelect(id, values) {
+    const el = $(id);
+    for (const v of [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+      const o = document.createElement('option'); o.value = v; o.textContent = v; el.appendChild(o);
+    }
+  }
+
+  function chips(r) {
+    const entries = Object.entries(r.bo);
+    const order = { active: 0, expired: 1, inactive: 2, unchecked: 3 };
+    entries.sort((a, b) => order[a[1]] - order[b[1]] || a[0].localeCompare(b[0], undefined, { numeric: true }));
+    const label = { active: 'Active on BO', expired: 'End date passed', inactive: 'Not active on BO', unchecked: 'Not checked' };
+    // "ALL brands" rows list 20+ brands: show what is live, summarise the rest.
+    if (entries.length > 12) {
+      const live = entries.filter(([, v]) => v === 'active' || v === 'expired');
+      const off = entries.filter(([, v]) => v === 'inactive').map(([k]) => k);
+      const unk = entries.filter(([, v]) => v === 'unchecked').map(([k]) => k);
+      return live.map(([k, v]) => `<span class="chip c-${v}" title="${esc(k)}: ${label[v]}">${esc(k)}</span>`).join('') +
+        (off.length ? `<span class="chip c-inactive" title="Not active on BO: ${esc(off.join(', '))}">+${off.length} not active</span>` : '') +
+        (unk.length ? `<span class="chip c-unchecked" title="Not checked: ${esc(unk.join(', '))}">+${unk.length} not checked</span>` : '');
+    }
+    if (!entries.length) return '<span class="muted">No brands listed</span>';
+    return entries.map(([k, v]) => `<span class="chip c-${v}" title="${esc(k)}: ${label[v]}">${esc(k)}</span>`).join('');
+  }
+
+  // "QP2A: still active on BO", "QP2B: still active on BO" → "Still active on BO: QP2A, QP2B"
+  function groupMismatch(list) {
+    const by = new Map();
+    for (const m of list) {
+      const i = m.indexOf(': ');
+      const brand = i > 0 ? m.slice(0, i) : '';
+      const what = i > 0 ? m.slice(i + 2) : m;
+      if (!by.has(what)) by.set(what, []);
+      if (brand) by.get(what).push(brand);
+    }
+    return [...by].map(([what, brands]) => `${what[0].toUpperCase()}${what.slice(1)}${brands.length ? `: ${brands.join(', ')}` : ''}`);
+  }
+
+  function rowHtml(r) {
+    const flag = r.mismatch.length
+      ? `<div class="flag" title="Sheet says: ${esc(r.sheetStatus)}">⚠ Sheet and BO disagree<ul>${groupMismatch(r.mismatch).map((m) => `<li>${esc(m)}</li>`).join('')}</ul></div>`
+      : (r.retired ? '<span class="muted">Retired on sheet</span>' : '');
+    return `<tr class="${r.mismatch.length ? 'mm' : ''}">
+      <td class="code">${esc(r.code)}${r.wsCode ? `<span class="ws">WS: ${esc(r.wsCode)}</span>` : ''}</td>
+      <td class="small"><strong style="color:var(--ink);font-weight:600">${esc(r.source)}</strong><br>${esc(r.group)}${r.pic ? ` · PIC ${esc(r.pic)}` : ''}</td>
+      <td class="offer">${esc(r.offer) || '<span class="muted">—</span>'}${r.note ? `<div class="small">${esc(r.note)}</div>` : ''}</td>
+      <td class="small">${esc(r.section)}${r.type ? `<br>${esc(r.type)}` : ''}</td>
+      <td class="small mono">${esc(r.regions.join(', ')) || '—'}</td>
+      <td><div class="chips">${chips(r)}</div></td>
+      <td>${flag}</td>
+    </tr>`;
+  }
+
+  function applyFilters() {
+    const q = $('q').value.trim().toLowerCase();
+    const src = $('f-source').value, grp = $('f-group').value, brand = $('f-brand').value;
+    const reg = $('f-region').value, typ = $('f-type').value, bo = $('f-bo').value, mm = $('f-mm').checked;
+    view = ROWS.filter((r) => {
+      if (q && !r._text.includes(q)) return false;
+      if (src && r.source !== src) return false;
+      if (grp && r.group !== grp) return false;
+      if (brand && !(brand in r.bo) && !r.brands.includes(brand)) return false;
+      if (reg && !r.regions.includes(reg)) return false;
+      if (typ && r.type !== typ) return false;
+      if (bo === 'active' && !r._active.length) return false;
+      if (bo === 'none' && r._active.length) return false;
+      if (bo === 'expired' && !boList(r, 'expired').length) return false;
+      if (bo === 'unchecked' && !boList(r, 'unchecked').length) return false;
+      if (mm && !r.mismatch.length) return false;
+      return true;
+    });
+    const { k, dir } = sort;
+    const val = (r) => (k === 'regions' ? r.regions.join(',') : r[k]);
+    view.sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (typeof x === 'number') return (x - y) * dir;
+      return String(x || '').localeCompare(String(y || ''), undefined, { numeric: true }) * dir;
+    });
+    shown = PAGE;
+    render();
+  }
+
+  function render() {
+    const tb = $('tbody');
+    tb.innerHTML = view.length
+      ? view.slice(0, shown).map(rowHtml).join('')
+      : `<tr><td colspan="7" class="empty">${ROWS.length ? 'No codes match these filters.' : 'No data yet.'}</td></tr>`;
+    $('count').textContent = view.length ? `Showing ${Math.min(shown, view.length).toLocaleString()} of ${view.length.toLocaleString()} rows` : '';
+    $('more').hidden = shown >= view.length;
+    document.querySelectorAll('th[data-k]').forEach((th) => {
+      th.setAttribute('aria-sort', th.dataset.k === sort.k ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none');
+    });
+  }
+
+  function stats(data) {
+    const all = ROWS.length;
+    const live = ROWS.filter((r) => r._active.length).length;
+    const mm = ROWS.filter((r) => r.mismatch.length).length;
+    const s = data.sources || {};
+    const cards = [
+      ['Code rows', all, ''],
+      ['Active on BO (≥1 brand)', live, ''],
+      ['Not active anywhere', all - live, ''],
+      ['Mismatches', mm, 'flag'],
+      ['CEE / Sales / CRM', `${s.CEE ?? 0} / ${s.Sales ?? 0} / ${s.CRM ?? 0}`, ''],
+    ];
+    $('stats').innerHTML = cards.map(([l, n, c]) => `<div class="panel stat ${c}"><div class="n">${typeof n === 'number' ? n.toLocaleString() : esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('');
+  }
+
+  function banners(data, status) {
+    const out = [];
+    const last = data?.boCheckedAt || data?.pulledAt;
+    if (last && Date.now() - Date.parse(last) > STALE_MS) out.push(['warn', `This list is out of date — last checked on BO ${fmt(last)}. The daily refresh may have failed.`]);
+    if (status && status.ok === false) out.push(['warn', `Last refresh failed (${fmt(status.lastFailureAt)}): ${status.detail || 'no detail'}. Showing the last good list.`]);
+    // Only brands the sheets actually use (WS1 ID/TH/KH failing is noise when no code lists them).
+    const used = new Set(ROWS.flatMap((r) => Object.keys(r.bo)));
+    const failed = (data?.siteErrors || []).map((e) => e.brand).filter((b) => used.has(b));
+    if (failed.length) out.push(['info', `Some brands could not be checked this run and show as "Not checked": ${failed.join(', ')}.`]);
+    $('banners').innerHTML = out.map(([c, t]) => `<div class="banner ${c}">${esc(t)}</div>`).join('');
+  }
+
+  function toCsv() {
+    const cols = ['Source', 'Team / Stakeholder', 'CRM PIC', 'Mechanic / Section', 'Code', 'WS Code', 'Sheet brands', 'Regions', 'Type', 'Offer / Bonus name', 'Sheet status', 'Active on BO', 'End date passed', 'Not active on BO', 'Not checked', 'Mismatch'];
+    const cellv = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const lines = [cols.join(',')];
+    for (const r of view) {
+      lines.push([r.source, r.group, r.pic, r.section, r.code, r.wsCode, r.brandsAll ? 'ALL' : r.brands.join(' '), r.regions.join(' '), r.type, r.offer, r.sheetStatus,
+        boList(r, 'active').join(' '), boList(r, 'expired').join(' '), boList(r, 'inactive').join(' '), boList(r, 'unchecked').join(' '), r.mismatch.join('; ')].map(cellv).join(','));
+    }
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `promo-codes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  async function load() {
+    try {
+      const me = await fetch('/api/me', { credentials: 'same-origin' });
+      if (me.ok) { const j = await me.json(); $('who').textContent = j.user?.email || ''; }
+    } catch {}
+    let res;
+    try { res = await fetch('/api/promo-codes', { credentials: 'same-origin' }); }
+    catch { $('sub').textContent = 'Could not reach the server.'; return; }
+    if (res.status === 401) { (embedded ? window.top : window).location.href = '/?return=%2Fpromo-codes'; return; }
+    if (res.status === 403) { $('sub').textContent = 'Your account is not on the Promo Codes viewer list.'; $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No access.</td></tr>'; return; }
+    if (!res.ok) { $('sub').textContent = `Could not load codes (${res.status}).`; return; }
+    const { data, status } = await res.json();
+    ROWS = prep(data?.rows || []);
+    banners(data, status);
+    if (!data) {
+      $('sub').textContent = 'No data yet — the first daily refresh has not run.';
+      $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No data yet.</td></tr>';
+      return;
+    }
+    $('sub').textContent = `From the CEE, Sales and CRM code sheets · BO checked ${fmt(data.boCheckedAt)} · refreshes daily at 9 AM`;
+    fillSelect('f-source', ROWS.map((r) => r.source));
+    fillSelect('f-group', ROWS.map((r) => r.group));
+    fillSelect('f-brand', ROWS.flatMap((r) => Object.keys(r.bo)));
+    fillSelect('f-region', ROWS.flatMap((r) => r.regions));
+    fillSelect('f-type', ROWS.map((r) => r.type));
+    stats(data);
+    $('csv').disabled = false;
+    applyFilters();
+  }
+
+  let t;
+  $('q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(applyFilters, 150); });
+  for (const id of ['f-source', 'f-group', 'f-brand', 'f-region', 'f-type', 'f-bo', 'f-mm']) $(id).addEventListener('change', applyFilters);
+  $('reset').addEventListener('click', () => {
+    $('q').value = ''; for (const id of ['f-source', 'f-group', 'f-brand', 'f-region', 'f-type', 'f-bo']) $(id).value = '';
+    $('f-mm').checked = false; applyFilters();
+  });
+  $('more').addEventListener('click', () => { shown += PAGE; render(); });
+  $('csv').addEventListener('click', toCsv);
+  document.querySelectorAll('th[data-k]').forEach((th) => th.addEventListener('click', () => {
+    sort = { k: th.dataset.k, dir: sort.k === th.dataset.k ? -sort.dir : (['boActive', 'mm'].includes(th.dataset.k) ? -1 : 1) };
+    applyFilters();
+  }));
+  $('logout').addEventListener('click', async () => {
+    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch {}
+    location.href = '/';
+  });
+  load();
+})();
+</script>
+</body>
+</html>

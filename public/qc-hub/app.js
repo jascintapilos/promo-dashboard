@@ -1601,7 +1601,7 @@ function bind() {
   resetCodeRows();
 }
 
-const ALLOWED_RETURN_PATHS = new Set(['/dashboard']);
+const ALLOWED_RETURN_PATHS = new Set(['/dashboard', '/promo-codes']);
 
 function bindSwitcher() {
   document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
@@ -1638,6 +1638,11 @@ async function init() {
   await ensureLogin();
   document.title = 'Promo QC Hub';
   syncSettingsAccess();
+  // Promo-Codes-only accounts have no QC Hub access — send them to their page.
+  if (state.user?.role === 'promo-codes') {
+    location.replace('/promo-codes');
+    return;
+  }
   const returnTo = new URLSearchParams(location.search).get('return');
   if (ALLOWED_RETURN_PATHS.has(returnTo)) {
     location.replace(returnTo);

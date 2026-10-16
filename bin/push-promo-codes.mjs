@@ -1,0 +1,122 @@
+#!/usr/bin/env node
+// Daily Promo Codes refresh (VDI): read the CEE / Sales / CRM code sheets, check
+// every code against BO (READ-ONLY active-list calls via fetchAllLiveCodes — no
+// PUT, no activate, no deactivate), and push the result to the dashboard server
+// over the HMAC relay so the Promo Codes tab can show it. See docs/plans/promo-codes-tab.md.
+//
+//   node bin/push-promo-codes.mjs             read sheets + BO, push
+//   node bin/push-promo-codes.mjs --dry-run   read sheets + BO, print counts, write tmp/promo-codes-dry-run.json, push nothing
+//   env: QC_HUB_URL (default https://qc-dashboard.zoom66.xyz), QC_RELAY_WORKER_ID
+//
+// A failed run pushes an ok:false marker (the page keeps the last good list and
+// shows the error). Exit 0 on success, 1 on failure — message only, never the secret.
+
+import { gzipSync } from 'node:zlib';
+import crypto from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { readWorkerRelaySecret, sign } from '../src/qc-dashboard/relay-auth.js';
+import { getSheetsClient } from '../src/sheets-client.js';
+import { fetchAllLiveCodes } from '../src/live-codes.js';
+import { QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES } from '../src/brand-ids.js';
+import { PROMO_CODE_SOURCES, PARSERS, applyBoStatus } from '../src/qc-dashboard/promo-codes-parse.js';
+
+const HUB = (process.env.QC_HUB_URL || 'https://qc-dashboard.zoom66.xyz').replace(/\/+$/, '');
+const WORKER_ID = process.env.QC_RELAY_WORKER_ID || `promo-codes-push-${process.pid}`;
+const REL_PATH = '/api/relay/promo-codes/dataset';
+const MAX_PUSH_BYTES = 8 * 1024 * 1024; // server cap for this route (MAX_REPORT_BUILD_BYTES)
+
+async function readSources() {
+  const { sheets } = await getSheetsClient();
+  const rows = [];
+  const sources = {};
+  for (const { source, spreadsheetId, tab } of PROMO_CODE_SOURCES) {
+    const r = await sheets.spreadsheets.values.get({ spreadsheetId, range: `'${tab}'!A:Z` });
+    const parsed = PARSERS[source](r.data.values || []);
+    if (!parsed.length) throw new Error(`${source} sheet "${tab}" returned no codes`);
+    sources[source] = parsed.length;
+    rows.push(...parsed);
+  }
+  return { rows, sources };
+}
+
+async function checkBo(rows) {
+  const { codes, siteErrors } = await fetchAllLiveCodes();
+  // IGMP site errors are labelled "WS1_MY/MY"; the BO key is the part before "/".
+  const failed = new Set(siteErrors.map((e) => String(e.brand).split('/')[0]));
+  const allKeys = [...QPRO_BRANDS.map((b) => b.brand), ...QP2_MERCHANTS.map((b) => b.brand), ...IGMP_SITES.map((s) => s.brand)];
+  const checkedBrands = allKeys.filter((k) => !failed.has(k));
+  const allBrandKeys = [...QPRO_BRANDS.map((b) => b.brand), ...QP2_MERCHANTS.map((b) => b.brand)];
+  return {
+    rows: applyBoStatus(rows, { liveCodes: codes, checkedBrands, igmpSites: IGMP_SITES, allBrandKeys }),
+    siteErrors: siteErrors.map((e) => ({ brand: String(e.brand).split('/')[0], message: e.message })),
+    liveCount: codes.length,
+  };
+}
+
+async function postSigned(payload, secret) {
+  const gz = gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+  if (gz.length > MAX_PUSH_BYTES) throw new Error(`payload too large (${(gz.length / 1048576).toFixed(1)}MB gzip)`);
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const headers = {
+    'content-type': 'application/gzip',
+    'x-relay-timestamp': String(timestamp),
+    'x-relay-nonce': nonce,
+    'x-relay-signature': sign({ secret, method: 'POST', path: REL_PATH, timestamp, nonce, bodyBuffer: gz }),
+    'x-relay-worker': WORKER_ID.slice(0, 64),
+  };
+  const resp = await fetch(`${HUB}${REL_PATH}`, { method: 'POST', headers, body: gz });
+  const text = await resp.text();
+  if (!resp.ok) throw new Error(`server rejected push (${resp.status}): ${text.slice(0, 200)}`);
+  return { bytes: gz.length, response: JSON.parse(text) };
+}
+
+function summarise(rows, sources, siteErrors, liveCount) {
+  const live = rows.filter((r) => Object.values(r.bo).includes('active')).length;
+  const mm = rows.filter((r) => r.mismatch.length).length;
+  console.log(`  sheets: CEE ${sources.CEE} · Sales ${sources.Sales} · CRM ${sources.CRM} → ${rows.length} rows`);
+  console.log(`  BO: ${liveCount} active codes listed · ${live} rows active on ≥1 brand · ${mm} mismatches`);
+  if (siteErrors.length) console.log(`  not checked this run: ${siteErrors.map((e) => e.brand).join(', ')}`);
+}
+
+export async function pushPromoCodes({ dryRun = false } = {}) {
+  const pulledAt = new Date().toISOString();
+  const secret = dryRun ? null : readWorkerRelaySecret();
+  if (secret && !secret.present) throw new Error(`relay secret unavailable — ${secret.reason}`);
+  try {
+    const { rows: sheetRows, sources } = await readSources();
+    const { rows, siteErrors, liveCount } = await checkBo(sheetRows);
+    const boCheckedAt = new Date().toISOString();
+    summarise(rows, sources, siteErrors, liveCount);
+    const payload = { ok: true, pulledAt, boCheckedAt, rows, sources, siteErrors, detail: '' };
+    if (dryRun) {
+      mkdirSync('tmp', { recursive: true });
+      writeFileSync('tmp/promo-codes-dry-run.json', JSON.stringify(payload, null, 2));
+      console.log('  dry run — nothing pushed; wrote tmp/promo-codes-dry-run.json');
+      return { ok: true };
+    }
+    const r = await postSigned(payload, secret.secret);
+    console.log(`  ↑ pushed ${rows.length} rows (${(r.bytes / 1024).toFixed(0)} KB gzip)`);
+    return { ok: true };
+  } catch (e) {
+    console.error(`  ✖ promo codes refresh failed: ${e.message}`);
+    if (!dryRun) {
+      try { await postSigned({ ok: false, pulledAt, detail: e.message.slice(0, 500) }, secret.secret); }
+      catch (e2) { console.error(`  ✖ could not record the failure on the server: ${e2.message}`); }
+    }
+    return { ok: false, error: e.message };
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  // process.exitCode, not process.exit(): exiting with fetch sockets still open
+  // trips a libuv assert on Windows (exit 127).
+  try {
+    const r = await pushPromoCodes({ dryRun: process.argv.includes('--dry-run') });
+    process.exitCode = r.ok ? 0 : 1;
+  } catch (e) {
+    console.error(`  ✖ ${e.message}`);
+    process.exitCode = 1;
+  }
+}

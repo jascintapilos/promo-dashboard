@@ -103,12 +103,13 @@
 <script>
 const ROLES = [
   ["promo-report", "Report only — promo report, nothing else"],
+  ["promo-codes", "Promo Codes only — Promo Codes page, nothing else"],
   ["promo-team", "Promo Team — QC Hub + Ops"],
   ["admin", "Admin — full access + manage users"],
   ["hod-view", "HOD View"],
   ["guest", "Guest"],
 ];
-const ROLE_SHORT = {admin:"Admin","promo-team":"Promo Team","hod-view":"HOD View",guest:"Guest","promo-report":"Promo Report"};
+const ROLE_SHORT = {admin:"Admin","promo-team":"Promo Team","hod-view":"HOD View",guest:"Guest","promo-report":"Promo Report","promo-codes":"Promo Codes"};
 let ME = "";
 
 function toast(msg, kind){
