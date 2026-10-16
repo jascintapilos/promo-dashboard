@@ -588,6 +588,7 @@
         <div class="pg-group-label">Resources</div>
         <button class="pg-tab" id="pg-sop" onclick="switchView('sop')"><span class="pg-num">5</span><i class="ti ti-book" aria-hidden="true"></i> SOP</button>
         <button class="pg-tab" id="pg-at" onclick="switchView('at')"><span class="pg-num">6</span><i class="ti ti-robot" aria-hidden="true"></i> Automation</button>
+        <button class="pg-tab" id="pg-codes" style="display:none;" onclick="switchView('codes')"><span class="pg-num">7</span><i class="ti ti-ticket" aria-hidden="true"></i> Promo Codes</button>
       </div>
     </nav>
     <div class="app-main">
@@ -814,6 +815,9 @@
     <div id="view-leave" style="display:none;">
     <iframe id="leave-frame" title="Leave board" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;background:#fff;"></iframe>
     </div><!-- /view-leave -->
+    <div id="view-codes" style="display:none;">
+    <iframe id="codes-frame" title="Promo Codes" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;"></iframe>
+    </div><!-- /view-codes -->
     <div id="view-sop" style="display:none;">
     <p class="section-label">Standard operating procedures</p>
     <div class="card" style="margin-bottom:28px;">
@@ -2793,6 +2797,17 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   }).catch(() => {});
 })();
 
+// Promo Codes tab — shown only to emails on promo-codes-viewers.json. The server
+// refuses /promo-codes and /api/promo-codes to everyone else; this is UX only.
+(function syncPromoCodesTab(){
+  fetch('/api/me').then((r) => r.json()).then((data) => {
+    if (!data?.canViewPromoCodes) return;
+    const btn = document.getElementById('pg-codes');
+    if (btn) btn.style.display = '';
+    if (location.hash === '#promo-codes') switchView('codes');
+  }).catch(() => {});
+})();
+
 // Logout button
 (function bindLogout(){
   const btn = document.getElementById('logoutBtn');
@@ -2968,8 +2983,15 @@ function renderLeaveTab(){
   const f = document.getElementById('leave-frame');
   if(f){ f.src = '/leave-board.html'; _leaveFrameLoaded = true; }
 }
+// Promo Codes (embedded; served same-origin at /promo-codes, allowlist-gated)
+let _codesFrameLoaded = false;
+function renderCodesTab(){
+  if(_codesFrameLoaded) return;
+  const f = document.getElementById('codes-frame');
+  if(f){ f.src = '/promo-codes'; _codesFrameLoaded = true; }
+}
 function switchView(v){
-  ['ops','sop','hk','util','leave','at'].forEach(n=>{
+  ['ops','sop','hk','util','leave','at','codes'].forEach(n=>{
     document.getElementById('view-'+n).style.display = v===n ? '' : 'none';
     document.getElementById('pg-'+n).classList.toggle('active', v===n);
   });
@@ -2982,7 +3004,8 @@ function switchView(v){
   if(v==='hk') renderHousekeepingTab();
   if(v==='leave') renderLeaveTab();
   if(v==='at') renderAutomationTab();
-  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='util'?'#utilization':v==='leave'?'#leave':v==='sop'?'#sop':v==='at'?'#automation':'#');}catch(e){}
+  if(v==='codes') renderCodesTab();
+  try{history.replaceState(null,'',v==='hk'?'#housekeeping':v==='util'?'#utilization':v==='leave'?'#leave':v==='sop'?'#sop':v==='at'?'#automation':v==='codes'?'#promo-codes':'#');}catch(e){}
 }
 
 // ── Automation Tab ───────────────────────────────────────────────────────────

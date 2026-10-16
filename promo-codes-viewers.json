@@ -1,0 +1,7 @@
+{
+  "_comment": "Who can see the Promo Codes tab / page. Explicit list only - admins are NOT included automatically. See docs/plans/promo-codes-tab.md.",
+  "emails": [
+    "gabrielle.tiffany@alphaiotabpo.com",
+    "shuern.lim@seahubasia.com"
+  ]
+}
