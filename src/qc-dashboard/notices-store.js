@@ -13,7 +13,11 @@ import crypto from 'node:crypto';
 
 const AUDIT_DIR = 'captures/qc-dashboard';
 const AUDIT_PATH = `${AUDIT_DIR}/notices-log.jsonl`;
-const FIELDS = ['id', 'title', 'body', 'by', 'createdAt', 'updatedAt', 'updatedBy'];
+const FIELDS = ['id', 'category', 'title', 'body', 'by', 'createdAt', 'updatedAt', 'updatedBy'];
+// Fixed list so filters stay clean (no "Promo code" vs "promo" drift). Memos saved
+// before categories existed read as the default.
+export const CATEGORIES = ['Operations', 'Promo Code', 'Game', 'Banner', 'CRM', 'General'];
+const DEFAULT_CATEGORY = 'General';
 const TITLE_MAX = 100;
 const BODY_MAX = 2000;
 
@@ -31,13 +35,20 @@ function cleanInput(input = {}) {
   // keep the author's line breaks, trim trailing spaces per line, collapse 3+ blank lines
   const body = String(input.body || '').replace(/\r\n?/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n')
     .replace(/\n{3,}/g, '\n\n').trim().slice(0, BODY_MAX);
+  const rawCategory = String(input.category || '').trim();
+  const category = rawCategory
+    ? CATEGORIES.find((c) => c.toLowerCase() === rawCategory.toLowerCase())
+    : DEFAULT_CATEGORY;
   if (!title) throw httpError(400, 'title is required');
   if (!body) throw httpError(400, 'message is required');
-  return { title, body };
+  if (!category) throw httpError(400, `category must be one of ${CATEGORIES.join(', ')}`);
+  return { category, title, body };
 }
 
 function normalize(n = {}) {
-  return Object.fromEntries(FIELDS.map((k) => [k, n[k] == null ? '' : String(n[k])]));
+  const out = Object.fromEntries(FIELDS.map((k) => [k, n[k] == null ? '' : String(n[k])]));
+  if (!CATEGORIES.includes(out.category)) out.category = DEFAULT_CATEGORY;
+  return out;
 }
 
 function readAll() {
@@ -108,4 +119,4 @@ export async function deleteNotice(id, user = {}) {
   return { ok: true };
 }
 
-export const _test = { cleanInput, dataFile, TITLE_MAX, BODY_MAX };
+export const _test = { cleanInput, dataFile, TITLE_MAX, BODY_MAX, DEFAULT_CATEGORY };

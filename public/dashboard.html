@@ -89,6 +89,19 @@
   .notice-form textarea{min-height:140px;resize:vertical;}
   .notice-form .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
   .notice-err{color:var(--risk);font-size:12px;margin-right:auto;}
+  .notice-form select{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);justify-self:start;min-width:200px;}
+  .notice-form label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--ink2);}
+  .memo-filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+  .memo-filters button{font:inherit;font-size:12.5px;font-weight:500;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--ink2);cursor:pointer;}
+  .memo-filters button:hover{background:var(--line);}
+  .memo-filters button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .memo-filters .cnt{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums;}
+  .memo-cat{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.02em;padding:2px 9px;border-radius:999px;margin-left:10px;vertical-align:1px;background:var(--line);color:var(--ink2);}
+  .memo-cat[data-cat="Operations"]{background:#eaeeff;color:#3b5bdb;}
+  .memo-cat[data-cat="Promo Code"]{background:#fdecf3;color:#c2255c;}
+  .memo-cat[data-cat="Game"]{background:#e9f7ef;color:#2b8a3e;}
+  .memo-cat[data-cat="Banner"]{background:#fdf3e4;color:#b35c00;}
+  .memo-cat[data-cat="CRM"]{background:#f1ebfd;color:#6741d9;}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
 
   /* ── Read This First + Suggested Actions ── */
@@ -806,6 +819,9 @@
         <button class="btn" id="notice-new" type="button"><i class="ti ti-plus" aria-hidden="true"></i> Issue memo</button>
       </div>
       <form class="notice-form" id="notice-form" hidden>
+        <label>Category
+          <select id="notice-category"></select>
+        </label>
         <input id="notice-title" maxlength="100" placeholder="Subject, e.g. Test account usernames" aria-label="Memo subject" required>
         <textarea id="notice-body" maxlength="2000" placeholder="Memo statement" aria-label="Memo statement" required></textarea>
         <div class="row">
@@ -814,6 +830,7 @@
           <button class="btn primary" type="submit" id="notice-save">Issue memo</button>
         </div>
       </form>
+      <div class="memo-filters" id="memo-filters" role="group" aria-label="Filter memos by category"></div>
       <div class="notice-list" id="notice-list"></div>
     </div>
     </div><!-- /view-memo -->
@@ -2889,7 +2906,14 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
   const bodyEl = document.getElementById('notice-body');
   const errEl = document.getElementById('notice-err');
   const saveBtn = document.getElementById('notice-save');
+  const catEl = document.getElementById('notice-category');
+  const filtersEl = document.getElementById('memo-filters');
+  const FILTER_KEY = 'memos.filter';
   let notices = [], editingId = null;
+  // The server sends the real list with every response; this is only the first-paint fallback.
+  let categories = ['Operations', 'Promo Code', 'Game', 'Banner', 'CRM', 'General'];
+  let filter = 'All';
+  try { filter = localStorage.getItem(FILTER_KEY) || 'All'; } catch (e) {}
 
   const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }); };
   const who = email => String(email || '').split('@')[0] || 'someone';
@@ -2898,17 +2922,36 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
     const r = await fetch(path, body === undefined ? {} : { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    if (Array.isArray(d.categories) && d.categories.length) categories = d.categories;
     return d.notices || [];
   }
 
+  function fillCategorySelect(selected){
+    catEl.innerHTML = categories.map(c => `<option value="${escText(c)}">${escText(c)}</option>`).join('');
+    catEl.value = categories.includes(selected) ? selected : 'General';
+  }
+
+  function renderFilters(){
+    if (filter !== 'All' && !categories.includes(filter)) filter = 'All';
+    const count = c => notices.filter(n => n.category === c).length;
+    const chip = (c, n) => `<button type="button" data-filter="${escText(c)}" aria-pressed="${filter === c}">${escText(c)}<span class="cnt">${n}</span></button>`;
+    filtersEl.innerHTML = chip('All', notices.length) + categories.map(c => chip(c, count(c))).join('');
+  }
+
   function render(){
+    renderFilters();
     if (!notices.length) {
       list.innerHTML = '<div class="notice-empty">No memos issued yet.</div>';
       return;
     }
-    list.innerHTML = notices.map(n => `
+    const shown = filter === 'All' ? notices : notices.filter(n => n.category === filter);
+    if (!shown.length) {
+      list.innerHTML = `<div class="notice-empty">No ${escText(filter)} memos yet.</div>`;
+      return;
+    }
+    list.innerHTML = shown.map(n => `
       <div class="notice">
-        <div class="notice-head"><span class="notice-kind">MEMO</span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
+        <div class="notice-head"><span><span class="notice-kind">MEMO</span><span class="memo-cat" data-cat="${escText(n.category)}">${escText(n.category)}</span></span><span class="notice-date">${escText(fmtDate(n.createdAt))}</span></div>
         <div class="notice-subject"><b>Subject:</b><span class="notice-title">${escText(n.title)}</span></div>
         <div class="notice-body">${escText(n.body)}</div>
         <div class="notice-foot">
@@ -2920,6 +2963,7 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 
   function openForm(n){
     editingId = n ? n.id : null;
+    fillCategorySelect(n ? n.category : (filter !== 'All' ? filter : 'General'));
     titleEl.value = n ? n.title : '';
     bodyEl.value = n ? n.body : '';
     errEl.textContent = '';
@@ -2931,13 +2975,20 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 
   document.getElementById('notice-new').addEventListener('click', () => openForm(null));
   document.getElementById('notice-cancel').addEventListener('click', closeForm);
+  filtersEl.addEventListener('click', (ev) => {
+    const f = ev.target.closest('[data-filter]')?.dataset.filter;
+    if (!f) return;
+    filter = f;
+    try { localStorage.setItem(FILTER_KEY, f); } catch (e) {}
+    render();
+  });
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     errEl.textContent = '';
     saveBtn.disabled = true;
     try {
-      const payload = { title: titleEl.value, body: bodyEl.value };
+      const payload = { category: catEl.value, title: titleEl.value, body: bodyEl.value };
       notices = await api(editingId ? '/api/notices/' + encodeURIComponent(editingId) : '/api/notices', payload);
       closeForm();
       render();
