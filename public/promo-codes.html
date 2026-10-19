@@ -152,7 +152,7 @@ body.embed header .who{display:none}
 <script>
 (() => {
   const PAGE = 100;
-  const STALE_MS = 36 * 3600 * 1000;
+  const STALE_MS = 3 * 3600 * 1000; // checked hourly; 3h of silence means the job stopped
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? '—' : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); };
@@ -283,10 +283,12 @@ body.embed header .who{display:none}
     $('stats').innerHTML = cards.map(([l, n, c]) => `<div class="panel stat ${c}"><div class="n">${typeof n === 'number' ? n.toLocaleString() : esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('');
   }
 
-  function banners(data, status) {
+  function banners(data, status, readError) {
     const out = [];
+    if (readError) out.push(['warn', readError]);
     const last = data?.boCheckedAt || data?.pulledAt;
-    if (last && Date.now() - Date.parse(last) > STALE_MS) out.push(['warn', `This list is out of date — last checked on BO ${fmt(last)}. The daily refresh may have failed.`]);
+    if (last && Date.now() - Date.parse(last) > STALE_MS) out.push(['warn', `This list is out of date — last checked on BO ${fmt(last)}. The hourly check may have stopped (is the VDI switched on?).`]);
+    if (data?.skippedRows) out.push(['info', `${data.skippedRows} row(s) in the "Promo Codes" sheet tab could not be read and are not shown.`]);
     if (status && status.ok === false) out.push(['warn', `Last refresh failed (${fmt(status.lastFailureAt)}): ${status.detail || 'no detail'}. Showing the last good list.`]);
     // Only brands the sheets actually use (WS1 ID/TH/KH failing is noise when no code lists them).
     const used = new Set(ROWS.flatMap((r) => Object.keys(r.bo)));
@@ -322,15 +324,15 @@ body.embed header .who{display:none}
     if (res.status === 401) { (embedded ? window.top : window).location.href = '/?return=%2Fpromo-codes'; return; }
     if (res.status === 403) { $('sub').textContent = 'Your account is not on the Promo Codes viewer list.'; $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No access.</td></tr>'; return; }
     if (!res.ok) { $('sub').textContent = `Could not load codes (${res.status}).`; return; }
-    const { data, status } = await res.json();
+    const { data, status, readError } = await res.json();
     ROWS = prep(data?.rows || []);
-    banners(data, status);
+    banners(data, status, readError);
     if (!data) {
-      $('sub').textContent = 'No data yet — the first daily refresh has not run.';
+      $('sub').textContent = readError ? 'Could not load the list right now.' : 'No data yet — the first hourly check has not run.';
       $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No data yet.</td></tr>';
       return;
     }
-    $('sub').textContent = `From the CEE, Sales and CRM code sheets · BO checked ${fmt(data.boCheckedAt)} · refreshes daily at 9 AM`;
+    $('sub').textContent = `From the CEE, Sales and CRM code sheets · BO checked ${fmt(data.boCheckedAt)} · re-checked every hour`;
     fillSelect('f-source', ROWS.map((r) => r.source));
     fillSelect('f-group', ROWS.map((r) => r.group));
     fillSelect('f-brand', ROWS.flatMap((r) => Object.keys(r.bo)));

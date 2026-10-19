@@ -1,6 +1,6 @@
 # Promo Codes — dedicated upload key (replaces use of the QC relay secret)
 
-**Drafted:** 2026-10-16 · **Branch:** `feat/promo-codes-feed-key` · **Status:** approved 2026-10-16; built on this branch, not merged.
+**Drafted:** 2026-10-16 · **Branch:** `feat/promo-codes-feed-key` · **Status:** SUPERSEDED 2026-10-19 — built and merged, then removed. The upload no longer needs any key: the VDI writes the list to the Ops sheet and the server reads it (see `docs/plans/promo-codes-tab.md`, "Data path (current)").
 **Context:** `docs/plans/promo-codes-tab.md` (tab is live, showing "No data yet"). Its daily upload was
 designed to sign with the QC relay secret over `/api/relay/promo-codes/dataset`. That is withdrawn:
 the relay secret can also lease QC jobs and submit QC verdicts, is shared, and can't be revoked per machine.
