@@ -7,13 +7,15 @@ Downside: how few top Diamonds must churn (lose their annual value) to wipe out 
 Out: scratchpad/vip/cashback-breakeven-MY.json
 Usage: python bin/vip_report/cashback_breakeven.py
 """
-import json, re
+import json, re, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from csir_config import SUF
 
 VIP = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/vip")
-inc = json.load(open(VIP / "cashback-incrementality-MY.json", encoding="utf-8"))
-metrics = json.load(open(VIP / "vip-metrics-MY.json", encoding="utf-8"))
-ledger = json.load(open(VIP / "member-ledger-MY.json", encoding="utf-8"))
+inc = json.load(open(VIP / f"cashback-incrementality-{SUF}.json", encoding="utf-8"))
+metrics = json.load(open(VIP / f"vip-metrics-{SUF}.json", encoding="utf-8"))
+ledger = json.load(open(VIP / f"member-ledger-{SUF}.json", encoding="utf-8"))
 
 TIER_KW = {"Diamond": "diamond", "Platinum": "platinum", "Gold": "gold", "Silver": "silver", "Bronze": "bronze"}
 # cashback cost + claims per tier from the Lane-B codes (tier-named rescue codes)
@@ -65,5 +67,5 @@ out = {"break_even": be, "top_diamond_downside": downside,
        "read": ("Observational estimates bracket zero and flip sign by method for Diamond (cross-section vs within-member), "
                 "so the RM1.33M can be neither justified nor condemned on this data. Cutting it risks a handful of top "
                 "Diamonds worth more than the whole 'saving'. Decision: hold at current rate, run the rate-crossover holdout.")}
-json.dump(out, open(VIP / "cashback-breakeven-MY.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-print("\nSaved scratchpad/vip/cashback-breakeven-MY.json")
+json.dump(out, open(VIP / f"cashback-breakeven-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+print(f"\nSaved scratchpad/vip/cashback-breakeven-{SUF}.json")

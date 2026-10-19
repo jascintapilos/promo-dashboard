@@ -30,10 +30,12 @@ by = defaultdict(list)
 for r in rows: by[r["code"]].append(r)
 for code, rs in by.items():
     m7 = [r for r in rs if r["mature_7"]]; sm7 = sum(r["bonus_cost"] for r in m7)
-    spend = sum(r["bonus_cost"] for r in rs); ngr = sum(r["ngr_lift"] for r in m7); ggr = sum(r["w7_ggr"] for r in m7)
+    spend = sum(r["bonus_cost"] for r in rs); ngr = sum(r["ngr_lift"] for r in m7)
+    _laneD = meta.get(code, {}).get("lane") == "D-engagement"
+    ggr = sum((r.get("ggr_aligned", 0.0) if _laneD else r["w7_ggr"]) for r in m7)  # Lane D uses claim-aligned GGR
     exp = {"spend": round(spend), "matured_7": len(m7), "matured_30": sum(1 for r in rs if r["mature_30"]),
            "ngr_lift": round(ngr), "ngr_lift_per_rm": round(ngr / sm7, 2) if sm7 else None,
-           "ggr_coverage": round(ggr / spend, 1) if spend else None}
+           "ggr_coverage": round(ggr / spend, 1) if (spend and (not _laneD or m7)) else None}
     got = mc.get(code, {})
     for k, v in exp.items():
         if got.get(k) != v: fails.append(f"[recompute] {code}.{k}: report={got.get(k)} vs raw={v}")

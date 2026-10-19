@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, LOGSITE, START, END_INCL, SNAP_END, AS_OF_DATE, snap_lo
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 VIP = SCR / "vip"
 
 END = END_INCL   # inclusive; START + SNAP_END from csir_config date seam
@@ -37,7 +37,7 @@ P = {
     "end7": (d1 + timedelta(days=7)).isoformat(),
     "start7": (d0 - timedelta(days=7)).isoformat(),
     "start21": (d0 - timedelta(days=21)).isoformat(),
-    "cur": CURRENCY, "SITE_EDIT": SITE_EDIT, "inlist": inlist, "statuses": STATUSES,
+    "cur": CURRENCY, "SITE_EDIT": SITE_EDIT, "inlist": inlist, "statuses": STATUSES, "mat7": MAT[7],
 }
 
 c = get_client(send_receive_timeout=600)
@@ -173,11 +173,27 @@ snap AS (
     SELECT SITE, MEMBER_ID, SnapshotDate, DepositAmount, GGR
     FROM WORKSPACE.Daily_GMT8_Snapshot_BC
     WHERE Currency='{cur}' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate >= '{start}' AND SnapshotDate < '{snapend}'
+),
+claim_days AS (
+    SELECT DISTINCT SITE, MEMBER_ID, BonusCode, bonus_date
+    FROM vip_claims WHERE bonus_date <= '{mat7}'
+),
+aligned_days AS (
+    SELECT cd.SITE AS SITE, cd.MEMBER_ID AS MEMBER_ID, cd.BonusCode AS BonusCode, s.sd AS sd, any(s.ggr) AS ggr
+    FROM claim_days cd
+    INNER JOIN snap s ON cd.SITE=s.ss AND cd.MEMBER_ID=s.sm
+       AND s.sd >= cd.bonus_date AND s.sd < addDays(cd.bonus_date, 7)
+    GROUP BY cd.SITE, cd.MEMBER_ID, cd.BonusCode, s.sd
+),
+aligned_ggr AS (
+    SELECT SITE, MEMBER_ID, BonusCode, sum(ggr) AS ggr_aligned
+    FROM aligned_days GROUP BY SITE, MEMBER_ID, BonusCode
 )
 SELECT p.MEMBER_ID AS MEMBER_ID, p.BonusCode AS BonusCode, p.claim_date AS claim_date,
     p.claims AS claims, p.bonus_cost AS bonus_cost, tm.tier AS tier,
     sumIf(ifNull(s.dep,0), n.number<7) AS w7_dep,
     sumIf(ifNull(s.ggr,0), n.number<7) AS w7_ggr,
+    any(ifNull(ag.ggr_aligned,0)) AS ggr_aligned,
     sum(if(ifNull(s.dep,0)>0 AND n.number<7,  1,0)) AS dep_days_7,
     sum(if(ifNull(s.dep,0)>0 AND n.number>=1 AND n.number<30,1,0)) AS redep_days_30,
     sum(if(ifNull(s.dep,0)>0 AND n.number<30, 1,0)) AS dep_days_30,
@@ -187,6 +203,7 @@ SELECT p.MEMBER_ID AS MEMBER_ID, p.BonusCode AS BonusCode, p.claim_date AS claim
 FROM per_cm p
 CROSS JOIN (SELECT number FROM numbers(90)) n
 LEFT JOIN snap s ON p.SITE=s.ss AND p.MEMBER_ID=s.sm AND addDays(p.claim_date, toInt32(n.number))=s.sd
+LEFT JOIN aligned_ggr ag ON p.SITE=ag.SITE AND p.MEMBER_ID=ag.MEMBER_ID AND p.BonusCode=ag.BonusCode
 LEFT JOIN tier_map tm ON p.MEMBER_ID=tm.MEMBER_ID AND p.BonusCode=tm.BonusCode
 GROUP BY p.MEMBER_ID, p.BonusCode, p.claim_date, p.claims, p.bonus_cost, tm.tier
 """.format(logsite=LOGSITE, snapend=SNAP_END, **P)
@@ -253,6 +270,7 @@ for key in keys:
         "dep_lift": float(a.get("dep_lift") or 0.0), "ggr_lift": float(a.get("ggr_lift") or 0.0),
         "ngr_lift": float(a.get("ngr_lift") or 0.0),
         "w7_dep": float(b.get("w7_dep") or 0.0), "w7_ggr": float(b.get("w7_ggr") or 0.0),
+        "ggr_aligned": float(b.get("ggr_aligned") or 0.0),
         "dep_days_7": int(b.get("dep_days_7") or 0),
         "redep_days_30": int(b.get("redep_days_30") or 0),
         "dep_days_30": int(b.get("dep_days_30") or 0),

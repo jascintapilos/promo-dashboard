@@ -16,12 +16,12 @@ from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from csir_config import get_client, START, END_EXCL, END_INCL, AS_OF_DATE, snap_hi
+from csir_config import get_client, CURRENCY, LOGSITE, SUF, money, START, END_EXCL, END_INCL, AS_OF_DATE, snap_hi
 
 VIP = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad/vip")
 END1 = END_EXCL   # from csir_config date seam (START also imported)
-LOSS_FLOOR = 1000.0          # a "losing week" = house won > RM1,000 off the member that week
-LOGSITE = "WS1_MYS_MYR"
+LOSS_FLOOR = money(1000.0)   # MY RM1,000; SG S$303.03 — money() rescales the MY-tuned loss floor
+# LOGSITE now comes from csir_config (WS1_MYS_MYR / WS1_SGP_SGD)
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
 VIP_TIERS = ("Bronze", "Silver", "Gold", "Platinum", "Diamond")
 
@@ -29,7 +29,7 @@ def norm_tier(t):
     t = (t or "Unknown").strip()
     return re.sub(r"\s*\(Trial\)$", "", t) if t not in ("", "Unknown", "Agent Credit", "Scammers") else t
 
-rescue = [r["code"] for r in json.load(open(VIP / "vip-codes-MY.json", encoding="utf-8")) if r["lane"] == "B-cashback"]
+rescue = [r["code"] for r in json.load(open(VIP / f"vip-codes-{SUF}.json", encoding="utf-8")) if r["lane"] == "B-cashback"]
 rinlist = ",".join("'" + c.replace("'", "''") + "'" for c in rescue)
 c = get_client(send_receive_timeout=400)
 SET = {"max_execution_time": 390, "max_memory_usage": 55000000000, "max_result_rows": 5000000}
@@ -38,8 +38,8 @@ SET = {"max_execution_time": 390, "max_memory_usage": 55000000000, "max_result_r
 q1 = f"""
 WITH act AS (
   SELECT DISTINCT MEMBER_ID FROM (
-    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE SITE_edit='WS1' AND Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}'
-    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}')),
+    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE SITE_edit='WS1' AND Currency='{CURRENCY}' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}'
+    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='{CURRENCY}' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}')),
 mem AS (SELECT MEMBER_ID, toDateTime('{END_INCL} 23:59:59') AS asof FROM act)
 SELECT mem.MEMBER_ID AS MEMBER_ID, ifNull(t.tier,'Unknown') AS tier
 FROM mem
@@ -60,10 +60,10 @@ q2 = f"""
 SELECT MEMBER_ID, SnapshotDate AS sd, sum(GGR) AS ggr, sum(NGR) AS ngr, sum(DepositAmount) AS dep
 FROM (
   SELECT MEMBER_ID, SnapshotDate, GGR, NGR, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A
-  WHERE SITE_edit='WS1' AND Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
+  WHERE SITE_edit='WS1' AND Currency='{CURRENCY}' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
   UNION ALL
   SELECT MEMBER_ID, SnapshotDate, GGR, NGR, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-  WHERE SITE_edit='WS1' AND Currency='MYR' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
+  WHERE SITE_edit='WS1' AND Currency='{CURRENCY}' AND SnapshotDate>='{START}' AND SnapshotDate<'{snap_hi(35)}' AND MEMBER_ID IN ({inlist}) AND (DepositAmount>0 OR GGR!=0 OR NGR!=0)
 ) GROUP BY MEMBER_ID, SnapshotDate
 """
 print("Q2: daily activity...")
@@ -74,7 +74,7 @@ print(f"  members with activity: {len(daily):,}")
 
 # ---- Q3: rescue claim dates ----
 q3 = f"""SELECT MEMBER_ID, toDate(BonusTime_gmt8) AS d FROM WORKSPACE.GetBonus_ABC
-  WHERE SITE_edit='WS1' AND Currency='MYR' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
+  WHERE SITE_edit='WS1' AND Currency='{CURRENCY}' AND BonusAmount>0 AND BonusStatus IN {STATUSES}
     AND BonusTime_gmt8>='{START} 00:00:00' AND BonusTime_gmt8<'{END1} 00:00:00' AND BonusCode IN ({rinlist})
   GROUP BY MEMBER_ID, toDate(BonusTime_gmt8)"""
 print("Q3: rescue claim dates...")
@@ -214,6 +214,6 @@ for tier in TIERS:
 print(f"=== (D) PLACEBO (treated shifted 21d earlier — a real effect must shrink vs the true intensive NGR) ===")
 for tier in TIERS:
     print(f"  {tier:9s} | true intensive incr NGR RM{intensive[tier]['inc_ngr30']:,} | placebo incr NGR RM{placebo[tier]['placebo_inc_ngr30']}")
-json.dump(out, open(VIP / "cashback-incrementality-MY.json", "w", encoding="utf-8"), default=str)
+json.dump(out, open(VIP / f"cashback-incrementality-{SUF}.json", "w", encoding="utf-8"), default=str)
 print("\n(Incremental deposit/NGR near 0 => cashback recipients don't play more than matched losers who got none => dead-weight, even on the intensive margin. Directional; the holdout is the proof.)")
-print("Saved scratchpad/vip/cashback-incrementality-MY.json")
+print(f"Saved scratchpad/vip/cashback-incrementality-{SUF}.json")

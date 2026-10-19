@@ -19,7 +19,7 @@ from pathlib import Path
 import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from csir_config import CURRENCY, SUF, SYMBOL, MARKET, money, PERIOD_LABEL, AS_OF
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 VIP = SCR / "vip"
 MIN_NORM_N = 30
 
@@ -141,9 +141,14 @@ for code, rs in by.items():
     elif lane == "D-engagement":
         # habitual collectors: took the freebie, ~0 GGR and no deposit
         hab = [r for r in m7 if r["w7_ggr"] < 0.05 * (r["bonus_cost"] or 1) and r["w7_dep"] <= 0]
+        # claim-aligned GGR: union of every matured claim's 7-day window (each member-day once),
+        # so the house-win numerator spans the SAME claims as the cost denominator (Fix 19 Lane D).
+        ggr_aligned = sum(r.get("ggr_aligned", 0.0) for r in m7)
         d.update({
+            "ggr_window": round(ggr_aligned),
+            "ggr_coverage": round(ggr_aligned / spend, 1) if (spend and m7) else None,
             "habitual_share": round(sum(r["bonus_cost"] for r in hab) / spend_m7 * 100, 1) if spend_m7 else None,
-            "pays_for_itself": bool(ggr_win > spend),   # GGR covers the giveaway
+            "pays_for_itself": bool(ggr_aligned > spend) if m7 else None,   # GGR covers the giveaway
             "claim_freq": round(claims / len(rs), 1) if rs else None,   # claims per member (habit)
         })
     else:  # C-entitlement
