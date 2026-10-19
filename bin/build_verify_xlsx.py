@@ -95,7 +95,8 @@ def merged(mk):
                                   "wagering_x": c.get("wagering_x"), "min_deposit": c.get("min_deposit"),
                                   "tier": c.get("tier_top"),   # the dominant membership tier (Bronze/Silver/Gold…)
                                   "avg_bonus": c.get("avg_bonus_per_claim") or c.get("avg_amount"),
-                                  "bonus_pct": int(mm.group(1) or mm.group(2)) if mm else None}
+                                  "bonus_pct": int(mm.group(1) or mm.group(2)) if mm else None,
+                                  "reason": c.get("reason")}   # Fix 18: carry the 03_thresholds grounded reason
     for o in va["codes"]:
         o["repro_per_rm"] = (rp.get(o["code"]) or {}).get("repro_per_rm")
         o["kh"] = kh.get(o["code"])
@@ -108,6 +109,7 @@ def merged(mk):
         o["mechanic"] = mb.get("mechanic"); o["deposit_required"] = mb.get("deposit_required")
         o["wagering_x"] = mb.get("wagering_x"); o["min_deposit"] = mb.get("min_deposit")
         o["tier"] = mb.get("tier"); o["bonus_pct"] = mb.get("bonus_pct"); o["avg_bonus"] = mb.get("avg_bonus")
+        if not o.get("reason"): o["reason"] = mb.get("reason")   # Fix 18: so _own_why shows the code's own grounded reason, not a shared template
         if o.get("pillar") == "Acquisition":
             ac = acq_by.get(o["code"], {})
             o["r_stick_median"] = acq_med; o["r_stick_median_7"] = acq_med7
