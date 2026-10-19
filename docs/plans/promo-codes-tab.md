@@ -42,7 +42,16 @@ Brand ranges like `QPRO1-4`, `QP2A-D` are expanded to individual brands.
 - WS1/WS2 sessions expire: the daily job runs the existing `bin/refresh-igmp-sessions.mjs` (promo_testbot) first; if that login fails
   those brands show "Not checked" for the day.
 
-## Delivery to the server
+## Data path (current — 2026-10-19)
+
+No upload route and no key. Both sides already have Google Sheets access to the Ops sheet ("PromoOps Data"):
+
+- **VDI, hourly** (`run-push-promo-codes.bat` → `bin/push-promo-codes.mjs`): reads the 3 code sheets, checks BO read-only, writes the list to the **"Promo Codes"** tab and run info to **"Promo Codes Status"** (`src/qc-dashboard/promo-codes-sheet.js`). Data is written before leftover rows are cleared, so a reader never sees an empty list. A failed run only updates the status tab. WS1/WS2 sessions are refreshed (promo_testbot) only when a WS site fails, then retried once.
+- **Server** (`GET /api/promo-codes`): reads both tabs via its existing Google access, caches 5 min (single-flight), serves the last copy if Google errors. Rows are re-validated (sheet cells are editable by anyone with sheet access); bad rows are skipped and counted.
+- The Promo Codes tab is visible to anyone who can open the Ops sheet (accepted by Gabrielle 2026-10-19); the dashboard view stays allowlist-gated.
+- Removed: `POST /api/promo-codes/snapshot`, the feed key store, `/admin/promo-codes-key`, and the earlier relay route. Page stale warning after 3 h.
+
+## Delivery to the server (historical)
 
 > **Superseded (2026-10-16):** the upload no longer uses the QC relay secret. It goes to `POST /api/promo-codes/snapshot`, signed with a dedicated Promo Codes feed key — see `docs/plans/promo-codes-feed-key.md`. The `/api/relay/promo-codes/dataset` route below was removed.
 
