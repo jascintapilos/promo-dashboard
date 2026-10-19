@@ -61,11 +61,11 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
           ),
           perclaim AS (
             SELECT c.code code, c.amt amt,
-              maxIf(d.TIME, d.TIME < c.bt AND d.TIME >= c.bt - INTERVAL {W} DAY) last_before,
-              argMaxIf(d.PostProcessAmount, d.TIME, d.TIME < c.bt AND d.TIME >= c.bt - INTERVAL {W} DAY) before_amt,
-              minIf(d.TIME, d.TIME > c.bt AND d.TIME <= c.bt + INTERVAL {W} DAY) first_after,
-              sumIf(d.PostProcessAmount, d.TIME > c.bt AND d.TIME <= c.bt + INTERVAL {W} DAY) after_amt,
-              maxIf(d.TIME, d.TIME < c.bt) last_ever,
+              maxIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < c.bt AND (d.TIME + INTERVAL 8 HOUR) >= c.bt - INTERVAL {W} DAY) last_before,
+              argMaxIf(d.PreProcessAmount, (d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < c.bt AND (d.TIME + INTERVAL 8 HOUR) >= c.bt - INTERVAL {W} DAY) before_amt,
+              minIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) > c.bt AND (d.TIME + INTERVAL 8 HOUR) <= c.bt + INTERVAL {W} DAY) first_after,
+              sumIf(d.PreProcessAmount, (d.TIME + INTERVAL 8 HOUR) > c.bt AND (d.TIME + INTERVAL 8 HOUR) <= c.bt + INTERVAL {W} DAY) after_amt,
+              maxIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < c.bt) last_ever,
               c.bt bt
             FROM claims c
             LEFT JOIN WORKSPACE.dedup_Deposit_A d
@@ -120,8 +120,8 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
       WITH claims AS (SELECT MEMBER_ID member, BonusTime_gmt8 bt FROM WORKSPACE.GetBonus_ABC WHERE {cw}),
       pc AS (
         SELECT c.member, c.bt,
-          maxIf(d.TIME, d.TIME < c.bt AND d.TIME >= c.bt - INTERVAL 30 DAY) lb,
-          minIf(d.TIME, d.TIME > c.bt AND d.TIME <= c.bt + INTERVAL 30 DAY) fa
+          maxIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < c.bt AND (d.TIME + INTERVAL 8 HOUR) >= c.bt - INTERVAL 30 DAY) lb,
+          minIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) > c.bt AND (d.TIME + INTERVAL 8 HOUR) <= c.bt + INTERVAL 30 DAY) fa
         FROM claims c LEFT JOIN WORKSPACE.dedup_Deposit_A d
           ON d.MEMBER_ID=c.member AND d.SITE='{LOGSITE}' AND {DEP_OK}
         GROUP BY c.member, c.bt

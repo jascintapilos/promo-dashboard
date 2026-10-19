@@ -30,7 +30,8 @@ from csir_config import get_client, SITE_EDIT, START, END_EXCL
 
 SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 STATUSES = "('Approved','Redeemed','Complete','Active','Completed','Low Balance 1','Low Balance 2')"
-MK_CFG = {"MY": ("MYR", "RM"), "SG": ("SGD", "S$")}
+DEP_OK = "(d.TransactionStatus IN ('Success','Approved','Completed') OR d.TransactionStatus='')"  # Fix 4: transaction-grain before-check
+MK_CFG = {"MY": ("MYR", "WS1_MYS_MYR", "RM"), "SG": ("SGD", "WS1_SGP_SGD", "S$")}
 WINDOWS = (30, 7, 90)  # 30 = primary (reconciliation gate); 7/90 secondary
 
 
@@ -50,7 +51,7 @@ def raw_bonusled(MK, W):
 
 c = get_client(send_receive_timeout=900)
 
-for MK, (CUR, SYM) in MK_CFG.items():
+for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
     va = load(f"verify-action-{MK}.json")
     codes = sorted({co["code"].strip() for co in va["codes"]})
     if not codes:
@@ -65,18 +66,17 @@ for MK, (CUR, SYM) in MK_CFG.items():
         # nearest / claimtag / cnt_bl add the bonus-led vs pre-funded tag, day-level, same deps.
         ctes = f"""
           WITH claims AS (
-            SELECT trimBoth(BonusCode) code, MEMBER_ID member, toDate(BonusTime_gmt8) cd
+            SELECT trimBoth(BonusCode) code, MEMBER_ID member, toDate(BonusTime_gmt8) cd, BonusTime_gmt8 bt
             FROM WORKSPACE.GetBonus_ABC
             WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND BonusAmount>0
               AND trimBoth(BonusCode) IN ({inlist}) AND BonusStatus IN {STATUSES}
               AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) < '{END_EXCL}'
           ),
           deps AS (
-            SELECT MEMBER_ID member, SnapshotDate sd, DepositAmount dep FROM (
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-              UNION ALL
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-            ) WHERE MEMBER_ID IN (SELECT member FROM claims)
+            SELECT MEMBER_ID member, SnapshotDate sd, DepositAmount dep
+            FROM WORKSPACE.Daily_GMT8_Snapshot_A
+            WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+              AND MEMBER_ID IN (SELECT member FROM claims)
           ),
           distinct_deps AS (   -- each after-deposit-DAY once; max() is deterministic across runs (any() is not)
             SELECT cl.member member, d.sd sd, max(d.dep) dep
@@ -91,10 +91,11 @@ for MK, (CUR, SYM) in MK_CFG.items():
             GROUP BY member, sd, code
           ),
           cnt AS (SELECT member, sd, count() n FROM pairs GROUP BY member, sd),
-          prefunded_days AS (   -- (member, claim-day) that HAD a Daily-snapshot deposit in [cd-W, cd)
-            SELECT cl.member member, cl.cd cd
-            FROM claims cl INNER JOIN deps d ON cl.member=d.member
-            WHERE d.sd >= cl.cd - {W} AND d.sd < cl.cd
+          prefunded_days AS (   -- Fix 4: (member, claim-day) with a TIME-aligned deposit at/before the claim TIMESTAMP within W
+            SELECT cl.member member, cl.cd cd   -- reuses Fix 1's flag: dedup_Deposit_A (TIME+8h, UTC->GMT8) vs BonusTime_gmt8; same-second counts as before
+            FROM claims cl INNER JOIN WORKSPACE.dedup_Deposit_A d
+              ON d.MEMBER_ID=cl.member AND d.SITE='{LOGSITE}' AND {DEP_OK}
+            WHERE (d.TIME + INTERVAL 8 HOUR) <= cl.bt AND (d.TIME + INTERVAL 8 HOUR) >= cl.bt - INTERVAL {W} DAY
             GROUP BY member, cd
           ),
           nearest AS (   -- NEAREST preceding claim-day for each (member, sd, code); range in WHERE (proven pattern)

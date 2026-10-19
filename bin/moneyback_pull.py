@@ -55,11 +55,10 @@ for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
         AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) < '{END_EXCL}'
     ),
     deps AS (
-      SELECT MEMBER_ID, SnapshotDate AS sd, DepositAmount AS dep FROM (
-        SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-        UNION ALL
-        SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-      ) WHERE MEMBER_ID IN (SELECT MEMBER_ID FROM claims)
+      SELECT MEMBER_ID, SnapshotDate AS sd, DepositAmount AS dep
+      FROM WORKSPACE.Daily_GMT8_Snapshot_A
+      WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+        AND MEMBER_ID IN (SELECT MEMBER_ID FROM claims)
     ),
     pairs AS (
       -- one row per (code, member, deposit-day): the deposit, and its nearest-preceding-claim gap

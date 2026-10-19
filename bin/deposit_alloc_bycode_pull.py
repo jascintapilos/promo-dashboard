@@ -44,11 +44,10 @@ for MK, (CUR, SYM) in MK_CFG.items():
               AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) < '{END_EXCL}'
           ),
           deps AS (
-            SELECT MEMBER_ID member, SnapshotDate sd, sum(DepositAmount) dep FROM (
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-              UNION ALL
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-            ) WHERE MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
+            SELECT MEMBER_ID member, SnapshotDate sd, sum(DepositAmount) dep
+            FROM WORKSPACE.Daily_GMT8_Snapshot_A
+            WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+              AND MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
           ),
           distinct_deps AS (
             SELECT cl.member member, d.sd sd, any(d.dep) dep

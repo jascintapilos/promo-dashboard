@@ -78,11 +78,10 @@ for MK, (CUR, SYM) in MK_CFG.items():
               AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) < '{END_EXCL}'
           ),
           deps AS (
-            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep FROM (
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-              UNION ALL
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-            ) WHERE MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
+            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep
+            FROM WORKSPACE.Daily_GMT8_Snapshot_A
+            WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+              AND MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
           ),
           per_code AS (
             SELECT cl.code AS code, cl.member AS member, d.sd AS sd, any(d.dep) AS dep
@@ -111,11 +110,10 @@ for MK, (CUR, SYM) in MK_CFG.items():
           ),
           dr_claims AS (SELECT code, member, cd FROM claims WHERE code IN ({drlist})),
           deps AS (
-            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep FROM (
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-              UNION ALL
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-            ) WHERE MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
+            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep
+            FROM WORKSPACE.Daily_GMT8_Snapshot_A
+            WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+              AND MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
           ),
           distinct_deps AS (
             SELECT cl.member AS member, d.sd AS sd, any(d.dep) AS dep
@@ -154,11 +152,10 @@ for MK, (CUR, SYM) in MK_CFG.items():
               AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) < '{END_EXCL}'
           ),
           deps AS (
-            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep FROM (
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-              UNION ALL
-              SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-            ) WHERE MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
+            SELECT MEMBER_ID AS member, SnapshotDate AS sd, sum(DepositAmount) AS dep
+            FROM WORKSPACE.Daily_GMT8_Snapshot_A
+            WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+              AND MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate
           ),
           distinct_deps AS (
             SELECT cl.member AS member, d.sd AS sd, any(d.dep) AS dep

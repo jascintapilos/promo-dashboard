@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from csir_config import get_client, CURRENCY, SITE_EDIT, SUF, SYMBOL, START, END_EXCL
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 ACQ = SCR / "acq"
 END1 = END_EXCL   # from csir_config date seam
 
@@ -32,10 +32,10 @@ WITH claimers AS (
 SELECT MEMBER_ID, min(SnapshotDate) AS fdate, argMin(DepositAmount, SnapshotDate) AS famt
 FROM (
     SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A
-    WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND MEMBER_ID IN (SELECT MEMBER_ID FROM claimers)
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND DepositAmount>0 AND MEMBER_ID IN (SELECT MEMBER_ID FROM claimers)
     UNION ALL
     SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC
-    WHERE Currency='{CURRENCY}' AND DepositAmount>0 AND MEMBER_ID IN (SELECT MEMBER_ID FROM claimers)
+    WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND DepositAmount>0 AND MEMBER_ID IN (SELECT MEMBER_ID FROM claimers)
 )
 GROUP BY MEMBER_ID
 """

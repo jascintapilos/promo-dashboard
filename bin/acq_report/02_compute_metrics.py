@@ -17,9 +17,11 @@ import sys, json, statistics as st
 from pathlib import Path
 from collections import defaultdict
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT))
-from csir_config import CURRENCY, SUF, SYMBOL, MARKET, PERIOD_LABEL, AS_OF, MONTHS
+from csir_config import CURRENCY, SUF, SYMBOL, MARKET, PERIOD_LABEL, AS_OF, MONTHS, mature_before
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+MATURE_7 = mature_before(7)   # latest claim_date with a full 7-day window before AS_OF (for the 7-day early-stick read)
+
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 ACQ = SCR / "acq"
 # MONTHS imported from csir_config (every month the window spans; default Jan..Aug 2026)
 
@@ -47,6 +49,8 @@ for code, rs in by.items():
     new_spend = sum(r["bonus_cost"] for r in new)          # acquisition cost = spend on NEW players only
     ftd_mat = [r for r in ftds if r["mature_30"]]
     stuck = sum(1 for r in ftd_mat if r["dep_days_30"] >= 2)
+    ftd_mat7 = [r for r in ftds if r["claim_date"] <= MATURE_7]                  # early-stick: 7-day window matured
+    stuck7 = sum(1 for r in ftd_mat7 if r["dep_days_7"] >= 2)                    # new depositor made a repeat deposit within 7d
     mech_raw = meta.get(code, {}).get("mechanic", "")
     codes.append({
         "code": code,
@@ -65,6 +69,8 @@ for code, rs in by.items():
         "dep_lift_per_rm": round(new_w7 / new_spend, 1) if new_spend else None,
         "ftd_mature": len(ftd_mat),
         "stick_30": round(stuck / len(ftd_mat) * 100, 1) if ftd_mat else None,
+        "stick_7": round(stuck7 / len(ftd_mat7) * 100, 1) if ftd_mat7 else None,   # of new depositors, repeat-deposited within 7 days
+        "ftd_mature_7": len(ftd_mat7),
         "stick_mature_share": round(len(ftd_mat) / ftd * 100) if ftd else None,   # % of FTDs with a matured 30-day window
         "first_dep_median": med([r["first_dep_amt"] for r in ftds]),
         "ngr_w7": round(sum(r["w7_ngr"] for r in rs)),
@@ -124,7 +130,10 @@ facts = {
 json.dump(facts, open(ACQ / f"acq-metrics-{SUF}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 # --- cross-foot + sanity ---
-assert sum(c["ftd"] for c in codes) == tot_ftd
+# Cross-foot the GRADED FTD total two independent ways (per-code sum vs row-level count). Referral codes
+# are excluded from the graded headline but CAN carry real FTDs once the cross-brand first-deposit leak is
+# removed (Fix 15: a referred player who makes a genuine first WS1 deposit), so don't assume referral==0 FTD.
+assert sum(1 for r in rows if r["ftd_in_7d"] and not is_ref(r["code"])) == tot_ftd
 assert abs(sum(c["spend"] for c in codes) - tot_spend) < 1
 bad = [c["code"] for c in codes if c["conversion"] > 100 or c["purity"] > 100 or (c["stick_30"] or 0) > 100]
 print(f"codes: {len(codes)} | claimers {tot_claimers:,} | FTDs {tot_ftd:,} | spend {SYMBOL}{tot_spend:,} | blended cost/FTD {SYMBOL}{kpis['cost_per_ftd']} | conv {kpis['conversion']}% | stick {kpis['stick_30']}%")

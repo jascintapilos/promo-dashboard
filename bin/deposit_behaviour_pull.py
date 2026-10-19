@@ -82,8 +82,8 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
               ),
               qual AS (
                 SELECT j.grp grp, j.member member, j.bt bt,
-                  maxIf(d.TIME, d.TIME < j.bt AND d.TIME >= j.bt - INTERVAL {W} DAY) AS qtime,
-                  argMaxIf(d.PostProcessAmount, d.TIME, d.TIME < j.bt AND d.TIME >= j.bt - INTERVAL {W} DAY) AS qdep
+                  maxIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < j.bt AND (d.TIME + INTERVAL 8 HOUR) >= j.bt - INTERVAL {W} DAY) AS qtime,
+                  argMaxIf(d.PostProcessAmount, (d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < j.bt AND (d.TIME + INTERVAL 8 HOUR) >= j.bt - INTERVAL {W} DAY) AS qdep
                 FROM claims j
                 LEFT JOIN WORKSPACE.dedup_Deposit_A d ON d.MEMBER_ID=j.member AND d.SITE='{LOGSITE}' AND {DEP_OK}
                 GROUP BY grp, member, bt

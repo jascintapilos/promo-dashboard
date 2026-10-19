@@ -52,9 +52,9 @@ for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
       GROUP BY code, MEMBER_ID
     ),
     dep_src AS (
-      SELECT MEMBER_ID, SnapshotDate AS sd, DepositAmount AS dep FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0 AND SnapshotDate >= '2025-10-01' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
+      SELECT MEMBER_ID, SnapshotDate AS sd, DepositAmount AS dep FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE SITE_edit='WS1' AND Currency='{CUR}' AND DepositAmount>0 AND SnapshotDate >= '2025-10-01' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
       UNION ALL
-      SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0 AND SnapshotDate >= '2025-10-01' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
+      SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='{CUR}' AND DepositAmount>0 AND SnapshotDate >= '2025-10-01' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
     ),
     predep AS (
       SELECT f.code AS code, f.MEMBER_ID AS member, sum(d.dep) AS dep90
@@ -64,9 +64,9 @@ for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
     ),
     ytd AS (
       SELECT MEMBER_ID, sum(ngr) AS yn FROM (
-        SELECT MEMBER_ID, NGR AS ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
+        SELECT MEMBER_ID, NGR AS ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
         UNION ALL
-        SELECT MEMBER_ID, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
+        SELECT MEMBER_ID, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate >= '{START}' AND SnapshotDate < '{END_EXCL}' AND MEMBER_ID IN (SELECT MEMBER_ID FROM fc)
       ) GROUP BY MEMBER_ID
     ),
     tier AS (

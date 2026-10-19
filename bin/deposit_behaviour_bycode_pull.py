@@ -66,8 +66,8 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
           WITH claims AS (SELECT trimBoth(BonusCode) code, MEMBER_ID member, BonusTime_gmt8 bt
                           FROM WORKSPACE.GetBonus_ABC WHERE {cw} AND trimBoth(BonusCode) IN ({inl(dr_codes)})),
           qual AS (SELECT j.code code, j.member member, j.bt bt,
-                     maxIf(d.TIME, d.TIME < j.bt AND d.TIME >= j.bt - INTERVAL {W} DAY) qtime,
-                     argMaxIf(d.PostProcessAmount, d.TIME, d.TIME < j.bt AND d.TIME >= j.bt - INTERVAL {W} DAY) qdep
+                     maxIf((d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < j.bt AND (d.TIME + INTERVAL 8 HOUR) >= j.bt - INTERVAL {W} DAY) qtime,
+                     argMaxIf(d.PostProcessAmount, (d.TIME + INTERVAL 8 HOUR), (d.TIME + INTERVAL 8 HOUR) < j.bt AND (d.TIME + INTERVAL 8 HOUR) >= j.bt - INTERVAL {W} DAY) qdep
                    FROM claims j LEFT JOIN WORKSPACE.dedup_Deposit_A d ON d.MEMBER_ID=j.member AND d.SITE='{LOGSITE}' AND {DEP_OK}
                    GROUP BY code, member, bt),
           agg AS (SELECT code, count() claims, uniqExact(member) claimants, countIf(qtime > {T0}) with_qual FROM qual GROUP BY code),
@@ -80,11 +80,10 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
         for code, recipients, cameback, speed, amount in c.query(f"""
           WITH claims AS (SELECT trimBoth(BonusCode) code, MEMBER_ID member, toDate(BonusTime_gmt8) cd
                           FROM WORKSPACE.GetBonus_ABC WHERE {cw} AND trimBoth(BonusCode) IN ({inl(ga_codes)})),
-          deps AS (SELECT MEMBER_ID member, SnapshotDate sd, sum(DepositAmount) dep FROM (
-                     SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND DepositAmount>0
-                     UNION ALL
-                     SELECT MEMBER_ID, SnapshotDate, DepositAmount FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND DepositAmount>0
-                   ) WHERE MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate),
+          deps AS (SELECT MEMBER_ID member, SnapshotDate sd, sum(DepositAmount) dep
+                   FROM WORKSPACE.Daily_GMT8_Snapshot_A
+                   WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CUR}' AND DepositAmount>0
+                     AND MEMBER_ID IN (SELECT member FROM claims) GROUP BY MEMBER_ID, SnapshotDate),
           cb AS (SELECT cl.code code, cl.member member, min(dateDiff('day', cl.cd, d.sd)) gap
                  FROM claims cl INNER JOIN deps d ON cl.member=d.member WHERE d.sd > cl.cd AND d.sd <= cl.cd + {W} GROUP BY code, member),
           amt AS (SELECT code, round(sum(dep)) amount FROM (SELECT cl.code code, cl.member member, d.sd sd, any(d.dep) dep

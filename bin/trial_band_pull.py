@@ -23,9 +23,9 @@ for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
     q = f"""
     WITH m AS (
       SELECT MEMBER_ID, sum(dep) AS ytd_dep, sum(ngr) AS ytd_ngr FROM (
-        SELECT MEMBER_ID, DepositAmount dep, NGR ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
+        SELECT MEMBER_ID, DepositAmount dep, NGR ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
         UNION ALL
-        SELECT MEMBER_ID, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
+        SELECT MEMBER_ID, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
       ) GROUP BY MEMBER_ID HAVING ytd_dep > 0
     ),
     tier AS (
