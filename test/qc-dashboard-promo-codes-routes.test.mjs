@@ -1,4 +1,4 @@
-// Promo Codes tab routes — relay push (HMAC), allowlist-gated read, and the
+// Promo Codes tab routes — feed-key snapshot upload (HMAC), allowlist-gated read, and the
 // `promo-codes` role being kept to its one page.
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -10,7 +10,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSignedHeaders, MAX_REPORT_BUILD_BYTES } from '../src/qc-dashboard/relay-auth.js';
 
-const SECRET = 'P'.repeat(64);
+const RELAY = 'P'.repeat(64);
+const FEED = 'F'.repeat(64);
 const TMP = mkdtempSync(path.join(os.tmpdir(), 'promo-codes-routes-'));
 const DATA_DIR = path.join(TMP, 'data');
 const VIEWERS = path.join(TMP, 'viewers.json');
@@ -22,7 +23,7 @@ async function startServer(port, email, role) {
   const server = spawn(process.execPath, ['bin/qc-dashboard.mjs'], {
     env: {
       ...process.env, PORT: String(port), AUTH_MODE: 'dev', DEV_USER_EMAIL: email, DEV_USER_ROLE: role,
-      RELAY_SECRET: SECRET, PROMO_CODES_DATA_DIR: DATA_DIR, PROMO_CODES_VIEWERS_PATH: VIEWERS, OPS_DATA_DIR: path.join(TMP, 'ops'),
+      RELAY_SECRET: RELAY, PROMO_CODES_FEED_SECRET: FEED, PROMO_CODES_DATA_DIR: DATA_DIR, PROMO_CODES_VIEWERS_PATH: VIEWERS, OPS_DATA_DIR: path.join(TMP, 'ops'),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -58,9 +59,9 @@ const get = async (base, p, { auth = true } = {}) => fetch(`${base}${p}`, {
 });
 
 function signedPush(base, payload, { tamper = false } = {}) {
-  const relPath = '/api/relay/promo-codes/dataset';
+  const relPath = '/api/promo-codes/snapshot';
   const gz = gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
-  const { headers, bodyBuffer } = buildSignedHeaders({ method: 'POST', path: relPath, bodyBuffer: gz, secret: SECRET, workerId: 'promo-codes-test', maxBytes: MAX_REPORT_BUILD_BYTES });
+  const { headers, bodyBuffer } = buildSignedHeaders({ method: 'POST', path: relPath, bodyBuffer: gz, secret: FEED, workerId: 'promo-codes-test', maxBytes: MAX_REPORT_BUILD_BYTES });
   headers['content-type'] = 'application/gzip';
   if (tamper) headers['x-relay-signature'] = 'f'.repeat(64);
   return fetch(`${base}${relPath}`, { method: 'POST', headers, body: bodyBuffer });
@@ -73,7 +74,7 @@ const PUSH = {
 };
 
 test('unsigned / tampered pushes are refused', async () => {
-  assert.equal((await fetch(`${VIEWER}/api/relay/promo-codes/dataset`, { method: 'POST', body: 'x' })).status, 401);
+  assert.equal((await fetch(`${VIEWER}/api/promo-codes/snapshot`, { method: 'POST', body: 'x' })).status, 401);
   assert.equal((await signedPush(VIEWER, PUSH, { tamper: true })).status, 401);
 });
 

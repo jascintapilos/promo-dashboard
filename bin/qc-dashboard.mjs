@@ -29,7 +29,8 @@ import { promoRefreshStore } from '../src/qc-dashboard/promo-refresh-store.js';
 import { sanitizeResultPayload, payloadCarriesEvidence } from '../src/qc-dashboard/relay-result.js';
 import { readStatus as readRelayStatus, rotateSecret as rotateRelaySecret, registerRotationInvalidation } from '../src/qc-dashboard/relay-secret-store.js';
 import { OPS_DATASETS, opsDataDir, validateOpsPush, applyOpsPush, readOpsData } from '../src/qc-dashboard/ops-store.js';
-import { PROMO_CODES_ROLE, canViewPromoCodes, promoCodesDataDir, validatePromoCodesPush, applyPromoCodesPush, readPromoCodes } from '../src/qc-dashboard/promo-codes-store.js';
+import { PROMO_CODES_ROLE, canViewPromoCodes, promoCodesDataDir, validatePromoCodesPush, applyPromoCodesPush, readPromoCodes, readPromoCodesStatus } from '../src/qc-dashboard/promo-codes-store.js';
+import { readEffectiveFeedSecret, readFeedStatus, rotateFeedSecret } from '../src/qc-dashboard/promo-codes-feed-secret.js';
 import { gzipSync, gunzipSync } from 'node:zlib';
 
 // BO Relay: the secret is read on demand each request. The admin can rotate
@@ -720,6 +721,31 @@ async function handleApi(req, res, user) {
       return send(res, 500, { error: (e?.message || 'rotate failed').slice(0, 200) });
     }
   }
+  // Promo Codes feed key — admin-only status + rotate (cloned from the relay-secret
+  // rotate route, but a separate key: rotating it never touches the QC relay).
+  if (req.method === 'GET' && url.pathname === '/api/admin/promo-codes-key') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    return send(res, 200, { key: readFeedStatus(), upload: readPromoCodesStatus(promoCodesDataDir(ROOT)) }, { 'cache-control': 'no-store' });
+  }
+  if (req.method === 'POST' && url.pathname === '/api/admin/promo-codes-key/rotate') {
+    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    const originCheck = _verifySameOrigin(req);
+    if (!originCheck.ok) return send(res, 403, { error: originCheck.error });
+    try {
+      await readJsonBounded(req, 512).catch(() => null);
+      const result = rotateFeedSecret({ actorEmail: user.email });
+      try { console.log(`[promo-codes-key] rotated by ${user.email} at ${result.rotatedAt}`); } catch {}
+      return send(res, 200, {
+        secret: result.secret,
+        rotatedAt: result.rotatedAt,
+        rotatedBy: result.rotatedBy,
+        instructions: 'Save this value on the VDI as %USERPROFILE%\\.qc-relay\\promo-codes-secret (one line). This is the only time it is shown. Never paste it into chat.',
+      }, { 'cache-control': 'no-store', pragma: 'no-cache' });
+    } catch (e) {
+      if (e?.code === 'EXTERNALLY_MANAGED') return send(res, 409, { error: e.message, code: 'EXTERNALLY_MANAGED' });
+      return send(res, 500, { error: 'rotate failed' });
+    }
+  }
   if (req.method === 'POST' && url.pathname === '/api/fix-request') {
     const body = await readJsonBounded(req, 65536);
     return send(res, 200, await dispatchFixRequest({ ...body, requestedBy: user.email }));
@@ -755,6 +781,10 @@ async function handle(req, res) {
     // these; only the VDI worker with the shared RELAY_SECRET does.
     if (url.pathname.startsWith('/api/relay/')) {
       return await handleRelayApi(req, res, url);
+    }
+    // Promo Codes daily upload — HMAC-signed with the dedicated feed key, no session.
+    if (url.pathname === '/api/promo-codes/snapshot') {
+      return await handlePromoCodesSnapshot(req, res, url);
     }
     // Promo Codes data — dispatched BEFORE the report-only gate below so a
     // `promo-codes` account can read it. The viewer allowlist is the gate for
@@ -824,6 +854,18 @@ async function handle(req, res) {
     }
     // Manage Users — admin-only screen (linked from the QC Hub and Ops Dashboard).
     // Served from public/ (NOT public/qc-hub/), so serveStatic can't expose it ungated.
+    // Promo Codes upload key — admin-only screen (generate / revoke the feed key).
+    if (url.pathname === '/admin/promo-codes-key') {
+      const s = readSession(req);
+      if (!s) return redirectTo(res, `/?return=${encodeURIComponent('/dashboard')}`);
+      if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
+      if (s.role !== 'admin') {
+        res.writeHead(403, HTML_HEADERS);
+        res.end('<!doctype html><meta charset=utf-8><title>Admins only</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">Admins only</h2><p>Only an admin can manage the Promo Codes upload key.</p></body>');
+        return;
+      }
+      return await sendHtml(res, path.join(ROOT, 'public', 'admin-promo-codes-key.html'));
+    }
     if (url.pathname === '/admin/users') {
       const s = readSession(req);
       if (!s) { res.writeHead(302, { location: `/?return=${encodeURIComponent(url.pathname)}` }); res.end(); return; }
@@ -853,6 +895,30 @@ async function handle(req, res) {
 // BO Relay endpoints. Signed with HMAC over raw bytes; no session cookie.
 // Correction brief §§3-6.
 
+// POST /api/promo-codes/snapshot — the VDI's daily Promo Codes list (gzip JSON),
+// signed with the Promo Codes feed key (NOT the QC relay secret) using the relay
+// HMAC scheme: timestamp window, single-use nonce, signature over the raw body.
+// Write-only: the response never carries code data. ok:false keeps the last good list.
+async function handlePromoCodesSnapshot(req, res, url) {
+  if (req.method !== 'POST') return send(res, 405, { error: 'method not allowed' });
+  const secret = readEffectiveFeedSecret();
+  if (!secret) return send(res, 503, { error: 'promo codes feed not configured' });
+  let rawBody;
+  try { rawBody = await readRawBodyBounded(req, MAX_REPORT_BUILD_BYTES); }
+  catch (e) { return send(res, e.status || 413, { error: 'body too large' }); }
+  const verify = verifySignedRequest({ method: req.method, path: url.pathname, headers: req.headers, bodyBuffer: rawBody, secret });
+  if (!verify.ok) return send(res, verify.status || 401, { error: 'unauthorized' });
+  let body;
+  try { body = JSON.parse(gunzipSync(rawBody, { maxOutputLength: 64 * 1024 * 1024 }).toString('utf8')); }
+  catch { return send(res, 400, { error: 'body is not valid gzip/JSON' }); }
+  try {
+    const status = applyPromoCodesPush(promoCodesDataDir(ROOT), validatePromoCodesPush(body));
+    return send(res, 200, { ok: true, status });
+  } catch (e) {
+    return send(res, e.status && e.status < 500 ? e.status : 500, { error: e.status && e.status < 500 ? e.message : 'store failed' });
+  }
+}
+
 async function handleRelayApi(req, res, url) {
   const relaySecret = getRelaySecret();
   if (!relaySecret) return send(res, 503, { error: 'relay unavailable' });
@@ -863,10 +929,9 @@ async function handleRelayApi(req, res, url) {
   const isReportBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/report-build';
   const isStoreBuild = req.method === 'POST' && url.pathname === '/api/relay/promo/ws1/store-build';
   const opsPush = req.method === 'POST' ? url.pathname.match(/^\/api\/relay\/ops\/dataset\/([A-Za-z]{1,40})$/) : null;
-  const promoCodesPush = req.method === 'POST' && url.pathname === '/api/relay/promo-codes/dataset';
   let rawBody;
   try {
-    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild || opsPush || promoCodesPush) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
+    rawBody = await readRawBodyBounded(req, isPromoIngest ? PROMO_INGEST_MAX : (isReportBuild || isStoreBuild || opsPush) ? MAX_REPORT_BUILD_BYTES : MAX_BODY_BYTES);
   } catch (e) {
     return send(res, e.status || 413, { error: 'body too large' });
   }
@@ -882,20 +947,6 @@ async function handleRelayApi(req, res, url) {
     return send(res, verify.status || 401, { error: 'unauthorized' });
   }
   const workerId = String(req.headers['x-relay-worker'] || 'unknown').slice(0, 64);
-
-  // POST /api/relay/promo-codes/dataset — the daily Promo Codes list + BO status
-  // from bin/push-promo-codes.mjs (gzip JSON). ok:false keeps the last good list.
-  if (promoCodesPush) {
-    let body;
-    try { body = JSON.parse(gunzipSync(rawBody, { maxOutputLength: 64 * 1024 * 1024 }).toString('utf8')); }
-    catch { return send(res, 400, { error: 'body is not valid gzip/JSON' }); }
-    try {
-      const status = applyPromoCodesPush(promoCodesDataDir(ROOT), validatePromoCodesPush(body));
-      return send(res, 200, { ok: true, status });
-    } catch (e) {
-      return send(res, e.status && e.status < 500 ? e.status : 500, { error: e.status && e.status < 500 ? e.message : 'store failed' });
-    }
-  }
 
   // POST /api/relay/ops/dataset/<key> — one Ops sheet tab from the VDI nightly runner
   // (gzip JSON). ok:false records a failed pull without touching the last good rows.
