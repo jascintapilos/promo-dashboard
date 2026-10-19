@@ -28,9 +28,9 @@ def live(CUR):
     WITH m AS (
       SELECT MEMBER_ID, sum(dep) AS ytd_dep, sum(ngr) AS ytd_ngr, max(if(dep>0, sd, toDate('2000-01-01'))) AS last_dep
       FROM (
-        SELECT MEMBER_ID, SnapshotDate sd, DepositAmount dep, NGR ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
+        SELECT MEMBER_ID, SnapshotDate sd, DepositAmount dep, NGR ngr FROM WORKSPACE.Daily_GMT8_Snapshot_A  WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
         UNION ALL
-        SELECT MEMBER_ID, SnapshotDate, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
+        SELECT MEMBER_ID, SnapshotDate, DepositAmount, NGR FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='{CUR}' AND SnapshotDate>='{START}' AND SnapshotDate<'{END_EXCL}'
       ) GROUP BY MEMBER_ID HAVING ytd_dep > 0
     )
     SELECT multiIf(ytd_dep>=100000,'Whale', ytd_dep>=20000,'High', ytd_dep>=2000,'Mid','Low') AS vband,

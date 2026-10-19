@@ -328,6 +328,16 @@ def recipe_lever(o, sym):
     return ("; ".join(parts[:3]) if parts else None), tgt
 
 
+def _own_why(o, sym, fallback):
+    """Fix 18: the WHY must be the decision code's OWN grounded reason (the acq/ret/vip
+    03_thresholds verdict already shown elsewhere), not a shared (call x bonus-type) template that
+    contradicted the code's numbers across pillars. Take the diagnosis clause before the lever/basis
+    tail; pp->pts to match the sheet; currency is normalised by the relabel() already applied to the
+    returned why at the diagnose call site. Fall back to the template only when there is no reason."""
+    own = (o.get("reason") or "").split(" — ")[0].strip().rstrip(".")
+    return re.sub(r"(-?\d+)\s*pp\b", r"\1 pts", own) if own else fallback
+
+
 def diagnose(o, sym):
     """(why, lever) — the code's SPECIFIC problem and the SPECIFIC, config-grounded fix, kept
     separate so the sheet shows 'Why this call' | 'The lever' with no overlap. Mechanic-aware:
@@ -339,12 +349,12 @@ def diagnose(o, sym):
     dep_based = ("deposit" in mech) if dr is None else bool(dr)   # acq: DepositBonus=deposit; FreeCredit/FreeSpin=no-deposit
     giveaway = (not dep_based) and (("credit" in mech) or ("spin" in mech))   # no-deposit giveaway — judged on reactivation, NGR negative by design
     if dec == "Maintain":
-        return (("Brings players back above the norm — reactivation lever (typically reads negative on Bonus ROI, a no-deposit cost)" if giveaway else "Profitable, keeps players"), "Keep as-is; re-check next cycle")
+        return (_own_why(o, sym, ("Brings players back above the norm — reactivation lever (typically reads negative on Bonus ROI, a no-deposit cost)" if giveaway else "Profitable, keeps players")), "Keep as-is; re-check next cycle")
     if dec == "Scale":
         t = o.get("tier"); tgt = recipe_for(o, sym); bt = btype_of(o)
         keep = f"keep the mechanic ({mechanic_str(tgt, bt, sym)}); " if (tgt and not tgt.get("skip")) else ""
         widen = f"widen beyond {t}" if (t and str(t).strip().lower() not in ("", "all", "none", "unknown")) else "widen who's eligible"
-        return (("Brings players back well above the norm — reactivation lever (typically negative on Bonus ROI, a no-deposit cost)" if giveaway else "Works and pays — brings players back"), f"Raise budget; {keep}{widen} — {segment_for(o)}")
+        return (_own_why(o, sym, ("Brings players back well above the norm — reactivation lever (typically negative on Bonus ROI, a no-deposit cost)" if giveaway else "Works and pays — brings players back")), f"Raise budget; {keep}{widen} — {segment_for(o)}")
     if dec == "Stop":
         tgt = recipe_for(o, sym); bt = btype_of(o)
         why_stop = "Doesn't bring players back or pull enough deposits" if giveaway else "Loses money and drives no extra redeposits"
@@ -373,8 +383,8 @@ def diagnose(o, sym):
     signal = next((_rr.get(k) for k in ("30", "90", "7") if _rr.get(k) is not None), o.get("repro_per_rm"))
     losing = signal is not None and signal < 0              # DISPLAYED Bonus ROI is negative — never pair it with a profit-implying reason
     if giveaway:                                            # no-deposit giveaway on an Optimise/Reduce/Trim call — reactivation-framed why; lever comes from the recipe below (risk-reducers, no size-raise)
-        why = ("Brings players back below the free-credit norm — too generous for the reactivation it buys" if dec in ("Reduce", "Trim")
-               else "Brings players back about the norm — mostly reaching players who'd return anyway; right-size / tighten")
+        why = _own_why(o, sym, ("Brings players back below the free-credit norm — too generous for the reactivation it buys" if dec in ("Reduce", "Trim")
+               else "Brings players back about the norm — mostly reaching players who'd return anyway; right-size / tighten"))
         lev = _shrink(o, sym)
     elif "barely pays" in txt or "right-size the offer" in txt:
         why, lev = "Barely pays for what it gives", _shrink(o, sym)
@@ -1636,7 +1646,7 @@ def build_formula_sheet(wb):
     row("NGR lift (incremental NGR)", "net NGR in the forward window − the player's own 14-day pre-claim daily-average baseline", "Normally RM10/day; after the claim RM30/day → RM20/day above baseline", "Estimated change vs baseline (an association, not a proven cause)", h=48)
     row("Bonus ROI", "NGR lift vs baseline ÷ bonus spent", "PAYDAY 30%: RM653,751 lift ÷ RM202,080 → +3.24 (illustrative; see note)", "Per RM1 of bonus · 0 = no change vs baseline · + above baseline · − below — improvement vs the player's own run-rate, not absolute profit")
     row("House edge (GGR cover) — does the gross margin cover the bonus cost?", "7-day GGR (days 0–6 after claim) ÷ bonus spent", "welcomegift 0.6× (didn't cover) · 200% Welcome 19×", "≥ 1× = the gross margin covers the bonus cost")
-    note("NGR lift & Bonus ROI use the report's own attribution method — the player's own 14-day pre-claim daily baseline, a forward window that counts later days for less (flat for lifetime), and credit split across any bonuses running at once — reproduced from raw claim rows. It is an ESTIMATED CHANGE vs each player's baseline, not a controlled-test effect and not absolute profit. The per-code tabs show Bonus ROI at 7 / 30 / 60 / 90 days and lifetime — the 7-day figure reproduces the report exactly, longer windows extend it (lifetime rough). Bonus ROI is the only modelled number; the pipeline treats NGR as already net of the bonus (data definition not independently re-verified against the warehouse). The PAYDAY example is arithmetically consistent with that code's displayed +3.24, but its underlying warehouse lift has not been independently re-run here. Config bands judged on the first-month (28-day) window.")
+    note("NGR lift & Bonus ROI use the report's own attribution method — the player's own 14-day pre-claim daily baseline, a forward window that counts later days for less (flat for lifetime), and credit split across any bonuses running at once — reproduced from raw claim rows. It is an ESTIMATED CHANGE vs each player's baseline, not a controlled-test effect and not absolute profit. The per-code tabs show Bonus ROI at 7 / 30 / 60 / 90 days and lifetime — the 7-day figure reproduces the report exactly, longer windows extend it (lifetime rough). Bonus ROI is the only modelled number; the pipeline treats NGR as already net of the bonus. The PAYDAY example is arithmetically consistent with that code's displayed +3.24, but its underlying warehouse lift has not been independently re-run here. Config bands judged on the first-month (28-day) window.")
 
     section("③  Costs & funnel", "loyal")
     row("Cost / new depositor (acquisition)", "Bonus spent on new players ÷ new depositors", "welcomegift: RM51,200 ÷ 105 new depositors → RM488", "Cheaper = better")

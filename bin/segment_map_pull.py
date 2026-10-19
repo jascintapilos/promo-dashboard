@@ -35,7 +35,7 @@ for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
       multiIf(dateDiff('day',last_dep,toDate('{END_INCL}'))<=30,'Active',
               dateDiff('day',last_dep,toDate('{END_INCL}'))<=60,'Cooling',
               dateDiff('day',last_dep,toDate('{END_INCL}'))<=90,'Lapsed','Dormant') AS state,
-      count() AS members, round(sum(ytd_ngr)) AS ngr, round(median(ytd_dep)) AS med_dep
+      count() AS members, round(sum(ytd_ngr)) AS ngr, round(medianExact(ytd_dep)) AS med_dep
     FROM m GROUP BY vband, state
     """
     rows = c.query(q).result_rows

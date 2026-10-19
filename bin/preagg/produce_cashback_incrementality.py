@@ -63,8 +63,8 @@ SET = {"max_execution_time": 390, "max_memory_usage": 55000000000, "max_result_r
 q1 = f"""
 WITH act AS (
   SELECT DISTINCT MEMBER_ID FROM (
-    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}'
-    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}')),
+    SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_A WHERE SITE_edit='WS1' AND Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}'
+    UNION ALL SELECT MEMBER_ID FROM WORKSPACE.Daily_GMT8_Snapshot_BC WHERE SITE_edit='WS1' AND Currency='MYR' AND (DepositAmount>0 OR GGR!=0) AND SnapshotDate>='{START}' AND SnapshotDate<'{END1}')),
 mem AS (SELECT MEMBER_ID, toDateTime('{END_INCL} 23:59:59') AS asof FROM act)
 SELECT mem.MEMBER_ID AS MEMBER_ID, ifNull(t.tier,'Unknown') AS tier
 FROM mem
