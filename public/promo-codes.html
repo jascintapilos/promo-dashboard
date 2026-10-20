@@ -289,10 +289,6 @@ body.embed header .who{display:none}
     const last = data?.boCheckedAt || data?.pulledAt;
     if (last && Date.now() - Date.parse(last) > STALE_MS) out.push(['warn', `This list is out of date — last checked on BO ${fmt(last)}. The hourly check may have stopped (is the VDI switched on?).`]);
     if (status && status.ok === false) out.push(['warn', `Last refresh failed (${fmt(status.lastFailureAt)}): ${status.detail || 'no detail'}. Showing the last good list.`]);
-    // Only brands the sheets actually use (WS1 ID/TH/KH failing is noise when no code lists them).
-    const used = new Set(ROWS.flatMap((r) => Object.keys(r.bo)));
-    const failed = (data?.siteErrors || []).map((e) => e.brand).filter((b) => used.has(b));
-    if (failed.length) out.push(['info', `Some brands could not be checked this run and show as "Not checked": ${failed.join(', ')}.`]);
     $('banners').innerHTML = out.map(([c, t]) => `<div class="banner ${c}">${esc(t)}</div>`).join('');
   }
 
