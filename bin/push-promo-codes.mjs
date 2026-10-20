@@ -13,9 +13,9 @@
 //   node bin/push-promo-codes.mjs --dry-run   read sheets + BO, print counts, write tmp/promo-codes-dry-run.json only
 //   env: QC_HUB_URL (default https://qc-dashboard.zoom66.xyz), PROMO_CODES_FEED_SECRET (instead of the key file)
 //
-// WS1/WS2 sessions expire: when WS1 MY or WS2 fails, bin/refresh-igmp-sessions.mjs
+// WS1/WS2 sessions expire: when WS1 MY, WS1 SG or WS2 fails, bin/refresh-igmp-sessions.mjs
 // (promo_testbot) is run ONCE for just that site and the BO check retried. WS1 SG
-// never triggers a login (its testbot login keeps failing; retries risk a lockout).
+// logs in with its own kiosk password from igmp-creds.local.json.
 // A failed run is recorded on the dashboard and in the sheet; the last good list stays.
 // Exit 0 on success, 1 on failure — message only, never the key.
 
@@ -38,9 +38,10 @@ const WORKER_ID = `promo-codes-push-${process.pid}`;
 const REL_PATH = '/api/promo-codes/snapshot';
 const MAX_PUSH_BYTES = 8 * 1024 * 1024; // server cap for this route
 
-// BO key → site the job may log back into, only when that site failed. WS1 SG is
-// deliberately excluded; add it back here once its testbot login is fixed.
-const REFRESHABLE_IGMP = new Map([['WS1_MY', 'ws1-v3-my'], ['WS2', 'ws2']]);
+// BO key → site the job may log back into, only when that site failed (at most
+// one login per site per run). WS1 SG uses its own kiosk password — its earlier
+// failures were the shared testbot password being sent to it (fixed 2026-10-20).
+const REFRESHABLE_IGMP = new Map([['WS1_MY', 'ws1-v3-my'], ['WS1_SG', 'ws1-v3-sg'], ['WS2', 'ws2']]);
 
 async function readSources(sheets) {
   const rows = [];
