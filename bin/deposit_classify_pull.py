@@ -75,26 +75,32 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
           cls AS (
             SELECT code, amt,
               multiIf(last_before > {T0}, 'prefunded', first_after > {T0}, 'bonusled', 'noresp') bucket,
-              if(last_before > {T0} AND dateDiff('hour', last_before, bt) <= 24, 1, 0) dtu,
+              if(last_before > {T0} AND dateDiff('second', last_before, bt) <= 86400, 1, 0) dtu,
               before_amt, after_amt,
-              if(first_after > {T0} AND (last_ever <= {T0} OR dateDiff('day', last_ever, bt) > 30), 1, 0) react
+              if(first_after > {T0} AND (last_ever <= {T0} OR dateDiff('day', last_ever, bt) > 30), 1, 0) react,
+              if(first_after > {T0} AND last_ever <= {T0}, 1, 0) react_ft,
+              if(first_after > {T0} AND last_ever > {T0} AND dateDiff('day', last_ever, bt) > 30, 1, 0) react_ret
             FROM perclaim
           )
           SELECT code, bucket, count() claims, round(sum(amt)) spend,
                  sum(dtu) dtu_claims, sum(react) react_claims,
+                 sum(react_ft) react_ft_claims, sum(react_ret) react_ret_claims,
                  round(sum(before_amt)) before_amt, round(sum(after_amt)) after_amt
           FROM cls GROUP BY code, bucket
         """).result_rows
 
         byc = {}
-        for code, bucket, claims, spend, dtu, react, before_amt, after_amt in rows:
+        for code, bucket, claims, spend, dtu, react, react_ft, react_ret, before_amt, after_amt in rows:
             d = byc.setdefault(code.strip(), {})
             if bucket == "prefunded":
                 d["prefunded"] = {"claims": int(claims), "spend": float(spend or 0),
                                   "dtu_claims": int(dtu or 0), "before_amt": float(before_amt or 0)}
             elif bucket == "bonusled":
                 d["bonusled"] = {"claims": int(claims), "spend": float(spend or 0),
-                                 "react_claims": int(react or 0), "after_amt": float(after_amt or 0)}
+                                 "react_claims": int(react or 0),
+                                 "react_firsttime_claims": int(react_ft or 0),  # Fix 10: never deposited before this claim
+                                 "react_returning_claims": int(react_ret or 0),  # Fix 10: deposited before but >30d gap
+                                 "after_amt": float(after_amt or 0)}
             else:
                 d["noresp"] = {"claims": int(claims), "spend": float(spend or 0)}
         out["byWindow"][str(W)] = byc
@@ -126,9 +132,9 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
           ON d.MEMBER_ID=c.member AND d.SITE='{LOGSITE}' AND {DEP_OK}
         GROUP BY c.member, c.bt
       )
-      SELECT round(medianIf(dateDiff('hour', lb, bt), lb > {T0})),
-             round(quantileIf(0.25)(dateDiff('hour', lb, bt), lb > {T0})),
-             round(quantileIf(0.75)(dateDiff('hour', lb, bt), lb > {T0})),
+      SELECT round(medianIf(dateDiff('minute', lb, bt), lb > {T0})),
+             round(quantileIf(0.25)(dateDiff('minute', lb, bt), lb > {T0})),
+             round(quantileIf(0.75)(dateDiff('minute', lb, bt), lb > {T0})),
              round(medianIf(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0})),
              round(quantileIf(0.25)(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0})),
              round(quantileIf(0.75)(dateDiff('day', bt, fa), lb <= {T0} AND fa > {T0}))
@@ -140,12 +146,12 @@ for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
     # "median 0 days later (middle half 0 to 0 days)". The template only shows a side when its median
     # is non-null, so null correctly suppresses that side.
     _n = lambda v: int(v) if v is not None and v == v else None
-    gap_h, gap_h_p25, gap_h_p75, bl_days, bl_days_p25, bl_days_p75 = row
-    gh, bd = _n(gap_h), _n(bl_days)
+    gap_min, gap_min_p25, gap_min_p75, bl_days, bl_days_p25, bl_days_p75 = row  # Fix 10: pre-funded gap in MINUTES (median ~1 min rounds to 0h)
+    gm, bd = _n(gap_min), _n(bl_days)
     # median + the middle-half (p25-p75) spread, so the typical is not read as a tight rule
-    out["timing"] = {"prefunded_gap_h": gh, "prefunded_gap_h_p25": _n(gap_h_p25), "prefunded_gap_h_p75": _n(gap_h_p75),
+    out["timing"] = {"prefunded_gap_min": gm, "prefunded_gap_min_p25": _n(gap_min_p25), "prefunded_gap_min_p75": _n(gap_min_p75),
                      "bonusled_days": bd, "bonusled_days_p25": _n(bl_days_p25), "bonusled_days_p75": _n(bl_days_p75)}
-    print(f"[{MK}] timing: pre-funded {gh}h deposit->claim · bonus-led {bd}d claim->deposit")
+    print(f"[{MK}] timing: pre-funded {gm}min deposit->claim · bonus-led {bd}d claim->deposit")
 
     json.dump(out, open(SCR / f"deposit-classify-{MK}.json", "w", encoding="utf-8"), ensure_ascii=False)
     print(f"[{MK}] wrote deposit-classify-{MK}.json\n")

@@ -135,7 +135,7 @@ def derive_dep_classify(mk, vmap):
         b = {"prefunded": {"claims": 0, "spend": 0.0, "before_amt": 0.0},
              "bonusled": {"claims": 0, "spend": 0.0, "after_amt": 0.0},
              "noresp": {"claims": 0, "spend": 0.0}}
-        b["dtu_claims"] = 0; b["react_claims"] = 0
+        b["dtu_claims"] = 0; b["react_claims"] = 0; b["react_ft_claims"] = 0; b["react_ret_claims"] = 0
         return b
     out = {"byCode": dc["byWindow"], "byGroup": {}, "byPillar": {}, "total": {}, "sym": dc.get("sym", ""), "timing": dc.get("timing")}
     for W, byc in dc["byWindow"].items():
@@ -149,9 +149,11 @@ def derive_dep_classify(mk, vmap):
                     for agg in (gg, pp, tot):
                         agg[x]["claims"] += d0[x].get("claims", 0); agg[x]["spend"] += d0[x].get("spend", 0.0)
             dtu = d0.get("prefunded", {}).get("dtu_claims", 0); rc = d0.get("bonusled", {}).get("react_claims", 0)
+            rcf = d0.get("bonusled", {}).get("react_firsttime_claims", 0); rcr = d0.get("bonusled", {}).get("react_returning_claims", 0)
             pfb = d0.get("prefunded", {}).get("before_amt", 0); bla = d0.get("bonusled", {}).get("after_amt", 0)
             for agg in (gg, pp, tot):
                 agg["dtu_claims"] += dtu; agg["react_claims"] += rc
+                agg["react_ft_claims"] += rcf; agg["react_ret_claims"] += rcr
                 agg["prefunded"]["before_amt"] += pfb; agg["bonusled"]["after_amt"] += bla
         out["byGroup"][W] = grp
         out["byPillar"][W] = {k: v for k, v in sorted(pil.items(),
@@ -338,6 +340,90 @@ if macro:
 for _mk in ("MY", "SG"):
     PAYLOAD[_mk] = OUT[_mk]
 PAYLOAD["builtAt"] = datetime.now(timezone.utc).isoformat()   # provenance for the "last refreshed" header
+
+# ── code-name hygiene (ship clean) ───────────────────────────────────────────
+# Strip control / zero-width / bidi characters and surrounding whitespace from every promo-code
+# string that SHIPS in the payload. A single stray invisible char (seen live on FT_BR_RET_40PCT_12X_100)
+# survives only in the stored name — the lookups above already .strip() for matching — and it (a) hides
+# the whole summary row in Chrome's table parser and (b) splits the code between the Codes and Money tabs
+# / breaks exact-code lookups. This is a no-op on already-clean names.
+import re as _re
+_INVIS = _re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f​-‏‪-‮⁠﻿]")
+def _clean_code(s):
+    return _INVIS.sub("", s).strip() if isinstance(s, str) else s
+def _scrub_codes(mk):
+    blk = PAYLOAD.get(mk)
+    if not isinstance(blk, dict):
+        return
+    for rec in blk.get("codes", []):
+        pc = (rec.get("cells") or {}).get("Promo code")
+        if isinstance(pc, dict) and isinstance(pc.get("d"), str):
+            pc["d"] = _clean_code(pc["d"])
+    for row in ((blk.get("money") or {}).get("rows") or []):
+        pc = row.get("Promo code")
+        if isinstance(pc, dict) and isinstance(pc.get("d"), str):
+            pc["d"] = _clean_code(pc["d"])
+for _mk in ("MY", "SG"):
+    _scrub_codes(_mk)
+
+# ── per-run scoring thresholds (for the Tab-4 "Threshold Guide" card) ─────────
+# Carry the live, run-dependent cutoffs the scoring engines actually used so the card can show them
+# instead of a stale hardcoded snapshot: Acquisition cost-per-FTD percentiles + stick median (DRAFT,
+# move each run), the Retention matrix floors/bands, and the VIP Lane-B per-tier cashback break-even
+# verdicts. Fixed-constant rules (VIP Lane A, DEADBAND, giveaway tree) are not serialised anywhere, so
+# the card hardcodes those from the python; this block only supplies what genuinely changes per run.
+def _loadj(p):
+    try:
+        return json.load(open(p, encoding="utf-8"))
+    except Exception:
+        return None
+for _mk in ("MY", "SG"):
+    _blk = PAYLOAD.get(_mk)
+    if not isinstance(_blk, dict):
+        continue
+    _acq = _loadj(SCR / "acq" / f"acq-metrics-{_mk}.json") or {}
+    _ret = _loadj(SCR / "ret" / f"ret-metrics-{_mk}.json") or {}
+    _cb = _loadj(SCR / "vip" / f"cashback-breakeven-{_mk}.json") or {}
+    _blk["thresholds"] = {
+        "acq": (_acq.get("thresholds") if isinstance(_acq, dict) else None) or None,
+        "ret": (_ret.get("thresholds") if isinstance(_ret, dict) else None) or None,
+        "vipCashback": (_cb.get("break_even") if isinstance(_cb, dict) else None) or None,
+    }
+
+# ── full VIP program (Lanes A/B/C/D) for the Tab-4 VIP lane filter ───────────
+# The managed Codes/Money/Summary tables (ROI action codes only) are UNCHANGED — this is a SEPARATE,
+# clearly-labelled population carried straight from the authoritative vip-metrics scoring output, so the
+# lane filter can show Lanes B/C/D (which are excluded from the action book) with their OWN rules. Each
+# lane keeps its own call (Keep/Review/Trim/Monitor/Entitlement); the Lane-A ROI matrix is never applied
+# to B/C/D. Values are the scored outputs (missing/immature stays null, not 0).
+for _mk in ("MY", "SG"):
+    _blk = PAYLOAD.get(_mk)
+    if not isinstance(_blk, dict):
+        continue
+    _vm = _loadj(SCR / "vip" / f"vip-metrics-{_mk}.json") or {}
+    _cbv = (_loadj(SCR / "vip" / f"cashback-breakeven-{_mk}.json") or {}).get("break_even") or {}
+    _lanes, _summ = [], {}
+    for _c in (_vm.get("codes") or []):
+        _L = (_c.get("lane") or "").split("-")[0].upper()        # A / B / C / D
+        _tt = _c.get("tier_top")
+        _be = (_cbv.get(_tt) or {}).get("verdict") if (_L == "B" and isinstance(_cbv, dict) and isinstance(_cbv.get(_tt), dict)) else None
+        _lanes.append({
+            "code": _clean_code(_c.get("code", "")), "name": _c.get("name", ""), "lane": _L,
+            "decision": _c.get("decision"), "reason": _c.get("reason"), "do": _c.get("do"),
+            "spend": _c.get("spend"), "claimers": _c.get("claimers"),
+            "matured_30": _c.get("matured_30"), "matured_7": _c.get("matured_7"),
+            "ggr_coverage": _c.get("ggr_coverage"), "tier": _tt,
+            "breakeven": _be, "retention_after_loss": _c.get("retention_after_loss"), "fwd_ngr_30": _c.get("fwd_ngr_30"),
+            "leakage_share": _c.get("leakage_share"), "downstream_ngr": _c.get("downstream_ngr"),
+            "habitual_share": _c.get("habitual_share"), "pays_for_itself": _c.get("pays_for_itself"),
+        })
+        _s = _summ.setdefault(_L, {"codes": 0, "spend": 0})
+        _s["codes"] += 1
+        _s["spend"] += (_c.get("spend") or 0)
+    _blk["vipLanes"] = _lanes
+    _blk["vipLaneSummary"] = _summ
+    _blk["vipPeriod"] = _vm.get("period")   # VIP scoring window (may differ from the macro period)
+
 json.dump(PAYLOAD, open(SCR / "explorer-payload.json", "w", encoding="utf-8"), ensure_ascii=False)
 print("wrote explorer-payload.json size", (SCR / "explorer-payload.json").stat().st_size,
       "| period:", PERIOD, "| macro:", ("yes" if macro else "no"), "| builtAt:", PAYLOAD["builtAt"])
