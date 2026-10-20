@@ -18,7 +18,12 @@ if (!pass || typeof pass !== 'string') {
   process.exit(1);
 }
 
-const SITES = ['ws1-v3-my', 'ws1-v3-sg', 'ws2'];
+// IGMP_REFRESH_SITES=ws1-v3-my,ws2 limits a run to those sites (used by
+// bin/push-promo-codes.mjs so it only logs into the site that actually failed).
+const ALL_SITES = ['ws1-v3-my', 'ws1-v3-sg', 'ws2'];
+const SITES = process.env.IGMP_REFRESH_SITES
+  ? process.env.IGMP_REFRESH_SITES.split(',').map((s) => s.trim()).filter((s) => ALL_SITES.includes(s))
+  : ALL_SITES;
 const captureScript = path.resolve('bin/igmp-session-capture.mjs');
 
 for (const siteId of SITES) {

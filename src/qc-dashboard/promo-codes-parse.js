@@ -5,12 +5,20 @@
 // its live BO status per brand. Kept dependency-free so it is unit-testable and
 // never drags the promo write-path into the dashboard. See docs/plans/promo-codes-tab.md.
 
-// The sheets and the one tab each that holds the full list (the per-person /
-// per-team tabs are subsets of these, so reading them too would double count).
+// Sales tabs in priority order. "Index (All Teams)" is NOT complete (2026-10-20:
+// 160 of 397 codes), so every tab is read and a code is taken from the first tab
+// that lists it; later tabs only add codes not seen before.
+export const SALES_TABS = Object.freeze([
+  'Index (All Teams)', 'VM - All Codes (BO)', 'TSM - Codes by Segment x Brand', 'AM - Codes by Campaign',
+  'VM - Live Codes by Campaign', 'Bonus Menu',
+]);
+
+// The sheets and the tabs read from each. CRM's "All CRM Codes" and CEE's single
+// tab already hold everything (the per-person CRM tabs are subsets).
 export const PROMO_CODE_SOURCES = Object.freeze([
-  { source: 'CEE', spreadsheetId: '1gCXe0wzYySMG-usZHvXAFVqq3SL2UmHhPjpvDemToKA', tab: 'CEE Codes' },
-  { source: 'Sales', spreadsheetId: '1Teg9TiKlubOjNF-0mjoHA9QLmWiI6EoiivMzjJgNm8s', tab: 'Index (All Teams)' },
-  { source: 'CRM', spreadsheetId: '1-ZjgA3ietUyh7TpotivVID1GgLZ9CyV7nIpy-PRA1HU', tab: 'All CRM Codes' },
+  { source: 'CEE', spreadsheetId: '1gCXe0wzYySMG-usZHvXAFVqq3SL2UmHhPjpvDemToKA', tabs: ['CEE Codes'] },
+  { source: 'Sales', spreadsheetId: '1Teg9TiKlubOjNF-0mjoHA9QLmWiI6EoiivMzjJgNm8s', tabs: SALES_TABS },
+  { source: 'CRM', spreadsheetId: '1-ZjgA3ietUyh7TpotivVID1GgLZ9CyV7nIpy-PRA1HU', tabs: ['All CRM Codes'] },
 ]);
 
 // BO status values carried per brand key.
@@ -101,7 +109,7 @@ export function brandScope(text) {
 }
 
 // Builds one normalised row.
-function makeRow({ source, group = '', pic = '', section = '', code, wsCode = '', brandText, regionText, type = '', offer = '', sheetStatus = '', note = '' }) {
+function makeRow({ source, group = '', pic = '', section = '', code, wsCode = '', brandText, regionText, type = '', offer = '', sheetStatus = '', note = '', noClaim: forceNoClaim = false }) {
   const seg = parseStatusSegments(sheetStatus);
   const scope = brandScope(brandText);
   const isAll = scope.all;
@@ -111,7 +119,8 @@ function makeRow({ source, group = '', pic = '', section = '', code, wsCode = ''
   for (const b of [...seg.on, ...seg.off]) if (!brands.includes(b)) brands.push(b);
   const retired = RETIRED_RE.test(section) || RETIRED_RE.test(note) || OFF_STATUS_RE.test(sheetStatus);
   // "Not checked WS1, WS2 BO not reachable" — the sheet makes no claim, so BO can't disagree with it.
-  const noClaim = /^\s*not checked\b/i.test(sheetStatus);
+  // A WS1/WS2 twin code (Bonus Menu / Live Codes by Campaign) does not say which WS brand carries it: no claim either.
+  const noClaim = forceNoClaim || /^\s*not checked\b/i.test(sheetStatus);
   // Brands the sheet says should be OFF. A retired row expects every brand off,
   // even when its status cell says "⚠ Still active on BO" (that IS the problem).
   const expectedOff = retired ? [...brands] : [...new Set(seg.off)];
@@ -121,13 +130,21 @@ function makeRow({ source, group = '', pic = '', section = '', code, wsCode = ''
   };
 }
 
+// "1 · Deposit-match  (81)" → "Deposit-match"
+const cleanGroup = (t) => t.replace(/\s*\(\d+\)\s*$/, '').replace(/^\d+[a-z]?\s*·\s*/i, '').trim();
+
+// map(row, col, section) returns a row, an array of rows, or null (title, blank
+// and group-heading rows). A row with text only in column A is a group heading;
+// its text is passed on as `section` to the rows under it.
 function rowsFrom(values, header, map) {
   const out = [];
   const col = (name) => header.cols.indexOf(norm(name));
+  let section = '';
   for (let r = header.index + 1; r < values.length; r++) {
-    // Rows without a code (title, blank and group-heading rows) are skipped by map().
-    const built = map(values[r] || [], col);
-    if (built) out.push(makeRow(built));
+    const row = values[r] || [];
+    const built = map(row, col, section);
+    if (built) { for (const b of [].concat(built)) out.push(makeRow(b)); continue; }
+    if (cell(row, 0) && row.slice(1).every((c) => !String(c ?? '').trim())) section = cleanGroup(cell(row, 0));
   }
   return out;
 }
@@ -176,7 +193,107 @@ export function parseCrmAll(values) {
   });
 }
 
-export const PARSERS = Object.freeze({ CEE: parseCeeCodes, Sales: parseSalesIndex, CRM: parseCrmAll });
+export function parseVmAllCodes(values) {
+  const header = findHeaderRow(values, ['Mechanic', 'Live Code (BO)', 'QP2/QPRO Brands']);
+  if (!header) throw new Error('Sales "VM - All Codes (BO)": header row not found');
+  return rowsFrom(values, header, (row, col, section) => {
+    const code = cell(row, col('Live Code (BO)'));
+    if (!code) return null;
+    return {
+      source: 'Sales', group: 'VM', section, code,
+      brandText: cell(row, col('QP2/QPRO Brands')), regionText: cell(row, col('Region')),
+      type: cell(row, col('Type')), offer: cell(row, col('Bonus Name')), sheetStatus: cell(row, col('Status')),
+    };
+  });
+}
+
+export function parseTsmCodes(values) {
+  const header = findHeaderRow(values, ['Segment', 'Brand / Platform', 'Live Code (BO)']);
+  if (!header) throw new Error('Sales "TSM - Codes by Segment x Brand": header row not found');
+  return rowsFrom(values, header, (row, col, section) => {
+    const code = cell(row, col('Live Code (BO)'));
+    if (!code) return null;
+    return {
+      source: 'Sales', group: 'TSM', section, code,
+      brandText: cell(row, col('Brand / Platform')), regionText: cell(row, col('Region')),
+      offer: cell(row, col('Offer')), sheetStatus: cell(row, col('Status')),
+    };
+  });
+}
+
+export function parseAmCodes(values) {
+  const header = findHeaderRow(values, ['Campaign', 'Live Code (BO)', 'Brand coverage']);
+  if (!header) throw new Error('Sales "AM - Codes by Campaign": header row not found');
+  return rowsFrom(values, header, (row, col, section) => {
+    const code = cell(row, col('Live Code (BO)'));
+    if (!code) return null;
+    // "Brand coverage" is a count ("21 brands"); the named brands come from the Status cell.
+    return {
+      source: 'Sales', group: 'AM', section, code,
+      brandText: cell(row, col('Brand coverage')), regionText: cell(row, col('Region')),
+      offer: cell(row, col('Bonus Name')), note: cell(row, col('Note')), sheetStatus: cell(row, col('Status')),
+    };
+  });
+}
+
+// One line can carry two codes: the QP2/QPRO code and its FT_ WS1/WS2 twin.
+export function parseVmLiveByCampaign(values) {
+  const header = findHeaderRow(values, ['Campaign', 'Code — QP2/QPRO', 'Code — WS1/WS2']);
+  if (!header) throw new Error('Sales "VM - Live Codes by Campaign": header row not found');
+  return rowsFrom(values, header, (row, col, section) => {
+    const code = cell(row, col('Code — QP2/QPRO'));
+    const ws = cell(row, col('Code — WS1/WS2'));
+    if (!code && !ws) return null;
+    const base = { source: 'Sales', group: 'VM', section, regionText: cell(row, col('Region')), offer: cell(row, col('Bonus Name')) };
+    const out = [];
+    if (code) out.push({ ...base, code, wsCode: ws && ws !== code ? ws : '', brandText: cell(row, col('QP2/QPRO Brands')) });
+    if (ws && ws !== code) out.push({ ...base, code: ws, brandText: 'WS1, WS2', noClaim: true });
+    return out;
+  });
+}
+
+export function parseBonusMenu(values) {
+  const header = findHeaderRow(values, ['Promo Code', 'Promo Code for WS1 + WS2', 'Bonus Name']);
+  if (!header) throw new Error('Sales "Bonus Menu": header row not found');
+  const statusCol = header.cols.findIndex((c) => c.startsWith('status')); // "Status (BO 2026-09-07)"
+  return rowsFrom(values, header, (row, col) => {
+    const code = cell(row, col('Promo Code'));
+    const ws = cell(row, col('Promo Code for WS1 + WS2'));
+    if (!code && !ws) return null;
+    const base = { source: 'Sales', group: 'VM', section: 'Bonus Menu', offer: cell(row, col('Bonus Name')), note: cell(row, col('Remark')), sheetStatus: cell(row, statusCol) };
+    const out = [];
+    // The menu applies to every QP2/QPRO brand; the same code in both columns means WS too.
+    if (code) out.push({ ...base, code, wsCode: ws && ws !== code ? ws : '', brandText: ws === code ? 'ALL (QP2/QPRO) + WS' : 'ALL (QP2/QPRO)' });
+    if (ws && ws !== code) out.push({ ...base, code: ws, brandText: 'WS1, WS2', noClaim: true });
+    return out;
+  });
+}
+
+const SALES_PARSERS = Object.freeze({
+  'Index (All Teams)': parseSalesIndex, 'VM - All Codes (BO)': parseVmAllCodes, 'TSM - Codes by Segment x Brand': parseTsmCodes,
+  'AM - Codes by Campaign': parseAmCodes, 'VM - Live Codes by Campaign': parseVmLiveByCampaign, 'Bonus Menu': parseBonusMenu,
+});
+
+// All Sales tabs; the first tab (in SALES_TABS order) that lists a code wins. Rows
+// of the same code within that tab are all kept (e.g. one Index row per brand).
+export function parseSalesAll(valuesByTab) {
+  const seen = new Set();
+  const out = [];
+  for (const tab of SALES_TABS) {
+    if (!valuesByTab[tab]) throw new Error(`Sales tab "${tab}" not found`);
+    const rows = SALES_PARSERS[tab](valuesByTab[tab]);
+    out.push(...rows.filter((r) => !seen.has(r.code.toUpperCase())));
+    for (const r of rows) seen.add(r.code.toUpperCase());
+  }
+  return out;
+}
+
+// Each takes { [tabName]: values } for its source's tabs.
+export const PARSERS = Object.freeze({
+  CEE: (v) => parseCeeCodes(v['CEE Codes']),
+  Sales: parseSalesAll,
+  CRM: (v) => parseCrmAll(v['All CRM Codes']),
+});
 
 // ── BO status ────────────────────────────────────────────────────────────────
 

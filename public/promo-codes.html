@@ -93,6 +93,7 @@ body.embed header .who{display:none}
     </div>
     <div class="actions">
       <span class="muted who" id="who"></span>
+      <a id="keylink" href="/admin/promo-codes-key" target="_top" hidden>Upload key</a>
       <button type="button" id="csv" disabled>Export CSV</button>
       <button type="button" id="logout" class="who">Log out</button>
     </div>
@@ -283,12 +284,10 @@ body.embed header .who{display:none}
     $('stats').innerHTML = cards.map(([l, n, c]) => `<div class="panel stat ${c}"><div class="n">${typeof n === 'number' ? n.toLocaleString() : esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('');
   }
 
-  function banners(data, status, readError) {
+  function banners(data, status) {
     const out = [];
-    if (readError) out.push(['warn', readError]);
     const last = data?.boCheckedAt || data?.pulledAt;
     if (last && Date.now() - Date.parse(last) > STALE_MS) out.push(['warn', `This list is out of date — last checked on BO ${fmt(last)}. The hourly check may have stopped (is the VDI switched on?).`]);
-    if (data?.skippedRows) out.push(['info', `${data.skippedRows} row(s) in the "Promo Codes" sheet tab could not be read and are not shown.`]);
     if (status && status.ok === false) out.push(['warn', `Last refresh failed (${fmt(status.lastFailureAt)}): ${status.detail || 'no detail'}. Showing the last good list.`]);
     // Only brands the sheets actually use (WS1 ID/TH/KH failing is noise when no code lists them).
     const used = new Set(ROWS.flatMap((r) => Object.keys(r.bo)));
@@ -316,7 +315,7 @@ body.embed header .who{display:none}
   async function load() {
     try {
       const me = await fetch('/api/me', { credentials: 'same-origin' });
-      if (me.ok) { const j = await me.json(); $('who').textContent = j.user?.email || ''; }
+      if (me.ok) { const j = await me.json(); $('who').textContent = j.user?.email || ''; $('keylink').hidden = !j.canManagePromoCodesKey; }
     } catch {}
     let res;
     try { res = await fetch('/api/promo-codes', { credentials: 'same-origin' }); }
@@ -324,11 +323,11 @@ body.embed header .who{display:none}
     if (res.status === 401) { (embedded ? window.top : window).location.href = '/?return=%2Fpromo-codes'; return; }
     if (res.status === 403) { $('sub').textContent = 'Your account is not on the Promo Codes viewer list.'; $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No access.</td></tr>'; return; }
     if (!res.ok) { $('sub').textContent = `Could not load codes (${res.status}).`; return; }
-    const { data, status, readError } = await res.json();
+    const { data, status } = await res.json();
     ROWS = prep(data?.rows || []);
-    banners(data, status, readError);
+    banners(data, status);
     if (!data) {
-      $('sub').textContent = readError ? 'Could not load the list right now.' : 'No data yet — the first hourly check has not run.';
+      $('sub').textContent = 'No data yet — the first hourly upload has not arrived.';
       $('tbody').innerHTML = '<tr><td colspan="7" class="empty">No data yet.</td></tr>';
       return;
     }

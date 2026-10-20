@@ -42,16 +42,18 @@ Brand ranges like `QPRO1-4`, `QP2A-D` are expanded to individual brands.
 - WS1/WS2 sessions expire: the daily job runs the existing `bin/refresh-igmp-sessions.mjs` (promo_testbot) first; if that login fails
   those brands show "Not checked" for the day.
 
-## Data path (current — 2026-10-19)
+## Data path (current — 2026-10-20)
 
-No upload route and no key. Both sides already have Google Sheets access to the Ops sheet ("PromoOps Data"):
+The dashboard server has **no Google access** (QC-log sheet writes fall back to a local file there), so it cannot read sheets. Hourly, on Gaby's VDI (`run-push-promo-codes.bat` → `bin/push-promo-codes.mjs`, Windows task "PromoCodes-Hourly"):
 
-- **VDI, hourly** (`run-push-promo-codes.bat` → `bin/push-promo-codes.mjs`): reads the 3 code sheets, checks BO read-only, writes the list to the **"Promo Codes"** tab and run info to **"Promo Codes Status"** (`src/qc-dashboard/promo-codes-sheet.js`). Data is written before leftover rows are cleared, so a reader never sees an empty list. A failed run only updates the status tab. WS1/WS2 sessions are refreshed (promo_testbot) only when a WS site fails, then retried once.
-- **Server** (`GET /api/promo-codes`): reads both tabs via its existing Google access, caches 5 min (single-flight), serves the last copy if Google errors. Rows are re-validated (sheet cells are editable by anyone with sheet access); bad rows are skipped and counted.
-- The Promo Codes tab is visible to anyone who can open the Ops sheet (accepted by Gabrielle 2026-10-19); the dashboard view stays allowlist-gated.
-- Removed: `POST /api/promo-codes/snapshot`, the feed key store, `/admin/promo-codes-key`, and the earlier relay route. Page stale warning after 3 h.
+1. Read **every** Sales tab (`SALES_TABS`; "Index (All Teams)" alone had only 160 of ~399 codes — first tab listing a code wins), plus CRM "All CRM Codes" and CEE "CEE Codes".
+2. Check BO read-only. WS1 MY / WS2 sessions are refreshed only when that site fails; **WS1 SG never triggers a login** (its testbot login keeps failing).
+3. Upload to `POST /api/promo-codes/snapshot` with the dedicated Promo Codes key (`docs/plans/promo-codes-feed-key.md`) — this is what the dashboard shows.
+4. Write a readable copy to the Ops sheet "Promo Codes" / "Promo Codes Status" tabs (for people who use the sheet; the dashboard does not read it).
 
-## Delivery to the server (historical)
+Key: created at `/admin/promo-codes-key` by an admin or a `keyOwners` person on the VDI itself, saved as `%USERPROFILE%.qc-relaypromo-codes-secret`. Page shows "re-checked every hour" and warns after 3 h without an upload.
+
+## Delivery to the server
 
 > **Superseded (2026-10-16):** the upload no longer uses the QC relay secret. It goes to `POST /api/promo-codes/snapshot`, signed with a dedicated Promo Codes feed key — see `docs/plans/promo-codes-feed-key.md`. The `/api/relay/promo-codes/dataset` route below was removed.
 
