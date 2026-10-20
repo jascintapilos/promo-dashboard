@@ -230,7 +230,8 @@ const GORDER=["Identity","COSTS / EARNS","DEPOSITS BACK","BONUS ROI over time","
 const GLABEL={"DEPOSITS BACK":"DEPOSITS BACK (gross · not profit)","KEEPS PLAYERS":"CAME BACK (share who redeposited)"};
 const FUN=`<svg width="10" height="10" viewBox="0 0 10 10"><path d="M0.6 1.4h8.8L6 5.2V8L4 9V5.2z" fill="currentColor"/></svg>`;
 let R="MY",TAB="macro",MW="30d",CT="Retention",VB="risk",DP="",MR=0,MACRO=DATA.macro;const WINS=["7d","30d","90d"];
-const winSwitch=()=>`<span class="winsw">${WINS.map(w=>`<button data-w="${w}" class="${w===MW?'on':''}">${w}</button>`).join("")}</span>`;
+const _builtDate=()=>{const s=(DATA.builtAt||"").slice(0,10);if(!s)return"the build date";const[y,m,d]=s.split("-");return `${+d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(+m||1)-1]} ${y}`;};
+const winSwitch=()=>`<span class="winsw">${WINS.map(w=>`<button data-w="${w}" class="${w===MW?'on':''}">${w}</button>`).join("")}</span>${MW!=="7d"?`<span class="winnote" style="font-size:10.5px;color:var(--muted);margin-left:8px">${MW} figures for recent claims are still filling in — shown “so far”, data to ${_builtDate()}</span>`:""}`;
 const g=id=>document.getElementById(id),d=()=>DATA[R],sym=()=>d().sym;
 const esc=s=>String(s==null?"":s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 const M=n=>sym()+(Math.abs(n)>=1e7?(n/1e6).toFixed(0)+"M":Math.abs(n)>=1e6?(n/1e6).toFixed(1)+"M":n>=1000?Math.round(n).toLocaleString():Math.round(n));
@@ -1163,7 +1164,7 @@ function tValueBands(){
      take=[`<b>This window is too short to measure who is “at risk”.</b> Players need about <b>90 days</b> of deposit history to be marked Cooling / Lapsed / Dormant, so in a short window everyone shows as <b>Active</b> and the at-risk figures read 0 — that means <b>not measurable for this period</b>, not “nobody is at risk”. For the at-risk / win-back view, pick a wider window (e.g. Year to date).`];
      body=segHeatHTML()+trialBandCard()+churnCard();
    }else{
-     take=[`<b>${slip.toLocaleString()}</b> top-value + high-value players are cooling or lapsed — <b>${MM(inm)}</b> of NGR sitting one step from dormant (the reactivation queue).`,
+     take=[`<b>${slip.toLocaleString()}</b> top-value + high-value players have <b>stopped depositing</b> (cooling or lapsed) — <b>${MM(inm)}</b> of NGR in the reactivation queue. This tracks <b>deposits</b>: some of these players are still placing bets.`,
          `Suggested priority follows value, not headcount: <b>${MM(prot)}</b> in active W/H/M NGR to protect · <b>${MM(rec+deep)}</b> is NGR associated with currently-inactive W/H/M players (<b>${MM(rec)}</b> recent &amp; urgent, <b>${MM(inm)}</b> of it top-value + high) — this is value already booked, not an amount we can expect back: the report's own measured 90-day win-back for these players has recovered only <b>${MM(wbMeasured)}</b> so far (${inm>0?Math.round(wbMeasured/inm*100):0}% of that booked value) · <b>${lowm.toLocaleString()}</b> Low-band players for low-cost servicing / selective testing.`,
          `The heat grid is a snapshot; the <b>measured 90-day flow</b> (fall-rates + win-back) is shown below it. Observed, not causal.`];
      body=segHeatHTML()+trialBandCard()+cascadeLadderHTML()+churnCard()+protectSplitHTML()+erosionHTML();
