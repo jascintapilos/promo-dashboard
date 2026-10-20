@@ -1,8 +1,11 @@
 {
-  "_comment": "Who can see the Promo Codes tab / page. Explicit list only - admins are NOT included automatically. See docs/plans/promo-codes-tab.md.",
+  "_comment": "emails = who can see the Promo Codes tab / page (explicit list only; admins are NOT included automatically). keyOwners = who, besides admins, may generate / revoke the Promo Codes upload key on their own VDI. See docs/plans/promo-codes-tab.md.",
   "emails": [
     "gabrielle.tiffany@alphaiotabpo.com",
     "shuern.lim@seahubasia.com",
     "jascinta.pilos@thebrandingpeople.co"
+  ],
+  "keyOwners": [
+    "gabrielle.tiffany@alphaiotabpo.com"
   ]
 }

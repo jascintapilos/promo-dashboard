@@ -1,22 +1,31 @@
 #!/usr/bin/env node
 // Hourly Promo Codes refresh (VDI): read the CEE / Sales / CRM code sheets, check
 // every code against BO (READ-ONLY active-list calls via fetchAllLiveCodes — no
-// PUT, no activate, no deactivate), and write the result to the "Promo Codes" tab
-// of the Ops sheet (PromoOps Data). The dashboard reads that tab directly — there
-// is no upload route and no key. See docs/plans/promo-codes-tab.md.
+// PUT, no activate, no deactivate), then
+//   1. upload the result to POST /api/promo-codes/snapshot, signed with the
+//      dedicated Promo Codes key (%USERPROFILE%\.qc-relay\promo-codes-secret,
+//      created by the key owner at /admin/promo-codes-key) — this is what the
+//      dashboard shows. It never uses the QC relay key.
+//   2. write a readable copy to the "Promo Codes" tab of the Ops sheet.
+// See docs/plans/promo-codes-tab.md and docs/plans/promo-codes-feed-key.md.
 //
-//   node bin/push-promo-codes.mjs             read sheets + BO, write the Ops sheet tab
+//   node bin/push-promo-codes.mjs             read sheets + BO, upload + write the Ops sheet tab
 //   node bin/push-promo-codes.mjs --dry-run   read sheets + BO, print counts, write tmp/promo-codes-dry-run.json only
+//   env: QC_HUB_URL (default https://qc-dashboard.zoom66.xyz), PROMO_CODES_FEED_SECRET (instead of the key file)
 //
-// WS1/WS2 sessions expire: when one of those sites fails, bin/refresh-igmp-sessions.mjs
-// (promo_testbot) is run ONCE and the BO check retried — so the testbot only logs in
-// when a session is actually dead, not every hour.
-// A failed run records the failure in "Promo Codes Status" and keeps the last good list.
-// Exit 0 on success, 1 on failure.
+// WS1/WS2 sessions expire: when WS1 MY or WS2 fails, bin/refresh-igmp-sessions.mjs
+// (promo_testbot) is run ONCE for just that site and the BO check retried. WS1 SG
+// never triggers a login (its testbot login keeps failing; retries risk a lockout).
+// A failed run is recorded on the dashboard and in the sheet; the last good list stays.
+// Exit 0 on success, 1 on failure — message only, never the key.
 
+import { gzipSync } from 'node:zlib';
+import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { sign } from '../src/qc-dashboard/relay-auth.js';
+import { readUploaderFeedSecret } from '../src/qc-dashboard/promo-codes-feed-secret.js';
 import { getSheetsClient } from '../src/sheets-client.js';
 import { getOpsSheetId } from '../src/ops-sheet.js';
 import { fetchAllLiveCodes } from '../src/live-codes.js';
@@ -24,16 +33,23 @@ import { QPRO_BRANDS, QP2_MERCHANTS, IGMP_SITES } from '../src/brand-ids.js';
 import { PROMO_CODE_SOURCES, PARSERS, applyBoStatus } from '../src/qc-dashboard/promo-codes-parse.js';
 import { writeGoodRun, writeFailedRun } from '../src/qc-dashboard/promo-codes-sheet.js';
 
-// The sites refresh-igmp-sessions.mjs can log back into.
-const REFRESHABLE_IGMP = new Set(['WS1_MY', 'WS1_SG', 'WS2']);
+const HUB = (process.env.QC_HUB_URL || 'https://qc-dashboard.zoom66.xyz').replace(/\/+$/, '');
+const WORKER_ID = `promo-codes-push-${process.pid}`;
+const REL_PATH = '/api/promo-codes/snapshot';
+const MAX_PUSH_BYTES = 8 * 1024 * 1024; // server cap for this route
+
+// BO key → site the job may log back into, only when that site failed. WS1 SG is
+// deliberately excluded; add it back here once its testbot login is fixed.
+const REFRESHABLE_IGMP = new Map([['WS1_MY', 'ws1-v3-my'], ['WS2', 'ws2']]);
 
 async function readSources(sheets) {
   const rows = [];
   const sources = {};
-  for (const { source, spreadsheetId, tab } of PROMO_CODE_SOURCES) {
-    const r = await sheets.spreadsheets.values.get({ spreadsheetId, range: `'${tab}'!A:Z` });
-    const parsed = PARSERS[source](r.data.values || []);
-    if (!parsed.length) throw new Error(`${source} sheet "${tab}" returned no codes`);
+  for (const { source, spreadsheetId, tabs } of PROMO_CODE_SOURCES) {
+    const r = await sheets.spreadsheets.values.batchGet({ spreadsheetId, ranges: tabs.map((t) => `'${t}'!A:Z`) });
+    const valuesByTab = Object.fromEntries(tabs.map((t, i) => [t, r.data.valueRanges?.[i]?.values || []]));
+    const parsed = PARSERS[source](valuesByTab);
+    if (!parsed.length) throw new Error(`${source} sheet returned no codes`);
     sources[source] = parsed.length;
     rows.push(...parsed);
   }
@@ -47,8 +63,11 @@ async function listLiveCodes({ refreshIgmp }) {
   let result = await fetchAllLiveCodes();
   const dead = result.siteErrors.map(keyOf).filter((k) => REFRESHABLE_IGMP.has(k));
   if (refreshIgmp && dead.length) {
-    console.log(`  WS1/WS2 session problem (${dead.join(', ')}) — refreshing sessions once and retrying`);
-    const r = spawnSync(process.execPath, ['bin/refresh-igmp-sessions.mjs'], { stdio: 'ignore', timeout: 4 * 60_000 });
+    console.log(`  WS1/WS2 session problem (${dead.join(', ')}) — refreshing just those sites once and retrying`);
+    const r = spawnSync(process.execPath, ['bin/refresh-igmp-sessions.mjs'], {
+      stdio: 'ignore', timeout: 4 * 60_000,
+      env: { ...process.env, IGMP_REFRESH_SITES: dead.map((k) => REFRESHABLE_IGMP.get(k)).join(',') },
+    });
     if (r.status !== 0) console.log(`  session refresh exited ${r.status ?? 'timeout'} — affected brands will show "Not checked"`);
     result = await fetchAllLiveCodes();
   }
@@ -68,6 +87,24 @@ async function checkBo(rows, opts) {
   };
 }
 
+async function postSigned(payload, secret) {
+  const gz = gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+  if (gz.length > MAX_PUSH_BYTES) throw new Error(`payload too large (${(gz.length / 1048576).toFixed(1)}MB gzip)`);
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const headers = {
+    'content-type': 'application/gzip',
+    'x-relay-timestamp': String(timestamp),
+    'x-relay-nonce': nonce,
+    'x-relay-signature': sign({ secret, method: 'POST', path: REL_PATH, timestamp, nonce, bodyBuffer: gz }),
+    'x-relay-worker': WORKER_ID.slice(0, 64),
+  };
+  const resp = await fetch(`${HUB}${REL_PATH}`, { method: 'POST', headers, body: gz });
+  const text = await resp.text();
+  if (!resp.ok) throw new Error(`dashboard rejected the upload (${resp.status}): ${text.slice(0, 200)}`);
+  return { bytes: gz.length };
+}
+
 function summarise(rows, sources, siteErrors, liveCount) {
   const live = rows.filter((r) => Object.values(r.bo).includes('active')).length;
   const mm = rows.filter((r) => r.mismatch.length).length;
@@ -78,6 +115,9 @@ function summarise(rows, sources, siteErrors, liveCount) {
 
 export async function pushPromoCodes({ dryRun = false, refreshIgmp = !dryRun } = {}) {
   const pulledAt = new Date().toISOString();
+  const key = dryRun ? null : readUploaderFeedSecret();
+  // No key yet still updates the sheet copy; the dashboard upload is skipped with a clear message.
+  if (key && !key.present) console.log(`  ! Promo Codes upload key unavailable — ${key.reason}`);
   const { sheets } = await getSheetsClient();
   const opsSheetId = dryRun ? null : getOpsSheetId();
   try {
@@ -85,29 +125,36 @@ export async function pushPromoCodes({ dryRun = false, refreshIgmp = !dryRun } =
     const { rows, siteErrors, liveCount } = await checkBo(sheetRows, { refreshIgmp });
     const boCheckedAt = new Date().toISOString();
     summarise(rows, sources, siteErrors, liveCount);
-    const payload = { pulledAt, boCheckedAt, rows, sources, siteErrors, detail: '' };
+    const payload = { ok: true, pulledAt, boCheckedAt, rows, sources, siteErrors, detail: '' };
     if (dryRun) {
       mkdirSync('tmp', { recursive: true });
       writeFileSync('tmp/promo-codes-dry-run.json', JSON.stringify(payload, null, 2));
-      console.log('  dry run — nothing written to the Ops sheet; wrote tmp/promo-codes-dry-run.json');
+      console.log('  dry run — nothing uploaded or written; wrote tmp/promo-codes-dry-run.json');
       return { ok: true };
     }
-    await writeGoodRun(sheets, opsSheetId, payload);
-    console.log(`  ✓ wrote ${rows.length} rows to the "Promo Codes" tab`);
+    try { await writeGoodRun(sheets, opsSheetId, payload); console.log(`  ✓ wrote ${rows.length} rows to the Ops sheet "Promo Codes" tab`); }
+    catch (e) { console.error(`  ✖ could not write the Ops sheet copy: ${e.message}`); }
+    if (!key.present) return { ok: false, error: 'no upload key' };
+    const r = await postSigned(payload, key.secret);
+    console.log(`  ✓ uploaded ${rows.length} rows to the dashboard (${(r.bytes / 1024).toFixed(0)} KB gzip)`);
     return { ok: true };
   } catch (e) {
     console.error(`  ✖ promo codes refresh failed: ${e.message}`);
     if (!dryRun) {
-      try { await writeFailedRun(sheets, opsSheetId, { pulledAt, detail: e.message.slice(0, 500) }); }
-      catch (e2) { console.error(`  ✖ could not record the failure in the sheet: ${e2.message}`); }
+      const detail = e.message.slice(0, 500);
+      try { await writeFailedRun(sheets, opsSheetId, { pulledAt, detail }); } catch {}
+      if (key?.present) {
+        try { await postSigned({ ok: false, pulledAt, detail }, key.secret); }
+        catch (e2) { console.error(`  ✖ could not record the failure on the dashboard: ${e2.message}`); }
+      }
     }
     return { ok: false, error: e.message };
   }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  // process.exitCode, not process.exit(): exiting with sockets still open trips a
-  // libuv assert on Windows (exit 127).
+  // process.exitCode, not process.exit(): exiting with fetch sockets still open
+  // trips a libuv assert on Windows (exit 127).
   try {
     const r = await pushPromoCodes({ dryRun: process.argv.includes('--dry-run') });
     process.exitCode = r.ok ? 0 : 1;

@@ -1,24 +1,19 @@
-// Promo Codes tab routes — list read from the Ops sheet (fixture here), allowlist-gated
-// read, no upload route, and the `promo-codes` role being kept to its one page.
+// Promo Codes tab routes — feed-key snapshot upload (HMAC), allowlist-gated read, and the
+// `promo-codes` role being kept to its one page.
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gzipSync } from 'node:zlib';
 import { buildSignedHeaders, MAX_REPORT_BUILD_BYTES } from '../src/qc-dashboard/relay-auth.js';
-import { DATA_HEADERS, rowToSheet, statusToSheet } from '../src/qc-dashboard/promo-codes-sheet.js';
 
 const RELAY = 'P'.repeat(64);
+const FEED = 'F'.repeat(64);
 const TMP = mkdtempSync(path.join(os.tmpdir(), 'promo-codes-routes-'));
-// Stands in for the "Promo Codes" / "Promo Codes Status" tabs of the Ops sheet.
-const FIXTURE = path.join(TMP, 'sheet.json');
-writeFileSync(FIXTURE, JSON.stringify({
-  data: [DATA_HEADERS.slice(), rowToSheet({ source: 'CEE', code: 'REL_BASE_12PCT_5X', brands: ['QP2A'], regions: ['SG'], bo: { QP2A: 'active' }, mismatch: [] })],
-  status: statusToSheet({ pulledAt: '2026-10-16T01:00:00.000Z', ok: true, lastGoodAt: '2026-10-16T01:00:00.000Z', boCheckedAt: '2026-10-16T01:05:00.000Z', sources: { CEE: 1, Sales: 0, CRM: 0 }, siteErrors: [] }),
-}));
+const DATA_DIR = path.join(TMP, 'data');
 const VIEWERS = path.join(TMP, 'viewers.json');
 writeFileSync(VIEWERS, JSON.stringify({ emails: ['viewer@test.local', 'codes-only@test.local'] }));
 const servers = [];
@@ -28,7 +23,7 @@ async function startServer(port, email, role) {
   const server = spawn(process.execPath, ['bin/qc-dashboard.mjs'], {
     env: {
       ...process.env, PORT: String(port), AUTH_MODE: 'dev', DEV_USER_EMAIL: email, DEV_USER_ROLE: role,
-      RELAY_SECRET: RELAY, PROMO_CODES_SHEET_FIXTURE: FIXTURE, PROMO_CODES_VIEWERS_PATH: VIEWERS, OPS_DATA_DIR: path.join(TMP, 'ops'),
+      RELAY_SECRET: RELAY, PROMO_CODES_FEED_SECRET: FEED, PROMO_CODES_DATA_DIR: DATA_DIR, PROMO_CODES_VIEWERS_PATH: VIEWERS, OPS_DATA_DIR: path.join(TMP, 'ops'),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -63,25 +58,42 @@ const get = async (base, p, { auth = true } = {}) => fetch(`${base}${p}`, {
   redirect: 'manual', headers: auth ? { cookie: await cookieFor(base) } : {},
 });
 
-test('an allowlisted user reads the list from the sheet', async () => {
+function signedPush(base, payload, { tamper = false } = {}) {
+  const relPath = '/api/promo-codes/snapshot';
+  const gz = gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+  const { headers, bodyBuffer } = buildSignedHeaders({ method: 'POST', path: relPath, bodyBuffer: gz, secret: FEED, workerId: 'promo-codes-test', maxBytes: MAX_REPORT_BUILD_BYTES });
+  headers['content-type'] = 'application/gzip';
+  if (tamper) headers['x-relay-signature'] = 'f'.repeat(64);
+  return fetch(`${base}${relPath}`, { method: 'POST', headers, body: bodyBuffer });
+}
+
+const PUSH = {
+  ok: true, pulledAt: '2026-10-16T01:00:00.000Z', boCheckedAt: '2026-10-16T01:05:00.000Z',
+  sources: { CEE: 1, Sales: 0, CRM: 0 }, siteErrors: [],
+  rows: [{ source: 'CEE', code: 'REL_BASE_12PCT_5X', brands: ['QP2A'], regions: ['SG'], bo: { QP2A: 'active' }, mismatch: [] }],
+};
+
+test('unsigned / tampered pushes are refused', async () => {
+  assert.equal((await fetch(`${VIEWER}/api/promo-codes/snapshot`, { method: 'POST', body: 'x' })).status, 401);
+  assert.equal((await signedPush(VIEWER, PUSH, { tamper: true })).status, 401);
+});
+
+test('signed push stores the list; an allowlisted user reads it', async () => {
+  const r = await signedPush(VIEWER, PUSH);
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).status.rowCount, 1);
   const g = await get(VIEWER, '/api/promo-codes');
   assert.equal(g.status, 200);
   const body = await g.json();
   assert.equal(body.data.rows[0].code, 'REL_BASE_12PCT_5X');
-  assert.deepEqual(body.data.rows[0].bo, { QP2A: 'active' });
   assert.equal(body.status.ok, true);
 });
 
-test('there is no upload route any more — not with a session, not with the QC relay key', async () => {
-  const gz = gzipSync(Buffer.from('{}', 'utf8'));
-  for (const p of ['/api/promo-codes/snapshot', '/api/relay/promo-codes/dataset']) {
-    const { headers, bodyBuffer } = buildSignedHeaders({ method: 'POST', path: p, bodyBuffer: gz, secret: RELAY, workerId: 't', maxBytes: MAX_REPORT_BUILD_BYTES });
-    const r = await fetch(`${VIEWER}${p}`, { method: 'POST', headers: { ...headers, cookie: await cookieFor(VIEWER) }, body: bodyBuffer });
-    assert.notEqual(r.status, 200, p);
-  }
-  for (const p of ['/admin/promo-codes-key', '/api/admin/promo-codes-key']) {
-    assert.ok([404, 200].includes((await get(ADMIN, p)).status) && !(await (await get(ADMIN, p)).text()).includes('Generate new key'), p);
-  }
+test('a bad push body is rejected and does not replace the list', async () => {
+  const r = await signedPush(VIEWER, { ...PUSH, rows: [{ ...PUSH.rows[0], source: 'Nope' }] });
+  assert.equal(r.status, 400);
+  const body = await (await get(VIEWER, '/api/promo-codes')).json();
+  assert.equal(body.data.rows[0].code, 'REL_BASE_12PCT_5X');
 });
 
 test('signed-out requests get 401 (API) / sign-in redirect (page)', async () => {

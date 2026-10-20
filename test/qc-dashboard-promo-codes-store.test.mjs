@@ -9,7 +9,7 @@ import {
   parseCeeCodes, parseSalesIndex, parseCrmAll, applyBoStatus,
 } from '../src/qc-dashboard/promo-codes-parse.js';
 import {
-  sanitizePromoCodeRow, canViewPromoCodes, loadPromoCodeViewers,
+  validatePromoCodesPush, applyPromoCodesPush, readPromoCodes, canViewPromoCodes, loadPromoCodeViewers,
 } from '../src/qc-dashboard/promo-codes-store.js';
 
 const IGMP = [
@@ -155,15 +155,37 @@ test('applyBoStatus: WS1 splits by region; ALL rows only flag named brands', () 
   assert.deepEqual(out[1].mismatch, []); // QPRO1-3 / QP2B inactive but not named by the sheet
 });
 
+const goodPush = (rows) => ({
+  ok: true, pulledAt: '2026-10-16T01:00:00.000Z', boCheckedAt: '2026-10-16T01:05:00.000Z',
+  sources: { CEE: 1, Sales: 0, CRM: 0, Bogus: 9 }, siteErrors: [{ brand: 'WS1_SG', message: 'HTTP 500' }], rows,
+});
 const sampleRow = { source: 'CEE', code: 'REL_A', brands: ['QP2A'], regions: ['SG'], bo: { QP2A: 'active' }, mismatch: [] };
 
-test('sanitizePromoCodeRow accepts a good row and rejects bad ones', () => {
-  assert.equal(sanitizePromoCodeRow(sampleRow).code, 'REL_A');
-  assert.throws(() => sanitizePromoCodeRow({ ...sampleRow, source: 'Other' }), /source/);
-  assert.throws(() => sanitizePromoCodeRow({ ...sampleRow, code: '' }), /code/);
-  assert.throws(() => sanitizePromoCodeRow({ ...sampleRow, bo: { QP2A: 'maybe' } }), /bo entries/);
-  assert.throws(() => sanitizePromoCodeRow({ ...sampleRow, bo: { '<script>': 'active' } }), /bo entries/);
-  assert.throws(() => sanitizePromoCodeRow({ ...sampleRow, offer: 'x'.repeat(1001) }), /offer/);
+test('validatePromoCodesPush accepts a good body and rejects bad ones', () => {
+  const rec = validatePromoCodesPush(goodPush([sampleRow]));
+  assert.equal(rec.rows.length, 1);
+  assert.deepEqual(rec.sources, { CEE: 1, Sales: 0, CRM: 0 });
+  assert.throws(() => validatePromoCodesPush({ ...goodPush([sampleRow]), pulledAt: 'x' }), /pulledAt/);
+  assert.throws(() => validatePromoCodesPush(goodPush([{ ...sampleRow, source: 'Other' }])), /source/);
+  assert.throws(() => validatePromoCodesPush(goodPush([{ ...sampleRow, code: '' }])), /code/);
+  assert.throws(() => validatePromoCodesPush(goodPush([{ ...sampleRow, bo: { QP2A: 'maybe' } }])), /bo entries/);
+  assert.throws(() => validatePromoCodesPush(goodPush([{ ...sampleRow, bo: { '<script>': 'active' } }])), /bo entries/);
+  assert.deepEqual(validatePromoCodesPush({ ok: false, pulledAt: '2026-10-16T01:00:00.000Z', detail: 'sheet error' }),
+    { ok: false, pulledAt: '2026-10-16T01:00:00.000Z', detail: 'sheet error' });
+});
+
+test('apply/read: a failed push keeps the last good rows', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'promo-codes-store-'));
+  try {
+    assert.deepEqual(readPromoCodes(dir), { data: null, status: null });
+    applyPromoCodesPush(dir, validatePromoCodesPush(goodPush([sampleRow])));
+    const st = applyPromoCodesPush(dir, validatePromoCodesPush({ ok: false, pulledAt: '2026-10-17T01:00:00.000Z', detail: 'BO down' }));
+    assert.equal(st.ok, false);
+    assert.equal(st.lastGoodAt, '2026-10-16T01:00:00.000Z');
+    const { data, status } = readPromoCodes(dir);
+    assert.equal(data.rows[0].code, 'REL_A');
+    assert.equal(status.detail, 'BO down');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('viewer allowlist: explicit emails only, case-insensitive, fails closed', () => {

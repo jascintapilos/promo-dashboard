@@ -1601,7 +1601,7 @@ function bind() {
   resetCodeRows();
 }
 
-const ALLOWED_RETURN_PATHS = new Set(['/dashboard', '/promo-codes']);
+const ALLOWED_RETURN_PATHS = new Set(['/dashboard', '/promo-codes', '/admin/promo-codes-key']);
 
 function bindSwitcher() {
   document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
