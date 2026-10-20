@@ -36,7 +36,7 @@ def load(p):
 c = get_client(send_receive_timeout=900)
 
 for MK, CUR in (("MY", "MYR"), ("SG", "SGD")):
-    va = load(f"verify-action-{MK}.json")
+    va = load(f"verify-allcodes-{MK}.json")  # Codes-tab statistic lookup: every code, not just managed
     if not va:
         print(f"[{MK}] skip — verify-action missing")
         continue

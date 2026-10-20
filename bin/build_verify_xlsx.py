@@ -74,7 +74,7 @@ def load(p):
 
 
 def merged(mk):
-    va = load(f"verify-action-{mk}.json")
+    va = load(f"verify-allcodes-{mk}.json")  # Codes tab = complete statistics lookup (managed + data-only rows)
     rp = (load(f"reproduce-perrm-{mk}.json") or {}).get("codes", {})
     kh = (load(f"keeps-horizon-{mk}.json") or {}).get("codes", {})
     ggr = load(f"ggr-coverage-{mk}.json") or {}     # ret/acq house-edge (VIP already carries its own)

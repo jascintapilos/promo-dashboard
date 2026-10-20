@@ -142,6 +142,8 @@ def derive_dep_classify(mk, vmap):
         grp, pil, tot = {}, {}, blank()
         for code, d0 in byc.items():
             vc = tv.get(code.strip()) or {}
+            if not vc.get("managed", True):   # byCode stays full (Tab-4 timing chips); Page-3 pillar/total aggregate is managed-only
+                continue
             p = vc.get("pillar", "?"); g = f"{p}||{bt(vc.get('mechanic'))}"
             gg = grp.setdefault(g, blank()); pp = pil.setdefault(p, blank())
             for x in BUCK:
@@ -202,8 +204,15 @@ def build_macro():
 
 OUT = {}
 for mk, sym in (("MY", "RM"), ("SG", "S$")):
-    va = load(f"verify-action-{mk}.json"); vac = va["codes"] if isinstance(va, dict) else va
+    va = load(f"verify-allcodes-{mk}.json"); vac = va["codes"] if isinstance(va, dict) else va  # every code (managed + data-only)
     vmap = {c["code"]: c for c in vac}
+    # MANAGED set — the ROI-scored codes with a firm call. The code UNIVERSE is now every code
+    # (managed + data-only statistics rows for the Codes tab), but every ANALYSIS aggregate
+    # (Page-3 money/timing, value bands, Spend-by-call, the exec book, the money reconciliation)
+    # is ring-fenced to MGD so the analyses stay exactly on the codes we actually judged. Per-code
+    # cell data (all tabs' columns) stays full for every code. Default True = backward-safe if a
+    # code predates the managed flag.
+    MGD = {c.strip() for c, v in vmap.items() if v.get("managed", True)}
     wt = load(f"who_targeted-{mk}.json") or {}
     dbc = (load(f"deposit-behaviour-bycode-{mk}.json") or {}).get("byCode", {})  # per-code deposit behaviour (30d)
     cp = load(f"code-players-{mk}.json") or {}  # gated per-player drill-down; _players = distinct claimers per code
@@ -248,20 +257,27 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
                 cells["DEPOSITS BACK · Came back & deposited (30d)"] = {"d": disp, "n": srt}
                 cells["DEPOSITS BACK · No-deposit deposit (30d)"] = {"d": f"{sym}{bc.get('amount', 0):,.0f}", "n": bc.get("amount", 0)}
                 cells["DEPOSITS BACK · Median days back"] = {"d": (f"{bc['speed']:.0f}d" if bc["speed"] else "—"), "n": bc["speed"] or None}
+        mgd = code.strip() in MGD
         codes.append({"_pillar": pillar, "_type": typ, "_band": b, "_tier": tier, "_call": call,
-                      "_spend": spend, "_perrm": vc.get("r_per_rm"), "_players": pcount.get(code.strip()), "cells": cells})
-        if pillar != "Acquisition":
-            a = band_agg[b]; a["n"] += 1; a["spend"] += spend
-        calls[call]["n"] += 1; calls[call]["sp"] += spend
+                      "_managed": mgd,  # False = data-only statistics row (no firm call); excluded from the analyses below
+                      "_spend": spend, "_perrm": vc.get("r_per_rm"),
+                      "_players": pcount.get(code.strip()) or vc.get("r_claimers"),  # fall back to warehouse claimers (data-only codes skip the player drill-down pull)
+                      "cells": cells})
+        if mgd:  # value-band + Spend-by-call aggregates stay on the managed book
+            if pillar != "Acquisition":
+                a = band_agg[b]; a["n"] += 1; a["spend"] += spend
+            calls[call]["n"] += 1; calls[call]["sp"] += spend
     # exec-vs-Money reconciliation guard: the exec book (sum of codes._spend) must equal the Money tab
     # Total bonus (sum of money rows). After sourcing _spend from the money rows above they tie by
     # construction; a divergence means a union-only code (in ex['codes'] with no money row -> r_spend
     # fallback) or a money row with no code rec. Warn loudly (non-fatal) so a rebuild surfaces it rather
     # than silently shipping an exec tile that contradicts the Money Total.
-    _code_set = {r["Promo code"]["d"] for r in ex["codes"]}
-    _money_set = set(money_by_code)
-    _exec_book = round(sum(c["_spend"] for c in codes))
-    _money_book = round(sum(v["spend"] for v in money_by_code.values()))
+    # Reconciliation is on the MANAGED book — the exec tile + Money Total both reflect managed codes;
+    # data-only statistics rows are excluded from both sides so the guard still means something.
+    _code_set = {r["Promo code"]["d"] for r in ex["codes"] if r["Promo code"]["d"].strip() in MGD}
+    _money_set = {k for k in money_by_code if k.strip() in MGD}
+    _exec_book = round(sum(c["_spend"] for c in codes if c["_managed"]))
+    _money_book = round(sum(v["spend"] for k, v in money_by_code.items() if k.strip() in MGD))
     if _code_set != _money_set or _exec_book != _money_book:
         import sys as _sys
         print(f"[{mk}] WARN exec-vs-Money reconcile: book {_exec_book} vs money {_money_book} "
@@ -282,8 +298,11 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
     # money in vs money out summary — aggregate ALL money columns from the by-code rows by pillar × type
     MONEYCOLS = ["Claims", "Unique claimers", "Repeat- claimers", "First-claim bonus", "Total bonus", "Repeat cost",
                  "Redepositors 7d", "Redepositors 30d", "Redepositors 90d", "Deposit amt 7d", "Deposit amt 30d", "Deposit amt 90d"]
+    # Money tab (Page 3) is an ANALYSIS: ring-fence to managed codes. money_by_code above stays full so
+    # the Codes tab shows every code's spend; only the Page-3 money rollups use the managed subset.
+    money_rows_mgd = [r for r in ex["money"]["rows"] if ((r.get("Promo code") or {}).get("d") or "").strip() in MGD]
     monsum = defaultdict(lambda: defaultdict(float)); moncodes = defaultdict(int)
-    for row in ex["money"]["rows"]:
+    for row in money_rows_mgd:
         p = row.get("Pillar", {}).get("d", ""); t = row.get("Bonus type", {}).get("d", "")
         moncodes[(p, t)] += 1
         for mc in MONEYCOLS:
@@ -315,7 +334,7 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
         elif vals and all((n is not None or d in ("", "—")) for d, n, p in vals) and any(n is not None for d, n, p in vals): typ = "num"
         else: typ = "text"
         cols.append({"key": k, "group": grp, "label": lab, "type": typ, "pillars": pillars})
-    OUT[mk] = {"sym": sym, "codes": codes, "columns": cols, "money": ex["money"], "moneySummary": money_summary,
+    OUT[mk] = {"sym": sym, "codes": codes, "columns": cols, "money": {**ex["money"], "rows": money_rows_mgd}, "moneySummary": money_summary,
                "depositTruth": load(f"deposit-truth-{mk}.json"),
                "depAlloc": derive_dep_alloc(mk, vmap),
                "depClassify": derive_dep_classify(mk, vmap),
@@ -328,7 +347,8 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
                "formulas": ex.get("formulas", []), "callsLevers": ex.get("callsLevers", []), "ripple": ex.get("ripple", {}),
                "verification": ex["verification"], "segGrid": ex["segGrid"], "bands": bands,
                "calls": calls_dist, "config": CONFIG,
-               "meta": {"nCodes": len(codes), "book": round(sum(c["_spend"] for c in codes))}}
+               "meta": {"nCodes": len(codes), "nManaged": sum(1 for c in codes if c["_managed"]),
+                        "book": round(sum(c["_spend"] for c in codes if c["_managed"]))}}  # exec book = managed only
     print(f"[{mk}] codes={len(codes)} bands={len(bands)} money_sum={len(money_summary)} calls={len(calls_dist)} book={sym}{OUT[mk]['meta']['book']:,}")
 
 macro = build_macro()

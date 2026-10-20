@@ -42,16 +42,19 @@ def main(mk):
         if not m:
             continue
         for c in m["codes"]:
-            if c.get("decision") not in ACTION:
-                continue
-            # ROI action codes only. VIP non-A lanes are loyalty perks / entitlements / engagement
-            # (weekly rescue = cashback perk, lucky-wheel / check-in / scratch / birthday), which the
-            # report does not score on ROI — they carry the native word "Trim" but are not a cut/scale call.
-            if pillar == "VIP" and (c.get("lane") or "") != "A-performance":
+            # MANAGED = has a firm exec call (an ROI action verb) and, for VIP, is Lane-A performance.
+            # Everything else (Monitor / Hold / Watch-money / Low volume / Referral / Reload, and VIP
+            # perks / entitlements / engagement: weekly rescue, lucky-wheel, check-in, scratch, birthday)
+            # is DATA-ONLY: shown on the Codes tab as a statistics lookup with NO firm call, and
+            # ring-fenced OUT of the managed analyses (Page 3 money/timing, bands, totals) downstream,
+            # where every consumer filters on this `managed` flag. (Pre-2026-10-20 this loop dropped the
+            # non-managed codes entirely; now they pass through tagged managed=False.)
+            managed = (c.get("decision") in ACTION) and not (pillar == "VIP" and (c.get("lane") or "") != "A-performance")
+            if not managed:
                 excluded.append((c["code"].strip(), c.get("lane"), c.get("sub_type")))
-                continue
             if True:
-                rows.append({"code": c["code"].strip(), "pillar": pillar, "decision": c.get("decision"),
+                rows.append({"code": c["code"].strip(), "pillar": pillar, "managed": managed,
+                             "decision": c.get("decision"),
                              "name": c.get("name") or "", "mechanic": c.get("mechanic"),
                              "reason": (c.get("reason") or "")[:300], "do": (c.get("do") or "")[:300],
                              "r_spend": round(c.get("spend") or 0), "r_claims": c.get("claims"),
@@ -72,12 +75,18 @@ def main(mk):
         # None, so the downstream consumers that read verify-action-{mk}.json .codes
         # (ggr_coverage, bonus_roi_horizon, reproduce_attribution, keeps_horizon, the
         # deposit_* pulls) degrade to no-op instead of crashing on a missing file.
-        json.dump({"market": mk, "sym": SYMBOL, "window": f"{START} to {END_INCL}",
-                   "n_codes": 0, "n_flagged": 0, "n_excluded_perks": 0, "excluded_perks": [], "codes": []},
-                  open(SCR / f"verify-action-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-        print(f"[{mk}] no qualifying action codes — wrote empty verify-action-{mk}.json")
+        _empty = {"market": mk, "sym": SYMBOL, "window": f"{START} to {END_INCL}",
+                  "n_codes": 0, "n_managed": 0, "n_dataonly": 0, "n_flagged": 0,
+                  "n_excluded_perks": 0, "excluded_perks": [], "codes": []}
+        json.dump(_empty, open(SCR / f"verify-action-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        json.dump(_empty, open(SCR / f"verify-allcodes-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        print(f"[{mk}] no qualifying action codes — wrote empty verify-action-{mk}.json + verify-allcodes-{mk}.json")
         return None
     inlist = ",".join("'" + x.replace("'", "''") + "'" for x in codes)
+    # Data-only codes are a statistics lookup, not scored — the directional NGR-lift check (qb) is only
+    # meaningful for managed codes and its snapshot join is heavy, so run it over managed codes only.
+    mgd_codes = sorted({r["code"] for r in rows if r["managed"]})
+    inlist_mgd = ",".join("'" + x.replace("'", "''") + "'" for x in mgd_codes) or "''"
     c = get_client(send_receive_timeout=600)
 
     # HARD CHECK — spend / claims / claimers straight from GetBonus (same window)
@@ -97,7 +106,7 @@ def main(mk):
       SELECT MEMBER_ID, trimBoth(BonusCode) code, toDate(BonusTime_gmt8) cd, BonusAmount amt
       FROM WORKSPACE.GetBonus_ABC
       WHERE SITE_edit='{SITE_EDIT}' AND Currency='{CURRENCY}' AND BonusAmount>0
-        AND trimBoth(BonusCode) IN ({inlist}) AND BonusStatus IN {STATUSES}
+        AND trimBoth(BonusCode) IN ({inlist_mgd}) AND BonusStatus IN {STATUSES}
         AND toDate(BonusTime_gmt8) >= '{START}' AND toDate(BonusTime_gmt8) <= '{END_INCL}'
     ),
     ngr AS (
@@ -143,10 +152,20 @@ def main(mk):
         out.append({**r, "w_spend": h.get("spend"), "w_claims": h.get("claims"), "w_claimers": h.get("claimers"),
                     "w_plain_per_rm": l.get("plain_per_rm"), "w_fwd7": l.get("fwd7"), "w_pre14": l.get("pre14"),
                     "flags": flags, "flag": ("OK" if not flags else " · ".join(flags))})
-    res = {"market": mk, "sym": SYMBOL, "window": f"{START} to {END_INCL}", "n_codes": len(out),
-           "n_flagged": sum(1 for o in out if o["flags"] and o["flags"] != ["THIN (<30)"]),
-           "n_excluded_perks": len(excluded), "excluded_perks": excluded,
-           "codes": out}
+    n_mgd = sum(1 for o in out if o.get("managed"))
+    # TWO files, by design:
+    #  * verify-allcodes-{MK}.json — EVERY code (managed + data-only). The Codes-tab per-code pulls
+    #    (moneyback / who_targeted / roi-horizon / ggr / deposit-behaviour-bycode / code-players) and
+    #    build_verify_xlsx read this, so the Codes tab is a complete statistics lookup.
+    #  * verify-action-{MK}.json — the MANAGED subset only (unchanged scope). The Page-3 analysis pulls
+    #    (deposit_classify / deposit_alloc_bycode / deposit_afterclaim_split / deposit_behaviour /
+    #    deposit_timedecay) read this, so every analysis stays exactly on the codes we judged.
+    allres = {"market": mk, "sym": SYMBOL, "window": f"{START} to {END_INCL}", "n_codes": len(out),
+              "n_managed": n_mgd, "n_dataonly": len(out) - n_mgd,
+              "n_flagged": sum(1 for o in out if o.get("managed") and o["flags"] and o["flags"] != ["THIN (<30)"]),
+              "n_excluded_perks": len(excluded), "excluded_perks": excluded, "codes": out}
+    json.dump(allres, open(SCR / f"verify-allcodes-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    res = {**allres, "n_codes": n_mgd, "codes": [o for o in out if o.get("managed")]}
     json.dump(res, open(SCR / f"verify-action-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if excluded:
         print(f"  excluded {len(excluded)} VIP perk/engagement codes (non-Lane-A, not ROI-scored):",

@@ -41,7 +41,7 @@ def inl(cs): return ",".join("'" + x.replace("'", "''") + "'" for x in cs)
 c = get_client(send_receive_timeout=900)
 
 for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
-    va = load(f"verify-action-{MK}.json")
+    va = load(f"verify-allcodes-{MK}.json")  # Codes-tab statistic lookup: every code, not just managed
     meta = {x["code"].strip(): x for x in va["codes"]}
     allcodes = sorted(meta)
     if not allcodes:

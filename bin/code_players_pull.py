@@ -96,7 +96,7 @@ def main():
     summary = {}
     for MK, (CUR, LOGSITE, SYM) in MK_CFG.items():
         try:
-            va = load(f"verify-action-{MK}.json")
+            va = load(f"verify-allcodes-{MK}.json")  # Codes-tab statistic lookup: every code, not just managed
             meta = {co["code"].strip(): co for co in va["codes"]}
             codes = sorted(meta)
             if not codes:
