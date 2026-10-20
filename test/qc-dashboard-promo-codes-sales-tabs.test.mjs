@@ -188,3 +188,35 @@ test('Ops sheet copy: leftover rows from a longer list are cleared; a failed run
   assert.equal(kv['BO checked at'], 'B');
   assert.equal(kv.Detail, 'BO down');
 });
+
+test('WS1/WS2 are checked under the FT_ twin (listed pair first, else FT_ + code)', async () => {
+  const { applyBoStatus } = await import('../src/qc-dashboard/promo-codes-parse.js');
+  const idx = [
+    ['Team', 'Brand / Platform', 'Region', 'Live Code (BO)', 'Bonus Name / Offer', '', 'Status'],
+    ['VM', 'QP2/QPRO + WS', 'MY', 'VM_FC_VARIABLE_8X', '', '', 'Active\nLive: QP2A, WS2'],
+    ['VM', 'QP2/QPRO + WS', 'MY', 'VM_FC_388_8X', '', '', 'Active\nLive: QPRO2, WS1'],
+  ];
+  const live = [
+    ['Campaign', 'Code — QP2/QPRO', 'QP2/QPRO Brands', 'Code — WS1/WS2', 'Region', 'Bonus Name', 'TO'],
+    ['', 'VM_FC_VARIABLE_8X', 'QP2A', 'FT_VM_FC_VARIABLE_8X_V2', 'MY', '', ''],
+  ];
+  const rows = parseSalesAll({ ...ALL_TABS, 'Index (All Teams)': idx, 'VM - Live Codes by Campaign': live });
+  const variable = rows.find((r) => r.code === 'VM_FC_VARIABLE_8X');
+  assert.equal(variable.wsCode, 'FT_VM_FC_VARIABLE_8X_V2'); // twin attached to the Index row
+  const out = applyBoStatus(rows.filter((r) => ['VM_FC_VARIABLE_8X', 'VM_FC_388_8X'].includes(r.code)), {
+    liveCodes: [
+      { brand: 'QP2A', code: 'VM_FC_VARIABLE_8X' }, { brand: 'WS2', code: 'FT_VM_FC_VARIABLE_8X_V2' },
+      { brand: 'QPRO2', code: 'VM_FC_388_8X' }, { brand: 'WS1_MY', code: 'FT_VM_FC_388_8X' },
+    ],
+    checkedBrands: ['QP2A', 'QPRO2', 'WS1_MY', 'WS2'],
+    igmpSites: [{ brand: 'WS1_MY', region: 'MY' }, { brand: 'WS2', region: 'MY' }], allBrandKeys: ['QP2A', 'QPRO2'],
+  });
+  for (const r of out) assert.deepEqual(r.mismatch, [], r.code);
+  assert.equal(out[0].bo.WS2, 'active');
+  assert.equal(out[1].bo.WS1_MY, 'active');
+  // QP2/QPRO brands are NOT matched via the FT_ fallback.
+  const qp = applyBoStatus([{ ...out[1], brandsAll: false, brands: ['QPRO3'], expectedOff: [] }], {
+    liveCodes: [{ brand: 'QPRO3', code: 'FT_VM_FC_388_8X' }], checkedBrands: ['QPRO3'], igmpSites: [], allBrandKeys: [],
+  });
+  assert.equal(qp[0].bo.QPRO3, 'inactive');
+});

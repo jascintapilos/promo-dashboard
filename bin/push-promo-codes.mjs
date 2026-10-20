@@ -46,7 +46,12 @@ async function readSources(sheets) {
   const rows = [];
   const sources = {};
   for (const { source, spreadsheetId, tabs } of PROMO_CODE_SOURCES) {
-    const r = await sheets.spreadsheets.values.batchGet({ spreadsheetId, ranges: tabs.map((t) => `'${t}'!A:Z`) });
+    // Real tab titles, matched ignoring case / surrounding spaces ("Index (All Teams) ").
+    const titles = (await sheets.spreadsheets.get({ spreadsheetId, fields: 'sheets.properties.title' })).data.sheets.map((s) => s.properties.title);
+    const actual = (t) => titles.find((x) => x.trim().toLowerCase() === t.trim().toLowerCase());
+    const missing = tabs.filter((t) => !actual(t));
+    if (missing.length) throw new Error(`${source} sheet is missing tab(s): ${missing.join(', ')}`);
+    const r = await sheets.spreadsheets.values.batchGet({ spreadsheetId, ranges: tabs.map((t) => `'${actual(t)}'!A:Z`) });
     const valuesByTab = Object.fromEntries(tabs.map((t, i) => [t, r.data.valueRanges?.[i]?.values || []]));
     const parsed = PARSERS[source](valuesByTab);
     if (!parsed.length) throw new Error(`${source} sheet returned no codes`);

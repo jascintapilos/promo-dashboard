@@ -14,10 +14,13 @@ export const SALES_TABS = Object.freeze([
 ]);
 
 // The sheets and the tabs read from each. CRM's "All CRM Codes" and CEE's single
-// tab already hold everything (the per-person CRM tabs are subsets).
+// tab already hold everything (the per-person CRM tabs are subsets). Sales is read
+// from the Sales team's own sheet ("SALES TEAM BONUS MENU"), not Gaby's copy, so
+// their edits show up within the hour. Tab names are matched ignoring case and
+// surrounding spaces (several of that sheet's tab names end in a space).
 export const PROMO_CODE_SOURCES = Object.freeze([
   { source: 'CEE', spreadsheetId: '1gCXe0wzYySMG-usZHvXAFVqq3SL2UmHhPjpvDemToKA', tabs: ['CEE Codes'] },
-  { source: 'Sales', spreadsheetId: '1Teg9TiKlubOjNF-0mjoHA9QLmWiI6EoiivMzjJgNm8s', tabs: SALES_TABS },
+  { source: 'Sales', spreadsheetId: '1-g31BR03qU2bldE3Iu-hUVTfOU-vzHYK1nbqq8r6XGE', tabs: SALES_TABS },
   { source: 'CRM', spreadsheetId: '1-ZjgA3ietUyh7TpotivVID1GgLZ9CyV7nIpy-PRA1HU', tabs: ['All CRM Codes'] },
 ]);
 
@@ -279,12 +282,19 @@ const SALES_PARSERS = Object.freeze({
 export function parseSalesAll(valuesByTab) {
   const seen = new Set();
   const out = [];
+  const twins = new Map(); // QP2/QPRO code → its WS1/WS2 code, from tabs that list both
   for (const tab of SALES_TABS) {
     if (!valuesByTab[tab]) throw new Error(`Sales tab "${tab}" not found`);
     const rows = SALES_PARSERS[tab](valuesByTab[tab]);
     out.push(...rows.filter((r) => !seen.has(r.code.toUpperCase())));
-    for (const r of rows) seen.add(r.code.toUpperCase());
+    for (const r of rows) {
+      seen.add(r.code.toUpperCase());
+      if (r.wsCode && !twins.has(r.code.toUpperCase())) twins.set(r.code.toUpperCase(), r.wsCode);
+    }
   }
+  // Index rows say "Live: …, WS1" for a code whose WS1/WS2 name differs
+  // (VM_FC_VARIABLE_8X → FT_VM_FC_VARIABLE_8X_V2): attach the twin so BO is checked under it.
+  for (const r of out) if (!r.wsCode && twins.has(r.code.toUpperCase())) r.wsCode = twins.get(r.code.toUpperCase());
   return out;
 }
 
@@ -319,8 +329,11 @@ export function applyBoStatus(rows, { liveCodes, checkedBrands, igmpSites, allBr
   const live = new Map(); // `${boKey}::${CODE}` → code record
   for (const c of liveCodes) live.set(`${c.brand}::${String(c.code).trim().toUpperCase()}`, c);
   const checked = new Set(checkedBrands);
+  const igmpKeys = new Set(igmpSites.map((s) => s.brand));
   return rows.map((row) => {
     const codes = [row.code, row.wsCode].filter(Boolean).map((c) => c.toUpperCase());
+    // On WS1/WS2 a QP2/QPRO code usually lives under its FT_ name; try that too.
+    const igmpCodes = [...codes, ...codes.filter((c) => !c.startsWith('FT_')).map((c) => `FT_${c}`)];
     // "ALL (QP2/QPRO)" rows: check every QPRO/QP2 brand (+ WS1/WS2 when the label
     // says WS), plus any the sheet named.
     const sheetBrands = row.brandsAll
@@ -332,7 +345,7 @@ export function applyBoStatus(rows, { liveCodes, checkedBrands, igmpSites, allBr
       for (const key of boKeysFor(brand, row.regions, igmpSites)) {
         let status = BO.UNCHECKED;
         if (checked.has(key)) {
-          const hit = codes.map((c) => live.get(`${key}::${c}`)).find(Boolean);
+          const hit = (igmpKeys.has(key) ? igmpCodes : codes).map((c) => live.get(`${key}::${c}`)).find(Boolean);
           status = !hit ? BO.INACTIVE : (isPast(hit.validTo || hit.endDate, now) || hit.isExpired ? BO.EXPIRED : BO.ACTIVE);
         }
         bo[key] = status;
