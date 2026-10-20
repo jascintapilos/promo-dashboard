@@ -239,7 +239,7 @@ const money=n=>sym()+Math.round(n).toLocaleString();
 const chip=v=>v?`<span class="chip c-${String(v).toLowerCase().replace(/[^a-z]/g,'')}">${esc(v)}</span>`:"";
 const bandchip=b=>b?`<span class="bchip"><i style="background:var(--band-${String(b).toLowerCase().replace(/[^a-z]/g,'')})"></i>${esc(b)}</span>`:"";
 /* ================= CODES ================= */
-const CS={pillar:"All",q:"",sort:null,dir:1,view:"lean",open:null,cf:{},hidden:new Set(),vlane:"A",vopen:null};
+const CS={pillar:"All",scope:"managed",q:"",sort:null,dir:1,view:"lean",open:null,cf:{},hidden:new Set(),vlane:"A",vopen:null};
 const cellD=(c,key)=>{const x=c.cells[key];return x?x.d:"";};
 const cnum=(c,k)=>{const x=c.cells[k];return x&&x.n!=null?x.n:null;};
 const LEAN=[
@@ -265,6 +265,7 @@ const LMAP=Object.fromEntries(LEAN.map(c=>[c.id,c]));
 const leanCols=()=>LEAN.filter(c=>(c.lock||!CS.hidden.has(c.id))&&(!c.pillars||(CS.pillar!=="All"&&c.pillars.includes(CS.pillar))));
 function codesFiltered(){
  let rows=d().codes.slice();
+ if(CS.scope!=="all")rows=rows.filter(c=>c._managed!==false);   // Managed view = scored codes only; All = + data-only statistics rows
  if(CS.pillar!=="All")rows=rows.filter(c=>c._pillar===CS.pillar);
  if(CS.q){const q=CS.q.toLowerCase();rows=rows.filter(c=>(c.cells["Promo code"].d+" "+cellD(c,"WHAT TO DO · Why this call")+" "+cellD(c,"WHAT TO DO · The lever (mechanic + who to give it to)")).toLowerCase().includes(q));}
  for(const id in CS.cf){const f=CS.cf[id],col=LMAP[id];if(!col)continue;
@@ -279,7 +280,7 @@ function codesFiltered(){
 }
 function leanCell(c,col){
  if(col.id==="code")return `<span class="exp">${CS.open===c.cells["Promo code"].d?'▾':'▸'}</span>${esc(c.cells["Promo code"].d)}`;
- if(col.id==="call")return chip(c._call);
+ if(col.id==="call")return c._managed===false?`<span class="mut" style="font-size:11px" title="data-only — a statistics row, not a scored call">${esc(c._call||"—")}</span>`:chip(c._call);
  if(col.id==="band")return bandchip(c._band);
  if(col.id==="spend")return money(c._spend);
  if(col.id==="perrm"||col.id==="roi30"){const v=col.get(c);return v==null?'<span class="mut">—</span>':`<span class="${v>0?'pos':v<0?'neg':''}">${v.toFixed(2)}</span>`;}
@@ -539,6 +540,8 @@ const vpct=n=>n==null?'<span class="mut">—</span>':n+'%';
 const vcov=n=>n==null?'<span class="mut">—</span>':n+'×';
 const codeC=c=>`<span class="exp">${CS.vopen===c.code?'▾':'▸'}</span>${esc(c.code)}`;
 function vlBar(){return `<div class="seg vlseg" id="vlsub">${VLANES.map(([k,l])=>`<button data-vl="${k}" class="${k===(CS.vlane||'A')?'on':''}">${esc(l)}</button>`).join("")}</div>`;}
+// Managed = scored codes with a firm call (the analyses are built on these). All = + data-only statistics rows for every other code.
+function scopeSeg(){const na=(d().meta&&d().meta.nAll)||d().codes.length;const nm=(d().meta&&d().meta.nManaged)||d().codes.filter(c=>c._managed!==false).length;return (na>nm)?`<div class="seg" id="scopesub" title="Managed = the ${nm} scored codes the analyses are built on. All = every code as a data-only statistics lookup (${na} total)."><button data-sc="managed" class="${CS.scope==='managed'?'on':''}">Managed</button><button data-sc="all" class="${CS.scope==='all'?'on':''}">All codes</button></div>`:"";}
 function vipScope(l,rows){
  const vp=d().vipPeriod||"",spend=rows.reduce((t,c)=>t+(c.spend||0),0),lab=l==="all"?"all four VIP lanes — the full VIP program":"VIP "+VLFULL[l]+" (Lane "+l+")";
  return `<div class="vscope"><b>${rows.length}</b> codes · <b>${money(spend)}</b> bonus spend — <b>${esc(lab)}</b>. <span class="mut">A separate population from the managed ROI action table (Summary counts/spend unchanged); each lane uses its own rules, not Lane&nbsp;A's ROI matrix. VIP scoring window ${esc(vp)}. Spend &amp; code counts sum cleanly; player counts are shown <b>per code</b> — not de-duped across codes, so they don't sum to a unique total.</span></div>`;
@@ -565,12 +568,13 @@ function wireVipChips(){const s=g("vlsub");if(s)s.querySelectorAll("button").for
  document.querySelectorAll("tr.vrow").forEach(tr=>tr.onclick=()=>{const c=tr.dataset.vc;CS.vopen=CS.vopen===c?null:c;renderCodes();});}
 function wireVipPath(){
  g("pillsub").querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.pillar=b.dataset.p;CS.open=null;CS.vopen=null;closePop&&closePop();renderCodes();});
+ {const _ss=g("scopesub");if(_ss)_ss.querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.scope=b.dataset.sc;CS.open=null;CS.vopen=null;closePop&&closePop();renderCodes();});}
  const cq=g("cq");if(cq)cq.oninput=e=>{CS.q=e.target.value;clearTimeout(window._t);window._t=setTimeout(()=>{if(TAB!=="codes")return;renderCodes();const el=g("cq");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},180);};
  wireVipChips();
 }
 function renderVipLanes(l){
  const rows=vipRows(l);
- const fbar=`<div class="fbar"><div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${vlBar()}<input type="text" id="cq" placeholder="search code / name / why…" value="${esc(CS.q)}"><span class="rc">${rows.length} codes</span></div>`;
+ const fbar=`<div class="fbar"><div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${scopeSeg()}${vlBar()}<input type="text" id="cq" placeholder="search code / name / why…" value="${esc(CS.q)}"><span class="rc">${rows.length} codes</span></div>`;
  const bodyHTML=vipAll().length?`${vipScope(l,rows)}${vipLaneTable(l,rows)}`:`<div class="vscope">The VIP lane detail (Lanes B / C / D) loads from the <b>next data refresh</b> — the current published build hasn't carried it yet. Lane A (Performance) is available now via the managed table; hit <b>Generate</b> or wait for the overnight refresh to populate the other lanes.</div>`;
  g("panel").innerHTML=threshCard()+`<div class="card">${fbar}${bodyHTML}</div>`;
  wireVipPath();
@@ -715,7 +719,7 @@ function renderCodes(){
  const rows=codesFiltered();
  const nf=Object.keys(CS.cf).length;
  const fbar=`<div class="fbar">
-   <div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${CS.pillar==="VIP"?vlBar():""}
+   <div class="seg" id="pillsub">${["All","Acquisition","Retention","VIP"].map(p=>`<button data-p="${p}" class="${p===CS.pillar?'on':''}">${p}</button>`).join("")}</div>${scopeSeg()}${CS.pillar==="VIP"?vlBar():""}
    <input type="text" id="cq" placeholder="search code / why / lever…" value="${esc(CS.q)}">
    <button class="btn" id="colbtn">⊞ Columns</button>
    <button class="btn ${CS.view==='full'?'on':''}" id="vtog">Full grid</button>
@@ -743,6 +747,7 @@ function renderCodes(){
 }
 function wireCodes(){
  g("pillsub").querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.pillar=b.dataset.p;CS.open=null;closePop();renderCodes();});
+ {const _ss=g("scopesub");if(_ss)_ss.querySelectorAll("button").forEach(b=>b.onclick=()=>{CS.scope=b.dataset.sc;CS.open=null;closePop();renderCodes();});}
  g("cq").oninput=e=>{CS.q=e.target.value;clearTimeout(window._t);window._t=setTimeout(()=>{if(TAB!=="codes")return;renderCodes();const el=g("cq");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},180);};
  g("vtog").onclick=()=>{CS.view=CS.view==="lean"?"full":"lean";CS.open=null;CS.sort=null;closePop();renderCodes();};
  g("cclr").onclick=()=>{CS.cf={};CS.q="";renderCodes();};
