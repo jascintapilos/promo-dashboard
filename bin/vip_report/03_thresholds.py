@@ -114,7 +114,16 @@ def decide_C(c):
     return "Entitlement", why, DO["Entitlement"]
 
 DECIDERS = {"A-performance": decide_A, "B-cashback": decide_B, "D-engagement": decide_D, "C-entitlement": decide_C}
+# Decision 1: deposit-required override (BO has no deposit field for CRM-triggered FastTrack codes)
+import os as _os, json as _json
+_DRO = set()
+try:
+    _drp = Path(__file__).resolve().parent.parent / "deposit-required-override.json"  # committed repo copy (durable)
+    if not _os.path.exists(_drp): _drp = VIP.parent / "deposit-required-override.json"  # scratchpad fallback
+    if _os.path.exists(_drp): _DRO = set(_json.load(open(_drp, encoding="utf-8"))["codes"])
+except Exception: _DRO = set()
 for c in codes:
+    if c["code"] in _DRO: c["deposit_required"] = True
     d, why, do = DECIDERS[c["lane"]](c)
     c["decision"], c["reason"], c["do"], c["flags"] = d, why, do, flags_common(c)
 

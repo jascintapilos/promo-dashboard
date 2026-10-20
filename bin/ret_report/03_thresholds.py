@@ -26,13 +26,14 @@ from pathlib import Path
 import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from csir_config import SYMBOL, SUF, MARKET, money
 
-SCR = Path(r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad")
+SCR = Path(__import__("os").environ.get("PROMO_SCRATCH", r"C:/Users/vdiuser/AppData/Local/Temp/claude/C--Users-vdiuser-Downloads-promo-automation/879d83be-432b-45e6-8ade-a793a2fe518e/scratchpad"))
 RET = SCR / "ret"
 
 VOL_FLOOR = 15 if MARKET == 'MY' else 8
 SCALE_VOL_FLOOR = 2 * VOL_FLOOR   # a budget-INCREASE call (Scale) needs a robust base, not a bare-floor sample
 GIVE_FLOOR = 0.5
 SCALE_HI = 2.0
+DEP_STRONG = 0.8     # no-deposit giveaways: gross deposits pulled per RM1 above which reactivation is "strong" (config Mid peak ≈ 1.08)
 DEADBAND = 1.0        # pp: |uplift| < DEADBAND = at-norm (not incremental, not below)
 OVER_REWARD_CPR = round(money(500))   # cost-per-retained is real money -> rescale for the market
 CONC_SHARE = 0.30     # top-1 member NGR share above which a Scale is one-whale-sensitive (demote if ex-whale weak)
@@ -65,6 +66,29 @@ def decide(c):
     if c["matured_30"] < VOL_FLOOR:
         d = "clearly losing" if money < 0 else "strong" if money >= SCALE_HI else "around paying for itself"
         return "Watch-money", f"Money seen so far ({SYMBOL}{money:.2f} back for every RM1, {d}) but the repeat deposits haven't had time yet — a read, not proof; firm at 30 days.", DO["Watch-money"], True
+    # No-deposit GIVEAWAYS (free-credit / free-spins, no deposit required) have NEGATIVE NGR BY DESIGN, so
+    # the money gate below always says Stop. Judge them on their PURPOSE instead — reactivation (redeposit
+    # uplift vs the type norm) + gross deposits pulled per RM1 — not on net profit. (NGR still shown elsewhere.)
+    if (c["mechanic"] in ("free-credit", "free-spins")) and not c.get("deposit_required"):
+        dep, rr = c.get("dep_lift_per_rm"), c.get("redeposit_rate")
+        incr = (up is not None and up > DEADBAND); below = (up is not None and up < -DEADBAND)
+        rtxt = (f"Brings back {rr:.0f}% of players" if rr is not None else "Reactivation")
+        deptxt = (f"{SYMBOL}{dep:.2f} in deposits per RM1" if dep is not None else "few deposits")
+        uptxt = (f" ({up:+.0f}pp vs the free-credit norm)" if up is not None else "")
+        basis = " — judged on reactivation + deposits pulled, not net profit (a no-deposit give-away typically reads negative on Bonus ROI)"
+        if dep is None:
+            return "Monitor", "Too little to judge — can't see the deposits it pulled back yet.", DO["Monitor"], False
+        if below and dep < GIVE_FLOOR:
+            return "Stop", f"{rtxt} BELOW the norm{uptxt} and pulls only {deptxt}{basis}.", "Stop or replace — it doesn't bring players back or pull deposits.", False
+        if below:
+            return "Reduce", f"{rtxt} but BELOW the norm{uptxt} — too generous for the reactivation it buys ({deptxt}){basis}.", "Trim the giveaway — it doesn't bring players back better than the free-credit norm for what it gives.", False
+        if dep < GIVE_FLOOR:
+            return "Optimise", f"{rtxt}{uptxt} but pulls only {deptxt} — right-size the giveaway{basis}.", "Right-size — it brings players back but pulls thin deposits for the cost.", False
+        if incr and dep >= DEP_STRONG:
+            return "Scale", f"{rtxt} ABOVE the norm{uptxt} and pulls {deptxt}{basis}.", "Grow it — brings players back above the norm and pulls strong deposits.", False
+        if incr:
+            return "Maintain", f"{rtxt} above the norm{uptxt}, pulling {deptxt}{basis}.", "Keep as-is — brings players back above the norm. Re-check next cycle.", False
+        return "Optimise", f"{rtxt} about the norm{uptxt}, pulling {deptxt} — tighten who gets it{basis}.", "Tighten who gets it — reactivates about the norm; mostly reaching players who'd return anyway.", False
     incr = (up is not None and up > DEADBAND)
     below = (up is not None and up < -DEADBAND)
     if money < 0 and not incr:
@@ -83,7 +107,18 @@ def decide(c):
         return "Maintain", f"Profitable ({SYMBOL}{money:.2f} back for every RM1) and keeping more players than the {mech} average (+{up:.0f}pp).", DO["Maintain"], False
     return "Scale", f"Strong return ({SYMBOL}{money:.2f} back for every RM1) and keeps more players than the {mech} average (+{up:.0f}pp).", DO["Scale"], False
 
+# Decision 1: codes confirmed deposit-required by behaviour (deposit in the hour before >=85% of claims)
+# + the FastTrack CRM trigger — the promo BO carries no deposit field for these, so they default to
+# giveaway; the override makes them judged on ROI (deposit-match), not reactivation.
+import os as _os, json as _json
+_DRO = set()
+try:
+    _drp = Path(__file__).resolve().parent.parent / "deposit-required-override.json"  # committed repo copy (durable)
+    if not _os.path.exists(_drp): _drp = SCR / "deposit-required-override.json"       # scratchpad fallback
+    if _os.path.exists(_drp): _DRO = set(_json.load(open(_drp, encoding="utf-8"))["codes"])
+except Exception: _DRO = set()
 for c in codes:
+    if c["code"] in _DRO: c["deposit_required"] = True
     d, why, do, prov = decide(c)
     # volume guard: a budget-increase (Scale) needs a robust base, not a bare-floor sample
     m30 = c.get("matured_30") or 0
