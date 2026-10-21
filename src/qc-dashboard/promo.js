@@ -161,10 +161,14 @@ function brandSwitcher(root, current, user) {
       ? `<span style="${base};background:var(--accent);color:#fff;border-color:var(--accent)">${escapeHtml(name)}</span>`
       : `<a href="/promo/${encodeURIComponent(id)}" style="${base};background:var(--surface);color:var(--ink)">${escapeHtml(name)}</a>`;
   });
-  const ph = [];  // placeholder "Project 1 / Project 2" pills removed — they were shown to every viewer with no data behind them
+  // QP2A is a standalone panel (/promo/qp2a), not a servable brand in the registry —
+  // surface it here as a sibling tab so viewers can switch to it from the WS1 report.
+  const qp2a = current === 'qp2a'
+    ? `<span style="${base};background:var(--accent);color:#fff;border-color:var(--accent)">QP2A</span>`
+    : `<a href="/promo/qp2a" style="${base};background:var(--surface);color:var(--ink)">QP2A</a>`;
   return `<div class="wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 18px 3px">`
     + `<span style="font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-right:2px">Project</span>`
-    + `${pills.join('')}${ph.join('')}</div>`;
+    + `${pills.join('')}${qp2a}</div>`;
 }
 
 // Trim data the report never renders, so viewers never download it: dead analysis
