@@ -77,6 +77,7 @@ table.d td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowr
 table.d.cmpct th,table.d.cmpct td{padding:4px 3px;font-size:11px}
 table.d.cmpct th{font-size:9px;letter-spacing:.01em}
 table.d.cmpct thead tr.leaf:not(:first-child) th{top:24px}
+table.d.vlt{width:auto}/* VIP lane tables have few columns; content-size them so they don't stretch to fill a wide screen — keeps column density uniform with the other pillar tables (which overflow/scroll) */
 table.d td.dqcol{background:color-mix(in srgb,var(--accent) 7%,transparent)}table.d th.dqcol{background:color-mix(in srgb,var(--accent) 13%,var(--surface-2))}
 table.d td.ndcol{background:color-mix(in srgb,var(--spend) 7%,transparent)}table.d th.ndcol{background:color-mix(in srgb,var(--spend) 13%,var(--surface-2))}
 table.d th.dqcol,table.d th.ndcol{white-space:normal}
