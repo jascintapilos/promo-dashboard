@@ -2809,10 +2809,14 @@ document.querySelectorAll('.switcher-toggle').forEach((toggle) => {
 // admin-only.
 (function syncAdminUi(){
   fetch('/api/me').then((r) => r.json()).then((data) => {
-    if (data?.user?.role !== 'admin') return;
-    const gear = document.getElementById('settingsBtn');
+    const role = data?.user?.role;
+    // Manage Users (⚙) is open to admins AND promo-team. Site configs stay admin-only.
+    if (role === 'admin' || role === 'promo-team') {
+      const gear = document.getElementById('settingsBtn');
+      if (gear) gear.classList.remove('hidden');
+    }
+    if (role !== 'admin') return;
     const configLink = document.getElementById('siteConfigsLink');
-    if (gear) gear.classList.remove('hidden');
     if (configLink) configLink.classList.remove('hidden');
   }).catch(() => {});
 })();

@@ -322,7 +322,9 @@ async function handleApi(req, res, user) {
     return res.end(body);
   }
   if (req.method === 'GET' && url.pathname === '/api/admin/users') {
-    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    // User management is open to admins AND promo-team (promo-team is limited to
+    // non-admin roles; the escalation guard lives in upsertAdmittedUser/removeAdmittedUser).
+    if (user.role !== 'admin' && user.role !== 'promo-team') return send(res, 403, { error: 'manage-users role required' });
     return send(res, 200, { users: loadAdmittedUsers() });
   }
   if (req.method === 'GET' && url.pathname === '/api/diag/sites') {
@@ -406,12 +408,12 @@ async function handleApi(req, res, user) {
   // Manage Users — admin-only, self-service. Writes go to the server-side overlay
   // (auth.js), so they persist across deploys that rewrite the git-tracked base.
   if (req.method === 'POST' && url.pathname === '/api/admin/users') {
-    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    if (user.role !== 'admin' && user.role !== 'promo-team') return send(res, 403, { error: 'manage-users role required' });
     let body;
     try { body = await readJsonBounded(req, 8192); }
     catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
     try {
-      const users = upsertAdmittedUser({ email: body.email, role: body.role, actingEmail: user.email });
+      const users = upsertAdmittedUser({ email: body.email, role: body.role, actingEmail: user.email, actingRole: user.role });
       // Keep brand access in step with the role so the grant is complete in ONE action:
       // a report-only viewer is granted the brand(s) here (default: every current brand),
       // so they can actually SEE the report — no separate promo-brands.json edit. Any
@@ -426,12 +428,12 @@ async function handleApi(req, res, user) {
     } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
   }
   if (req.method === 'POST' && url.pathname === '/api/admin/users/remove') {
-    if (user.role !== 'admin') return send(res, 403, { error: 'admin role required' });
+    if (user.role !== 'admin' && user.role !== 'promo-team') return send(res, 403, { error: 'manage-users role required' });
     let body;
     try { body = await readJsonBounded(req, 8192); }
     catch (e) { return send(res, 400, { error: `invalid JSON: ${e.message}` }); }
     try {
-      const users = removeAdmittedUser({ email: body.email, actingEmail: user.email });
+      const users = removeAdmittedUser({ email: body.email, actingEmail: user.email, actingRole: user.role });
       revokeBrandAccess(ROOT, String(body.email || '').trim().toLowerCase());
       return send(res, 200, { ok: true, users });
     } catch (e) { return send(res, e.status && e.status < 500 ? e.status : 400, { error: e.message }); }
@@ -870,9 +872,9 @@ async function handle(req, res) {
       const s = readSession(req);
       if (!s) { res.writeHead(302, { location: `/?return=${encodeURIComponent(url.pathname)}` }); res.end(); return; }
       if (REPORT_ONLY_ROLES.has(s.role)) return sendReportOnly(res);
-      if (s.role !== 'admin') {
+      if (s.role !== 'admin' && s.role !== 'promo-team') {
         res.writeHead(403, HTML_HEADERS);
-        res.end('<!doctype html><meta charset=utf-8><title>Admins only</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">Admins only</h2><p>Managing users requires an admin account. Your role can’t change the allowlist.</p><p><a href="/">← Back to QC Hub</a></p></body>');
+        res.end('<!doctype html><meta charset=utf-8><title>No access</title><body style="font:15px system-ui,sans-serif;max-width:34rem;margin:14vh auto;padding:0 1.2rem;color:#1b2740"><h2 style="font-weight:600">No access</h2><p>Managing users needs an admin or promo-team account. Your role can’t change the allowlist.</p><p><a href="/">← Back to QC Hub</a></p></body>');
         return;
       }
       return await sendHtml(res, path.join(ROOT, 'public', 'admin-users.html'));

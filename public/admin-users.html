@@ -111,6 +111,7 @@ const ROLES = [
 ];
 const ROLE_SHORT = {admin:"Admin","promo-team":"Promo Team","hod-view":"HOD View",guest:"Guest","promo-report":"Promo Report","promo-codes":"Promo Codes"};
 let ME = "";
+let MYROLE = "";
 
 function toast(msg, kind){
   const t = document.getElementById("toast");
@@ -130,7 +131,11 @@ async function api(path, method, body){
   return data;
 }
 function optionsHTML(selected){
-  return ROLES.map(([v,l]) => '<option value="'+v+'"'+(v===selected?" selected":"")+'>'+l+"</option>").join("");
+  // Non-admin managers (promo-team) can't grant Admin, so hide it — but still show
+  // it when it's the row's current value (a locked admin row renders read-only).
+  return ROLES
+    .filter(([v]) => MYROLE === "admin" || v !== "admin" || v === selected)
+    .map(([v,l]) => '<option value="'+v+'"'+(v===selected?" selected":"")+'>'+l+"</option>").join("");
 }
 function render(users){
   users.sort((a,b) => (a.role==="admin")!==(b.role==="admin") ? (a.role==="admin"?-1:1) : a.email.localeCompare(b.email));
@@ -145,12 +150,15 @@ function render(users){
     em.className = "email";
     em.textContent = u.email;
     if (isMe){ const b = document.createElement("span"); b.className = "you"; b.textContent = "you"; em.appendChild(b); }
+    // A non-admin manager (promo-team) cannot change or remove an admin account.
+    const lockedAdmin = u.role === "admin" && MYROLE !== "admin";
     const rc = document.createElement("td");
     rc.className = "rolecell";
     const sel = document.createElement("select");
     sel.innerHTML = optionsHTML(u.role);
     sel.dataset.prev = u.role;
-    sel.addEventListener("change", () => changeRole(u.email, sel));
+    if (lockedAdmin){ sel.disabled = true; sel.title = "Only an admin can change an admin account"; }
+    else sel.addEventListener("change", () => changeRole(u.email, sel));
     rc.appendChild(sel);
     const ac = document.createElement("td");
     ac.className = "act";
@@ -158,6 +166,7 @@ function render(users){
     rm.className = "btn-ghost";
     rm.textContent = "Remove";
     if (isMe){ rm.disabled = true; rm.title = "You cannot remove your own account"; }
+    else if (lockedAdmin){ rm.disabled = true; rm.title = "Only an admin can remove an admin account"; }
     else rm.addEventListener("click", () => removeUser(u.email));
     ac.appendChild(rm);
     tr.append(em, rc, ac);
@@ -192,10 +201,10 @@ async function addUser(){
   finally { btn.disabled = false; }
 }
 async function init(){
-  document.getElementById("addRole").innerHTML = optionsHTML("promo-report");
   document.getElementById("addBtn").addEventListener("click", addUser);
   document.getElementById("addEmail").addEventListener("keydown", (e) => { if (e.key==="Enter") addUser(); });
-  try { const me = await api("/api/me"); ME = (me.user && me.user.email) || ""; } catch (e){}
+  try { const me = await api("/api/me"); ME = (me.user && me.user.email) || ""; MYROLE = (me.user && me.user.role) || ""; } catch (e){}
+  document.getElementById("addRole").innerHTML = optionsHTML("promo-report");
   try { const d = await api("/api/admin/users"); render(d.users); }
   catch (e){ document.getElementById("rows").innerHTML = '<tr><td colspan="3" class="empty">'+e.message+"</td></tr>"; }
 }

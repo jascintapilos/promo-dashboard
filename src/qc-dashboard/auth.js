@@ -139,13 +139,21 @@ export function listAdmittedUsers() {
 }
 
 /** Add a user or change a user's role. Writes ONLY to the overlay. Guardrails:
- *  valid email + role; an admin cannot demote their own account (self-lockout). */
-export function upsertAdmittedUser({ email, role, actingEmail } = {}) {
+ *  valid email + role; an admin cannot demote their own account (self-lockout);
+ *  a non-admin manager (promo-team) can neither grant the Admin role nor touch an
+ *  existing admin account — only admins manage admins (prevents privilege escalation). */
+export function upsertAdmittedUser({ email, role, actingEmail, actingRole } = {}) {
   const e = String(email || '').trim().toLowerCase();
   const acting = String(actingEmail || '').trim().toLowerCase();
   if (!EMAIL_RE.test(e)) throw authErr(400, 'Enter a valid email address.');
   const r = String(role || '').trim().toLowerCase();
   if (!VALID_ROLES.has(r)) throw authErr(400, `Invalid role. Allowed: ${[...VALID_ROLES].join(', ')}.`);
+  const actingAdmin = String(actingRole || '').trim().toLowerCase() === 'admin';
+  if (!actingAdmin) {
+    if (r === 'admin') throw authErr(403, 'Only an admin can grant the Admin role.');
+    const current = new Map(listAdmittedUsers().map((u) => [u.email, u.role]));
+    if (current.get(e) === 'admin') throw authErr(403, 'Only an admin can change an admin account.');
+  }
   if (e === acting && r !== 'admin') {
     const current = new Map(listAdmittedUsers().map((u) => [u.email, u.role]));
     if (current.get(e) === 'admin') throw authErr(400, 'You cannot change your own admin role (avoids locking yourself out).');
@@ -159,13 +167,16 @@ export function upsertAdmittedUser({ email, role, actingEmail } = {}) {
 }
 
 /** Remove a user. Writes ONLY to the overlay (base users get a removal tombstone).
- *  Guardrails: cannot remove your own account; cannot remove the last admin. */
-export function removeAdmittedUser({ email, actingEmail } = {}) {
+ *  Guardrails: cannot remove your own account; cannot remove the last admin; a
+ *  non-admin manager (promo-team) cannot remove an admin account. */
+export function removeAdmittedUser({ email, actingEmail, actingRole } = {}) {
   const e = String(email || '').trim().toLowerCase();
   const acting = String(actingEmail || '').trim().toLowerCase();
   if (!e) throw authErr(400, 'Missing email.');
   if (e === acting) throw authErr(400, 'You cannot remove your own account.');
   const admins = listAdmittedUsers().filter((u) => u.role === 'admin').map((u) => u.email);
+  const actingAdmin = String(actingRole || '').trim().toLowerCase() === 'admin';
+  if (!actingAdmin && admins.includes(e)) throw authErr(403, 'Only an admin can remove an admin account.');
   if (admins.length <= 1 && admins.includes(e)) throw authErr(400, 'Cannot remove the last admin.');
   const ov = loadOverlay();
   ov.upserts = ov.upserts.filter((u) => String(u?.email || '').trim().toLowerCase() !== e);
