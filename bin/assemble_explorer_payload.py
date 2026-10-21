@@ -347,8 +347,8 @@ for mk, sym in (("MY", "RM"), ("SG", "S$")):
                "formulas": ex.get("formulas", []), "callsLevers": ex.get("callsLevers", []), "ripple": ex.get("ripple", {}),
                "verification": ex["verification"], "segGrid": ex["segGrid"], "bands": bands,
                "calls": calls_dist, "config": CONFIG,
-               "meta": {"nCodes": len(codes), "nManaged": sum(1 for c in codes if c["_managed"]),
-                        "book": round(sum(c["_spend"] for c in codes if c["_managed"]))}}  # exec book = managed only
+               "meta": {"nCodes": len(codes), "nAll": len(codes), "nManaged": sum(1 for c in codes if c["_managed"]),
+                        "book": round(sum(c["_spend"] for c in codes if c["_managed"]))}}  # exec book = managed only; nAll drives the Managed/All toggle
     print(f"[{mk}] codes={len(codes)} bands={len(bands)} money_sum={len(money_summary)} calls={len(calls_dist)} book={sym}{OUT[mk]['meta']['book']:,}")
 
 macro = build_macro()
