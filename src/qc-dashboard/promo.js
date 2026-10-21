@@ -527,6 +527,20 @@ export async function handlePromo(req, res, url, ctx) {
   }
   if (url.pathname.startsWith('/api/promo/')) return servePlayers(req, res, url, root, send);
   if (url.pathname.startsWith('/promo-assets/')) return serveAsset(res, root, url.pathname.slice('/promo-assets/'.length));
+  // Self-contained QP2A panel (bonus cost + leakage shortlist) — data baked into the HTML, no
+  // overlay/relay and no brand registry. MUST sit before the /promo/<brand> regex below, else
+  // 'qp2a' (unregistered) would fall through to serveLogin. Access is gated to the WS1 report
+  // audience by reusing its registry entry for canView (QP2A is NOT a servable brand itself).
+  if (url.pathname === '/promo/qp2a' || url.pathname === '/promo/qp2a/') {
+    const user = readSession(req);
+    const gate = loadBrandRegistry(root)['ws1'] || null;
+    if (!user || !canView(user, gate)) return serveLogin(res, root, 'qp2a', gate, htmlHeaders);
+    const f = path.join(root, 'public', 'promo', 'qp2a.html');
+    if (!existsSync(f)) return send(res, 404, { error: 'not found' });
+    res.writeHead(200, htmlHeaders);
+    res.end(readFileSync(f, 'utf8'));
+    return;
+  }
   if (url.pathname === '/promo' || url.pathname === '/promo/') {
     const brands = Object.keys(loadBrandRegistry(root));
     res.writeHead(302, { location: `/promo/${brands[0] || 'ws1'}` });

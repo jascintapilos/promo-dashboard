@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!-- deploy-check: qp2a-20261021a -->
+<title>QP2A — Bonus Cost &amp; Leakage</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{--bg:#EEF2F6;--surface:#FFFFFF;--surface-2:#F5F8FB;--ink:#141F2C;--muted:#57697B;--line:#DBE3EB;--navy:#1C2C42;--accent:#116FA6;
+--good:#1B7A46;--good-bg:#E3F1E8;--warn:#A9660A;--warn-bg:#FAF0DD;--bad:#B23A2E;--bad-bg:#F7E3E0;--spend:#C77A18;
+--shadow:0 1px 2px rgba(20,31,44,.05),0 6px 22px rgba(20,31,44,.06);--maxw:1100px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1520;--surface:#151F2C;--surface-2:#1A2634;--ink:#E6EDF4;--muted:#93A5B6;--line:#26333F;--navy:#0F1926;--accent:#3BB3A3;--good:#5FBE86;--good-bg:#183226;--warn:#E0A64A;--warn-bg:#33270F;--bad:#E88A7E;--bad-bg:#331C18;--spend:#E0A44A;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.32)}}
+:root[data-theme="dark"]{--bg:#0D1520;--surface:#151F2C;--surface-2:#1A2634;--ink:#E6EDF4;--muted:#93A5B6;--line:#26333F;--navy:#0F1926;--accent:#3BB3A3;--good:#5FBE86;--good-bg:#183226;--warn:#E0A64A;--warn-bg:#33270F;--bad:#E88A7E;--bad-bg:#331C18;--spend:#E0A44A;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.32)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.45;font-size:14px}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 18px}.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+h1{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-.01em}
+header.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hbar{display:flex;align-items:center;gap:14px;justify-content:space-between;padding:9px 18px;max-width:var(--maxw);margin:0 auto;flex-wrap:wrap}
+.brand{font-family:"Fraunces",serif;font-weight:600;font-size:16px}.brand span{color:var(--accent)}
+.asof{font-size:11px;font-weight:500;color:var(--muted)}
+main{padding:16px 0 60px}
+.phead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}.phead h1{font-size:21px;margin:0}.phead .cap{font-size:12px;color:var(--muted)}
+.takeaways{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:11px;padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.takeaways .lab{font:700 10.5px "IBM Plex Sans";letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.takeaways ul{margin:0;padding:0;list-style:none}.takeaways li{position:relative;padding-left:18px;margin:6px 0;font-size:13px}.takeaways li:before{content:"▸";position:absolute;left:2px;color:var(--accent);font-size:10px;top:2px}
+.takeaways code,.lkc,td.stick{font-family:"IBM Plex Mono",monospace}.takeaways b{color:var(--ink)}
+.tiles2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;box-shadow:var(--shadow)}
+.tl{font:600 10.5px "IBM Plex Sans";letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.tv{font-family:"IBM Plex Mono";font-weight:600;font-size:30px;line-height:1.1}
+.ts{font-size:12px;color:var(--muted);margin:5px 0 12px;line-height:1.4}
+.meter{position:relative;height:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:4px}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px 0 0 7px;background:var(--bad)}
+.meter .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.5}
+.mkrow{font-size:11px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.conf{display:inline-block;padding:2px 9px;border-radius:999px;font:600 10.5px "IBM Plex Sans";white-space:nowrap;margin-top:11px}
+.lkrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:6px 0;border-top:1px solid var(--line)}
+.lkc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}.lkv{color:var(--spend);font-weight:700;white-space:nowrap}
+.linknote{font-size:12.5px;color:var(--accent);font-weight:600;margin-top:11px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card .ct{font-size:14px;font-weight:650;color:var(--ink);padding:13px 15px 4px}
+.basis{font-weight:500;font-size:10.5px;color:var(--muted);font-style:italic;margin-left:6px}
+.tblwrap{overflow-x:auto}
+table.d{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%}
+table.d th{background:var(--surface-2);text-align:left;font:600 10px "IBM Plex Sans";text-transform:uppercase;letter-spacing:.03em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.d td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.d tr:hover td{background:var(--surface-2)}
+table.d td.n,table.d th.n{text-align:right;font-family:"IBM Plex Mono";font-variant-numeric:tabular-nums}
+table.d td.stick{font-size:11.5px}
+table.d td.ndcol{background:color-mix(in srgb,var(--spend) 7%,transparent)}table.d th.ndcol{background:color-mix(in srgb,var(--spend) 14%,var(--surface-2));white-space:normal}
+.note{font-size:11.5px;color:var(--muted);line-height:1.55;padding:11px 15px 14px;border-top:1px solid var(--line)}.note b{color:var(--ink)}
+</style>
+<header class="top"><div class="hbar">
+  <div class="brand">QP2A <span>bonus cost &amp; leakage</span></div>
+  <div class="asof">2026 year-to-date · MY + SG · generated 2026-10-21</div>
+</div></header>
+<main><div class="wrap">
+  <div class="phead"><h1>Promo bonus cost &amp; leakage</h1><span class="cap">where the bonus money goes, and what's leaking to players who never deposit</span></div>
+  <div class="takeaways"><div class="lab">The short version</div><ul>
+    <li>QP2A spends <b>6.77%</b> of deposits on bonuses — above the <b>4.5%</b> ceiling (and the 4.0% goal).</li>
+    <li><b>RM273k</b> of free credit went to players who <b>never deposited</b> — and one code, <code>EXCLUSIVE_KICKSTART_50FC</code>, is most of it.</li>
+    <li>Cutting all of the leakage moves bonus cost <b>6.77% → 6.25%</b> — a real step, but the over-spend is bigger than the farming.</li>
+  </ul></div>
+
+  <div class="tiles2">
+    <div class="tile">
+      <div class="tl">2026 bonus cost</div>
+      <div class="tv" style="color:var(--bad)">6.77%</div>
+      <div class="ts">RM3.51m bonus on RM51.79m deposits</div>
+      <div class="meter">
+        <div class="fill" style="width:84.6%"></div>
+        <div class="mk" style="left:50.0%"></div>
+        <div class="mk" style="left:56.2%"></div>
+      </div>
+      <div class="mkrow">goal 4.0% · ceiling 4.5% (marks) · scale 0–8%</div>
+      <span class="conf" style="background:var(--bad-bg);color:var(--bad)">Over ceiling by 2.3 pts</span>
+    </div>
+    <div class="tile">
+      <div class="tl">Leaking to non-depositors</div>
+      <div class="tv" style="color:var(--spend)">RM273k</div>
+      <div class="ts">across 311 giveaway codes (free credit / free spins), all-time</div>
+      <div class="lkrow"><span class="lkc">EXCLUSIVE_KICKSTART_50FC</span><span class="lkv">RM157k · 83%</span></div>
+<div class="lkrow"><span class="lkc">TELE_ANGPAU</span><span class="lkv">RM52k · 72%</span></div>
+<div class="lkrow"><span class="lkc">IBC22_TELE_TEST</span><span class="lkv">RM30k · 89%</span></div>
+      <div class="linknote">→ cutting these moves bonus cost 6.77% → 6.25%</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Remove / exclude shortlist<span class="basis">giveaway codes ranked by money reaching players who never deposited — covers 100% of all leakage</span></div>
+    <div class="tblwrap"><table class="d">
+      <thead><tr>
+        <th class="n">#</th><th>Code</th><th>Promo name</th><th>Mechanic</th><th>Market</th>
+        <th class="n">Claimers</th><th class="n ndcol">Never<br>deposited</th><th class="n">Leaked (RM)</th>
+        <th class="n">Leak % of code</th><th class="n">Code total</th><th>Last claim</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+<tr><td class="n" style="color:var(--muted)">1</td><td class="stick">EXCLUSIVE_KICKSTART_50FC</td><td style="white-space:normal;max-width:240px;color:var(--muted)">KICKSTART - 50FC</td><td>Free credit</td><td>MY/SG</td><td class="n">2,819</td><td class="n ndcol"><b style="color:var(--spend)">83%</b></td><td class="n" style="font-weight:700">RM157k</td><td class="n">83%</td><td class="n" style="color:var(--muted)">RM189k</td><td style="color:var(--muted)">2026-09-21</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">2</td><td class="stick">TELE_ANGPAU</td><td style="white-space:normal;max-width:240px;color:var(--muted)">FREE 50 ANGPAU</td><td>Free credit</td><td>MY/SG</td><td class="n">633</td><td class="n ndcol"><b style="color:var(--spend)">72%</b></td><td class="n" style="font-weight:700">RM52k</td><td class="n">75%</td><td class="n" style="color:var(--muted)">RM70k</td><td style="color:var(--muted)">2023-04-29</td><td><span class="conf" style="background:var(--surface-2);color:var(--muted);border:1px solid var(--line)">dormant / legacy</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">3</td><td class="stick">IBC22_TELE_TEST</td><td style="white-space:normal;max-width:240px;color:var(--muted)">FREE 50 ANGPAU</td><td>Free credit</td><td>MY/SG</td><td class="n">478</td><td class="n ndcol"><b style="color:var(--spend)">89%</b></td><td class="n" style="font-weight:700">RM30k</td><td class="n">85%</td><td class="n" style="color:var(--muted)">RM35k</td><td style="color:var(--muted)">2023-11-11</td><td><span class="conf" style="background:var(--surface-2);color:var(--muted);border:1px solid var(--line)">dormant / legacy</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">4</td><td class="stick">RND10_FC88</td><td style="white-space:normal;max-width:240px;color:var(--muted)">RND 10 DAYS - FREECREDIT 88</td><td>Free credit</td><td>MY/SG</td><td class="n">182</td><td class="n ndcol"><b style="color:var(--spend)">82%</b></td><td class="n" style="font-weight:700">RM18k</td><td class="n">81%</td><td class="n" style="color:var(--muted)">RM22k</td><td style="color:var(--muted)">2025-02-28</td><td><span class="conf" style="background:var(--surface-2);color:var(--muted);border:1px solid var(--line)">dormant / legacy</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">5</td><td class="stick">You_Lose_We_Pay_2026</td><td style="white-space:normal;max-width:240px;color:var(--muted)">IBC22 You Lose We Pay</td><td>Free credit</td><td>MY/SG</td><td class="n">25</td><td class="n ndcol"><b style="color:var(--spend)">76%</b></td><td class="n" style="font-weight:700">RM6k</td><td class="n">82%</td><td class="n" style="color:var(--muted)">RM7k</td><td style="color:var(--muted)">2026-06-05</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">6</td><td class="stick">VM_FC_VARIABLE_5X</td><td style="white-space:normal;max-width:240px;color:var(--muted)">VM Bns - Free Credit - 5x TO</td><td>Free credit</td><td>MY/SG</td><td class="n">119</td><td class="n ndcol">2%</td><td class="n" style="font-weight:700">RM4k</td><td class="n">4%</td><td class="n" style="color:var(--muted)">RM99k</td><td style="color:var(--muted)">2026-10-16</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">7</td><td class="stick">FT_ADHOC_FC50_5X</td><td style="white-space:normal;max-width:240px;color:var(--muted)">50 Free Credit  Max Withdrawal = 100 TO: 5x</td><td>Free credit</td><td>MY/SG</td><td class="n">110</td><td class="n ndcol">32%</td><td class="n" style="font-weight:700">RM3k</td><td class="n">32%</td><td class="n" style="color:var(--muted)">RM8k</td><td style="color:var(--muted)">2026-02-10</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">8</td><td class="stick">FT_ADHOC_REL_200FS_FOO_5X</td><td style="white-space:normal;max-width:240px;color:var(--muted)">200 Free Spins - Fortune Of Olympus, TO 5, 0.20 per spin    NO min dep Max Withdrawal = 100</td><td>Free spins</td><td>MY/SG</td><td class="n">71</td><td class="n ndcol">18%</td><td class="n" style="font-weight:700">RM1k</td><td class="n">19%</td><td class="n" style="color:var(--muted)">RM6k</td><td style="color:var(--muted)">2026-02-11</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">9</td><td class="stick">FT_VMFC_VARIABLE_3X</td><td style="white-space:normal;max-width:240px;color:var(--muted)">VIP SPECIAL FREE CREDIT - 3x TO</td><td>Free credit</td><td>MY/SG</td><td class="n">19</td><td class="n ndcol">5%</td><td class="n" style="font-weight:700">RM1k</td><td class="n">8%</td><td class="n" style="color:var(--muted)">RM12k</td><td style="color:var(--muted)">2026-09-26</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">10</td><td class="stick">FT_3DAYS_DEPO_388FS_021025</td><td style="white-space:normal;max-width:240px;color:var(--muted)">388 Free Spin No Min Depo - Gates of Olympus</td><td>Free spins</td><td>MY</td><td class="n">129</td><td class="n ndcol">1%</td><td class="n" style="font-weight:700">RM200</td><td class="n">1%</td><td class="n" style="color:var(--muted)">RM23k</td><td style="color:var(--muted)">2026-09-25</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">11</td><td class="stick">FT_REL_MID388FS_GOO_090925</td><td style="white-space:normal;max-width:240px;color:var(--muted)">388 Free Spin Reload bonus. Min dep 50</td><td>Free spins</td><td>MY</td><td class="n">286</td><td class="n ndcol">0%</td><td class="n" style="font-weight:700">RM188</td><td class="n">0%</td><td class="n" style="color:var(--muted)">RM112k</td><td style="color:var(--muted)">2025-12-22</td><td><span class="conf" style="background:var(--surface-2);color:var(--muted);border:1px solid var(--line)">dormant / legacy</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">12</td><td class="stick">FC_MINIGAMES_REWARDS</td><td style="white-space:normal;max-width:240px;color:var(--muted)">Mini Games Rewards</td><td>Free credit</td><td>MY</td><td class="n">3,650</td><td class="n ndcol">0%</td><td class="n" style="font-weight:700">RM133</td><td class="n">0%</td><td class="n" style="color:var(--muted)">RM478k</td><td style="color:var(--muted)">2026-10-21</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+<tr><td class="n" style="color:var(--muted)">13</td><td class="stick">REFERRAL-REWARD</td><td style="white-space:normal;max-width:240px;color:var(--muted)">Referral Bonus</td><td>Free credit</td><td>MY/SG</td><td class="n">194</td><td class="n ndcol">2%</td><td class="n" style="font-weight:700">RM126</td><td class="n">2%</td><td class="n" style="color:var(--muted)">RM8k</td><td style="color:var(--muted)">2026-10-18</td><td><span class="conf" style="background:var(--good-bg);color:var(--good)">active</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><b>How to read this.</b> "Never deposited" is the share of a code's claimers who have no deposit on record — for a free giveaway, that is money handed out with nothing back. The <b>never-deposited %</b> (amber) is the abuse signal; a high leaked RM with a low % just means a big code, not a farm. <b>EXCLUSIVE_KICKSTART_50FC</b> is the clear action — 83% of 2,819 claimers never deposited. The two 2023 TELE codes are already dead. <br><b>The honest caveat:</b> cutting every ringgit of leakage only moves bonus cost from 6.77% to 6.25% — still above the 4.5% ceiling. Leakage is a cleanup win; the wider over-spend is a separate, bigger question (the per-pillar effectiveness review).</div>
+  </div>
+</div></main>
