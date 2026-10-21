@@ -49,7 +49,10 @@ for MK, (CUR, SYM) in MK_CFG.items():
         print(f"[{MK}] skip — no action codes in this window (thin/recent)"); continue  # empty IN (...) is a ClickHouse error
     depreq = [k for k in allcodes if bt(meta[k]["mechanic"]) == "Deposit"]
     inlist = ",".join("'" + x.replace("'", "''") + "'" for x in allcodes)
-    drlist = ",".join("'" + x.replace("'", "''") + "'" for x in depreq)
+    # `or "''"` sentinel: a thin/recent window can have in-scope codes but NONE deposit-required
+    # (all give-aways) -> empty `code IN ()` is a ClickHouse error. IN ('') matches nothing = correct
+    # (no deposit-required allocation; everything falls to unattributed).
+    drlist = (",".join("'" + x.replace("'", "''") + "'" for x in depreq)) or "''"
     # per-code group tag = "pillar||bonus-type" (for WITHIN-GROUP distinct per money-table row)
     def _inl(cs): return ",".join("'" + x.replace("'", "''") + "'" for x in cs)
     groups = {}
